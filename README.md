@@ -25,7 +25,7 @@ $ cd ucloud-cli
 $ make install
 ```
 
-###Config UCloud CLI
+### Config UCloud CLI
 
 After install the cli, run 'ucloud config' to complete the cli configuration following the tips.
 
