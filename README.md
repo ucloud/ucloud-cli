@@ -44,4 +44,4 @@ After install the cli, run 'ucloud config' to complete the cli configuration fol
 
 ### Uninstall UCloud CLI
 
-Remove the executable file /user/local/bin/ucloud and the directory $HOME/.ucloud
+Remove the executable file /usr/local/bin/ucloud and the directory $HOME/.ucloud
