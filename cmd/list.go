@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
+	"github.com/ucloud/ucloud-cli/model"
 	"github.com/ucloud/ucloud-cli/util"
 	"github.com/ucloud/ucloud-sdk-go/service/uaccount"
 	"github.com/ucloud/ucloud-sdk-go/service/uaccount/types"
@@ -101,6 +102,9 @@ func getUserInfo() (*types.UserInfo, error) {
 	}
 	if len(resp.DataSet) == 1 {
 		userInfo = resp.DataSet[0]
+		model.ClientConfig.TracerData["userName"] = userInfo.UserEmail
+		model.ClientConfig.TracerData["userID"] = userInfo.UserEmail
+		model.ClientConfig.TracerData["companyName"] = userInfo.CompanyName
 		bytes, err := json.Marshal(userInfo)
 		if err != nil {
 			return nil, err
