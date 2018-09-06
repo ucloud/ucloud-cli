@@ -20,7 +20,10 @@ build_linux:
 build_windows:
 	GOOS=windows GOARCH=amd64 go build -o out/ucloud.exe main.go
 	zip -r out/ucloud-cli-windows-${VERSION}-amd64.zip out/ucloud.exe
-	shasum -a 256 out/ucloud-cli-windows-${VERSION}-amd64.tgz
+	shasum -a 256 out/ucloud-cli-windows-${VERSION}-amd64.zip
+
+.PHONY : build_all
+build_all: build_mac build_linux build_windows
 
 .PHONY : install
 install:

@@ -8,21 +8,21 @@ You can install UCloud CLI by downloading executable binary file or building fro
 
 ##### Download binary file
 Archive links:
-[Mac](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-macosx-0.1.1-amd64.tgz)
-[Linux](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-linux-0.1.1-amd64.tgz)
-[Windows](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-windows-0.1.1-amd64.zip)
+[Mac](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-macosx-0.1.2-amd64.tgz)
+[Linux](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-linux-0.1.2-amd64.tgz)
+[Windows](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-windows-0.1.2-amd64.zip)
 
 SHA-256 checksum
 ```
-165f1ce4d413bf92e2794efe2722678eb80990602b81fd6e501d0c5f6bbf30bb ucloud-cli-linux-0.1.1-amd64.tgz
-e174c2ef268f4b653062d0e1331bf642134a0fafbb745b407969a194d7c1bc0c ucloud-cli-macosx-0.1.1-amd64.tgz
-75ff8741d9348881b3d992701590bc27f9278f207a3fb9a12ef0edfab19058d2 ucloud-cli-windows-0.1.1-amd64.zip
+19b7a0803fc41ee689797a36fd67b288e993c383edf6087f56825a4d5bb17875 ucloud-cli-linux-0.1.2-amd64.tgz
+ecc787f4045ea14d583801cd0cfa746be357d50756c2cf0ba879e405c2325d1c ucloud-cli-macosx-0.1.2-amd64.tgz
+f48058ac96bb0283b18c660f0350eedba49d03a753775b0a2773b2081698b3f3 ucloud-cli-windows-0.1.2-amd64.zip
 ```
 
 Download the binary file and extract to /usr/local/bin directory or add it to the $PATH. Take macOS as an example.
 ```
-$ curl -o ucloud-cli.tgz http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-macosx-0.1.1-amd64.tgz
-$ echo "e174c2ef268f4b653062d0e1331bf642134a0fafbb745b407969a194d7c1bc0c *ucloud-cli-macosx-0.1.1-amd64.tgz" | shasum -a 256 -c
+$ curl -o ucloud-cli.tgz http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-macosx-0.1.2-amd64.tgz
+$ echo "ecc787f4045ea14d583801cd0cfa746be357d50756c2cf0ba879e405c2325d1c *ucloud-cli-macosx-0.1.2-amd64.tgz" | shasum -a 256 -c
 $ tar -zxf ucloud-cli.tgz
 $ cp ucloud /usr/local/bin
 ```
