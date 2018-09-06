@@ -50,6 +50,23 @@ func NewCmdList() *cobra.Command {
 	return cmd
 }
 
+func getDefaultRegion() (string, error) {
+	req := &uaccount.GetRegionRequest{}
+	resp, err := client.GetRegion(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.RetCode != 0 {
+		return "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+	}
+	for _, region := range resp.Regions {
+		if region.IsDefault == true {
+			return region.Region, nil
+		}
+	}
+	return "", fmt.Errorf("No default region")
+}
+
 func listRegion() error {
 	req := &uaccount.GetRegionRequest{}
 	resp, err := client.GetRegion(req)
@@ -59,10 +76,35 @@ func listRegion() error {
 	if resp.RetCode != 0 {
 		return fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
 	}
+	var regionMap = map[string]bool{}
+	var regionList []string
 	for _, region := range resp.Regions {
-		fmt.Printf("Region: %s, Zone: %s\n", region.Region, region.Zone)
+		if _, ok := regionMap[region.Region]; !ok {
+			regionList = append(regionList, region.Region)
+		}
+		regionMap[region.Region] = true
+	}
+	for index, region := range regionList {
+		fmt.Printf("[%2d] %s\n", index, region)
 	}
 	return nil
+}
+
+func getDefaultProject() (string, error) {
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.RetCode != 0 {
+		return "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+	}
+	for _, project := range resp.ProjectSet {
+		if project.IsDefault == true {
+			return project.ProjectId, nil
+		}
+	}
+	return "", fmt.Errorf("No default project")
 }
 
 func listProject() error {
@@ -80,12 +122,8 @@ func listProject() error {
 	return nil
 }
 
-func isUserCertified() (bool, error) {
-	userInfo, err := getUserInfo()
-	if err != nil {
-		return false, err
-	}
-	return userInfo.AuthState == "CERTIFIED", nil
+func isUserCertified(userInfo *types.UserInfo) bool {
+	return userInfo.AuthState == "CERTIFIED"
 }
 
 func getUserInfo() (*types.UserInfo, error) {

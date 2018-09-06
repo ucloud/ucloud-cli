@@ -25,8 +25,8 @@ import (
 func NewCmdGssh() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "gssh",
-		Short: "GlobalSSH management",
-		Long:  `GlobalSSH management, such as create,modify,list and delete`,
+		Short: "Create and manage globalssh instance",
+		Long:  `Create and manage globalssh instance, such as create,modify,list and delete`,
 	}
 	cmd.AddCommand(NewCmdGsshList())
 	cmd.AddCommand(NewCmdGsshCreate())
@@ -86,7 +86,7 @@ func NewCmdGsshCreate() *cobra.Command {
 				fmt.Println("Error:", err)
 				return
 			}
-			if port <= 1 || port >= 65535 || port == 80 || port == 443 {
+			if port < 1 || port > 65535 || port == 80 || port == 443 {
 				fmt.Println("The port number should be between 1 and 65535, and cannot be equal to 80 or 443")
 				return
 			}

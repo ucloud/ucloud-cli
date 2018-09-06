@@ -24,8 +24,8 @@ import (
 func NewCmdUHost() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "uhost",
-		Short: "UHost managment",
-		Long:  `UHost managment. Only list`,
+		Short: "List UHost instance",
+		Long:  `List UHost instance`,
 		Args:  cobra.NoArgs,
 	}
 	cmd.AddCommand(NewCmdUHostList())
