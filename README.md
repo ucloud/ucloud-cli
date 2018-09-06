@@ -12,7 +12,7 @@ Archive links:
 [Linux](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-linux-0.1.1-amd64.tgz)
 [Windows](http://ucloud-sdk.ufile.ucloud.com.cn/ucloud-cli-windows-0.1.1-amd64.zip)
 
-SHA-256 hashcode
+SHA-256 checksum
 ```
 165f1ce4d413bf92e2794efe2722678eb80990602b81fd6e501d0c5f6bbf30bb ucloud-cli-linux-0.1.1-amd64.tgz
 e174c2ef268f4b653062d0e1331bf642134a0fafbb745b407969a194d7c1bc0c ucloud-cli-macosx-0.1.1-amd64.tgz
@@ -33,7 +33,7 @@ If you have installed golang, run the following commands to install the UCloud C
 ```
 $ mkdir -p $GOPATH/src/github.com/ucloud
 $ cd $GOPATH/src/github.com/ucloud
-$ git clone http://github.com/ucloud/ucloud-cli.git
+$ git clone https://github.com/ucloud/ucloud-cli.git
 $ cd ucloud-cli
 $ make install
 ```
@@ -41,6 +41,8 @@ $ make install
 ### Config UCloud CLI
 
 After install the cli, run 'ucloud config' to complete the cli configuration following the tips. Local settings will be saved in directory $HOME/.ucloud
+Command 'ucloud ls --object [region|project]' display all the regions and projects. You can change the default region and prject by runing 'ucloud config set [region|project] xxx'.
+Execute 'ucloud config --help' for more information.
 
 ### Uninstall UCloud CLI
 

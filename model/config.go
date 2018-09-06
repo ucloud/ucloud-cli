@@ -186,5 +186,4 @@ func init() {
 		PublicKey:  ConfigInstance.PublicKey,
 		PrivateKey: ConfigInstance.PrivateKey,
 	}
-
 }

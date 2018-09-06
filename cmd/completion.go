@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,20 +34,17 @@ func NewCmdCompletion() *cobra.Command {
   On macOS, using bash
 
   On macOS, you will need to install bash-completion support via Homebrew first:
-  If running Bash 3.2 included with macOS
-  > brew install bash-completion
-  or, if running Bash 4.1+
-  > brew install bash-completion@2
+  $ ucloud completion
+  $ brew install bash-completion
   Follow the “caveats” section of brew’s output to add the appropriate bash completion path to your local .bash_profile.
   and then generate bash completion scripts for ucloud 
-  > ucloud completion
   
   On Linux, using bash
   
-  On CentOS Linux, you may need to install the bash-completion package which is not installed by default.
-  > yum install bash-completion -y
+  On Linux, you may need to install the bash-completion package which is not installed by default.
+  $ ucloud completion
+  $ yum install bash-completion or apt-get install bash-completion
   and then genreate bash completion scripts for ucloud 
-  > ucloud completion
   
   Using zsh
   > ucloud completion
@@ -73,21 +73,65 @@ func NewCmdCompletion() *cobra.Command {
 	return completionCmd
 }
 
+var darwinBash = `
+Install bash-completion with command 'brew install bash-completion', and then append the following scripts to ~/.bash_profile
+
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+  . $(brew --prefix)/etc/bash_completion
+fi
+
+source ~/.ucloud/ucloud.sh
+`
+
+var linuxBash = `
+Ensure your have installed bash-completion, and then append the following scripts to ~/.bashrc
+
+if [ -f /etc/bash_completion ]; then
+  . /etc/bash_completion
+fi
+
+source ~/.ucloud/ucloud.sh
+`
+
+func getBashVersion() (version string, err error) {
+	lookupBashVersion := exec.Command("bash", "-version")
+	out, err := lookupBashVersion.Output()
+	if err != nil {
+		context.AppendError(err)
+		fmt.Println(err)
+	}
+
+	// Example
+	// $ bash -version
+	// GNU bash, version 3.2.57(1)-release (x86_64-apple-darwin17)
+	// Copyright (C) 2007 Free Software Foundation, Inc.
+	versionStr := string(out)
+	re := regexp.MustCompile("(\\d)\\.\\d\\.")
+	strs := re.FindAllStringSubmatch(versionStr, -1)
+	if len(strs) >= 1 {
+		result := strs[0]
+		if len(result) >= 2 {
+			version = result[1]
+		}
+	}
+	if version == "" {
+		err = fmt.Errorf("lookup bash version failed")
+	}
+	return
+}
+
 func bashCompletion(cmd *cobra.Command) {
 	home := util.GetHomePath()
 	shellPath := home + "/" + util.ConfigPath + "/ucloud.sh"
 	cmd.GenBashCompletionFile(shellPath)
-	for _, rc := range [...]string{".bashrc", ".bash_profile", ".bash_login", ".profile"} {
-		rcPath := home + "/" + rc
-		if _, err := os.Stat(rcPath); err == nil {
-			cmd := "source " + shellPath
-			if util.LineInFile(rcPath, cmd) == false {
-				util.AppendToFile(rcPath, cmd)
-				fmt.Println("Auto completion is on. Please install bash-completion on your platform using brew,yum or apt-get. ucloud completion --help for more information")
-			} else {
-				fmt.Println("Auto completion update. Restart session")
-			}
-		}
+	fmt.Printf("Completion scripts has been written to '~/%s/ucloud.sh'\n", util.ConfigPath)
+
+	platform := runtime.GOOS
+
+	if platform == "darwin" {
+		fmt.Println(darwinBash)
+	} else if platform == "linux" {
+		fmt.Println(linuxBash)
 	}
 }
 
@@ -97,22 +141,17 @@ func zshCompletion(cmd *cobra.Command) {
 	file, err := os.Create(shellPath)
 	if err != nil {
 		fmt.Println(err)
+		context.AppendError(err)
 		return
 	}
 	defer file.Close()
-	runCompletionZsh(file, cmd)
 
-	rcPath := home + "/.zshrc"
-	if _, err = os.Stat(rcPath); err == nil {
-		cmd := fmt.Sprintf("fpath=(%s/%s $fpath);", home, util.ConfigPath)
-		cmd += "autoload -U +X compinit && compinit"
-		if util.LineInFile(rcPath, cmd) == false {
-			util.AppendToFile(rcPath, cmd)
-			fmt.Println("Auto completion is on")
-		} else {
-			fmt.Println("Auto completion update. Restart session")
-		}
-	}
+	runCompletionZsh(file, cmd)
+	fmt.Printf("Completion scripts was written to '~/%s/_ucloud'\n", util.ConfigPath)
+
+	scripts := fmt.Sprintf("fpath=(~/%s $fpath)\n", util.ConfigPath)
+	scripts += "autoload -U +X compinit && compinit"
+	fmt.Printf("Please append the following scripts to your ~/.zshrc\n%s\n", scripts)
 }
 
 //参考自 k8s.io/kubernetes/pkg/kubectl/cmd/completion.go

@@ -27,16 +27,7 @@ var config = model.ConfigInstance
 
 //NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
-
-	var configDesc = `Command 'ucloud config' is used to configure public-key,private-key and other settings. 
-
-Public-key and private-key could be acquired from https://console.ucloud.cn/uapi/apikey.
-
-If you don’t have an UCloud account yet, run 'ucloud sign-up', and authenticate the account with your valid documentation.
-
-If you just want to configure default region or project, please run 'ucloud config set region/project xxx'. Run 'ucloud config --help' for more infomation.
-
-`
+	var configDesc = `Public-key and private-key could be acquired from https://console.ucloud.cn/uapi/apikey.`
 	var helloUcloud = `
   _   _      _ _         _   _ _____ _                 _ 
   | | | |    | | |       | | | /  __ \ |               | |
@@ -49,10 +40,10 @@ If you just want to configure default region or project, please run 'ucloud conf
 	var configCmd = &cobra.Command{
 		Use:     "config",
 		Short:   "Config UCloud CLI options",
-		Long:    `Config UCloud CLI options such as credentials and other settings.`,
-		Example: "ucloud config;  ucloud config set region cn-bj2",
+		Long:    `Config UCloud CLI options such as private-key,public-key,default region and default project-id.`,
+		Example: "ucloud config; ucloud config set region cn-bj2; ucloud config set project org-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf(configDesc)
+			fmt.Println(configDesc)
 			if len(config.PrivateKey) != 0 && len(config.PublicKey) != 0 {
 				fmt.Printf("Your have already configured public-key and private-key. Do you want to overwrite it? (y/n):")
 				var overwrite string
@@ -69,24 +60,32 @@ If you just want to configure default region or project, please run 'ucloud conf
 			}
 			config.ConfigPublicKey()
 			config.ConfigPrivateKey()
-			fmt.Println("Fetching regions...")
-			err := listRegion()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			config.ConfigRegion()
 
-			fmt.Println("Fetching projects...")
-			err = listProject()
+			region, err := getDefaultRegion()
 			if err != nil {
+				context.AppendError(err)
 				fmt.Println(err)
-				return
+			} else {
+				config.Region = region
+				fmt.Printf("Configured default region:%s\n", region)
 			}
 
-			config.ConfigProjectID()
+			project, err := getDefaultProject()
+			if err != nil {
+				context.AppendError(err)
+				fmt.Println(err)
+			} else {
+				config.ProjectID = project
+				fmt.Printf("Configured default project:%s\n", project)
+			}
+
 			config.SaveConfig()
-			certified, err := isUserCertified()
+
+			userInfo, err := getUserInfo()
+
+			fmt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
+
+			certified := isUserCertified(userInfo)
 			if err != nil {
 				fmt.Println(err)
 			} else if certified == false {
@@ -144,7 +143,7 @@ func NewCmdConfigSet() *cobra.Command {
 		Use:     "set",
 		Short:   "Set a config value",
 		Long:    "Set a config value, including private-key public-key region and project-id.",
-		Example: "ucloud configure set region cn-bj2",
+		Example: "ucloud config set region cn-bj2",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				fmt.Printf("Error: accepts 2 arg(s), received %d\n", len(args))

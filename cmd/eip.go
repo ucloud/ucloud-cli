@@ -24,8 +24,8 @@ import (
 func NewCmdEIP() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "eip",
-		Short: "EIP managment",
-		Long:  `EIP managment, such as list,allocate and release`,
+		Short: "List,allocate and release EIP",
+		Long:  `Manipulate EIP, such as list,allocate and release`,
 		Args:  cobra.NoArgs,
 	}
 	cmd.AddCommand(NewCmdEIPList())

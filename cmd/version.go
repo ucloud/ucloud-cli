@@ -20,14 +20,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "0.1.1"
+var version = "0.1.2"
 
 //NewCmdVersion  ucloud version
 func NewCmdVersion() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Show the version of ucloud",
-		Long:  `Show the version of ucloud`,
+		Short: "Display UCloud CLI version",
+		Long:  `Display UCloud CLI version`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version)
 		},

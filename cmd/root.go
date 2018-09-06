@@ -37,24 +37,24 @@ var client = service.NewClient(model.ClientConfig, model.Credential)
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "ucloud",
-		Short: "The UCloud Command Line Interface v" + version,
-		Long:  `The UCloud Command Line Interface is a tool to manage your UCloud services`,
+		Use:                    "ucloud",
+		Short:                  "UCloud CLI v" + version,
+		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
 	}
 
 	cmd.PersistentFlags().StringVarP(&global.region, "region", "r", "", "Assign region(override default region of your config)")
-	cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign projectId(override default projecId of your config)")
+	cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign project-id(override default projec-id of your config)")
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
 
-	cmd.AddCommand(NewCmdVersion())
-	cmd.AddCommand(NewCmdCompletion())
-	cmd.AddCommand(NewCmdList())
-	cmd.AddCommand(NewCmdConfig())
 	cmd.AddCommand(NewCmdSignup())
+	cmd.AddCommand(NewCmdConfig())
+	cmd.AddCommand(NewCmdList())
 	cmd.AddCommand(NewCmdUHost())
-	cmd.AddCommand(NewCmdGssh())
 	cmd.AddCommand(NewCmdEIP())
+	cmd.AddCommand(NewCmdGssh())
+	cmd.AddCommand(NewCmdCompletion())
+	cmd.AddCommand(NewCmdVersion())
 
 	return cmd
 }
@@ -69,11 +69,15 @@ func Execute() {
 	}
 }
 
+var context *model.Context
+
 func init() {
+	cobra.EnableCommandSorting = false
+	client = service.NewClient(model.ClientConfig, model.Credential)
+	context = model.GetContext(os.Stdout, model.ClientConfig)
 	cobra.OnInitialize(initialize)
 	model.ClientConfig.UserAgent = fmt.Sprintf("UCloud CLI v%s", version)
 	model.ClientConfig.TracerData["command"] = fmt.Sprintf("%v", os.Args)
-	model.GetContext()
 }
 
 func initialize(cmd *cobra.Command) {
@@ -81,7 +85,6 @@ func initialize(cmd *cobra.Command) {
 		model.ClientConfig.LogLevel = 5
 		model.ClientConfig.Logger = nil
 	}
-	client = service.NewClient(model.ClientConfig, model.Credential)
 
 	userInfo, err := model.LoadUserInfo()
 	if err == nil {
@@ -89,13 +92,9 @@ func initialize(cmd *cobra.Command) {
 		model.ClientConfig.TracerData["userID"] = userInfo.UserEmail
 		model.ClientConfig.TracerData["companyName"] = userInfo.CompanyName
 	} else {
-		errorStr, ok := model.ClientConfig.TracerData["error"].(string)
-		if ok {
-			model.ClientConfig.TracerData["error"] = errorStr + "->" + err.Error()
-		} else {
-			model.ClientConfig.TracerData["error"] = err.Error()
-		}
+		context.AppendError(err)
 	}
+
 	//上报服务对Origin请求头有限制，必须以'.ucloud.cn'结尾，因此这里伪造了一个sdk.ucloud.cn,跟其他上报区分
 	model.ClientConfig.HTTPHeaders["Origin"] = "https://sdk.ucloud.cn"
 

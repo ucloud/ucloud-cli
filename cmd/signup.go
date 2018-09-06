@@ -27,8 +27,8 @@ func NewCmdSignup() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:     "sign-up",
-		Short:   "Open sign up page of ucloud in your browser",
-		Long:    `Open sign up page of ucloud in your browser`,
+		Short:   "Launch UCloud sign-up page in browser",
+		Long:    `Launch UCloud sign-up page in browser`,
 		Args:    cobra.NoArgs,
 		Example: "ucloud sign-up",
 		Run: func(cmd *cobra.Command, args []string) {
