@@ -4,7 +4,14 @@ The UCloud Command Line Interface is a tool to manage your UCloud services. It's
 
 ### Install UCloud CLI
 
-You can install UCloud CLI by downloading executable binary file or building from the source code by yourself.
+You can install UCloud CLI by Homebrew/Linuxbrew, downloading executable binary file or building from the source code by yourself.
+
+##### Homebrew(recommended)
+
+You can use [Homebrew](https://brew.sh/) on macOS or [Linuxbrew](http://linuxbrew.sh/) on Linux. After installing Homebrew or Linuxbrew,just type the following command to complete the installation.
+```
+brew install ucloud
+```
 
 ##### Download binary file
 Archive links:
