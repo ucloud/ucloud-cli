@@ -15,9 +15,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //NewCmdUHost ucloud uhost
@@ -32,24 +31,66 @@ func NewCmdUHost() *cobra.Command {
 	return cmd
 }
 
-//NewCmdUHostList ucloud uhost list
+//NewCmdUHostList [ucloud uhost list]
 func NewCmdUHostList() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   "ls",
+	req := BizClient.NewDescribeUHostInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
 		Short: "List all UHost Instances",
 		Long:  `List all UHost Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
-			req := client.NewDescribeUHostInstanceRequest()
-			bindGlobalParam(req)
-			resp, err := client.DescribeUHostInstance(req)
+			resp, err := BizClient.DescribeUHostInstance(req)
 			if err != nil {
-				fmt.Println("Error:", err)
+				Tracer.Println(err)
 				return
 			}
-			for _, uhost := range resp.UHostSet {
-				fmt.Printf("UHostID:%s\n", uhost.UHostId)
+			if resp.RetCode != 0 {
+				HandleBizError(resp)
+			} else {
+				PrintTable(resp.UHostSet, []string{"UHostId", "Name", "UHostType", "Zone", "Tag", "State"})
 			}
 		},
 	}
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&req.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	cmd.Flags().StringVar(&req.Zone, "zone", "", "Zone")
+	cmd.Flags().StringVar(&req.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "UHost Instance ID, multiple values separated by comma(without space)")
+	cmd.Flags().StringVar(&req.Tag, "tag", "", "UGroup")
+	cmd.Flags().IntVar(&req.Offset, "offset", 0, "offset default 0")
+	cmd.Flags().IntVar(&req.Limit, "limit", 20, "limit default 20, max value 100")
+
+	return cmd
+}
+
+//NewCmdUHostCreate [ucloud uhost create]
+func NewCmdUHostCreate() *cobra.Command {
+	req := BizClient.NewCreateUHostInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create UHost Instance",
+		Long:  "Create UHost Instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			resp, err := BizClient.CreateUHostInstance(req)
+			if err != nil {
+				Tracer.Println(err)
+				return
+			}
+			if resp.RetCode != 0 {
+				HandleBizError(resp)
+			} else {
+				Tracer.Println(resp)
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+
+	cmd.Flags().StringVar(&req.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	cmd.Flags().StringVar(&req.Zone, "zone", "", "Zone")
+	cmd.Flags().StringVar(&req.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	cmd.Flags().StringVar(&req.ImageId, "image-id", "", "The ID of image. Obtain by 'ucloud image list'")
+	cmd.Flags().StringVar(&req.Password, "password", "", "Password of the uhost user")
+
 	return cmd
 }

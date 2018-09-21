@@ -23,3 +23,8 @@ type TraceInfo interface {
 type Tracer interface {
 	Send(TraceInfo, map[string]string) error
 }
+
+// type AggTracer interface {
+// 	TraceInfo
+// 	Send() error
+// }

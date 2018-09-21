@@ -20,10 +20,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-cli/model"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
-var config = model.ConfigInstance
+var config = ConfigInstance
 
 //NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
@@ -58,13 +58,16 @@ func NewCmdConfig() *cobra.Command {
 					return
 				}
 			}
+			config.ClearConfig()
+			ClientConfig.Region = ""
+			ClientConfig.ProjectId = ""
 			config.ConfigPublicKey()
 			config.ConfigPrivateKey()
 
 			region, err := getDefaultRegion()
 			if err != nil {
-				context.AppendError(err)
-				fmt.Println(err)
+				Tracer.Println(err)
+				return
 			} else {
 				config.Region = region
 				fmt.Printf("Configured default region:%s\n", region)
@@ -72,8 +75,8 @@ func NewCmdConfig() *cobra.Command {
 
 			project, err := getDefaultProject()
 			if err != nil {
-				context.AppendError(err)
-				fmt.Println(err)
+				Tracer.Println(err)
+				return
 			} else {
 				config.ProjectID = project
 				fmt.Printf("Configured default project:%s\n", project)

@@ -19,20 +19,19 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/model"
+
 	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/service"
+
+	"github.com/ucloud/ucloud-cli/model"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
-	region    string
-	projectID string
-	debug     bool
+	debug bool
 }
 
 var global GlobalFlag
-var client = service.NewClient(model.ClientConfig, model.Credential)
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
@@ -43,8 +42,8 @@ func NewCmdRoot() *cobra.Command {
 		BashCompletionFunction: "__ucloud_init_completion",
 	}
 
-	cmd.PersistentFlags().StringVarP(&global.region, "region", "r", "", "Assign region(override default region of your config)")
-	cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign project-id(override default projec-id of your config)")
+	// cmd.PersistentFlags().StringVarP(&global.region, "region", "r", "", "Assign region(override default region of your config)")
+	// cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign project-id(override default projec-id of your config)")
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
 
 	cmd.AddCommand(NewCmdSignup())
@@ -73,56 +72,42 @@ var context *model.Context
 
 func init() {
 	cobra.EnableCommandSorting = false
-	client = service.NewClient(model.ClientConfig, model.Credential)
-	context = model.GetContext(os.Stdout, model.ClientConfig)
+	// bizClient = service.NewClient(model.ClientConfig, model.Credential)
+	context = model.GetContext(os.Stdout, SdkClient)
 	cobra.OnInitialize(initialize)
-	model.ClientConfig.UserAgent = fmt.Sprintf("UCloud CLI v%s", version)
-	model.ClientConfig.TracerData["command"] = fmt.Sprintf("%v", os.Args)
+	Tracer.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
 func initialize(cmd *cobra.Command) {
 	if global.debug {
-		model.ClientConfig.LogLevel = 5
-		model.ClientConfig.Logger = nil
+		ClientConfig.Logger.SetLevel(5)
 	}
 
-	userInfo, err := model.LoadUserInfo()
+	userInfo, err := LoadUserInfo()
 	if err == nil {
-		model.ClientConfig.TracerData["userName"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["userID"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["companyName"] = userInfo.CompanyName
+		Tracer.AppendInfo("userName", userInfo.UserEmail)
+		Tracer.AppendInfo("companyName", userInfo.CompanyName)
 	} else {
-		context.AppendError(err)
+		Tracer.AppendError(err)
 	}
 
-	//上报服务对Origin请求头有限制，必须以'.ucloud.cn'结尾，因此这里伪造了一个sdk.ucloud.cn,跟其他上报区分
-	model.ClientConfig.HTTPHeaders["Origin"] = "https://sdk.ucloud.cn"
-
-	if (cmd.Name() != "config" && cmd.Name() != "completion" && cmd.Name() != "version") && cmd.Parent().Name() != "config" {
+	if (cmd.Name() != "config" && cmd.Name() != "completion" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if config.PrivateKey == "" {
-			fmt.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
+			Tracer.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
 		if config.PublicKey == "" {
-			fmt.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
-			os.Exit(0)
-		}
-		if config.Region == "" {
-			fmt.Println("Default region is empty. Execute command 'ucloud config set region' to configure your default region")
-			os.Exit(0)
-		}
-		if config.ProjectID == "" {
-			fmt.Println("Default project-id is empty. Execute command 'ucloud config set project' to configure your default project-id")
+			Tracer.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
 	}
 }
 
 func bindGlobalParam(req request.Common) {
-	if global.region != "" {
-		req.SetRegion(global.region)
-	}
-	if global.projectID != "" {
-		req.SetProjectId(global.projectID)
-	}
+	// if global.region != "" {
+	// 	req.SetRegion(global.region)
+	// }
+	// if global.projectID != "" {
+	// 	req.SetProjectId(global.projectID)
+	// }
 }

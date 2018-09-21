@@ -24,9 +24,17 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/sdk/utils"
 )
 
+//Client 客户端
 type Client struct {
 	credential *auth.Credential
 	config     *ClientConfig
+	Tracer     *utrace.AggDasTracer
+}
+
+//WithTracer 给Client添加Tracer
+func (c *Client) WithTracer(t *utrace.AggDasTracer) *Client {
+	c.Tracer = t
+	return c
 }
 
 // NewClient will create an client of ucloud sdk
@@ -41,27 +49,34 @@ func NewClient(config *ClientConfig, credential *auth.Credential) *Client {
 
 	if config.Logger == nil {
 		log.Init(config.LogLevel)
-		config.Logger = logrus.WithField("client", "sdk")
+		// config.Logger = logrus.WithField("client", "sdk")
+		config.Logger = logrus.New()
+		config.Logger.SetLevel(config.LogLevel)
 	}
 
-	if config.Tracer == nil {
-		tracer := utrace.NewDasTracer()
-		config.Tracer = &tracer
-	}
+	// if config.Tracer == nil {
+	// 	tracer := utrace.NewDasTracer()
+	// 	config.Tracer = &tracer
+	// }
 
-	if config.TracerData == nil {
-		config.TracerData = make(map[string]interface{})
-	}
+	// if config.TracerData == nil {
+	// 	config.TracerData = make(map[string]interface{})
+	// }
 
-	if config.HTTPHeaders == nil {
-		config.HTTPHeaders = make(map[string]string)
-	}
+	// if config.HTTPHeaders == nil {
+	// 	config.HTTPHeaders = make(map[string]string)
+	// }
 
-	config.HTTPHeaders["User-Agent"] = fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, config.UserAgent)
+	tracer := utrace.NewAggDasTracer()
+
+	tracer.HTTPHeaders["User-Agent"] = fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, config.UserAgent)
+
+	// tracer.HTTPHeaders = config.HTTPHeaders
 
 	return &Client{
 		credential: credential,
 		config:     config,
+		Tracer:     tracer,
 	}
 }
 
@@ -77,16 +92,15 @@ func (c *Client) GetConfig() *ClientConfig {
 
 // DoRequest will send a real http request to api endpoint with retry.
 func (c *Client) DoRequest(req *request.HttpRequest, resp response.Common) error {
-	config := c.GetConfig()
+	// config := c.GetConfig()
 	r, err := c.buildSuperAgent(req)
 	if err != nil {
 		return err
 	}
 
-	tracer := config.Tracer
+	tracer := c.Tracer
 
-	traceinfo := utrace.NewDasTraceInfo()
-	traceinfo.SetSDKRequest(req.Query)
+	tracer.SetSDKRequest(req.Query)
 
 	// temporary method, should use new version sdk
 	sendWithTracer := func(sendType string) (*http.Response, error) {
@@ -100,19 +114,19 @@ func (c *Client) DoRequest(req *request.HttpRequest, resp response.Common) error
 			return nil, err
 		}
 
-		traceinfo.SetSDKResponse(resp)
-		traceinfo.SetExtraData("startTime", startTime.UnixNano()/1e6)
-		traceinfo.SetExtraData("endTime", endTime.UnixNano()/1e6)
-		traceinfo.SetExtraData("durationTime", endTime.Sub(startTime).Nanoseconds()/1e6)
+		tracer.SetSDKResponse(resp)
+		tracer.SetExtraData("startTime", startTime.UnixNano()/1e6)
+		tracer.SetExtraData("endTime", endTime.UnixNano()/1e6)
+		tracer.SetExtraData("durationTime", endTime.Sub(startTime).Nanoseconds()/1e6)
 
-		for k, v := range config.TracerData {
-			traceinfo.SetExtraData(k, v)
-		}
+		// for k, v := range config.TracerData {
+		// 	tracer.SetExtraData(k, v)
+		// }
 
 		if tracer != nil {
-			err = tracer.Send(&traceinfo, c.config.HTTPHeaders)
+			err = tracer.Send()
 			if err != nil {
-				fmt.Println(err)
+				return nil, err
 			}
 		}
 
@@ -192,7 +206,7 @@ func (c *Client) buildSuperAgent(req *request.HttpRequest) (*gorequest.SuperAgen
 	r := gorequest.New()
 	r.ClearSuperAgent()
 
-	for k, v := range utils.MergeMap(DefaultHeaders, config.HTTPHeaders, req.Header) {
+	for k, v := range utils.MergeMap(DefaultHeaders, req.Header) {
 		r.Set(k, v)
 	}
 

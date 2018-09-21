@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //NewCmdEIP ucloud eip
@@ -38,7 +39,7 @@ func NewCmdEIP() *cobra.Command {
 
 //NewCmdEIPList ucloud eip ls
 func NewCmdEIPList() *cobra.Command {
-	req := client.NewDescribeEIPRequest()
+	req := BizClient.NewDescribeEIPRequest()
 	var cmd = &cobra.Command{
 		Use:     "ls",
 		Short:   "List all EIP instances",
@@ -46,7 +47,7 @@ func NewCmdEIPList() *cobra.Command {
 		Example: "ucloud eip ls",
 		Run: func(cmd *cobra.Command, args []string) {
 			bindGlobalParam(req)
-			resp, err := client.DescribeEIP(req)
+			resp, err := BizClient.DescribeEIP(req)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
@@ -69,7 +70,7 @@ func NewCmdEIPList() *cobra.Command {
 
 //NewCmdEIPAllocate ucloud eip allocate
 func NewCmdEIPAllocate() *cobra.Command {
-	var eipAllocateReq = client.NewAllocateEIPRequest()
+	var eipAllocateReq = BizClient.NewAllocateEIPRequest()
 	var cmd = &cobra.Command{
 		Use:     "allocate",
 		Short:   "Allocate EIP",
@@ -77,7 +78,7 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Example: "ucloud eip allocate --line Bgp --bandwidth 2",
 		Run: func(cmd *cobra.Command, args []string) {
 			bindGlobalParam(eipAllocateReq)
-			resp, err := client.AllocateEIP(eipAllocateReq)
+			resp, err := BizClient.AllocateEIP(eipAllocateReq)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -111,7 +112,7 @@ func NewCmdEIPAllocate() *cobra.Command {
 
 //NewCmdEIPBind ucloud eip bind
 func NewCmdEIPBind() *cobra.Command {
-	var eipBindReq = client.NewBindEIPRequest()
+	var eipBindReq = BizClient.NewBindEIPRequest()
 	var eipBindCmd = &cobra.Command{
 		Use:     "bind",
 		Short:   "Bind EIP with uhost",
@@ -120,7 +121,7 @@ func NewCmdEIPBind() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bindGlobalParam(eipBindReq)
 			eipBindReq.ResourceType = "uhost"
-			resp, err := client.BindEIP(eipBindReq)
+			resp, err := BizClient.BindEIP(eipBindReq)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -143,7 +144,7 @@ func NewCmdEIPBind() *cobra.Command {
 //NewCmdEIPUnbind ucloud eip unbind
 func NewCmdEIPUnbind() *cobra.Command {
 
-	var eipUnBindReq = client.NewUnBindEIPRequest()
+	var eipUnBindReq = BizClient.NewUnBindEIPRequest()
 	var eipUnBindCmd = &cobra.Command{
 		Use:     "unbind",
 		Short:   "Unbind EIP with uhost",
@@ -152,7 +153,7 @@ func NewCmdEIPUnbind() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bindGlobalParam(eipUnBindReq)
 			eipUnBindReq.ResourceType = "uhost"
-			resp, err := client.UnBindEIP(eipUnBindReq)
+			resp, err := BizClient.UnBindEIP(eipUnBindReq)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -183,10 +184,10 @@ func NewCmdEIPRelease() *cobra.Command {
 		Example: "ucloud eip release --eip-id eip-xx1 --eip-id eip-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
-				var eipReleaseReq = client.NewReleaseEIPRequest()
+				var eipReleaseReq = BizClient.NewReleaseEIPRequest()
 				bindGlobalParam(eipReleaseReq)
 				eipReleaseReq.EIPId = id
-				resp, err := client.ReleaseEIP(eipReleaseReq)
+				resp, err := BizClient.ReleaseEIP(eipReleaseReq)
 				if err != nil {
 					fmt.Println(err)
 				} else {

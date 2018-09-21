@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //NewCmdGssh ucloud gssh
@@ -37,7 +38,7 @@ func NewCmdGssh() *cobra.Command {
 
 //NewCmdGsshList ucloud gssh list
 func NewCmdGsshList() *cobra.Command {
-	req := client.NewDescribeGlobalSSHInstanceRequest()
+	req := BizClient.NewDescribeGlobalSSHInstanceRequest()
 	var cmd = &cobra.Command{
 		Use:     "ls",
 		Short:   "List all GlobalSSH instances",
@@ -45,7 +46,7 @@ func NewCmdGsshList() *cobra.Command {
 		Example: "ucloud gssh ls",
 		Run: func(cmd *cobra.Command, args []string) {
 			bindGlobalParam(req)
-			resp, err := client.DescribeGlobalSSHInstance(req)
+			resp, err := BizClient.DescribeGlobalSSHInstance(req)
 			if err != nil {
 				fmt.Println("Error", err)
 			} else {
@@ -64,7 +65,7 @@ func NewCmdGsshList() *cobra.Command {
 
 //NewCmdGsshCreate ucloud gssh create
 func NewCmdGsshCreate() *cobra.Command {
-	var gsshCreateReq = client.NewCreateGlobalSSHInstanceRequest()
+	var gsshCreateReq = BizClient.NewCreateGlobalSSHInstanceRequest()
 	var cmd = &cobra.Command{
 		Use:     "create",
 		Short:   "Create GlobalSSH instance",
@@ -97,7 +98,7 @@ func NewCmdGsshCreate() *cobra.Command {
 				fmt.Println("Area should be one of LosAngeles,Singapore,HongKong,Tokyo,Washington,Frankfurt.")
 				return
 			}
-			resp, err := client.CreateGlobalSSHInstance(gsshCreateReq)
+			resp, err := BizClient.CreateGlobalSSHInstance(gsshCreateReq)
 			if err != nil {
 				fmt.Println("Error:", err)
 			} else {
@@ -122,7 +123,7 @@ func NewCmdGsshCreate() *cobra.Command {
 
 //NewCmdGsshDelete ucloud gssh delete
 func NewCmdGsshDelete() *cobra.Command {
-	var gsshDeleteReq = client.NewDeleteGlobalSSHInstanceRequest()
+	var gsshDeleteReq = BizClient.NewDeleteGlobalSSHInstanceRequest()
 	var gsshIds []string
 	var cmd = &cobra.Command{
 		Use:     "delete",
@@ -134,10 +135,10 @@ func NewCmdGsshDelete() *cobra.Command {
 			for _, id := range gsshIds {
 				gsshDeleteReq.InstanceId = id
 
-				if global.projectID != "" {
-					gsshDeleteReq.ProjectId = global.projectID
-				}
-				resp, err := client.DeleteGlobalSSHInstance(gsshDeleteReq)
+				// if global.projectID != "" {
+				// 	gsshDeleteReq.ProjectId = global.projectID
+				// }
+				resp, err := BizClient.DeleteGlobalSSHInstance(gsshDeleteReq)
 				if err != nil {
 					fmt.Println("Error:", err)
 				} else {
@@ -157,8 +158,8 @@ func NewCmdGsshDelete() *cobra.Command {
 
 //NewCmdGsshModify ucloud gssh modify
 func NewCmdGsshModify() *cobra.Command {
-	var gsshModifyPortReq = client.NewModifyGlobalSSHPortRequest()
-	var gsshModifyRemarkReq = client.NewModifyGlobalSSHRemarkRequest()
+	var gsshModifyPortReq = BizClient.NewModifyGlobalSSHPortRequest()
+	var gsshModifyRemarkReq = BizClient.NewModifyGlobalSSHRemarkRequest()
 	var cmd = &cobra.Command{
 		Use:     "modify",
 		Short:   "Modify GlobalSSH instance",
@@ -181,7 +182,7 @@ func NewCmdGsshModify() *cobra.Command {
 					return
 				}
 				gsshModifyPortReq.InstanceId = gsshModifyRemarkReq.InstanceId
-				resp, err := client.ModifyGlobalSSHPort(gsshModifyPortReq)
+				resp, err := BizClient.ModifyGlobalSSHPort(gsshModifyPortReq)
 				if err != nil {
 					fmt.Println("Error:", err)
 				} else {
@@ -193,7 +194,7 @@ func NewCmdGsshModify() *cobra.Command {
 				}
 			}
 			if gsshModifyRemarkReq.Remark != "" {
-				resp, err := client.ModifyGlobalSSHRemark(gsshModifyRemarkReq)
+				resp, err := BizClient.ModifyGlobalSSHRemark(gsshModifyRemarkReq)
 				if err != nil {
 					fmt.Println("Error:", err)
 				} else {

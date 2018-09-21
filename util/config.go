@@ -1,19 +1,21 @@
-package model
+package util
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
-	"time"
 
-	"github.com/ucloud/ucloud-cli/util"
 	"github.com/ucloud/ucloud-sdk-go/sdk"
 	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
+	"github.com/ucloud/ucloud-sdk-go/service"
 	"github.com/ucloud/ucloud-sdk-go/service/uaccount/types"
 )
 
 const configFile = "config.json"
+
+//Version 版本号
+const Version = "0.1.2"
 
 //ConfigPath 配置文件路径
 
@@ -36,26 +38,26 @@ type Config struct {
 
 //ConfigPublicKey 输入公钥
 func (p *Config) ConfigPublicKey() error {
-	context.Print("Your public-key:")
+	Tracer.Print("Your public-key:")
 	_, err := fmt.Scanf("%s\n", &p.PublicKey)
 	p.PublicKey = strings.TrimSpace(p.PublicKey)
 	Credential.PublicKey = p.PublicKey
 	p.SaveConfig()
 	if err != nil {
-		context.Println(err)
+		Tracer.Println(err)
 	}
 	return err
 }
 
 //ConfigPrivateKey 输入私钥
 func (p *Config) ConfigPrivateKey() error {
-	context.Print("Your private-key:")
+	Tracer.Print("Your private-key:")
 	_, err := fmt.Scanf("%s\n", &p.PrivateKey)
 	p.PrivateKey = strings.TrimSpace(p.PrivateKey)
 	Credential.PrivateKey = p.PrivateKey
 	p.SaveConfig()
 	if err != nil {
-		context.Println(err)
+		Tracer.Println(err)
 	}
 	return err
 }
@@ -63,10 +65,10 @@ func (p *Config) ConfigPrivateKey() error {
 //ConfigRegion 输入默认Region
 func (p *Config) ConfigRegion() error {
 	p.LoadConfig()
-	context.Print("Default region:")
+	Tracer.Print("Default region:")
 	_, err := fmt.Scanf("%s\n", &p.Region)
 	if err != nil {
-		context.Println(err)
+		Tracer.Println(err)
 		return err
 	}
 	p.Region = strings.TrimSpace(p.Region)
@@ -78,10 +80,10 @@ func (p *Config) ConfigRegion() error {
 //ConfigProjectID 输入默认ProjectID
 func (p *Config) ConfigProjectID() error {
 	p.LoadConfig()
-	context.Print("Default project-id:")
+	Tracer.Print("Default project-id:")
 	_, err := fmt.Scanf("%s\n", &p.ProjectID)
 	if err != nil {
-		context.Println(err)
+		Tracer.Println(err)
 		return err
 	}
 	p.ProjectID = strings.TrimSpace(p.ProjectID)
@@ -96,9 +98,10 @@ func (p *Config) GetClientConfig(isDebug bool) *sdk.ClientConfig {
 	clientConfig := &sdk.ClientConfig{
 		Region:    p.Region,
 		ProjectId: p.ProjectID,
-		BaseUrl:   "https://api.ucloud.cn/",
-		Timeout:   10 * time.Second,
-		LogLevel:  1,
+		BaseUrl:   ClientConfig.BaseUrl,
+		Timeout:   ClientConfig.Timeout,
+		UserAgent: ClientConfig.UserAgent,
+		LogLevel:  ClientConfig.LogLevel,
 	}
 	if isDebug == true {
 		clientConfig.LogLevel = 5
@@ -119,14 +122,14 @@ func (p *Config) GetCredential() *auth.Credential {
 func (p *Config) ListConfig() error {
 
 	tmpConfig := *p
-	tmpConfig.PrivateKey = util.MosaicString(tmpConfig.PrivateKey, 8, 5)
-	tmpConfig.PublicKey = util.MosaicString(tmpConfig.PublicKey, 8, 5)
+	tmpConfig.PrivateKey = MosaicString(tmpConfig.PrivateKey, 8, 5)
+	tmpConfig.PublicKey = MosaicString(tmpConfig.PublicKey, 8, 5)
 
 	bytes, err := json.MarshalIndent(tmpConfig, "", "  ")
 	if err != nil {
 		return err
 	}
-	context.Println(string(bytes))
+	Tracer.Println(string(bytes))
 	return nil
 }
 
@@ -142,14 +145,14 @@ func (p *Config) SaveConfig() error {
 	if err != nil {
 		return err
 	}
-	fileFullPath := util.GetConfigPath() + "/" + configFile
+	fileFullPath := GetConfigPath() + "/" + configFile
 	err = ioutil.WriteFile(fileFullPath, bytes, 0600)
 	return err
 }
 
 //LoadConfig 从本地文件加载配置
 func (p *Config) LoadConfig() error {
-	fileFullPath := util.GetConfigPath() + "/" + configFile
+	fileFullPath := GetConfigPath() + "/" + configFile
 	content, err := ioutil.ReadFile(fileFullPath)
 	if err != nil {
 		return err
@@ -160,7 +163,7 @@ func (p *Config) LoadConfig() error {
 
 //LoadUserInfo 从~/.ucloud/user.json加载用户信息
 func LoadUserInfo() (*types.UserInfo, error) {
-	fileFullPath := util.GetConfigPath() + "/user.json"
+	fileFullPath := GetConfigPath() + "/user.json"
 	content, err := ioutil.ReadFile(fileFullPath)
 	if err != nil {
 		return nil, err
@@ -179,6 +182,7 @@ func init() {
 		Region:    ConfigInstance.Region,
 		ProjectId: ConfigInstance.ProjectID,
 		BaseUrl:   "https://api.ucloud.cn/",
+		UserAgent: fmt.Sprintf("UCloud CLI v%s", Version),
 		LogLevel:  1,
 	}
 
@@ -186,4 +190,12 @@ func init() {
 		PublicKey:  ConfigInstance.PublicKey,
 		PrivateKey: ConfigInstance.PrivateKey,
 	}
+
+	//sdkClient 用于上报数据
+	SdkClient = sdk.NewClient(ClientConfig, Credential)
+
+	//bizClient 用于调用业务接口
+	BizClient = service.NewClient(ClientConfig, Credential)
+
+	Tracer = SdkClient.Tracer
 }

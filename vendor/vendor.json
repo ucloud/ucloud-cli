@@ -53,136 +53,136 @@
 			"revisionTime": "2018-08-21T11:45:17Z"
 		},
 		{
-			"checksumSHA1": "hViBXqXEr+ZUETMlvRxMcHKNI6c=",
+			"checksumSHA1": "TWG1lAM4V+wFOhSgH6ZvX3EP2lM=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "kqXMcnOXU7He34CAoSBDBQAME2s=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/auth",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "wOO2LY9hCd5eyp9WRbCrJy3zzvQ=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/error",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "I7NV3zm5ExrbD6ogXTUdPz930Z8=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/log",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "oSfATLS72L0Y4+hd8k76gTa6lsc=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/request",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "0DLtqRUzBsRFyWqPqFtI02PcF+E=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/response",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
-			"checksumSHA1": "eeQfx9gZbyiKofr1J5O0o5dGInw=",
+			"checksumSHA1": "iyyrhCtEhReLSlUIH+w/68APV3A=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/trace",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "WBkmTEwVcm+6Cps0+kil4L+ffvE=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/utils",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "5MnC8CI9JbOOZOQWq7whOvhup2Y=",
 			"path": "github.com/ucloud/ucloud-sdk-go/sdk/version",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "Ngl9bT2IqFJR0Kq0qGc5xuapb0k=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "L+JnwP7o1GbbGoQ2wyi6EYrF5To=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/pathx",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "TEP6eRPe4l08pGDj64ZrjGAzIZs=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/pathx/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "WxKpu4lEtkuMAo5mgBs0V0vOHcI=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/uaccount",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "vOeBGVw2ZuLFARtqxDXUEiGQsbk=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/uaccount/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "CsmyE+4sE7EAxn4HFLXq+58gBGA=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/uhost",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "TdFY6UJYaLE3BmXt4fxteAqgbV4=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/uhost/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "TmNghm/XWsb8OqNtNO7CGwz9U+Q=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/ulb",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "qkjTq70UQVjHF9IZVFG8HyYlygg=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/ulb/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "jJHFw/vy0DSyrhCmBJKeZGrsoQY=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/unet",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "N0LPR3wb7l5lgw6vd2k6OpCdtPY=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/unet/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "TtaufQ3Qpmwls+tvoHERIgi+WnM=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/vpc",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "/OpzOU5VwjgYozUtY8kM2tIqQWE=",
 			"path": "github.com/ucloud/ucloud-sdk-go/service/vpc/types",
-			"revision": "e16a479eae8309d7f90f5653bdbd76664da4972b",
-			"revisionTime": "2018-08-30T08:55:37Z"
+			"revision": "ba0b8a95f67816ce0259781bddde17aebe9b6660",
+			"revisionTime": "2018-09-20T07:59:57Z"
 		},
 		{
 			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",

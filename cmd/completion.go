@@ -97,7 +97,7 @@ func getBashVersion() (version string, err error) {
 	lookupBashVersion := exec.Command("bash", "-version")
 	out, err := lookupBashVersion.Output()
 	if err != nil {
-		context.AppendError(err)
+		util.Tracer.AppendError(err)
 		fmt.Println(err)
 	}
 
@@ -141,7 +141,7 @@ func zshCompletion(cmd *cobra.Command) {
 	file, err := os.Create(shellPath)
 	if err != nil {
 		fmt.Println(err)
-		context.AppendError(err)
+		util.Tracer.AppendError(err)
 		return
 	}
 	defer file.Close()

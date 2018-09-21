@@ -20,10 +20,11 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/model"
-	"github.com/ucloud/ucloud-cli/util"
+
 	"github.com/ucloud/ucloud-sdk-go/service/uaccount"
 	"github.com/ucloud/ucloud-sdk-go/service/uaccount/types"
+
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //NewCmdList ucloud ls
@@ -37,9 +38,13 @@ func NewCmdList() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			switch listObject {
 			case "region":
-				listRegion()
+				if err := listRegion(); err != nil {
+					fmt.Println(err)
+				}
 			case "project":
-				listProject()
+				if err := listProject(); err != nil {
+					fmt.Println(err)
+				}
 			default:
 				fmt.Println("object should be region or project")
 			}
@@ -52,7 +57,7 @@ func NewCmdList() *cobra.Command {
 
 func getDefaultRegion() (string, error) {
 	req := &uaccount.GetRegionRequest{}
-	resp, err := client.GetRegion(req)
+	resp, err := BizClient.GetRegion(req)
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +74,7 @@ func getDefaultRegion() (string, error) {
 
 func listRegion() error {
 	req := &uaccount.GetRegionRequest{}
-	resp, err := client.GetRegion(req)
+	resp, err := BizClient.GetRegion(req)
 	if err != nil {
 		return err
 	}
@@ -91,8 +96,8 @@ func listRegion() error {
 }
 
 func getDefaultProject() (string, error) {
-	req := client.NewGetProjectListRequest()
-	resp, err := client.GetProjectList(req)
+	req := BizClient.NewGetProjectListRequest()
+	resp, err := BizClient.GetProjectList(req)
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +114,7 @@ func getDefaultProject() (string, error) {
 
 func listProject() error {
 	req := &uaccount.GetProjectListRequest{}
-	resp, err := client.GetProjectList(req)
+	resp, err := BizClient.GetProjectList(req)
 	if err != nil {
 		return err
 	}
@@ -127,9 +132,9 @@ func isUserCertified(userInfo *types.UserInfo) bool {
 }
 
 func getUserInfo() (*types.UserInfo, error) {
-	req := client.NewGetUserInfoRequest()
+	req := BizClient.NewGetUserInfoRequest()
 	var userInfo types.UserInfo
-	resp, err := client.GetUserInfo(req)
+	resp, err := BizClient.GetUserInfo(req)
 
 	if err != nil {
 		return nil, err
@@ -140,14 +145,13 @@ func getUserInfo() (*types.UserInfo, error) {
 	}
 	if len(resp.DataSet) == 1 {
 		userInfo = resp.DataSet[0]
-		model.ClientConfig.TracerData["userName"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["userID"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["companyName"] = userInfo.CompanyName
+		Tracer.AppendInfo("userName", userInfo.UserEmail)
+		Tracer.AppendInfo("companyName", userInfo.CompanyName)
 		bytes, err := json.Marshal(userInfo)
 		if err != nil {
 			return nil, err
 		}
-		fileFullPath := util.GetConfigPath() + "/user.json"
+		fileFullPath := GetConfigPath() + "/user.json"
 		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
 		if err != nil {
 			return nil, err

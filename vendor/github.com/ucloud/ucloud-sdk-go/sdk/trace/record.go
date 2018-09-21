@@ -26,6 +26,15 @@ func NewDasTraceInfo() DasTraceInfo {
 	}
 }
 
+//Clear 清空发送数据，只保留版本号,渠道等配置信息
+func (d *DasTraceInfo) Clear() {
+	d.request = nil
+	d.response = nil
+	d.err = nil
+	d.traceback = nil
+	d.extra = make(map[string]interface{})
+}
+
 // GetSDKVersion will return version of sdk
 func (d *DasTraceInfo) GetSDKVersion() string {
 	return d.SDKVersion
