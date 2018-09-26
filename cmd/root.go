@@ -20,16 +20,21 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-
 	"github.com/ucloud/ucloud-cli/model"
 	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
-	debug bool
+	debug      bool
+	json       bool
+	version    bool
+	completion bool
+	config     bool
+	signup     bool
 }
+
+const version = "0.1.2"
 
 var global GlobalFlag
 
@@ -40,20 +45,33 @@ func NewCmdRoot() *cobra.Command {
 		Short:                  "UCloud CLI v" + version,
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
+		Run: func(cmd *cobra.Command, args []string) {
+			if global.version {
+				Tracer.Printf("ucloud cli %s\n", version)
+			} else if global.completion {
+				NewCmdCompletion().Run(cmd, args)
+			} else if global.config {
+				config.ListConfig()
+			} else if global.signup {
+				NewCmdSignup().Run(cmd, args)
+			} else {
+				cmd.HelpFunc()(cmd, args)
+			}
+		},
 	}
 
-	// cmd.PersistentFlags().StringVarP(&global.region, "region", "r", "", "Assign region(override default region of your config)")
-	// cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign project-id(override default projec-id of your config)")
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
+	cmd.PersistentFlags().BoolVarP(&global.json, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.Flags().BoolVar(&global.version, "version", false, "Display version")
+	cmd.Flags().BoolVar(&global.completion, "completion", false, "Create or update completion scripts")
+	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
+	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.AddCommand(NewCmdSignup())
 	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdList())
+	cmd.AddCommand(NewCmdRegion())
 	cmd.AddCommand(NewCmdUHost())
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
-	cmd.AddCommand(NewCmdCompletion())
-	cmd.AddCommand(NewCmdVersion())
 
 	return cmd
 }
@@ -101,13 +119,4 @@ func initialize(cmd *cobra.Command) {
 			os.Exit(0)
 		}
 	}
-}
-
-func bindGlobalParam(req request.Common) {
-	// if global.region != "" {
-	// 	req.SetRegion(global.region)
-	// }
-	// if global.projectID != "" {
-	// 	req.SetProjectId(global.projectID)
-	// }
 }

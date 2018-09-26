@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -107,6 +108,16 @@ func HandleBizError(resp response.Common) {
 	Tracer.Printf("Something wrong. RetCode:%d. Message:%s\n", resp.GetRetCode(), resp.GetMessage())
 }
 
+//PrintJSON 以JSON格式打印数据集合
+func PrintJSON(dataSet interface{}) error {
+	bytes, err := json.MarshalIndent(dataSet, "", "  ")
+	if err != nil {
+		return err
+	}
+	Tracer.Println(string(bytes))
+	return nil
+}
+
 //GAP 表格列直接的间隔字符数
 const GAP = 2
 
@@ -114,19 +125,30 @@ const GAP = 2
 func PrintTable(dataSet interface{}, fieldList []string) error {
 	dataSetVal := reflect.ValueOf(dataSet)
 
-	if dataSetVal.Kind() != reflect.Slice && dataSetVal.Kind() != reflect.Array {
-		return fmt.Errorf("PrintTable expect array or slice, accept %T", dataSet)
+	switch dataSetVal.Kind() {
+	case reflect.Slice, reflect.Array:
+		displaySlice(dataSetVal, fieldList)
+	case reflect.Map:
+		displayMap(dataSetVal, fieldList)
+	default:
+		return fmt.Errorf("PrintTable expect array,slice or map, accept %T", dataSet)
 	}
+	return nil
+}
 
+func displayMap(mapVal reflect.Value, fieldList []string) {
+	fmt.Println(mapVal, fieldList)
+	//todo
+}
+
+func displaySlice(listVal reflect.Value, fieldList []string) {
 	showFieldMap := make(map[string]int)
 	for _, field := range fieldList {
 		showFieldMap[field] = len([]rune(field))
 	}
-
 	rowList := make([]map[string]interface{}, 0)
-
-	for i := 0; i < dataSetVal.Len(); i++ {
-		elemVal := dataSetVal.Index(i)
+	for i := 0; i < listVal.Len(); i++ {
+		elemVal := listVal.Index(i)
 		elemType := elemVal.Type()
 		row := make(map[string]interface{})
 		for j := 0; j < elemVal.NumField(); j++ {
@@ -158,7 +180,6 @@ func PrintTable(dataSet interface{}, fieldList []string) error {
 		}
 		fmt.Printf("\n")
 	}
-	return nil
 }
 
 func calcCutWidth(text string) int {

@@ -47,7 +47,11 @@ func NewCmdUHostList() *cobra.Command {
 			if resp.RetCode != 0 {
 				HandleBizError(resp)
 			} else {
-				PrintTable(resp.UHostSet, []string{"UHostId", "Name", "UHostType", "Zone", "Tag", "State"})
+				if global.json {
+					PrintJSON(resp.UHostSet)
+				} else {
+					PrintTable(resp.UHostSet, []string{"UHostId", "Name", "UHostType", "Zone", "Tag", "State"})
+				}
 			}
 		},
 	}

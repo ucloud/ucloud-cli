@@ -46,7 +46,6 @@ func NewCmdEIPList() *cobra.Command {
 		Long:    `List all EIP instances`,
 		Example: "ucloud eip ls",
 		Run: func(cmd *cobra.Command, args []string) {
-			bindGlobalParam(req)
 			resp, err := BizClient.DescribeEIP(req)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -65,6 +64,8 @@ func NewCmdEIPList() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().StringVar(&req.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	cmd.Flags().StringVar(&req.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
 	return cmd
 }
 
@@ -77,7 +78,6 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Long:    "Allocate EIP",
 		Example: "ucloud eip allocate --line Bgp --bandwidth 2",
 		Run: func(cmd *cobra.Command, args []string) {
-			bindGlobalParam(eipAllocateReq)
 			resp, err := BizClient.AllocateEIP(eipAllocateReq)
 			if err != nil {
 				fmt.Println(err)
@@ -96,6 +96,8 @@ func NewCmdEIPAllocate() *cobra.Command {
 		},
 	}
 	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&eipAllocateReq.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	cmd.Flags().StringVar(&eipAllocateReq.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
 	cmd.Flags().StringVar(&eipAllocateReq.OperatorName, "line", "", "Line 'Bgp' or 'International'. 'Bgp' can be set in region cn-sh1,cn-sh2,cn-gd,cn-bj1 and cn-bj2. 'International' can be set in region hk,us-ca,th-bkk,kr-seoul,us-ws,ge-fra,sg,tw-kh and other oversea regions. Required")
 	cmd.Flags().IntVar(&eipAllocateReq.Bandwidth, "bandwidth", 0, "Bandwidth(Unit:Mbps). When paying by traffic, it ranges from 1 to 200; when paying by bandwidth, it ranges from 1 to 800, and when shared bandwidth is used, its value is 0. Required")
 	cmd.Flags().StringVar(&eipAllocateReq.PayMode, "pay-mode", "Bandwidth", "pay-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
@@ -119,7 +121,6 @@ func NewCmdEIPBind() *cobra.Command {
 		Long:    "Bind EIP with uhost",
 		Example: "ucloud eip bind --eip-id eip-xxx --resource-id uhost-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			bindGlobalParam(eipBindReq)
 			eipBindReq.ResourceType = "uhost"
 			resp, err := BizClient.BindEIP(eipBindReq)
 			if err != nil {
@@ -134,6 +135,8 @@ func NewCmdEIPBind() *cobra.Command {
 		},
 	}
 	eipBindCmd.Flags().SortFlags = false
+	eipBindCmd.Flags().StringVar(&eipBindReq.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	eipBindCmd.Flags().StringVar(&eipBindReq.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
 	eipBindCmd.Flags().StringVar(&eipBindReq.EIPId, "eip-id", "", "EIPId to bind. Required")
 	eipBindCmd.Flags().StringVar(&eipBindReq.ResourceId, "resource-id", "", "ResourceID , which is the UHostId of uhost. Required")
 	eipBindCmd.MarkFlagRequired("eip-id")
@@ -151,7 +154,6 @@ func NewCmdEIPUnbind() *cobra.Command {
 		Long:    "Unbind EIP with uhost",
 		Example: "ucloud eip unbind --eip-id eip-xxx --resource-id uhost-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			bindGlobalParam(eipUnBindReq)
 			eipUnBindReq.ResourceType = "uhost"
 			resp, err := BizClient.UnBindEIP(eipUnBindReq)
 			if err != nil {
@@ -166,6 +168,8 @@ func NewCmdEIPUnbind() *cobra.Command {
 		},
 	}
 	eipUnBindCmd.Flags().SortFlags = false
+	eipUnBindCmd.Flags().StringVar(&eipUnBindReq.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	eipUnBindCmd.Flags().StringVar(&eipUnBindReq.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
 	eipUnBindCmd.Flags().StringVar(&eipUnBindReq.EIPId, "eip-id", "", "EIPId to unbind. Required")
 	eipUnBindCmd.Flags().StringVar(&eipUnBindReq.ResourceId, "resource-id", "", "ResourceID , which is the UHostId of uhost. Required")
 	eipUnBindCmd.MarkFlagRequired("eip-id")
@@ -177,6 +181,7 @@ func NewCmdEIPUnbind() *cobra.Command {
 //NewCmdEIPRelease ucloud eip release
 func NewCmdEIPRelease() *cobra.Command {
 	var ids []string
+	var eipReleaseReq = BizClient.NewReleaseEIPRequest()
 	var eipReleaseCmd = &cobra.Command{
 		Use:     "release",
 		Short:   "Release EIP",
@@ -184,8 +189,6 @@ func NewCmdEIPRelease() *cobra.Command {
 		Example: "ucloud eip release --eip-id eip-xx1 --eip-id eip-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
-				var eipReleaseReq = BizClient.NewReleaseEIPRequest()
-				bindGlobalParam(eipReleaseReq)
 				eipReleaseReq.EIPId = id
 				resp, err := BizClient.ReleaseEIP(eipReleaseReq)
 				if err != nil {
@@ -194,12 +197,14 @@ func NewCmdEIPRelease() *cobra.Command {
 					if resp.RetCode == 0 {
 						fmt.Printf("EIP: %v released \n", eipReleaseReq.EIPId)
 					} else {
-						fmt.Printf("Something wrong. RetCode:%d, Message: %s \n", resp.RetCode, resp.Message)
+						HandleBizError(resp)
 					}
 				}
 			}
 		},
 	}
+	eipReleaseCmd.Flags().StringVar(&eipReleaseReq.Region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
+	eipReleaseCmd.Flags().StringVar(&eipReleaseReq.ProjectId, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
 	eipReleaseCmd.Flags().StringArrayVarP(&ids, "eip-id", "", make([]string, 0), "EIPId of the EIP you want to release. Required")
 	eipReleaseCmd.MarkFlagRequired("eip-id")
 	eipReleaseCmd.MarkFlagRequired("bandwidth")

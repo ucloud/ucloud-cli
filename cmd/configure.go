@@ -116,7 +116,7 @@ func NewCmdConfig() *cobra.Command {
 //NewCmdConfigList ucloud config ls
 func NewCmdConfigList() *cobra.Command {
 	var configListCmd = &cobra.Command{
-		Use:   "ls",
+		Use:   "list",
 		Short: "list all settings",
 		Long:  `list all settings`,
 		Run: func(cmd *cobra.Command, args []string) {

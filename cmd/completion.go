@@ -59,9 +59,9 @@ func NewCmdCompletion() *cobra.Command {
 			shell, ok := os.LookupEnv("SHELL")
 			if ok {
 				if strings.HasSuffix(shell, "bash") {
-					bashCompletion(cmd.Parent())
+					bashCompletion(cmd)
 				} else if strings.HasSuffix(shell, "zsh") {
-					zshCompletion(cmd.Parent())
+					zshCompletion(cmd)
 				} else {
 					fmt.Println("Unknow shell: %", shell)
 				}
