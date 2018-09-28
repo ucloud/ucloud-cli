@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 // NewCmdCompletion ucloud completion
@@ -97,7 +97,7 @@ func getBashVersion() (version string, err error) {
 	lookupBashVersion := exec.Command("bash", "-version")
 	out, err := lookupBashVersion.Output()
 	if err != nil {
-		util.Tracer.AppendError(err)
+		Cxt.PrintErr(err)
 		fmt.Println(err)
 	}
 
@@ -121,10 +121,10 @@ func getBashVersion() (version string, err error) {
 }
 
 func bashCompletion(cmd *cobra.Command) {
-	home := util.GetHomePath()
-	shellPath := home + "/" + util.ConfigPath + "/ucloud.sh"
+	home := GetHomePath()
+	shellPath := home + "/" + ConfigPath + "/ucloud.sh"
 	cmd.GenBashCompletionFile(shellPath)
-	fmt.Printf("Completion scripts has been written to '~/%s/ucloud.sh'\n", util.ConfigPath)
+	fmt.Printf("Completion scripts has been written to '~/%s/ucloud.sh'\n", ConfigPath)
 
 	platform := runtime.GOOS
 
@@ -136,20 +136,19 @@ func bashCompletion(cmd *cobra.Command) {
 }
 
 func zshCompletion(cmd *cobra.Command) {
-	home := util.GetHomePath()
-	shellPath := home + "/" + util.ConfigPath + "/_ucloud"
+	home := GetHomePath()
+	shellPath := home + "/" + ConfigPath + "/_ucloud"
 	file, err := os.Create(shellPath)
 	if err != nil {
-		fmt.Println(err)
-		util.Tracer.AppendError(err)
+		Cxt.PrintErr(err)
 		return
 	}
 	defer file.Close()
 
 	runCompletionZsh(file, cmd)
-	fmt.Printf("Completion scripts was written to '~/%s/_ucloud'\n", util.ConfigPath)
+	fmt.Printf("Completion scripts was written to '~/%s/_ucloud'\n", ConfigPath)
 
-	scripts := fmt.Sprintf("fpath=(~/%s $fpath)\n", util.ConfigPath)
+	scripts := fmt.Sprintf("fpath=(~/%s $fpath)\n", ConfigPath)
 	scripts += "autoload -U +X compinit && compinit"
 	fmt.Printf("Please append the following scripts to your ~/.zshrc\n%s\n", scripts)
 }

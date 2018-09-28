@@ -64,29 +64,28 @@ func NewCmdConfig() *cobra.Command {
 			config.ConfigPublicKey()
 			config.ConfigPrivateKey()
 
-			region, err := getDefaultRegion()
+			region, zone, err := getDefaultRegion()
 			if err != nil {
-				Tracer.Println(err)
+				Cxt.Println(err)
 				return
-			} else {
-				config.Region = region
-				fmt.Printf("Configured default region:%s\n", region)
 			}
+			config.Region = region
+			config.Zone = zone
+			Cxt.Printf("Configured default region:%s zone:%s\n", region, zone)
 
-			project, err := getDefaultProject()
+			projectId, projectName, err := getDefaultProject()
 			if err != nil {
-				Tracer.Println(err)
+				Cxt.Println(err)
 				return
-			} else {
-				config.ProjectID = project
-				fmt.Printf("Configured default project:%s\n", project)
 			}
+			config.ProjectID = projectId
+			Cxt.Printf("Configured default project:%s %s\n", projectId, projectName)
 
 			config.SaveConfig()
 
 			userInfo, err := getUserInfo()
 
-			fmt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
+			Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
 
 			certified := isUserCertified(userInfo)
 			if err != nil {
@@ -120,7 +119,7 @@ func NewCmdConfigList() *cobra.Command {
 		Short: "list all settings",
 		Long:  `list all settings`,
 		Run: func(cmd *cobra.Command, args []string) {
-			config.ListConfig()
+			config.ListConfig(global.json)
 		},
 	}
 	return configListCmd
@@ -155,6 +154,8 @@ func NewCmdConfigSet() *cobra.Command {
 			switch args[0] {
 			case "region":
 				config.Region = args[1]
+			case "zone":
+				config.Zone = args[1]
 			case "project-id":
 				config.ProjectID = args[1]
 			case "public-key":
@@ -162,7 +163,7 @@ func NewCmdConfigSet() *cobra.Command {
 			case "private-key":
 				config.PrivateKey = args[1]
 			default:
-				fmt.Println("Only public-key, private-key, region, project-id supported")
+				Cxt.Println("Only public-key, private-key, region, zone and project-id supported")
 			}
 			config.SaveConfig()
 		},

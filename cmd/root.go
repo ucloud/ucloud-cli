@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-cli/model"
 	. "github.com/ucloud/ucloud-cli/util"
 )
 
@@ -34,24 +34,22 @@ type GlobalFlag struct {
 	signup     bool
 }
 
-const version = "0.1.2"
-
 var global GlobalFlag
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:                    "ucloud",
-		Short:                  "UCloud CLI v" + version,
+		Short:                  "UCloud CLI v" + Version,
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.version {
-				Tracer.Printf("ucloud cli %s\n", version)
+				Cxt.Printf("ucloud cli %s\n", Version)
 			} else if global.completion {
 				NewCmdCompletion().Run(cmd, args)
 			} else if global.config {
-				config.ListConfig()
+				config.ListConfig(global.json)
 			} else if global.signup {
 				NewCmdSignup().Run(cmd, args)
 			} else {
@@ -69,9 +67,11 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.AddCommand(NewCmdConfig())
 	cmd.AddCommand(NewCmdRegion())
+	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
+	cmd.AddCommand(NewCmdUImage())
 
 	return cmd
 }
@@ -81,41 +81,37 @@ func NewCmdRoot() *cobra.Command {
 func Execute() {
 	command := NewCmdRoot()
 	if err := command.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-var context *model.Context
-
 func init() {
 	cobra.EnableCommandSorting = false
-	// bizClient = service.NewClient(model.ClientConfig, model.Credential)
-	context = model.GetContext(os.Stdout, SdkClient)
 	cobra.OnInitialize(initialize)
-	Tracer.AppendInfo("command", fmt.Sprintf("%v", os.Args))
+	Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
 func initialize(cmd *cobra.Command) {
 	if global.debug {
-		ClientConfig.Logger.SetLevel(5)
+		// ClientConfig.Logger.SetLevel(5)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	userInfo, err := LoadUserInfo()
 	if err == nil {
-		Tracer.AppendInfo("userName", userInfo.UserEmail)
-		Tracer.AppendInfo("companyName", userInfo.CompanyName)
+		Cxt.AppendInfo("userName", userInfo.UserEmail)
+		Cxt.AppendInfo("companyName", userInfo.CompanyName)
 	} else {
-		Tracer.AppendError(err)
+		Cxt.PrintErr(err)
 	}
 
 	if (cmd.Name() != "config" && cmd.Name() != "completion" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if config.PrivateKey == "" {
-			Tracer.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
+			Cxt.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
 		if config.PublicKey == "" {
-			Tracer.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
+			Cxt.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
 	}

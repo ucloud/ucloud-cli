@@ -22,13 +22,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-sdk-go/service/uaccount"
-	"github.com/ucloud/ucloud-sdk-go/service/uaccount/types"
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
 	. "github.com/ucloud/ucloud-cli/util"
 )
 
-//NewCmdRegion ucloud ls
+//NewCmdRegion ucloud region
 func NewCmdRegion() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:     "region",
@@ -37,28 +36,28 @@ func NewCmdRegion() *cobra.Command {
 		Example: "ucloud region",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := listRegion(); err != nil {
-				Tracer.Println(err)
+				Cxt.PrintErr(err)
 			}
 		},
 	}
 	return cmd
 }
 
-func getDefaultRegion() (string, error) {
+func getDefaultRegion() (string, string, error) {
 	req := &uaccount.GetRegionRequest{}
 	resp, err := BizClient.GetRegion(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if resp.RetCode != 0 {
-		return "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+		return "", "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
 	}
 	for _, region := range resp.Regions {
 		if region.IsDefault == true {
-			return region.Region, nil
+			return region.Region, region.Zone, nil
 		}
 	}
-	return "", fmt.Errorf("No default region")
+	return "", "", fmt.Errorf("No default region")
 }
 
 //RegionTable 为显示region表格创建的类型
@@ -93,45 +92,30 @@ func listRegion() error {
 	return err
 }
 
-func getDefaultProject() (string, error) {
+func getDefaultProject() (string, string, error) {
 	req := BizClient.NewGetProjectListRequest()
 	resp, err := BizClient.GetProjectList(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if resp.RetCode != 0 {
-		return "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+		return "", "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
 	}
 	for _, project := range resp.ProjectSet {
 		if project.IsDefault == true {
-			return project.ProjectId, nil
+			return project.ProjectId, project.ProjectName, nil
 		}
 	}
-	return "", fmt.Errorf("No default project")
+	return "", "", fmt.Errorf("No default project")
 }
 
-func listProject() error {
-	req := &uaccount.GetProjectListRequest{}
-	resp, err := BizClient.GetProjectList(req)
-	if err != nil {
-		return err
-	}
-	if resp.RetCode != 0 {
-		return fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
-	}
-	for _, project := range resp.ProjectSet {
-		fmt.Printf("ProjectId: %s, ProjectName:%s\n", project.ProjectId, project.ProjectName)
-	}
-	return nil
-}
-
-func isUserCertified(userInfo *types.UserInfo) bool {
+func isUserCertified(userInfo *uaccount.UserInfo) bool {
 	return userInfo.AuthState == "CERTIFIED"
 }
 
-func getUserInfo() (*types.UserInfo, error) {
+func getUserInfo() (*uaccount.UserInfo, error) {
 	req := BizClient.NewGetUserInfoRequest()
-	var userInfo types.UserInfo
+	var userInfo uaccount.UserInfo
 	resp, err := BizClient.GetUserInfo(req)
 
 	if err != nil {
@@ -143,8 +127,8 @@ func getUserInfo() (*types.UserInfo, error) {
 	}
 	if len(resp.DataSet) == 1 {
 		userInfo = resp.DataSet[0]
-		Tracer.AppendInfo("userName", userInfo.UserEmail)
-		Tracer.AppendInfo("companyName", userInfo.CompanyName)
+		Cxt.AppendInfo("userName", userInfo.UserEmail)
+		Cxt.AppendInfo("companyName", userInfo.CompanyName)
 		bytes, err := json.Marshal(userInfo)
 		if err != nil {
 			return nil, err

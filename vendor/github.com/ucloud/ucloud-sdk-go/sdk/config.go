@@ -10,6 +10,7 @@ type Config struct {
 	// Region is the region of backend service
 	// See also <https://docs.ucloud.cn/api/summary/regionlist> ...
 	Region string `default:""`
+	Zone   string `default:""`
 
 	// ProjectId is the unique identify of project, used for organize resources,
 	// Most of resources should belong to a project.

@@ -31,7 +31,7 @@ type TerminateUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost 实例 Id
-	UHostIds []string
+	UHostId string
 
 	// 放入回收站:"Yes", 彻底删除：“No”
 	InRecycle string

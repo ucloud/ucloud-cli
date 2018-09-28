@@ -10,25 +10,30 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
+
+	"github.com/ucloud/ucloud-cli/model"
 
 	"github.com/ucloud/ucloud-sdk-go/sdk"
 	"github.com/ucloud/ucloud-sdk-go/sdk/response"
-	"github.com/ucloud/ucloud-sdk-go/sdk/trace"
-	"github.com/ucloud/ucloud-sdk-go/service"
+	service "github.com/ucloud/ucloud-sdk-go/services"
 )
 
 //ConfigPath 配置文件路径
 const ConfigPath = ".ucloud"
+
+//GAP 表格列直接的间隔字符数
+const GAP = 2
+
+//Cxt 上下文
+var Cxt = model.GetContext(os.Stdout)
 
 //SdkClient 用于上报数据
 var SdkClient *sdk.Client
 
 //BizClient 用于调用业务接口
 var BizClient *service.Client
-
-//Tracer 上报服务，根据用户授权是否发送上报数据
-var Tracer *trace.AggDasTracer
 
 //GetHomePath 获取家目录
 func GetHomePath() string {
@@ -104,8 +109,10 @@ func GetConfigPath() string {
 }
 
 //HandleBizError 处理RetCode != 0 的业务异常
-func HandleBizError(resp response.Common) {
-	Tracer.Printf("Something wrong. RetCode:%d. Message:%s\n", resp.GetRetCode(), resp.GetMessage())
+func HandleBizError(resp response.Common) error {
+	format := "Something wrong. RetCode:%d. Message:%s\n"
+	Cxt.Printf(format, resp.GetRetCode(), resp.GetMessage())
+	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
 //PrintJSON 以JSON格式打印数据集合
@@ -114,12 +121,9 @@ func PrintJSON(dataSet interface{}) error {
 	if err != nil {
 		return err
 	}
-	Tracer.Println(string(bytes))
+	Cxt.Println(string(bytes))
 	return nil
 }
-
-//GAP 表格列直接的间隔字符数
-const GAP = 2
 
 //PrintTable 以表格方式打印数据集合
 func PrintTable(dataSet interface{}, fieldList []string) error {
@@ -204,4 +208,9 @@ func calcWidth(text string) int {
 		}
 	}
 	return width
+}
+
+//FormatDate 格式化时间,把以秒为单位的时间戳格式化未年月日
+func FormatDate(seconds int) string {
+	return time.Unix(int64(seconds), 0).Format("2006-01-02")
 }
