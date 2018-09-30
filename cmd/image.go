@@ -55,11 +55,7 @@ func NewCmdUImageList() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.DescribeImage(req)
 			if err != nil {
-				Cxt.PrintErr(err)
-				return
-			}
-			if resp.RetCode != 0 {
-				HandleBizError(resp)
+				HandleError(err)
 				return
 			}
 			if global.json {
@@ -80,9 +76,9 @@ func NewCmdUImageList() *cobra.Command {
 			}
 		},
 	}
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Assign region(override default zone of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.ImageType = cmd.Flags().String("image-type", "", "'Base',Standard image; 'Business',image market; 'Custom',custom image; Return all types by default")
 	req.OsType = cmd.Flags().String("os-type", "", "Linux or Windows. Return all types by default")
 	req.ImageId = cmd.Flags().String("image-id", "", "iamge id such as 'uimage-xxx'")

@@ -5,7 +5,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
 	"github.com/ucloud/ucloud-sdk-go/sdk/log"
-	"github.com/ucloud/ucloud-sdk-go/sdk/protocal/http"
+	"github.com/ucloud/ucloud-sdk-go/sdk/protocol/http"
 	"github.com/ucloud/ucloud-sdk-go/sdk/request"
 	"github.com/ucloud/ucloud-sdk-go/sdk/response"
 )
@@ -45,7 +45,7 @@ func (c *Client) GetConfig() *Config {
 
 // InvokeAction will do an action request from a request struct and set response value into res struct pointer
 func (c *Client) InvokeAction(action string, req request.Common, resp response.Common) error {
-	req = c.SetupRequest(req, action)
+	c.SetupRequest(req, action)
 	req.SetRequestTime(time.Now())
 
 	httpReq, err := c.buildHTTPRequest(req)

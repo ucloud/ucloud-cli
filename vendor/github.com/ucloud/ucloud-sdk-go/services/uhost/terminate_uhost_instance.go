@@ -31,10 +31,13 @@ type TerminateUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost 实例 Id
-	UHostId string
+	UHostIds []string
 
 	// 放入回收站:"Yes", 彻底删除：“No”
 	InRecycle string
+
+	// 主机 ID
+	UHostId string
 }
 
 // NewTerminateUHostInstanceRequest will create request of TerminateUHostInstance action.

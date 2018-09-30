@@ -38,7 +38,7 @@ func (c *Context) Printf(format string, a ...interface{}) (n int, err error) {
 
 //PrintErr 打印错误
 func (c *Context) PrintErr(uerr error) (n int, err error) {
-	text := fmt.Sprintf("Error:%v", uerr)
+	text := fmt.Sprintf("Error:%v\n", uerr)
 	n, err = c.writer.Write([]byte(text))
 	return
 }

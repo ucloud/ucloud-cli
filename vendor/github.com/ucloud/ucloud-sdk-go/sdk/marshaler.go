@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk/protocal/http"
+	"github.com/ucloud/ucloud-sdk-go/sdk/protocol/http"
 	"github.com/ucloud/ucloud-sdk-go/sdk/request"
 	"github.com/ucloud/ucloud-sdk-go/sdk/response"
 	"github.com/ucloud/ucloud-sdk-go/sdk/version"

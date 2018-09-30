@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-
 	"github.com/spf13/cobra"
+
+	"github.com/ucloud/ucloud-sdk-go/sdk"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 
 	. "github.com/ucloud/ucloud-cli/util"
@@ -69,59 +69,55 @@ func NewCmdUHostList() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.DescribeUHostInstance(req)
 			if err != nil {
-				Cxt.Println(err)
+				HandleError(err)
 				return
 			}
-			if resp.RetCode != 0 {
-				HandleBizError(resp)
+			if global.json {
+				PrintJSON(resp.UHostSet)
 			} else {
-				if global.json {
-					PrintJSON(resp.UHostSet)
-				} else {
-					list := make([]UHostRow, 0)
-					for _, host := range resp.UHostSet {
-						row := UHostRow{}
-						row.UHostName = host.Name
-						row.ResourceID = host.UHostId
-						row.UGroup = host.Tag
-						for _, ip := range host.IPSet {
-							if row.ClassicNetwork != "" {
-								row.ClassicNetwork += " | "
-							}
-							if ip.Type == "Private" {
-								row.ClassicNetwork += fmt.Sprintf("%s", ip.IP)
-							} else {
-								row.ClassicNetwork += fmt.Sprintf("%s %s", ip.IP, ip.Type)
-							}
+				list := make([]UHostRow, 0)
+				for _, host := range resp.UHostSet {
+					row := UHostRow{}
+					row.UHostName = host.Name
+					row.ResourceID = host.UHostId
+					row.UGroup = host.Tag
+					for _, ip := range host.IPSet {
+						if row.ClassicNetwork != "" {
+							row.ClassicNetwork += " | "
 						}
-						osName := strings.SplitN(host.OsName, " ", 2)
-						cupCore := host.CPU
-						memorySize := host.Memory / 1024
-						diskSize := 0
-						for _, disk := range host.DiskSet {
-							if disk.Type == "Data" {
-								diskSize += disk.Size
-							}
+						if ip.Type == "Private" {
+							row.ClassicNetwork += fmt.Sprintf("%s", ip.IP)
+						} else {
+							row.ClassicNetwork += fmt.Sprintf("%s %s", ip.IP, ip.Type)
 						}
-						row.Config = fmt.Sprintf("%s cpu:%d memory:%dG disk:%dG", osName[0], cupCore, memorySize, diskSize)
-						row.CreationTime = FormatDate(host.CreateTime)
-						row.State = host.State
-						row.Type = host.UHostType + "/" + host.HostType
-						list = append(list, row)
 					}
-					PrintTable(list, []string{"UHostName", "ResourceID", "UGroup", "ClassicNetwork", "Config", "Type", "CreationTime", "State"})
+					osName := strings.SplitN(host.OsName, " ", 2)
+					cupCore := host.CPU
+					memorySize := host.Memory / 1024
+					diskSize := 0
+					for _, disk := range host.DiskSet {
+						if disk.Type == "Data" {
+							diskSize += disk.Size
+						}
+					}
+					row.Config = fmt.Sprintf("%s cpu:%d memory:%dG disk:%dG", osName[0], cupCore, memorySize, diskSize)
+					row.CreationTime = FormatDate(host.CreateTime)
+					row.State = host.State
+					row.Type = host.UHostType + "/" + host.HostType
+					list = append(list, row)
 				}
+				PrintTable(list, []string{"UHostName", "ResourceID", "UGroup", "ClassicNetwork", "Config", "Type", "CreationTime", "State"})
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	cmd.Flags().StringSliceVar(&req.UHostIds, "resource-id", make([]string, 0), "UHost Instance ID, multiple values separated by comma(without space)")
-	req.Tag = cmd.Flags().String("tag", "", "UGroup")
-	req.Offset = cmd.Flags().Int("offset", 0, "offset default 0")
-	req.Limit = cmd.Flags().Int("limit", 20, "limit default 20, max value 100")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
+	cmd.Flags().StringSliceVar(&req.UHostIds, "resource-id", make([]string, 0), "Optional. UHost Instance ID, multiple values separated by comma(without space)")
+	req.Tag = cmd.Flags().String("tag", "", "Optional. UGroup")
+	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
+	req.Limit = cmd.Flags().Int("limit", 20, "Optional. Limit default 20, max value 100")
 
 	return cmd
 }
@@ -137,18 +133,13 @@ func NewCmdUHostCreate() *cobra.Command {
 			*req.Memory *= 1024
 			*req.Password = base64.StdEncoding.EncodeToString([]byte(*req.Password))
 			req.LoginMode = sdk.String("Password")
-			// req.UHostType = sdk.String("Normal")
-			// req.HostType = sdk.String("N2")
+			req.ImageId = sdk.String("uimage-fphcvv") //默认镜像 Centos 6.5 64bits
 			resp, err := BizClient.CreateUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 				return
 			}
-			if resp.RetCode != 0 {
-				HandleBizError(resp)
-			} else {
-				Cxt.Printf("UHost:%v created successfully!\n", resp.UHostIds)
-			}
+			Cxt.Printf("UHost:%v created successfully!\n", resp.UHostIds)
 		},
 	}
 
@@ -169,30 +160,30 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.Disks[1].IsBoot = sdk.Bool(false)
 
 	flags := cmd.Flags()
-	cmd.Flags().SortFlags = false
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", ConfigInstance.Zone, "Zone")
-	req.UHostType = flags.String("type", defaultUhostType, "Uhost type. enumeration value. 'N1': series 1 standard type; 'N2': series 2 standard type; 'I1': series 1 high io type; 'I2', series 2 high IO type; 'D1': Series 1 big data model; 'G1': Series 1 GPU type, model For K80; 'G2': Series 2 GPU type, model is P40; 'G3': Series 2 GPU type, model is V100.")
-	req.NetCapability = flags.String("net-capability", "Normal", "enumeration value. 'Normal' or 'Super'")
-	req.CPU = flags.Int("cpu", 4, "The number of virtual CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
-	req.Memory = flags.Int("memory", 8, "memory size. Unit: GB. Range: [1, 128], multiple of 2")
-	req.ImageId = cmd.Flags().String("image-id", "", "The ID of image. Obtain by 'ucloud image list'")
-	req.Password = cmd.Flags().String("password", "", "Password of the uhost user")
-	req.Disks[0].Type = cmd.Flags().String("system-disk-type", "LOCAL_NORMAL", "Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
-	req.Disks[0].BackupType = cmd.Flags().String("system-disk-backup-type", "NONE", "Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.Disks[1].Type = cmd.Flags().String("data-disk-type", "LOCAL_NORMAL", "Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
-	req.Disks[1].Size = cmd.Flags().String("data-disk-size", "20", "Disk size. Unit GB")
-	req.Disks[1].BackupType = cmd.Flags().String("data-disk-backup-type", "NONE", "Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.NetworkId = flags.String("network-id", "", "Network ID (no need to fill in the case of VPC2.0). In the case of VPC1.0, if not filled in, we will choose the basic network; if it is filled in, we will choose the subnet. See DescribeSubnet.")
-	req.VPCId = flags.String("vpc-id", "", "VPC ID. This field is required under VPC2.0")
-	req.SubnetId = flags.String("subnet-id", "", "Subnet ID. This field is required under VPC2.0")
-	req.SecurityGroupId = flags.String("firewall-id", "", "Firewall Id, default: Web recommended firewall. see DescribeSecurityGroup.")
-	req.Tag = flags.String("ugroup", "Default", "Business group")
-	req.Name = flags.String("name", "UHost", "UHost instance name")
-	req.ChargeType = flags.String("charge-type", "Month", "Enumeration value. 'Year', pay per year; 'Month', pay per month; 'Dynamic', pay per hour (requires access). The default is monthly payment")
-	req.Quantity = flags.Int("quantity", 1, "The length of purchase. This parameter is not required when purchasing by the hour (Dynamic). When the monthly payment is made, the parameter 0 means the purchase until the end of the month.")
-	req.CouponId = flags.String("coupon-id", "", "Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
+	flags.SortFlags = false
+	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
+	req.Memory = flags.Int("memory", 8, "Required. Memory size. Unit: GB. Range: [1, 128], multiple of 2")
+	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
+	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
+	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
+	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
+	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2r means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
+	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
+	req.ImageId = flags.String("image-id", "", "Optional. The ID of image. see 'ucloud image list'. The default image is CentOS 6.5 64 bits")
+	req.Disks[0].Type = flags.String("boot-disk-type", "Optional. LOCAL_NORMAL", "Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[0].BackupType = flags.String("boot-disk-backup-type", "Optional. NONE", "Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
+	req.Disks[1].Type = flags.String("data-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[1].Size = flags.String("data-disk-size", "20", "Optional. Disk size. Unit GB")
+	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
+	req.NetworkId = flags.String("network-id", "", "Optional. Network ID (no need to fill in the case of VPC2.0). In the case of VPC1.0, if not filled in, we will choose the basic network; if it is filled in, we will choose the subnet. See DescribeSubnet.")
+	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0")
+	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0")
+	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see DescribeSecurityGroup.")
+	req.Tag = flags.String("ugroup", "Default", "Optional. Business group")
+	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
 
 	cmd.MarkFlagRequired("image-id")
 	cmd.MarkFlagRequired("password")
@@ -223,20 +214,16 @@ func NewCmdUHostDelete() *cobra.Command {
 			}
 			resp, err := BizClient.TerminateUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					Cxt.Printf("UHost:%v deleted successfully!\n", resp.UHostId)
-				}
+				Cxt.Printf("UHost:%v deleted successfully!\n", resp.UHostId)
 			}
 		},
 	}
 
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	isDestory = cmd.Flags().Bool("destory", false, "false,the uhost instance will be thrown to UHost recycle If you have permission; true,the uhost instance will be deleted directly")
 	isEipReleased = cmd.Flags().Bool("eip-released", false, "false,Unbind EIP only; true, Unbind EIP and release it")
@@ -255,20 +242,15 @@ func NewCmdUHostStop() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.StopUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					fmt.Println(resp)
-					Cxt.Printf("UHost:%v is shuting down. Wait a moment\n", resp.UhostId)
-				}
+				Cxt.Printf("UHost:%v is shuting down. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", ConfigInstance.Zone, "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	cmd.MarkFlagRequired("resource-id")
 
@@ -286,19 +268,15 @@ func NewCmdUHostStart() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.StartUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					Cxt.Printf("UHost:%v is starting. Wait a moment\n", resp.UhostId)
-				}
+				Cxt.Printf("UHost:%v is starting. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	req.DiskPassword = cmd.Flags().String("disk-password", "", "Encrypted disk password")
 	cmd.MarkFlagRequired("resource-id")
@@ -316,19 +294,15 @@ func NewCmdUHostReboot() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.RebootUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					Cxt.Printf("UHost:%v is restarting. Wait a moment\n", resp.UhostId)
-				}
+				Cxt.Printf("UHost:%v is restarting. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	req.DiskPassword = cmd.Flags().String("disk-password", "", "Encrypted disk password")
 	cmd.MarkFlagRequired("resource-id")
@@ -345,19 +319,15 @@ func NewCmdUHostPoweroff() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.PoweroffUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					Cxt.Printf("UHost:%v is power off\n", resp.UhostId)
-				}
+				Cxt.Printf("UHost:%v is power off\n", resp.UhostId)
 			}
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	return cmd
 }
@@ -386,20 +356,15 @@ func NewCmdUHostScale() *cobra.Command {
 			}
 			resp, err := BizClient.ResizeUHostInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode != 0 {
-					HandleBizError(resp)
-				} else {
-					Cxt.Printf("UHost:%v scaled\n", resp.UhostId)
-				}
+				Cxt.Printf("UHost:%v scaled\n", resp.UhostId)
 			}
-
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.Zone = cmd.Flags().String("zone", "", "Zone")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
 	req.CPU = cmd.Flags().Int("cpu", 0, "The number of virtual CPU cores. Series1 {1, 2, 4, 8, 12, 16, 24, 32}. Series2 {1,2,4,8,16}")
 	req.Memory = cmd.Flags().Int("memory", 0, "memory size. Unit: GB. Range: [1, 128], multiple of 2")

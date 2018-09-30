@@ -15,21 +15,25 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
+
 	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //NewCmdGssh ucloud gssh
 func NewCmdGssh() *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "gssh",
-		Short: "Create, list, update and delete globalssh instance",
-		Long:  `Create, list, update and delete globalssh instance`,
+		Short: "Create,list,update and delete globalssh instance",
+		Long:  `Create,list,update and delete globalssh instance`,
 	}
 	cmd.AddCommand(NewCmdGsshList())
 	cmd.AddCommand(NewCmdGsshCreate())
 	cmd.AddCommand(NewCmdGsshDelete())
 	cmd.AddCommand(NewCmdGsshModify())
+	cmd.AddCommand(NewCmdGsshArea())
 	return cmd
 }
 
@@ -46,94 +50,133 @@ type GSSHRow struct {
 //NewCmdGsshList ucloud gssh list
 func NewCmdGsshList() *cobra.Command {
 	req := BizClient.NewDescribeGlobalSSHInstanceRequest()
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List all GlobalSSH instances",
 		Long:    `List all GlobalSSH instances`,
-		Example: "ucloud gssh ls",
-		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.DescribeGlobalSSHInstance(req)
-			if err != nil {
-				Cxt.PrintErr(err)
-			} else {
-				if resp.RetCode == 0 {
-					if global.json {
-						PrintJSON(resp.InstanceSet)
-					} else {
-						list := make([]GSSHRow, 0)
-						for _, gssh := range resp.InstanceSet {
-							row := GSSHRow{}
-							row.ResourceID = gssh.InstanceId
-							row.SSHServerIP = gssh.TargetIP
-							row.AcceleratingDomain = gssh.AcceleratingDomain
-							row.SSHServerLocation = gssh.Area
-							row.SSHPort = gssh.Port
-							row.Remark = gssh.Remark
-							list = append(list, row)
-						}
-						PrintTable(list, []string{"ResourceID", "SSHServerIP", "AcceleratingDomain", "SSHServerLocation", "SSHPort", "Remark"})
-					}
-				} else {
-					HandleBizError(resp)
-				}
-			}
-		},
-	}
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	return cmd
-}
-
-//NewCmdGsshCreate ucloud gssh create
-func NewCmdGsshCreate() *cobra.Command {
-	var req = BizClient.NewCreateGlobalSSHInstanceRequest()
-	var cmd = &cobra.Command{
-		Use:     "create",
-		Short:   "Create GlobalSSH instance",
-		Long:    "Create GlobalSSH instance",
-		Example: "ucloud gssh create --area Washington --target-ip 8.8.8.8",
+		Example: "ucloud gssh list",
 		Run: func(cmd *cobra.Command, args []string) {
 			var areaMap = map[string]string{
-				"LosAngeles": "洛杉矶",
-				"Singapore":  "新加坡",
-				"HongKong":   "香港",
-				"Tokyo":      "东京",
-				"Washington": "华盛顿",
-				"Frankfurt":  "法兰克福",
+				"洛杉矶":  "LosAngeles",
+				"新加坡":  "Singapore",
+				"香港":   "HongKong",
+				"东京":   "Tokyo",
+				"华盛顿":  "Washington",
+				"法兰克福": "Frankfurt",
 			}
 
-			port := *req.Port
-			if port < 1 || port > 65535 || port == 80 || port == 443 {
-				Cxt.Println("The port number should be between 1 and 65535, and cannot be equal to 80 or 443")
-				return
-			}
-
-			if area, ok := areaMap[*req.Area]; ok {
-				*req.Area = area
-			} else {
-				Cxt.Println("Area should be one of LosAngeles,Singapore,HongKong,Tokyo,Washington,Frankfurt.")
-				return
-			}
-			resp, err := BizClient.CreateGlobalSSHInstance(req)
+			resp, err := BizClient.DescribeGlobalSSHInstance(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode == 0 {
-					Cxt.Println("Succeed, GlobalSSHInstanceId:", resp.InstanceId)
+				if global.json {
+					PrintJSON(resp.InstanceSet)
 				} else {
-					HandleBizError(resp)
+					list := make([]GSSHRow, 0)
+					for _, gssh := range resp.InstanceSet {
+						row := GSSHRow{}
+						row.ResourceID = gssh.InstanceId
+						row.SSHServerIP = gssh.TargetIP
+						row.AcceleratingDomain = gssh.AcceleratingDomain
+						row.SSHPort = gssh.Port
+						row.Remark = gssh.Remark
+						if val, ok := areaMap[gssh.Area]; ok {
+							row.SSHServerLocation = val
+						} else {
+							row.SSHServerLocation = gssh.Area
+						}
+						list = append(list, row)
+					}
+					PrintTable(list, []string{"ResourceID", "SSHServerIP", "AcceleratingDomain", "SSHServerLocation", "SSHPort", "Remark"})
 				}
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	req.Area = cmd.Flags().String("area", "", "Location of the source server.Only supports six cities,LosAngeles,Singapore,HongKong,Tokyo,Washington,Frankfurt. Required")
-	req.TargetIP = cmd.Flags().String("target-ip", "", "IP of the source server. Required")
-	req.Port = cmd.Flags().Int("port", 22, "Port of The SSH service between 1 and 65535. Do not use ports such as 80,443.")
-	req.Remark = cmd.Flags().String("remark", "", "Remark of your GlobalSSH.")
-	req.CouponId = cmd.Flags().String("coupon-id", "", "Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	return cmd
+}
+
+//NewCmdGsshArea ucloud gssh area
+func NewCmdGsshArea() *cobra.Command {
+	req := BizClient.NewDescribeGlobalSSHAreaRequest()
+	cmd := &cobra.Command{
+		Use:   "area",
+		Short: "List SSH server locations and covered areas",
+		Long:  "List SSH server locations and covered areas",
+		Run: func(cmd *cobra.Command, args []string) {
+			resp, err := BizClient.DescribeGlobalSSHArea(req)
+			if err != nil {
+				HandleError(err)
+				return
+			}
+			list := make([]GsshLocation, 0)
+			for _, item := range resp.AreaSet {
+				row := GsshLocation{
+					AirportCode:       item.AreaCode,
+					SSHServerLocation: areaCodeMap[item.AreaCode],
+				}
+				regionLabels := make([]string, 0)
+				for _, region := range item.RegionSet {
+					regionLabels = append(regionLabels, RegionLabel[region])
+				}
+				row.CoveredArea = strings.Join(regionLabels, ",")
+				list = append(list, row)
+			}
+
+			PrintTable(list, []string{"AirportCode", "SSHServerLocation", "CoveredArea"})
+		},
+	}
+	return cmd
+}
+
+//GsshLocation 服务地点和覆盖区域
+type GsshLocation struct {
+	AirportCode       string
+	SSHServerLocation string
+	CoveredArea       string
+}
+
+var areaCodeMap = map[string]string{
+	"LAX": "LosAngeles",
+	"SIN": "Singapore",
+	"HKG": "HongKong",
+	"HND": "Tokyo",
+	"IAD": "Washington",
+	"FRA": "Frankfurt",
+}
+
+//NewCmdGsshCreate ucloud gssh create
+func NewCmdGsshCreate() *cobra.Command {
+	req := BizClient.NewCreateGlobalSSHInstanceRequest()
+	cmd := &cobra.Command{
+		Use:     "create",
+		Short:   "Create GlobalSSH instance",
+		Long:    "Create GlobalSSH instance",
+		Example: "ucloud gssh create --area Washington --target-ip 8.8.8.8",
+		Run: func(cmd *cobra.Command, args []string) {
+			port := *req.Port
+			if port < 1 || port > 65535 || port == 80 || port == 443 {
+				Cxt.Println("The port number should be between 1 and 65535, and cannot be 80 or 443")
+				return
+			}
+			resp, err := BizClient.CreateGlobalSSHInstance(req)
+			if err != nil {
+				HandleError(err)
+			} else {
+				Cxt.Println("ResourceID:", resp.InstanceId)
+			}
+		},
+	}
+	cmd.Flags().SortFlags = false
+	req.Area = cmd.Flags().String("airport-code", "", "Required. Location of the source server. See 'ucloud gssh area'")
+	req.TargetIP = cmd.Flags().String("target-ip", "", "Required. IP of the source server. Required")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Port = cmd.Flags().Int("port", 22, "Optional. Port of The SSH service between 1 and 65535. Do not use ports such as 80,443.")
+	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
+	req.CouponId = cmd.Flags().String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
 	cmd.MarkFlagRequired("area")
 	cmd.MarkFlagRequired("target-ip")
 	return cmd
@@ -151,22 +194,19 @@ func NewCmdGsshDelete() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range *gsshIds {
 				req.InstanceId = &id
-				resp, err := BizClient.DeleteGlobalSSHInstance(req)
+				_, err := BizClient.DeleteGlobalSSHInstance(req)
 				if err != nil {
-					Cxt.PrintErr(err)
+					HandleError(err)
 				} else {
-					if resp.RetCode == 0 {
-						Cxt.Printf("GlobalSSH(%s) was successfully deleted\n", id)
-					} else {
-						HandleBizError(resp)
-					}
+					Cxt.Printf("GlobalSSH(%s) was successfully deleted\n", id)
 				}
 			}
 		},
 	}
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	gsshIds = cmd.Flags().StringArray("id", make([]string, 0), "ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple flags. Required")
+	cmd.Flags().SortFlags = false
+	gsshIds = cmd.Flags().StringArray("id", make([]string, 0), "Required. ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple flags")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("id")
 	return cmd
 }
@@ -197,36 +237,29 @@ func NewCmdGsshModify() *cobra.Command {
 					return
 				}
 				gsshModifyPortReq.InstanceId = gsshModifyRemarkReq.InstanceId
-				resp, err := BizClient.ModifyGlobalSSHPort(gsshModifyPortReq)
+				_, err := BizClient.ModifyGlobalSSHPort(gsshModifyPortReq)
 				if err != nil {
-					Cxt.Println("Error:", err)
+					HandleError(err)
 				} else {
-					if resp.RetCode == 0 {
-						Cxt.Println("Successfully updated")
-					} else {
-						Cxt.Printf("Something wrong. RetCode:%d, Message: %s\n", resp.RetCode, resp.Message)
-					}
+					Cxt.Println("Successfully updated")
 				}
 			}
 			if *gsshModifyRemarkReq.Remark != "" {
-				resp, err := BizClient.ModifyGlobalSSHRemark(gsshModifyRemarkReq)
+				_, err := BizClient.ModifyGlobalSSHRemark(gsshModifyRemarkReq)
 				if err != nil {
-					Cxt.Println(err)
+					HandleError(err)
 				} else {
-					if resp.RetCode == 0 {
-						Cxt.Println("Successfully updated")
-					} else {
-						HandleBizError(resp)
-					}
+					Cxt.Println("Successfully updated")
 				}
 			}
 		},
 	}
-	cmd.Flags().StringVar(&region, "region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	cmd.Flags().StringVar(&project, "project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
-	gsshModifyPortReq.Port = cmd.Flags().Int("port", 0, "Port of SSH service.")
-	gsshModifyRemarkReq.Remark = cmd.Flags().String("remark", "", "Remark of your GlobalSSH.")
-	gsshModifyRemarkReq.InstanceId = cmd.Flags().String("id", "", "InstanceID of your GlobalSSH. Required")
+	cmd.Flags().SortFlags = false
+	gsshModifyRemarkReq.InstanceId = cmd.Flags().String("id", "", "Required. InstanceID of your GlobalSSH")
+	cmd.Flags().StringVar(&region, "region", ConfigInstance.Region, "Optional. Assign region")
+	cmd.Flags().StringVar(&project, "project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
+	gsshModifyPortReq.Port = cmd.Flags().Int("port", 0, "Optional. Port of SSH service.")
+	gsshModifyRemarkReq.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
 	cmd.MarkFlagRequired("id")
 	return cmd
 }

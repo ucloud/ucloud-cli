@@ -65,6 +65,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
 
+	cmd.AddCommand(NewCmdInit())
 	cmd.AddCommand(NewCmdConfig())
 	cmd.AddCommand(NewCmdRegion())
 	cmd.AddCommand(NewCmdProject())

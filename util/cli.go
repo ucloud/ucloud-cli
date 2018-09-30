@@ -13,11 +13,12 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ucloud/ucloud-cli/model"
-
 	"github.com/ucloud/ucloud-sdk-go/sdk"
+	uerr "github.com/ucloud/ucloud-sdk-go/sdk/error"
 	"github.com/ucloud/ucloud-sdk-go/sdk/response"
 	service "github.com/ucloud/ucloud-sdk-go/services"
+
+	"github.com/ucloud/ucloud-cli/model"
 )
 
 //ConfigPath 配置文件路径
@@ -113,6 +114,16 @@ func HandleBizError(resp response.Common) error {
 	format := "Something wrong. RetCode:%d. Message:%s\n"
 	Cxt.Printf(format, resp.GetRetCode(), resp.GetMessage())
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
+}
+
+//HandleError 处理错误，业务错误 和 HTTP错误
+func HandleError(err error) {
+	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
+		format := "Something wrong. RetCode:%d. Message:%s\n"
+		Cxt.Printf(format, uErr.Code(), uErr.Message())
+	} else {
+		Cxt.PrintErr(err)
+	}
 }
 
 //PrintJSON 以JSON格式打印数据集合
@@ -213,4 +224,29 @@ func calcWidth(text string) int {
 //FormatDate 格式化时间,把以秒为单位的时间戳格式化未年月日
 func FormatDate(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02")
+}
+
+//RegionLabel regionlable
+var RegionLabel = map[string]string{
+	"cn-bj1":       "Beijing1",
+	"cn-bj2":       "Beijing2",
+	"cn-sh2":       "Shanghai2",
+	"cn-gd":        "Guangzhou",
+	"hk":           "Hongkong",
+	"us-ca":        "LosAngeles",
+	"us-ws":        "Washington",
+	"ge-fra":       "Frankfurt",
+	"th-bkk":       "Bangkok",
+	"kr-seoul":     "Seoul",
+	"sg":           "Singapore",
+	"tw-kh":        "Kaohsiung",
+	"rus-mosc":     "Moscow",
+	"jpn-tky":      "Tokyo",
+	"tw-tp":        "TaiPei",
+	"uae-dubai":    "Dubai",
+	"idn-jakarta":  "Jakarta",
+	"ind-mumbai":   "Bombay",
+	"bra-saopaulo": "SaoPaulo",
+	"uk-london":    "London",
+	"afr-nigeria":  "Lagos",
 }

@@ -26,8 +26,8 @@ import (
 func NewCmdProject() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:     "project",
-		Short:   "List, create, update and delete project",
-		Long:    "List, create, update and delete project",
+		Short:   "List,create,update and delete project",
+		Long:    "List,create,update and delete project",
 		Example: "ucloud project",
 	}
 	cmd.AddCommand(NewCmdProjectList())

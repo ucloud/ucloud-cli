@@ -65,38 +65,34 @@ func NewCmdEIPList() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.DescribeEIP(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode == 0 {
-					if global.json {
-						PrintJSON(resp.EIPSet)
-					} else {
-						list := make([]EIPRow, 0)
-						for _, eip := range resp.EIPSet {
-							row := EIPRow{}
-							row.Name = eip.Name
-							for _, ip := range eip.EIPAddr {
-								row.IP += ip.IP + " " + ip.OperatorName + "   "
-							}
-							row.ResourceID = eip.EIPId
-							row.UGroup = eip.Tag
-							row.Billing = eip.PayMode
-							row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
-							row.BindResource = fmt.Sprintf("%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceType)
-							row.Status = eip.Status
-							row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
-							list = append(list, row)
-						}
-						PrintTable(list, []string{"Name", "IP", "ResourceID", "UGroup", "Billing", "Bandwidth", "BindResource", "Status", "ExpirationTime"})
-					}
+				if global.json {
+					PrintJSON(resp.EIPSet)
 				} else {
-					HandleBizError(resp)
+					list := make([]EIPRow, 0)
+					for _, eip := range resp.EIPSet {
+						row := EIPRow{}
+						row.Name = eip.Name
+						for _, ip := range eip.EIPAddr {
+							row.IP += ip.IP + " " + ip.OperatorName + "   "
+						}
+						row.ResourceID = eip.EIPId
+						row.UGroup = eip.Tag
+						row.Billing = eip.PayMode
+						row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
+						row.BindResource = fmt.Sprintf("%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceType)
+						row.Status = eip.Status
+						row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
+						list = append(list, row)
+					}
+					PrintTable(list, []string{"Name", "IP", "ResourceID", "UGroup", "Billing", "Bandwidth", "BindResource", "Status", "ExpirationTime"})
 				}
 			}
 		},
 	}
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	return cmd
 }
 
@@ -111,24 +107,20 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.AllocateEIP(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode == 0 {
-					for _, eip := range resp.EIPSet {
-						Cxt.Printf("EIPId:%s,", eip.EIPId)
-						for _, ip := range eip.EIPAddr {
-							Cxt.Printf("IP:%s,Line:%s \n", ip.IP, ip.OperatorName)
-						}
+				for _, eip := range resp.EIPSet {
+					Cxt.Printf("EIPId:%s,", eip.EIPId)
+					for _, ip := range eip.EIPAddr {
+						Cxt.Printf("IP:%s,Line:%s \n", ip.IP, ip.OperatorName)
 					}
-				} else {
-					HandleBizError(resp)
 				}
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	req.OperatorName = cmd.Flags().String("line", "", "Line 'Bgp' or 'International'. 'Bgp' can be set in region cn-sh1,cn-sh2,cn-gd,cn-bj1 and cn-bj2. 'International' can be set in region hk,us-ca,th-bkk,kr-seoul,us-ws,ge-fra,sg,tw-kh and other oversea regions. Required")
 	req.Bandwidth = cmd.Flags().Int("bandwidth", 0, "Bandwidth(Unit:Mbps). When paying by traffic, it ranges from 1 to 200; when paying by bandwidth, it ranges from 1 to 800, and when shared bandwidth is used, its value is 0. Required")
 	req.PayMode = cmd.Flags().String("pay-mode", "Bandwidth", "pay-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
@@ -153,21 +145,17 @@ func NewCmdEIPBind() *cobra.Command {
 		Example: "ucloud eip bind --eip-id eip-xxx --resource-id uhost-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
 			req.ResourceType = sdk.String("uhost")
-			resp, err := BizClient.BindEIP(req)
+			_, err := BizClient.BindEIP(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode == 0 {
-					fmt.Printf("EIP: %s bind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
-				} else {
-					HandleBizError(resp)
-				}
+				Cxt.Printf("EIP: %s bind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	req.EIPId = cmd.Flags().String("eip-id", "", "EIPId to bind. Required")
 	req.ResourceId = cmd.Flags().String("resource-id", "", "ResourceID , which is the UHostId of uhost. Required")
 	cmd.MarkFlagRequired("eip-id")
@@ -186,21 +174,17 @@ func NewCmdEIPUnbind() *cobra.Command {
 		Example: "ucloud eip unbind --eip-id eip-xxx --resource-id uhost-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
 			req.ResourceType = sdk.String("uhost")
-			resp, err := BizClient.UnBindEIP(req)
+			_, err := BizClient.UnBindEIP(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				HandleError(err)
 			} else {
-				if resp.RetCode == 0 {
-					Cxt.Printf("EIP: %s unbind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
-				} else {
-					HandleBizError(resp)
-				}
+				Cxt.Printf("EIP: %s unbind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	req.EIPId = cmd.Flags().String("eip-id", "", "EIPId to unbind. Required")
 	req.ResourceId = cmd.Flags().String("resource-id", "", "ResourceID , which is the UHostId of uhost. Required")
 	cmd.MarkFlagRequired("eip-id")
@@ -221,21 +205,17 @@ func NewCmdEIPRelease() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
 				req.EIPId = &id
-				resp, err := BizClient.ReleaseEIP(req)
+				_, err := BizClient.ReleaseEIP(req)
 				if err != nil {
-					Cxt.PrintErr(err)
+					HandleError(err)
 				} else {
-					if resp.RetCode == 0 {
-						Cxt.Printf("EIP: %v released \n", req.EIPId)
-					} else {
-						HandleBizError(resp)
-					}
+					Cxt.Printf("EIP: %v released \n", req.EIPId)
 				}
 			}
 		},
 	}
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region(override default region of your config)")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id(override default projec-id of your config)")
+	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	cmd.Flags().StringArrayVarP(&ids, "eip-id", "", make([]string, 0), "EIPId of the EIP you want to release. Required")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("bandwidth")
