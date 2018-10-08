@@ -25,7 +25,7 @@ import (
 //NewCmdUImage ucloud uimage
 func NewCmdUImage() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "uimage",
+		Use:   "image",
 		Short: "List images",
 		Long:  `List images`,
 		Args:  cobra.NoArgs,
@@ -49,9 +49,10 @@ type ImageRow struct {
 func NewCmdUImageList() *cobra.Command {
 	req := BizClient.NewDescribeImageRequest()
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List image",
-		Long:  "List image",
+		Use:     "list",
+		Short:   "List image",
+		Long:    "List image",
+		Example: "ucloud image list --image-type Base",
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := BizClient.DescribeImage(req)
 			if err != nil {
@@ -70,7 +71,9 @@ func NewCmdUImageList() *cobra.Command {
 					row.ExtensibleFeature = strings.Join(image.Features, ",")
 					row.CreationTime = FormatDate(image.CreateTime)
 					row.State = image.State
-					list = append(list, row)
+					if row.State == "Available" {
+						list = append(list, row)
+					}
 				}
 				PrintTable(list, []string{"ImageName", "ImageID", "BasicImage", "ExtensibleFeature", "CreationTime", "State"})
 			}
@@ -78,11 +81,11 @@ func NewCmdUImageList() *cobra.Command {
 	}
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
-	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
+	req.Zone = cmd.Flags().String("zone", ConfigInstance.Zone, "Assign availability zone")
 	req.ImageType = cmd.Flags().String("image-type", "", "'Base',Standard image; 'Business',image market; 'Custom',custom image; Return all types by default")
 	req.OsType = cmd.Flags().String("os-type", "", "Linux or Windows. Return all types by default")
 	req.ImageId = cmd.Flags().String("image-id", "", "iamge id such as 'uimage-xxx'")
 	req.Offset = cmd.Flags().Int("offset", 0, "offset default 0")
-	req.Limit = cmd.Flags().Int("limit", 20, "limit default 20")
+	req.Limit = cmd.Flags().Int("limit", 500, "max count")
 	return cmd
 }

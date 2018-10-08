@@ -105,6 +105,9 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Long:    "Allocate EIP",
 		Example: "ucloud eip allocate --line Bgp --bandwidth 2",
 		Run: func(cmd *cobra.Command, args []string) {
+			if *req.OperatorName == "BGP" {
+				*req.OperatorName = "Bgp"
+			}
 			resp, err := BizClient.AllocateEIP(req)
 			if err != nil {
 				HandleError(err)
@@ -121,15 +124,18 @@ func NewCmdEIPAllocate() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
-	req.OperatorName = cmd.Flags().String("line", "", "Line 'Bgp' or 'International'. 'Bgp' can be set in region cn-sh1,cn-sh2,cn-gd,cn-bj1 and cn-bj2. 'International' can be set in region hk,us-ca,th-bkk,kr-seoul,us-ws,ge-fra,sg,tw-kh and other oversea regions. Required")
-	req.Bandwidth = cmd.Flags().Int("bandwidth", 0, "Bandwidth(Unit:Mbps). When paying by traffic, it ranges from 1 to 200; when paying by bandwidth, it ranges from 1 to 800, and when shared bandwidth is used, its value is 0. Required")
-	req.PayMode = cmd.Flags().String("pay-mode", "Bandwidth", "pay-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
-	req.Quantity = cmd.Flags().Int("quantity", 1, "The quantity of EIP")
-	req.ChargeType = cmd.Flags().String("charge-type", "Month", "charge-type is an enumeration value. 'Year','Month', 'Dynamic'(Pay by the hour), 'Trial'(Need permission)")
-	req.Tag = cmd.Flags().String("tag", "Default", "Tag of your EIP.")
+	req.OperatorName = cmd.Flags().String("line", "", "Required. 'BGP' or 'International'. 'BGP' could be set in China mainland regions, such as cn-bj2 etc. 'International' could be set in the regions beyond mainland, such as hk, tw-kh, us-ws etc.")
+	req.Bandwidth = cmd.Flags().Int("bandwidth", 0, "Required. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 200]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
+	req.PayMode = cmd.Flags().String("charge-mode", "Bandwidth", "Optional. charge-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
+	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
+	req.ChargeType = cmd.Flags().String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires permission),'Trial', free trial(need permission)")
+	req.Tag = cmd.Flags().String("ugroup", "Default", "UGroup of your EIP.")
 	req.Name = cmd.Flags().String("name", "EIP", "Name of your EIP.")
 	req.Remark = cmd.Flags().String("remark", "", "Remark of your EIP.")
 	req.CouponId = cmd.Flags().String("coupon-id", "", "Coupon ID, The Coupon can deducte part of the payment")
+	cmd.Flags().SetFlagValues("line", []string{"BGP", "International"})
+	cmd.Flags().SetFlagValues("charge-mode", []string{"Bandwidth", "Traffic", "ShareBandwidth"})
+	cmd.Flags().SetFlagValues("charge-type", []string{"Month", "Year", "Dynamic", "Trial"})
 	cmd.MarkFlagRequired("line")
 	cmd.MarkFlagRequired("bandwidth")
 	return cmd
@@ -149,7 +155,7 @@ func NewCmdEIPBind() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("EIP: %s bind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
+				Cxt.Printf("EIP: [%s] bind with %s:[%s] successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
@@ -178,7 +184,7 @@ func NewCmdEIPUnbind() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("EIP: %s unbind with %s:%s successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
+				Cxt.Printf("EIP: %s unbind with [%s]:[%s] successfully \n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
@@ -209,7 +215,7 @@ func NewCmdEIPRelease() *cobra.Command {
 				if err != nil {
 					HandleError(err)
 				} else {
-					Cxt.Printf("EIP: %v released \n", req.EIPId)
+					Cxt.Printf("EIP: %v released \n", *req.EIPId)
 				}
 			}
 		},

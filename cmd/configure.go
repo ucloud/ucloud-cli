@@ -43,7 +43,6 @@ func NewCmdInit() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize UCloud CLI options",
 		Long:  `Initialize UCloud CLI options such as private-key,public-key,default region,zone and project.`,
-		// Example: "ucloud ; ucloud config set region cn-bj2; ucloud config set project org-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
 			Cxt.Println(configDesc)
 			if len(config.PrivateKey) != 0 && len(config.PublicKey) != 0 {
@@ -113,12 +112,18 @@ func NewCmdConfig() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			tmpCfgVal := reflect.ValueOf(cfg)
 			configVal := reflect.ValueOf(config).Elem()
+			changed := false
 			for i := 0; i < tmpCfgVal.NumField(); i++ {
 				if fieldVal := tmpCfgVal.Field(i).String(); fieldVal != "" {
 					configVal.Field(i).SetString(fieldVal)
+					changed = true
 				}
 			}
-			config.SaveConfig()
+			if changed {
+				config.SaveConfig()
+			} else {
+				cmd.HelpFunc()(cmd, args)
+			}
 		},
 	}
 	flags := cmd.Flags()
@@ -132,14 +137,6 @@ func NewCmdConfig() *cobra.Command {
 	cmd.AddCommand(NewCmdConfigList())
 	cmd.AddCommand(NewCmdConfigClear())
 
-	// originHelpFunc := cmd.HelpFunc()
-
-	// cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-	// 	rootCmd := cmd.Parent()
-	// 	rootCmd.Flags().MarkHidden("region")
-	// 	rootCmd.Flags().MarkHidden("project-id")
-	// 	originHelpFunc(cmd, args)
-	// })
 	return cmd
 }
 

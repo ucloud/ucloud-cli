@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	flag "github.com/spf13/pflag"
@@ -467,6 +468,7 @@ func shortHasNoOptDefVal(name string, fs *flag.FlagSet) bool {
 	return flag.NoOptDefVal != ""
 }
 
+//去除命令行末尾的flag相关字符
 func stripFlags(args []string, c *Command) []string {
 	if len(args) == 0 {
 		return args
@@ -817,6 +819,11 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 	// overriding
 	c.InitDefaultHelpCmd()
 
+	if NeedComplete() {
+		err := c.complete()
+		return c, err
+	}
+
 	var args []string
 
 	// Workaround FAIL with "go test -v" or "cobra.test -test.v", see #155
@@ -965,6 +972,96 @@ Simply type ` + c.Name() + ` help [path to command] for full details.`,
 	}
 	c.RemoveCommand(c.helpCommand)
 	c.AddCommand(c.helpCommand)
+}
+
+//complete attampt to word completion
+func (c *Command) complete() error {
+	line := os.Getenv("COMP_LINE")
+	if line == "" {
+		return nil
+	}
+	point := os.Getenv("COMP_POINT")
+	p, err := strconv.Atoi(point)
+	if err != nil {
+		return err
+	}
+	if length := len(line); p > length {
+		p = length
+	}
+	compLine := line[0:p]
+	lastSpaceIndex := strings.LastIndex(compLine, " ")
+	currentWord := compLine[lastSpaceIndex+1 : p]
+	args := strings.Fields(compLine)[1:]
+	compCmd, _, err := c.Root().Find(args)
+	if err != nil {
+		compCmd = c
+	}
+	compCmd.InitDefaultHelpFlag()
+
+	//complete flags, flag values or sub commands
+	if length := len(args); length > 0 && strings.HasPrefix(args[length-1], "-") { //需要被补全的单词开头是‘-’时，补全flag和value
+		completeFlagValues(compCmd, args, currentWord)
+	} else if len(compCmd.Commands()) > 0 { //需要补全的单词开头没有‘-’，补全子命令
+		completeSubCommands(compCmd, currentWord)
+	} else if length := len(args); length > 0 && compLine[p-1] != 32 { //需要补全的单词开头没有‘-’，前一个单词也不是命令，光标当前位置非空格，尝试补全参数值（value)
+		completeFlagValues(compCmd, args, currentWord)
+	} else { //需要补全的单词开头没有‘-’，也没有子命令，默认尝试补全参数 flag
+		completeFlags(compCmd, currentWord)
+	}
+	return nil
+}
+
+func completeFlags(cmd *Command, word string) {
+	cmd.mergePersistentFlags()
+	cmd.Flags().VisitAll(func(f *flag.Flag) {
+		completedWord := "--" + f.Name
+		if strings.HasPrefix(completedWord, word) {
+			fmt.Fprintln(cmd.OutOrStdout(), completedWord)
+		}
+	})
+}
+
+func completeSubCommands(cmd *Command, word string) {
+	for _, cmd := range cmd.Commands() {
+		if strings.HasPrefix(cmd.Name(), word) {
+			fmt.Fprintln(cmd.OutOrStdout(), cmd.Name())
+		}
+	}
+}
+
+func completeFlagValues(cmd *Command, args []string, word string) {
+	cmd.mergePersistentFlags()
+
+	var _flag *flag.Flag
+	var lastArg = args[len(args)-1]
+
+	if strings.HasPrefix(lastArg, "--") {
+		_flag = cmd.Flags().Lookup(lastArg[2:])
+	} else if strings.HasPrefix(lastArg, "-") && len(lastArg) == 2 {
+		_flag = cmd.Flags().ShorthandLookup(lastArg[1:])
+	} else if len(args) >= 2 {
+		arg := args[len(args)-2]
+		_flag = cmd.Flags().Lookup(arg[2:])
+	}
+
+	if _flag == nil {
+		cmd.Flags().VisitAll(func(f *flag.Flag) {
+			completedWord := "--" + f.Name
+			if strings.HasPrefix(completedWord, word) {
+				fmt.Fprintln(cmd.OutOrStdout(), "--"+f.Name)
+			}
+		})
+		return
+	}
+
+	if _flag.Annotations != nil {
+		values := _flag.Annotations[flag.BashCompleteFlagValues]
+		for _, v := range values {
+			if strings.HasPrefix(v, word) {
+				fmt.Fprintln(cmd.OutOrStdout(), v)
+			}
+		}
+	}
 }
 
 // ResetCommands delete parent, subcommand and help command from c.

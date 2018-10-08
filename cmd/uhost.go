@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -115,7 +114,7 @@ func NewCmdUHostList() *cobra.Command {
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.Flags().StringSliceVar(&req.UHostIds, "resource-id", make([]string, 0), "Optional. UHost Instance ID, multiple values separated by comma(without space)")
-	req.Tag = cmd.Flags().String("tag", "", "Optional. UGroup")
+	req.Tag = cmd.Flags().String("ugroup", "", "Optional. UGroup")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 20, "Optional. Limit default 20, max value 100")
 
@@ -131,9 +130,7 @@ func NewCmdUHostCreate() *cobra.Command {
 		Long:  "Create UHost instance",
 		Run: func(cmd *cobra.Command, args []string) {
 			*req.Memory *= 1024
-			*req.Password = base64.StdEncoding.EncodeToString([]byte(*req.Password))
 			req.LoginMode = sdk.String("Password")
-			req.ImageId = sdk.String("uimage-fphcvv") //默认镜像 Centos 6.5 64bits
 			resp, err := BizClient.CreateUHostInstance(req)
 			if err != nil {
 				HandleError(err)
@@ -164,29 +161,40 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
 	req.Memory = flags.Int("memory", 8, "Required. Memory size. Unit: GB. Range: [1, 128], multiple of 2")
 	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
+	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
+	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
+	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
 	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2r means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
+	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2' means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
-	req.ImageId = flags.String("image-id", "", "Optional. The ID of image. see 'ucloud image list'. The default image is CentOS 6.5 64 bits")
-	req.Disks[0].Type = flags.String("boot-disk-type", "Optional. LOCAL_NORMAL", "Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
-	req.Disks[0].BackupType = flags.String("boot-disk-backup-type", "Optional. NONE", "Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.Disks[1].Type = flags.String("data-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD SSD',local ssd disk; 'CLOUD_SSD SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[0].Type = flags.String("boot-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[0].BackupType = flags.String("boot-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
+	req.Disks[1].Type = flags.String("data-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[1].Size = flags.String("data-disk-size", "20", "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
 	req.NetworkId = flags.String("network-id", "", "Optional. Network ID (no need to fill in the case of VPC2.0). In the case of VPC1.0, if not filled in, we will choose the basic network; if it is filled in, we will choose the subnet. See DescribeSubnet.")
-	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0")
-	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0")
-	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see DescribeSecurityGroup.")
+	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("ugroup", "Default", "Optional. Business group")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
 
-	cmd.MarkFlagRequired("image-id")
+	cmd.Flags().SetFlagValues("charge-type", []string{"Month", "Year", "Dynamic", "Trial"})
+	cmd.Flags().SetFlagValues("cpu", []string{"1", "2", "4", "8", "12", "16", "24", "32"})
+	cmd.Flags().SetFlagValues("type", []string{"N2", "N1", "I2", "D1", "G1", "G2", "G3"})
+	cmd.Flags().SetFlagValues("net-capability", []string{"Normal", "Super"})
+	cmd.Flags().SetFlagValues("boot-disk-type", []string{"LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK"})
+	cmd.Flags().SetFlagValues("boot-disk-backup-type", []string{"NONE", "DATAARK"})
+	cmd.Flags().SetFlagValues("data-disk-type", []string{"LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK"})
+	cmd.Flags().SetFlagValues("data-disk-backup-type", []string{"NONE", "DATAARK"})
+
+	cmd.MarkFlagRequired("cpu")
+	cmd.MarkFlagRequired("memory")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("image-id")
 
 	return cmd
 }
@@ -216,7 +224,7 @@ func NewCmdUHostDelete() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v deleted successfully!\n", resp.UHostId)
+				Cxt.Printf("UHost:[%v] deleted successfully!\n", resp.UHostId)
 			}
 		},
 	}
@@ -244,7 +252,7 @@ func NewCmdUHostStop() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v is shuting down. Wait a moment\n", resp.UhostId)
+				Cxt.Printf("UHost:[%v] is shuting down. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
@@ -270,7 +278,7 @@ func NewCmdUHostStart() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v is starting. Wait a moment\n", resp.UhostId)
+				Cxt.Printf("UHost:[%v] is starting. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
@@ -296,7 +304,7 @@ func NewCmdUHostReboot() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v is restarting. Wait a moment\n", resp.UhostId)
+				Cxt.Printf("UHost:[%v] is restarting. Wait a moment\n", resp.UhostId)
 			}
 		},
 	}
@@ -321,7 +329,7 @@ func NewCmdUHostPoweroff() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v is power off\n", resp.UhostId)
+				Cxt.Printf("UHost:[%v] is power off\n", resp.UhostId)
 			}
 		},
 	}
@@ -358,7 +366,7 @@ func NewCmdUHostScale() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Printf("UHost:%v scaled\n", resp.UhostId)
+				Cxt.Printf("UHost:[%v] scaled\n", resp.UhostId)
 			}
 		},
 	}

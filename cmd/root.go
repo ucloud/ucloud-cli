@@ -61,7 +61,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.json, "json", "j", false, "Print result in JSON format whenever possible")
 	cmd.Flags().BoolVar(&global.version, "version", false, "Display version")
-	cmd.Flags().BoolVar(&global.completion, "completion", false, "Create or update completion scripts")
+	cmd.Flags().BoolVar(&global.completion, "completion", false, "Turn on auto completion according to the prompt")
 	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
 
@@ -73,15 +73,54 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
 	cmd.AddCommand(NewCmdUImage())
-
+	cmd.AddCommand(NewCmdSubnet())
+	cmd.AddCommand(NewCmdVPC())
+	cmd.AddCommand(NewCmdFirewall())
 	return cmd
 }
+
+const helpTmpl = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Commands:{{range .Commands}}{{if .IsAvailableCommand}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
+//概要帮助信息模板
+const usageTmpl = `Usage:{{if .Runnable}}
+ {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
+ {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 2)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
+ {{"flags may be" | printf "%-20s"}} {{.Flags.FlagNames}}
+
+Use "{{.CommandPath}} --help" for details.{{end}}
+`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	command := NewCmdRoot()
-	if err := command.Execute(); err != nil {
+	rootCmd := NewCmdRoot()
+	rootCmd.SetHelpTemplate(helpTmpl)
+	rootCmd.SetUsageTemplate(usageTmpl)
+	resetHelpFunc(rootCmd)
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -92,9 +131,16 @@ func init() {
 	Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
+func resetHelpFunc(cmd *cobra.Command) {
+	for _, a := range os.Args {
+		if a == "-h" {
+			cmd.SetHelpTemplate(usageTmpl)
+		}
+	}
+}
+
 func initialize(cmd *cobra.Command) {
 	if global.debug {
-		// ClientConfig.Logger.SetLevel(5)
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
@@ -106,13 +152,13 @@ func initialize(cmd *cobra.Command) {
 		Cxt.PrintErr(err)
 	}
 
-	if (cmd.Name() != "config" && cmd.Name() != "completion" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
+	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if config.PrivateKey == "" {
-			Cxt.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
+			Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
 		if config.PublicKey == "" {
-			Cxt.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
+			Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
 	}

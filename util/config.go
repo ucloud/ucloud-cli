@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -152,17 +153,24 @@ func (p *Config) SaveConfig() error {
 //LoadConfig 从本地文件加载配置
 func (p *Config) LoadConfig() error {
 	fileFullPath := GetConfigPath() + "/" + configFile
-	content, err := ioutil.ReadFile(fileFullPath)
-	if err != nil {
-		return err
+	if _, err := os.Stat(fileFullPath); os.IsNotExist(err) {
+		p = new(Config)
+	} else {
+		content, err := ioutil.ReadFile(fileFullPath)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(content, p)
 	}
-	json.Unmarshal(content, p)
 	return nil
 }
 
 //LoadUserInfo 从~/.ucloud/user.json加载用户信息
 func LoadUserInfo() (*uaccount.UserInfo, error) {
 	fileFullPath := GetConfigPath() + "/user.json"
+	if _, err := os.Stat(fileFullPath); os.IsNotExist(err) {
+		return new(uaccount.UserInfo), nil
+	}
 	content, err := ioutil.ReadFile(fileFullPath)
 	if err != nil {
 		return nil, err
