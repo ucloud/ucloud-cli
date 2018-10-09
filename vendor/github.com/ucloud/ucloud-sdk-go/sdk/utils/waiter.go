@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/ucloud/ucloud-sdk-go/sdk/log"
 )
 
 // Waiter to wait sth until it completed.
@@ -27,7 +27,7 @@ type FuncWaiter struct {
 // It will call the condition function to ensure state with interval.
 func (w *FuncWaiter) WaitForCompletion() error {
 	for i := 0; ; i++ {
-		logrus.Infof("Waiting for completion ... attempted %v times, %v total", i, w.MaxAttempts)
+		log.Infof("Waiting for completion ... attempted %v times, %v total", i, w.MaxAttempts)
 
 		if i >= w.MaxAttempts {
 			return errors.New("maximum attemps are reached")

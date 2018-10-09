@@ -24,13 +24,12 @@ import (
 
 //NewCmdSignup ucloud signup
 func NewCmdSignup() *cobra.Command {
-
 	var cmd = &cobra.Command{
-		Use:     "sign-up",
-		Short:   "Launch UCloud sign-up page in browser",
-		Long:    `Launch UCloud sign-up page in browser`,
+		Use:     "signup",
+		Short:   "Launch UCloud sign up page in browser",
+		Long:    `Launch UCloud sign up page in browser`,
 		Args:    cobra.NoArgs,
-		Example: "ucloud sign-up",
+		Example: "ucloud signup",
 		Run: func(cmd *cobra.Command, args []string) {
 			openbrowser("https://passport.ucloud.cn/#register")
 		},

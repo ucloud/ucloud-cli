@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-
-	"github.com/ucloud/ucloud-sdk-go/sdk"
 )
 
 var context *Context
@@ -13,35 +11,48 @@ var once sync.Once
 
 // Context 执行环境
 type Context struct {
-	writer       io.Writer
-	clientConfig *sdk.ClientConfig
+	writer io.Writer
+	data   map[string]interface{}
 }
 
-// Println 在当前执行环境打印一行
-func (p *Context) Println(a ...interface{}) (n int, err error) {
-	return fmt.Fprintln(p.writer, a...)
+//Print 打印一行
+func (c *Context) Print(a ...interface{}) (n int, err error) {
+	text := fmt.Sprint(a...)
+	n, err = c.writer.Write([]byte(text))
+	return
 }
 
-// Print 在当前执行环境打印一串
-func (p *Context) Print(a ...interface{}) (n int, err error) {
-	return fmt.Fprint(p.writer, a...)
+//Println 打印一行
+func (c *Context) Println(a ...interface{}) (n int, err error) {
+	text := fmt.Sprintln(a...)
+	n, err = c.writer.Write([]byte(text))
+	return
 }
 
-//AppendError 添加上报的错误
-func (p *Context) AppendError(err error) {
-	tracerData := p.clientConfig.TracerData
-	errorStr, ok := tracerData["error"].(string)
-	if ok {
-		tracerData["error"] = errorStr + "->" + err.Error()
-	} else {
-		tracerData["error"] = err.Error()
-	}
+//Printf 根据格式字符串打印
+func (c *Context) Printf(format string, a ...interface{}) (n int, err error) {
+	text := fmt.Sprintf(format, a...)
+	n, err = c.writer.Write([]byte(text))
+	return
+}
+
+//PrintErr 打印错误
+func (c *Context) PrintErr(uerr error) (n int, err error) {
+	text := fmt.Sprintf("Error:%v\n", uerr)
+	n, err = c.writer.Write([]byte(text))
+	return
+}
+
+//AppendInfo 添加记录
+func (c *Context) AppendInfo(key string, content interface{}) {
+	c.data[key] = content
 }
 
 // GetContext 创建一个单例的Context
-func GetContext(writer io.Writer, clientConfig *sdk.ClientConfig) *Context {
+func GetContext(writer io.Writer) *Context {
 	once.Do(func() {
-		context = &Context{writer, clientConfig}
+		data := make(map[string]interface{}, 0)
+		context = &Context{writer, data}
 	})
 	return context
 }

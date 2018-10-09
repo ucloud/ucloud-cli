@@ -1,17 +1,20 @@
 package model
 
 import (
+	"fmt"
 	"os"
 	"testing"
-
-	"github.com/ucloud/ucloud-sdk-go/sdk"
 )
 
-var context_test = Context{
+var ctx = Context{
 	os.Stdout,
-	&sdk.ClientConfig{},
 }
 
 func TestPrintln(t *testing.T) {
-	context_test.Println("test print")
+	ctx.Println("test print")
+}
+
+func TestPrintErr(t *testing.T) {
+	err := fmt.Errorf("error test")
+	ctx.PrintErr(err)
 }

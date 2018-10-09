@@ -14,6 +14,12 @@ type Credential struct {
 	PrivateKey string
 }
 
+// NewCredential will return credential config with default values
+func NewCredential() Credential {
+	return Credential{}
+}
+
+// CreateSign will encode query string to credential signature.
 func (c *Credential) CreateSign(query string) string {
 	// replace "=" "&"
 	str := strings.Replace(query, "&", "", -1)
@@ -30,6 +36,7 @@ func (c *Credential) CreateSign(query string) string {
 	return result
 }
 
+// BuildCredentialedQuery will build query string with signature query param.
 func (c *Credential) BuildCredentialedQuery(query map[string]string) string {
 	var queryList []string
 	for k, v := range query {

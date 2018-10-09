@@ -122,6 +122,9 @@ const (
 	ExitOnError
 	// PanicOnError will panic() if an error is found when parsing flags
 	PanicOnError
+
+	//BashCompleteFlagValues the key in Flag.Annotations
+	BashCompleteFlagValues = "bash_complete_flag_values"
 )
 
 // ParseErrorsWhitelist defines the parsing errors that can be ignored
@@ -491,6 +494,24 @@ func (f *FlagSet) SetAnnotation(name, key string, values []string) error {
 	return nil
 }
 
+//SetFlagValues set values for a flag. Useful when auto completing the flag value
+func (f *FlagSet) SetFlagValues(name string, values []string) error {
+	return f.SetAnnotation(name, BashCompleteFlagValues, values)
+}
+
+//GetFlagValues set values for a flag. Useful when auto completing the flag value
+func (f *FlagSet) GetFlagValues(name string) ([]string, error) {
+	normalName := f.normalizeFlagName(name)
+	flag, ok := f.formal[normalName]
+	if !ok {
+		return nil, fmt.Errorf("no such flag -%v", name)
+	}
+	if flag.Annotations == nil {
+		flag.Annotations = map[string][]string{}
+	}
+	return flag.Annotations[BashCompleteFlagValues], nil
+}
+
 // Changed returns true if the flag was explicitly set during Parse() and false
 // otherwise
 func (f *FlagSet) Changed(name string) bool {
@@ -737,6 +758,23 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 // the FlagSet
 func (f *FlagSet) FlagUsages() string {
 	return f.FlagUsagesWrapped(0)
+}
+
+//FlagNames returns a string containing all flags names in the FlagSet. Separated by " | "
+func (f *FlagSet) FlagNames() string {
+	buf := new(bytes.Buffer)
+	sep := " | "
+	f.VisitAll(func(flag *Flag) {
+		if flag.Hidden {
+			return
+		}
+		line := fmt.Sprintf("--%s"+sep, flag.Name)
+		fmt.Fprint(buf, line)
+	})
+	result := buf.String()
+	result = strings.Trim(result, sep)
+	result = wrap(22, 100, result)
+	return result
 }
 
 // PrintDefaults prints to standard error the default values of all defined command-line flags.

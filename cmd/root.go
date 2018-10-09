@@ -18,111 +18,148 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/model"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/service"
+
+	. "github.com/ucloud/ucloud-cli/util"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
-	region    string
-	projectID string
-	debug     bool
+	debug      bool
+	json       bool
+	version    bool
+	completion bool
+	config     bool
+	signup     bool
 }
 
 var global GlobalFlag
-var client = service.NewClient(model.ClientConfig, model.Credential)
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:                    "ucloud",
-		Short:                  "UCloud CLI v" + version,
+		Short:                  "UCloud CLI v" + Version,
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
+		Run: func(cmd *cobra.Command, args []string) {
+			if global.version {
+				Cxt.Printf("ucloud cli %s\n", Version)
+			} else if global.completion {
+				NewCmdCompletion().Run(cmd, args)
+			} else if global.config {
+				config.ListConfig(global.json)
+			} else if global.signup {
+				NewCmdSignup().Run(cmd, args)
+			} else {
+				cmd.HelpFunc()(cmd, args)
+			}
+		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&global.region, "region", "r", "", "Assign region(override default region of your config)")
-	cmd.PersistentFlags().StringVarP(&global.projectID, "project-id", "p", "", "Assign project-id(override default projec-id of your config)")
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
+	cmd.PersistentFlags().BoolVarP(&global.json, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.Flags().BoolVar(&global.version, "version", false, "Display version")
+	cmd.Flags().BoolVar(&global.completion, "completion", false, "Turn on auto completion according to the prompt")
+	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
+	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.AddCommand(NewCmdSignup())
+	cmd.AddCommand(NewCmdInit())
 	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdList())
+	cmd.AddCommand(NewCmdRegion())
+	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
-	cmd.AddCommand(NewCmdCompletion())
-	cmd.AddCommand(NewCmdVersion())
-
+	cmd.AddCommand(NewCmdUImage())
+	cmd.AddCommand(NewCmdSubnet())
+	cmd.AddCommand(NewCmdVPC())
+	cmd.AddCommand(NewCmdFirewall())
 	return cmd
 }
+
+const helpTmpl = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Commands:{{range .Commands}}{{if .IsAvailableCommand}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
+//概要帮助信息模板
+const usageTmpl = `Usage:{{if .Runnable}}
+ {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
+ {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 2)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
+ {{"flags may be" | printf "%-20s"}} {{.Flags.FlagNames}}
+
+Use "{{.CommandPath}} --help" for details.{{end}}
+`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	command := NewCmdRoot()
-	if err := command.Execute(); err != nil {
-		fmt.Println(err)
+	rootCmd := NewCmdRoot()
+	rootCmd.SetHelpTemplate(helpTmpl)
+	rootCmd.SetUsageTemplate(usageTmpl)
+	resetHelpFunc(rootCmd)
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-var context *model.Context
-
 func init() {
 	cobra.EnableCommandSorting = false
-	client = service.NewClient(model.ClientConfig, model.Credential)
-	context = model.GetContext(os.Stdout, model.ClientConfig)
 	cobra.OnInitialize(initialize)
-	model.ClientConfig.UserAgent = fmt.Sprintf("UCloud CLI v%s", version)
-	model.ClientConfig.TracerData["command"] = fmt.Sprintf("%v", os.Args)
+	Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
+}
+
+func resetHelpFunc(cmd *cobra.Command) {
+	for _, a := range os.Args {
+		if a == "-h" {
+			cmd.SetHelpTemplate(usageTmpl)
+		}
+	}
 }
 
 func initialize(cmd *cobra.Command) {
 	if global.debug {
-		model.ClientConfig.LogLevel = 5
-		model.ClientConfig.Logger = nil
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	userInfo, err := model.LoadUserInfo()
+	userInfo, err := LoadUserInfo()
 	if err == nil {
-		model.ClientConfig.TracerData["userName"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["userID"] = userInfo.UserEmail
-		model.ClientConfig.TracerData["companyName"] = userInfo.CompanyName
+		Cxt.AppendInfo("userName", userInfo.UserEmail)
+		Cxt.AppendInfo("companyName", userInfo.CompanyName)
 	} else {
-		context.AppendError(err)
+		Cxt.PrintErr(err)
 	}
 
-	//上报服务对Origin请求头有限制，必须以'.ucloud.cn'结尾，因此这里伪造了一个sdk.ucloud.cn,跟其他上报区分
-	model.ClientConfig.HTTPHeaders["Origin"] = "https://sdk.ucloud.cn"
-
-	if (cmd.Name() != "config" && cmd.Name() != "completion" && cmd.Name() != "version") && cmd.Parent().Name() != "config" {
+	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if config.PrivateKey == "" {
-			fmt.Println("private-key is empty. Execute command 'ucloud config' to configure your private-key")
+			Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
 		if config.PublicKey == "" {
-			fmt.Println("public-key is empty. Execute command 'ucloud config' to configure your public-key")
+			Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
-		if config.Region == "" {
-			fmt.Println("Default region is empty. Execute command 'ucloud config set region' to configure your default region")
-			os.Exit(0)
-		}
-		if config.ProjectID == "" {
-			fmt.Println("Default project-id is empty. Execute command 'ucloud config set project' to configure your default project-id")
-			os.Exit(0)
-		}
-	}
-}
-
-func bindGlobalParam(req request.Common) {
-	if global.region != "" {
-		req.SetRegion(global.region)
-	}
-	if global.projectID != "" {
-		req.SetProjectId(global.projectID)
 	}
 }
