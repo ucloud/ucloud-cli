@@ -1,49 +1,84 @@
-## UCloud Command Line Interface 
+##  <u>ucloud-cli 
+  
+- website: https://www.ucloud.cn/
 
-The UCloud Command Line Interface is a tool to manage your UCloud services. It's built on the [UCloud API](https://docs.ucloud.cn/api/summary/index).
+![](http://cli-ucloud-logo.sg.ufileos.com/ucloud.png)
 
-### Install UCloud CLI
+The ucloud-cli provides a unified command line interface to manage Ucloud services. It works through Golang SDK based on UCloud OpenAPI and support Linux, macOS, and Windows. 
 
-You can install UCloud CLI by Homebrew/Linuxbrew, downloading executable binary file or building from the source code by yourself.
+## Installation
 
-##### Homebrew(recommended)
-
-You can use [Homebrew](https://brew.sh/) on macOS or [Linuxbrew](http://linuxbrew.sh/) on Linux. After installing Homebrew or Linuxbrew,just type the following command to complete the installation.
-```
-brew install ucloud
-```
-##### Build from source code
-
-If you have installed golang, run the following commands to install the UCloud CLI.
+The easiest way to install ucloud-cli is to use home-brew for Linux and macOS users. This will install the package as well as all dependencies.
 
 ```
-$ mkdir -p $GOPATH/src/github.com/ucloud
+$ brew install ucloud
+```
+
+If you have the ucloud-cli installed and want to upgrade to the latest version you can run:
+
+```
+$ brew upgrade ucloud
+```
+
+**Note**
+
+If you come across error during the installation via home-brew, you may update the management package first.
+
+```
+$ brew update
+```
+
+**Build from the source code**
+
+For windows users, suggest build from the source code which require install Golang first. This also works for Linux and macOS.
+
+```
+$ mkdir -p $ GOPATH/src/github.com/ucloud
 $ cd $GOPATH/src/github.com/ucloud
 $ git clone https://github.com/ucloud/ucloud-cli.git
 $ cd ucloud-cli
 $ make install
 ```
 
-### Uninstall UCloud CLI
+## Command Completion
 
-Remove the executable file /usr/local/bin/ucloud and the directory $HOME/.ucloud
+The ucloud-cli include command completion feature and need configure it manually. Add following scripts to  ~/.bash_profile or ~/.bashrc 
 
-### Config UCloud CLI
-
-After install the cli, run 'ucloud init' to complete the cli configuration following the tips. Local settings will be saved in directory $HOME/.ucloud
-
-### Auto complete
-Run 'ucloud --completion' for help
-
-#### Bash shell 
-Please append the following scripts to file ~/.bash_profile or ~/.bashrc.
 ```
 complete -C /usr/local/bin/ucloud ucloud
 ```
 
-#### Zsh shell
-Please append the following scripts to file ~/.zshrc.
+**Zsh shell** please add following scripts to ~/.zshrc 
+
 ```
 autoload -U +X bashcompinit && bashcompinit
 complete -F /usr/local/bin/ucloud ucloud
+```
+
+## Getting Started
+
+Run the command to get started and configure ucloud-cli follow the steps. The public & private keys will be saved automatically and locally.
+
+```
+$ ucloud init
+```
+
+To reset the configurations, run the command:
+
+```
+$ ucloud config
+```
+
+To learn the usage and flags, run the command:
+
+```
+$ ucloud help
+```
+
+## Example
+
+Taking configure globalssh to uhost instance as an example, which will acceleare the instance SSH management efficiency (TCP 22 as default):
+
+```
+$ ucloud gssh create --area Washington --target-ip 128.14.225.161
 ```
