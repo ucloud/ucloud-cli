@@ -15,33 +15,13 @@
 			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
-			"checksumSHA1": "CxNwJP++vjUAyy3bbJnNss1Il9Q=",
-			"path": "github.com/moul/http2curl",
-			"revision": "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d",
-			"revisionTime": "2017-09-19T18:10:01Z"
-		},
-		{
-			"checksumSHA1": "UmYMPKuYIY/PPRYaixh8FuR0X64=",
-			"path": "github.com/parnurzeal/gorequest",
-			"revision": "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3",
-			"revisionTime": "2017-02-20T17:20:57Z"
-		},
-		{
 			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
 			"path": "github.com/pkg/errors",
 			"revision": "816c9085562cd7ee03e7f8188a1cfd942858cded",
 			"revisionTime": "2018-03-11T21:45:15Z"
 		},
 		{
-			"checksumSHA1": "+nVM+CEZGAopOrYlLifgWP+X01E=",
-			"path": "github.com/satori/go.uuid",
-			"revision": "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3",
-			"revisionTime": "2018-01-03T03:42:45Z",
-			"version": "v1.2.0",
-			"versionExact": "v1.2.0"
-		},
-		{
-			"checksumSHA1": "jK3uwh4rFn9LP7STDqPRer+lR8A=",
+			"checksumSHA1": "YcW7CHAiI6Ch0gmYpcL1759s8nU=",
 			"path": "github.com/spf13/cobra",
 			"revision": "8d114be902bc9f08717804830a55c48378108a28",
 			"revisionTime": "2018-09-15T22:22:04Z"
@@ -153,12 +133,6 @@
 			"path": "golang.org/x/crypto/ssh/terminal",
 			"revision": "614d502a4dac94afa3a6ce146bd1736da82514c6",
 			"revisionTime": "2018-07-28T08:01:47Z"
-		},
-		{
-			"checksumSHA1": "/yo2FIWZX5FozwxE8ZZol2ekbxE=",
-			"path": "golang.org/x/net/publicsuffix",
-			"revision": "922f4815f713f213882e8ef45e0d315b164d705c",
-			"revisionTime": "2018-08-02T22:19:15Z"
 		},
 		{
 			"checksumSHA1": "KaRjeh5/dENvIxpw0DK8UuhXA+8=",
