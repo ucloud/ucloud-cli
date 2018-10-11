@@ -1,4 +1,4 @@
-package util
+package base
 
 import (
 	"bufio"
@@ -136,24 +136,32 @@ func PrintJSON(dataSet interface{}) error {
 	return nil
 }
 
-//PrintTable 以表格方式打印数据集合
-func PrintTable(dataSet interface{}, fieldList []string) error {
+//PrintTableS 简化版表格打印，无需传表头，根据结构体反射解析
+func PrintTableS(dataSet interface{}) {
 	dataSetVal := reflect.ValueOf(dataSet)
+	fieldNameList := make([]string, 0)
+	if dataSetVal.Len() > 0 {
+		elemType := dataSetVal.Index(0).Type()
+		for i := 0; i < elemType.NumField(); i++ {
+			fieldNameList = append(fieldNameList, elemType.Field(i).Name)
+		}
+	}
+	if kind := dataSetVal.Kind(); kind == reflect.Slice || kind == reflect.Array {
+		displaySlice(dataSetVal, fieldNameList)
+	} else {
+		panic(fmt.Sprintf("Internal error, PrintTableS expect array or slice, accept %T", dataSet))
+	}
+}
 
+//PrintTable 以表格方式打印数据集合
+func PrintTable(dataSet interface{}, fieldList []string) {
+	dataSetVal := reflect.ValueOf(dataSet)
 	switch dataSetVal.Kind() {
 	case reflect.Slice, reflect.Array:
 		displaySlice(dataSetVal, fieldList)
-	case reflect.Map:
-		displayMap(dataSetVal, fieldList)
 	default:
-		return fmt.Errorf("PrintTable expect array,slice or map, accept %T", dataSet)
+		panic(fmt.Sprintf("PrintTable expect array,slice or map, accept %T", dataSet))
 	}
-	return nil
-}
-
-func displayMap(mapVal reflect.Value, fieldList []string) {
-	fmt.Println(mapVal, fieldList)
-	//todo
 }
 
 func displaySlice(listVal reflect.Value, fieldList []string) {
@@ -180,9 +188,12 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 		}
 		rowList = append(rowList, row)
 	}
+	printTable(rowList, fieldList, showFieldMap)
+}
 
+func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidthMap map[string]int) {
 	for _, field := range fieldList {
-		tmpl := "%-" + strconv.Itoa(showFieldMap[field]+GAP) + "s"
+		tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]+GAP) + "s"
 		fmt.Printf(tmpl, field)
 	}
 	fmt.Printf("\n")
@@ -190,7 +201,7 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 	for _, row := range rowList {
 		for _, field := range fieldList {
 			cutWidth := calcCutWidth(fmt.Sprintf("%v", row[field]))
-			tmpl := "%-" + strconv.Itoa(showFieldMap[field]-cutWidth+GAP) + "v"
+			tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]-cutWidth+GAP) + "v"
 			fmt.Printf(tmpl, row[field])
 		}
 		fmt.Printf("\n")
@@ -198,10 +209,10 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 }
 
 func calcCutWidth(text string) int {
-	set := []*unicode.RangeTable{unicode.Han}
+	set := []*unicode.RangeTable{unicode.Han, unicode.Punct}
 	width := 0
 	for _, r := range text {
-		if unicode.IsOneOf(set, r) {
+		if unicode.IsOneOf(set, r) && r > unicode.MaxLatin1 {
 			width++
 		}
 	}
@@ -209,10 +220,10 @@ func calcCutWidth(text string) int {
 }
 
 func calcWidth(text string) int {
-	set := []*unicode.RangeTable{unicode.Han}
+	set := []*unicode.RangeTable{unicode.Han, unicode.Punct}
 	width := 0
 	for _, r := range text {
-		if unicode.IsOneOf(set, r) {
+		if unicode.IsOneOf(set, r) && r > unicode.MaxLatin1 {
 			width += 2
 		} else {
 			width++

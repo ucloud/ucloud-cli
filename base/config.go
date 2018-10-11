@@ -1,4 +1,4 @@
-package util
+package base
 
 import (
 	"encoding/json"
@@ -130,7 +130,8 @@ func (p *Config) ListConfig(json bool) error {
 	if json {
 		return PrintJSON(tmpConfig)
 	}
-	return PrintTable([]Config{tmpConfig}, []string{"PublicKey", "PrivateKey", "Region", "Zone", "ProjectID"})
+	PrintTable([]Config{tmpConfig}, []string{"PublicKey", "PrivateKey", "Region", "Zone", "ProjectID"})
+	return nil
 }
 
 //ClearConfig 清空配置

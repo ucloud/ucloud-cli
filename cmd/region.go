@@ -24,7 +24,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdRegion ucloud region
@@ -74,20 +74,19 @@ func listRegion() error {
 	}
 	if resp.RetCode != 0 {
 		return fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+	}
+	regionList := make([]RegionTable, 0)
+	regionMap := make(map[string][]string)
+	for _, region := range resp.Regions {
+		regionMap[region.Region] = append(regionMap[region.Region], region.Zone)
+	}
+	for region, zones := range regionMap {
+		regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
+	}
+	if global.json {
+		PrintJSON(regionList)
 	} else {
-		regionList := make([]RegionTable, 0)
-		regionMap := make(map[string][]string)
-		for _, region := range resp.Regions {
-			regionMap[region.Region] = append(regionMap[region.Region], region.Zone)
-		}
-		for region, zones := range regionMap {
-			regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
-		}
-		if global.json {
-			PrintJSON(regionList)
-		} else {
-			err = PrintTable(regionList, []string{"Region", "Zones"})
-		}
+		PrintTable(regionList, []string{"Region", "Zones"})
 	}
 	return err
 }

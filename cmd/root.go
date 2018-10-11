@@ -21,7 +21,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID

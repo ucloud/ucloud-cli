@@ -22,7 +22,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/sdk"
 
 	"github.com/spf13/cobra"
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdEIP ucloud eip

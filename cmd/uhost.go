@@ -23,7 +23,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/sdk"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdUHost ucloud uhost
