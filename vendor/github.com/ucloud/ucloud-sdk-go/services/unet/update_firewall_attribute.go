@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // UpdateFirewallAttributeRequest is request schema for UpdateFirewallAttribute action
@@ -33,14 +32,14 @@ type UpdateFirewallAttributeResponse struct {
 
 // NewUpdateFirewallAttributeRequest will create request of UpdateFirewallAttribute action.
 func (c *UNetClient) NewUpdateFirewallAttributeRequest() *UpdateFirewallAttributeRequest {
-	cfg := c.client.GetConfig()
+	req := &UpdateFirewallAttributeRequest{}
 
-	return &UpdateFirewallAttributeRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // UpdateFirewallAttribute - 更新防火墙规则
@@ -50,7 +49,7 @@ func (c *UNetClient) UpdateFirewallAttribute(req *UpdateFirewallAttributeRequest
 
 	err = c.client.InvokeAction("UpdateFirewallAttribute", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

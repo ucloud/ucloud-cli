@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // CreateVPCIntercomRequest is request schema for CreateVPCIntercom action
@@ -33,14 +32,14 @@ type CreateVPCIntercomResponse struct {
 
 // NewCreateVPCIntercomRequest will create request of CreateVPCIntercom action.
 func (c *VPCClient) NewCreateVPCIntercomRequest() *CreateVPCIntercomRequest {
-	cfg := c.client.GetConfig()
+	req := &CreateVPCIntercomRequest{}
 
-	return &CreateVPCIntercomRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CreateVPCIntercom - 新建VPC互通关系
@@ -50,7 +49,7 @@ func (c *VPCClient) CreateVPCIntercom(req *CreateVPCIntercomRequest) (*CreateVPC
 
 	err = c.client.InvokeAction("CreateVPCIntercom", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

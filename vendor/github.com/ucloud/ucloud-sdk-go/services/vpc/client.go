@@ -1,16 +1,16 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 )
 
 type VPCClient struct {
-	client *sdk.Client
+	client *ucloud.Client
 }
 
-func NewClient(config *sdk.Config, credential *auth.Credential) *VPCClient {
-	client := sdk.NewClient(config, credential)
+func NewClient(config *ucloud.Config, credential *auth.Credential) *VPCClient {
+	client := ucloud.NewClient(config, credential)
 	return &VPCClient{
 		client: client,
 	}

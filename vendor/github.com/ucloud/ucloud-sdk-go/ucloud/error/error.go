@@ -1,4 +1,4 @@
-package error
+package uerr
 
 // Error is the ucloud sdk error
 type Error interface {

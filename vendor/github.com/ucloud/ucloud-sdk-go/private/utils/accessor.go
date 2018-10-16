@@ -25,6 +25,11 @@ func ValueAtPath(v interface{}, path string) (interface{}, error) {
 			return nil, errors.Errorf("path %s is invalid at index of array", path)
 		}
 
+		length := rv.Len()
+		if i >= length {
+			return nil, errors.Errorf("path %s is invalid, array has length %v, but got %v", path, length, i)
+		}
+
 		itemV := rv.Index(i)
 		if !itemV.IsValid() {
 			return nil, errors.Errorf("path %s is invalid for map", path)

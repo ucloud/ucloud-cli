@@ -24,6 +24,9 @@ type Common interface {
 
 	SetRequestTime(time.Time)
 	GetRequestTime() time.Time
+
+	SetRetryable(retryable bool)
+	GetRetryable() bool
 }
 
 // CommonBase is the base struct of common request
@@ -33,9 +36,10 @@ type CommonBase struct {
 	ProjectId *string
 
 	maxRetries  int
+	retryable   bool
 	retryCount  int
 	timeout     time.Duration
-	requestTIme time.Time
+	requestTime time.Time
 }
 
 // SetRetryCount will set retry count of request
@@ -51,11 +55,22 @@ func (c *CommonBase) GetRetryCount() int {
 // WithRetry will set max retry count of request
 func (c *CommonBase) WithRetry(maxRetries int) {
 	c.maxRetries = maxRetries
+	c.retryable = true
 }
 
 // GetMaxretries will return max retry count of request
 func (c *CommonBase) GetMaxretries() int {
 	return c.maxRetries
+}
+
+// SetRetryable will set if the request is retryable
+func (c *CommonBase) SetRetryable(retryable bool) {
+	c.retryable = retryable
+}
+
+// GetRetryable will return if the request is retryable
+func (c *CommonBase) GetRetryable() bool {
+	return c.retryable
 }
 
 // WithTimeout will set timeout of request
@@ -69,17 +84,20 @@ func (c *CommonBase) GetTimeout() time.Duration {
 }
 
 // SetRequestTime will set timeout of request
-func (c *CommonBase) SetRequestTime(requestTIme time.Time) {
-	c.requestTIme = requestTIme
+func (c *CommonBase) SetRequestTime(requestTime time.Time) {
+	c.requestTime = requestTime
 }
 
 // GetRequestTime will get timeout of request
 func (c *CommonBase) GetRequestTime() time.Time {
-	return c.requestTIme
+	return c.requestTime
 }
 
 // GetAction will return action of request
 func (c *CommonBase) GetAction() string {
+	if c.Action == nil {
+		return ""
+	}
 	return *c.Action
 }
 

@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // AllocateShareBandwidthRequest is request schema for AllocateShareBandwidth action
@@ -32,18 +31,21 @@ type AllocateShareBandwidthRequest struct {
 // AllocateShareBandwidthResponse is response schema for AllocateShareBandwidth action
 type AllocateShareBandwidthResponse struct {
 	response.CommonBase
+
+	// 共享带宽 ID
+	ShareBandwidthId string
 }
 
 // NewAllocateShareBandwidthRequest will create request of AllocateShareBandwidth action.
 func (c *UNetClient) NewAllocateShareBandwidthRequest() *AllocateShareBandwidthRequest {
-	cfg := c.client.GetConfig()
+	req := &AllocateShareBandwidthRequest{}
 
-	return &AllocateShareBandwidthRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // AllocateShareBandwidth - 开通共享带宽
@@ -53,7 +55,7 @@ func (c *UNetClient) AllocateShareBandwidth(req *AllocateShareBandwidthRequest) 
 
 	err = c.client.InvokeAction("AllocateShareBandwidth", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

@@ -4,14 +4,13 @@
 package pathx
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeGlobalSSHAreaRequest is request schema for DescribeGlobalSSHArea action
 type DescribeGlobalSSHAreaRequest struct {
 	request.CommonBase
-
 }
 
 // DescribeGlobalSSHAreaResponse is response schema for DescribeGlobalSSHArea action
@@ -23,13 +22,17 @@ type DescribeGlobalSSHAreaResponse struct {
 
 	// 提示信息
 	Message string
-
 }
 
 // NewDescribeGlobalSSHAreaRequest will create request of DescribeGlobalSSHArea action.
 func (c *PathXClient) NewDescribeGlobalSSHAreaRequest() *DescribeGlobalSSHAreaRequest {
-    req := &DescribeGlobalSSHAreaRequest{}
-    c.client.SetupRequest(req, "DescribeGlobalSSHArea")
+	req := &DescribeGlobalSSHAreaRequest{}
+
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
 	return req
 }
 
@@ -45,4 +48,3 @@ func (c *PathXClient) DescribeGlobalSSHArea(req *DescribeGlobalSSHAreaRequest) (
 
 	return &res, nil
 }
-

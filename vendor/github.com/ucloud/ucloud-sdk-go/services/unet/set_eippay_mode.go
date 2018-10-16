@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // SetEIPPayModeRequest is request schema for SetEIPPayMode action
@@ -30,14 +29,14 @@ type SetEIPPayModeResponse struct {
 
 // NewSetEIPPayModeRequest will create request of SetEIPPayMode action.
 func (c *UNetClient) NewSetEIPPayModeRequest() *SetEIPPayModeRequest {
-	cfg := c.client.GetConfig()
+	req := &SetEIPPayModeRequest{}
 
-	return &SetEIPPayModeRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // SetEIPPayMode - 设置弹性IP计费模式, 切换时会涉及付费/退费.
@@ -47,7 +46,7 @@ func (c *UNetClient) SetEIPPayMode(req *SetEIPPayModeRequest) (*SetEIPPayModeRes
 
 	err = c.client.InvokeAction("SetEIPPayMode", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

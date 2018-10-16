@@ -1,4 +1,4 @@
-package error
+package uerr
 
 import (
 	"fmt"
@@ -48,7 +48,7 @@ func NewServerCodeError(retCode int, message string) ServerError {
 		message:    message,
 		name:       ErrRetCode,
 		err:        errors.Errorf("%s", message),
-		retryable:  false,
+		retryable:  retCode >= 2000,
 	}
 }
 

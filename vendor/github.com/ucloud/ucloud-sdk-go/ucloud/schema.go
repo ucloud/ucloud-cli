@@ -1,9 +1,9 @@
-package sdk
+package ucloud
 
 import (
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk/version"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
 )
 
 // Version is the version of sdk

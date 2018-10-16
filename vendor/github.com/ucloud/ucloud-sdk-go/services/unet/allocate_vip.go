@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // AllocateVIPRequest is request schema for AllocateVIP action
@@ -51,14 +50,14 @@ type AllocateVIPResponse struct {
 
 // NewAllocateVIPRequest will create request of AllocateVIP action.
 func (c *UNetClient) NewAllocateVIPRequest() *AllocateVIPRequest {
-	cfg := c.client.GetConfig()
+	req := &AllocateVIPRequest{}
 
-	return &AllocateVIPRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // AllocateVIP - 根据提供信息，申请内网VIP(Virtual IP），多用于高可用程序作为漂移IP。
@@ -68,7 +67,7 @@ func (c *UNetClient) AllocateVIP(req *AllocateVIPRequest) (*AllocateVIPResponse,
 
 	err = c.client.InvokeAction("AllocateVIP", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

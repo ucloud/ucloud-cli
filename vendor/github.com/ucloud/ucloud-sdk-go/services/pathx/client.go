@@ -1,16 +1,16 @@
 package pathx
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 )
 
 type PathXClient struct {
-	client *sdk.Client
+	client *ucloud.Client
 }
 
-func NewClient(config *sdk.Config, credential *auth.Credential) *PathXClient {
-	client := sdk.NewClient(config, credential)
+func NewClient(config *ucloud.Config, credential *auth.Credential) *PathXClient {
+	client := ucloud.NewClient(config, credential)
 	return &PathXClient{
 		client: client,
 	}

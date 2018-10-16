@@ -3,10 +3,11 @@ package uhost
 import (
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	uerr "github.com/ucloud/ucloud-sdk-go/sdk/error"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/utils"
+	"github.com/ucloud/ucloud-sdk-go/private/utils"
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
 
 type WaitUntilUHostInstanceStateRequest struct {
@@ -25,8 +26,8 @@ func (c *UHostClient) NewWaitUntilUHostInstanceStateRequest() *WaitUntilUHostIns
 
 	return &WaitUntilUHostInstanceStateRequest{
 		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
+			Region:    ucloud.String(cfg.Region),
+			ProjectId: ucloud.String(cfg.ProjectId),
 		},
 	}
 }
@@ -34,17 +35,19 @@ func (c *UHostClient) NewWaitUntilUHostInstanceStateRequest() *WaitUntilUHostIns
 // WaitUntilUHostInstanceState will pending current goroutine until the state has changed to expected state.
 func (c *UHostClient) WaitUntilUHostInstanceState(req *WaitUntilUHostInstanceStateRequest) error {
 	waiter := utils.FuncWaiter{
-		Interval:    sdk.TimeDurationValue(req.Interval),
-		MaxAttempts: sdk.IntValue(req.MaxAttempts),
-		IgnoreError: sdk.BoolValue(req.IgnoreError),
+		Interval:    ucloud.TimeDurationValue(req.Interval),
+		MaxAttempts: ucloud.IntValue(req.MaxAttempts),
+		IgnoreError: ucloud.BoolValue(req.IgnoreError),
 		Checker: func() (bool, error) {
 			resp, err := c.DescribeUHostInstance(req.DescribeRequest)
 
 			if err != nil {
 				skipErrors := []string{uerr.ErrNetwork, uerr.ErrHTTPStatus, uerr.ErrRetCode}
 				if uErr, ok := err.(uerr.Error); ok && utils.IsStringIn(uErr.Name(), skipErrors) {
+					log.Infof("skip error for wait resource state, %s", uErr)
 					return false, nil
 				}
+				log.Infof("wait for resource state is ready, %s", err)
 				return false, err
 			}
 

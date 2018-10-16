@@ -4,9 +4,8 @@
 package uaccount
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // TerminateProjectRequest is request schema for TerminateProject action
@@ -21,14 +20,14 @@ type TerminateProjectResponse struct {
 
 // NewTerminateProjectRequest will create request of TerminateProject action.
 func (c *UAccountClient) NewTerminateProjectRequest() *TerminateProjectRequest {
-	cfg := c.client.GetConfig()
+	req := &TerminateProjectRequest{}
 
-	return &TerminateProjectRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // TerminateProject - 删除项目
@@ -38,7 +37,7 @@ func (c *UAccountClient) TerminateProject(req *TerminateProjectRequest) (*Termin
 
 	err = c.client.InvokeAction("TerminateProject", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

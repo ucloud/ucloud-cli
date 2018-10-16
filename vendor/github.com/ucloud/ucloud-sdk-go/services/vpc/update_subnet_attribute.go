@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // UpdateSubnetAttributeRequest is request schema for UpdateSubnetAttribute action
@@ -30,14 +29,14 @@ type UpdateSubnetAttributeResponse struct {
 
 // NewUpdateSubnetAttributeRequest will create request of UpdateSubnetAttribute action.
 func (c *VPCClient) NewUpdateSubnetAttributeRequest() *UpdateSubnetAttributeRequest {
-	cfg := c.client.GetConfig()
+	req := &UpdateSubnetAttributeRequest{}
 
-	return &UpdateSubnetAttributeRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // UpdateSubnetAttribute - 更新子网信息
@@ -47,7 +46,7 @@ func (c *VPCClient) UpdateSubnetAttribute(req *UpdateSubnetAttributeRequest) (*U
 
 	err = c.client.InvokeAction("UpdateSubnetAttribute", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

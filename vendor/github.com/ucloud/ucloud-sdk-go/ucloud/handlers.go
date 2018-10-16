@@ -1,14 +1,14 @@
-package sdk
+package ucloud
 
 import (
 	"math/rand"
 	"time"
 
-	uerr "github.com/ucloud/ucloud-sdk-go/sdk/error"
-	"github.com/ucloud/ucloud-sdk-go/sdk/log"
-	"github.com/ucloud/ucloud-sdk-go/sdk/protocol/http"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // ReponseHandler receive response and write data into this response memory area
@@ -21,21 +21,25 @@ var defaultResponseHandlers = []ReponseHandler{errorHandler, logHandler, retryHa
 var defaultHttpResponseHandlers = []HttpReponseHandler{errorHTTPHandler, logDebugHTTPHandler}
 
 func retryHandler(c *Client, req request.Common, resp response.Common, err error) (response.Common, error) {
-	for retryCount := 1; err != nil && err.(uerr.Error).Retryable(); retryCount++ {
-		// if max retries number is reached, stop and raise last error
-		if retryCount > req.GetMaxretries() {
-			break
-		}
+	retryCount := req.GetRetryCount()
+	retryCount++
+	req.SetRetryCount(retryCount)
 
-		// use exponential backoff constant as retry delay
-		delay := getExpBackoffDelay(retryCount)
-		time.Sleep(delay)
-
-		req.SetRetryCount(retryCount)
-
-		// the resp will be changed after invoke
-		err = c.InvokeAction(req.GetAction(), req, resp)
+	if !req.GetRetryable() || err == nil || !err.(uerr.Error).Retryable() {
+		return resp, err
 	}
+
+	// if max retries number is reached, stop and raise last error
+	if req.GetRetryCount() > req.GetMaxretries() {
+		return resp, err
+	}
+
+	// use exponential backoff constant as retry delay
+	delay := getExpBackoffDelay(retryCount)
+	<-time.After(delay)
+
+	// the resp will be changed after invoke
+	err = c.InvokeAction(req.GetAction(), req, resp)
 
 	return resp, err
 }
@@ -79,7 +83,7 @@ func errorHTTPHandler(c *Client, req *http.HttpRequest, resp *http.HttpResponse,
 func logHandler(c *Client, req request.Common, resp response.Common, err error) (response.Common, error) {
 	action := req.GetAction()
 	if err != nil {
-		log.Errorf("do %s failed, %s", action, err)
+		log.Warnf("do %s failed, %s", action, err)
 	} else {
 		log.Infof("do %s successful!", action)
 	}
@@ -87,7 +91,6 @@ func logHandler(c *Client, req request.Common, resp response.Common, err error) 
 }
 
 func logDebugHTTPHandler(c *Client, req *http.HttpRequest, resp *http.HttpResponse, err error) (*http.HttpResponse, error) {
-	// TODO: move request debugging log to request handler
 	log.Debugf("%s", req)
 
 	if err != nil {

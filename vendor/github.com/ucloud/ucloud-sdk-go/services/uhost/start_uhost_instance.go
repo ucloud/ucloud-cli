@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // StartUHostInstanceRequest is request schema for StartUHostInstance action
@@ -33,14 +32,14 @@ type StartUHostInstanceResponse struct {
 
 // NewStartUHostInstanceRequest will create request of StartUHostInstance action.
 func (c *UHostClient) NewStartUHostInstanceRequest() *StartUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &StartUHostInstanceRequest{}
 
-	return &StartUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // StartUHostInstance - 启动处于关闭状态的UHost实例，需要指定数据中心及UHostID两个参数的值。
@@ -50,7 +49,7 @@ func (c *UHostClient) StartUHostInstance(req *StartUHostInstanceRequest) (*Start
 
 	err = c.client.InvokeAction("StartUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

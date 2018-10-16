@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // ReinstallUHostInstanceRequest is request schema for ReinstallUHostInstance action
@@ -45,14 +44,14 @@ type ReinstallUHostInstanceResponse struct {
 
 // NewReinstallUHostInstanceRequest will create request of ReinstallUHostInstance action.
 func (c *UHostClient) NewReinstallUHostInstanceRequest() *ReinstallUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &ReinstallUHostInstanceRequest{}
 
-	return &ReinstallUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // ReinstallUHostInstance - 重新安装指定UHost实例的操作系统
@@ -62,7 +61,7 @@ func (c *UHostClient) ReinstallUHostInstance(req *ReinstallUHostInstanceRequest)
 
 	err = c.client.InvokeAction("ReinstallUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

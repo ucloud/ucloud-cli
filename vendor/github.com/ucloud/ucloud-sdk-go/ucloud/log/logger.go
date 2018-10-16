@@ -26,8 +26,10 @@ var (
 	InfoLevel  = Level(logrus.InfoLevel)
 	DebugLevel = Level(logrus.DebugLevel)
 
-	SetLevel = func(level Level) { logrus.SetLevel(logrus.Level(level)) }
-	GetLevel = func() Level { return Level(logrus.GetLevel()) }
+	SetLevel     = func(level Level) { logrus.SetLevel(logrus.Level(level)) }
+	GetLevel     = func() Level { return Level(logrus.GetLevel()) }
+	SetOutput    = logrus.SetOutput
+	SetFormatter = logrus.SetFormatter
 
 	WithError = logrus.WithError
 	WithField = logrus.WithField

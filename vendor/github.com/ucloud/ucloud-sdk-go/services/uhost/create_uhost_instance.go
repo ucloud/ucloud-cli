@@ -3,17 +3,10 @@ package uhost
 import (
 	"encoding/base64"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
-
-type UHostDisk struct {
-	Size       *string `required:"true"`
-	Type       *string `required:"true"`
-	IsBoot     *bool   `required:"true"`
-	BackupType *string `required:"false"`
-}
 
 // CreateUHostInstanceRequest is request schema for CreateUHostInstance action
 type CreateUHostInstanceRequest struct {
@@ -28,7 +21,7 @@ type CreateUHostInstanceRequest struct {
 	// UHost密码，LoginMode为Password时此项必须（密码需使用base64进行编码）
 	Password *string `required:"true"`
 
-	// 磁盘大小，单位GB。系统盘的默认大小为镜像大小。数据盘必传。
+	// 磁盘列表
 	Disks []UHostDisk `required:"true"`
 
 	// UHost实例名称。默认：UHost
@@ -129,25 +122,25 @@ type CreateUHostInstanceResponse struct {
 
 // NewCreateUHostInstanceRequest will create request of CreateUHostInstance action.
 func (c *UHostClient) NewCreateUHostInstanceRequest() *CreateUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &CreateUHostInstanceRequest{}
 
-	return &CreateUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CreateUHostInstance - 指定数据中心，根据资源使用量创建指定数量的UHost实例。
 func (c *UHostClient) CreateUHostInstance(req *CreateUHostInstanceRequest) (*CreateUHostInstanceResponse, error) {
 	var err error
 	var res CreateUHostInstanceResponse
-	req.Password = sdk.String(base64.StdEncoding.EncodeToString([]byte(sdk.StringValue(req.Password))))
+	req.Password = ucloud.String(base64.StdEncoding.EncodeToString([]byte(ucloud.StringValue(req.Password))))
 
 	err = c.client.InvokeAction("CreateUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

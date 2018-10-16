@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // UpdateULBAttributeRequest is request schema for UpdateULBAttribute action
@@ -33,14 +32,14 @@ type UpdateULBAttributeResponse struct {
 
 // NewUpdateULBAttributeRequest will create request of UpdateULBAttribute action.
 func (c *ULBClient) NewUpdateULBAttributeRequest() *UpdateULBAttributeRequest {
-	cfg := c.client.GetConfig()
+	req := &UpdateULBAttributeRequest{}
 
-	return &UpdateULBAttributeRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // UpdateULBAttribute - 更新ULB名字业务组备注等属性字段
@@ -50,7 +49,7 @@ func (c *ULBClient) UpdateULBAttribute(req *UpdateULBAttributeRequest) (*UpdateU
 
 	err = c.client.InvokeAction("UpdateULBAttribute", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

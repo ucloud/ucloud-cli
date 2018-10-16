@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DeleteSubnetRequest is request schema for DeleteSubnet action
@@ -24,14 +23,14 @@ type DeleteSubnetResponse struct {
 
 // NewDeleteSubnetRequest will create request of DeleteSubnet action.
 func (c *VPCClient) NewDeleteSubnetRequest() *DeleteSubnetRequest {
-	cfg := c.client.GetConfig()
+	req := &DeleteSubnetRequest{}
 
-	return &DeleteSubnetRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DeleteSubnet - 删除子网
@@ -41,7 +40,7 @@ func (c *VPCClient) DeleteSubnet(req *DeleteSubnetRequest) (*DeleteSubnetRespons
 
 	err = c.client.InvokeAction("DeleteSubnet", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

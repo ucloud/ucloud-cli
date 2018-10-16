@@ -1,9 +1,9 @@
-package sdk
+package ucloud
 
 import (
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
 type Config struct {
@@ -47,7 +47,7 @@ func NewConfig() Config {
 		BaseUrl:    "https://api.ucloud.cn",
 		Timeout:    30 * time.Second,
 		MaxRetries: 0,
-		LogLevel:   log.InfoLevel,
+		LogLevel:   log.WarnLevel,
 	}
 	return cfg
 }

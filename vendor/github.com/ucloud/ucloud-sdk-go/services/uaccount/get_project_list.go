@@ -4,9 +4,8 @@
 package uaccount
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // GetProjectListRequest is request schema for GetProjectList action
@@ -30,14 +29,14 @@ type GetProjectListResponse struct {
 
 // NewGetProjectListRequest will create request of GetProjectList action.
 func (c *UAccountClient) NewGetProjectListRequest() *GetProjectListRequest {
-	cfg := c.client.GetConfig()
+	req := &GetProjectListRequest{}
 
-	return &GetProjectListRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // GetProjectList - 获取项目列表
@@ -47,7 +46,7 @@ func (c *UAccountClient) GetProjectList(req *GetProjectListRequest) (*GetProject
 
 	err = c.client.InvokeAction("GetProjectList", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

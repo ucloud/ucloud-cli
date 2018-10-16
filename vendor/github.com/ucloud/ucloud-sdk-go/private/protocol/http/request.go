@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/ucloud/ucloud-sdk-go/sdk/utils"
+	"github.com/ucloud/ucloud-sdk-go/private/utils"
 )
 
 var avaliableHTTPMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTION", "HEAD", "PATCH"}

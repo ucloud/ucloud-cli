@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // ModifyUHostInstanceNameRequest is request schema for ModifyUHostInstanceName action
@@ -33,14 +32,14 @@ type ModifyUHostInstanceNameResponse struct {
 
 // NewModifyUHostInstanceNameRequest will create request of ModifyUHostInstanceName action.
 func (c *UHostClient) NewModifyUHostInstanceNameRequest() *ModifyUHostInstanceNameRequest {
-	cfg := c.client.GetConfig()
+	req := &ModifyUHostInstanceNameRequest{}
 
-	return &ModifyUHostInstanceNameRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // ModifyUHostInstanceName - 修改指定UHost实例名称，需要给出数据中心，UHostId，及新的实例名称。
@@ -50,7 +49,7 @@ func (c *UHostClient) ModifyUHostInstanceName(req *ModifyUHostInstanceNameReques
 
 	err = c.client.InvokeAction("ModifyUHostInstanceName", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

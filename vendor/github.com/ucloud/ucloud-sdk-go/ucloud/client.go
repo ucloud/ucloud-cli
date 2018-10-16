@@ -1,16 +1,16 @@
-package sdk
+package ucloud
 
 import (
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
-	"github.com/ucloud/ucloud-sdk-go/sdk/log"
-	"github.com/ucloud/ucloud-sdk-go/sdk/protocol/http"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
-//Client 客户端
+// Client 客户端
 type Client struct {
 	credential *auth.Credential
 	config     *Config
@@ -45,7 +45,7 @@ func (c *Client) GetConfig() *Config {
 
 // InvokeAction will do an action request from a request struct and set response value into res struct pointer
 func (c *Client) InvokeAction(action string, req request.Common, resp response.Common) error {
-	c.SetupRequest(req, action)
+	req.SetAction(action)
 	req.SetRequestTime(time.Now())
 
 	httpReq, err := c.buildHTTPRequest(req)
@@ -65,7 +65,7 @@ func (c *Client) InvokeAction(action string, req request.Common, resp response.C
 		httpResp, err = handler(c, httpReq, httpResp, err)
 	}
 
-	err = c.UnmarshalHTTPReponse(httpResp, resp)
+	err = c.unmarshalHTTPReponse(httpResp, resp)
 	if err != nil {
 		return err
 	}

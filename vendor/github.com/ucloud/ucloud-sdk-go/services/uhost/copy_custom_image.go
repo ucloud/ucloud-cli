@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // CopyCustomImageRequest is request schema for CopyCustomImage action
@@ -42,14 +41,14 @@ type CopyCustomImageResponse struct {
 
 // NewCopyCustomImageRequest will create request of CopyCustomImage action.
 func (c *UHostClient) NewCopyCustomImageRequest() *CopyCustomImageRequest {
-	cfg := c.client.GetConfig()
+	req := &CopyCustomImageRequest{}
 
-	return &CopyCustomImageRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CopyCustomImage - 复制自制镜像
@@ -59,7 +58,7 @@ func (c *UHostClient) CopyCustomImage(req *CopyCustomImageRequest) (*CopyCustomI
 
 	err = c.client.InvokeAction("CopyCustomImage", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil
