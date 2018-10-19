@@ -8,10 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/auth"
-	service "github.com/ucloud/ucloud-sdk-go/services"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 )
 
 const configFile = "config.json"
@@ -204,5 +203,5 @@ func init() {
 	SdkClient = sdk.NewClient(ClientConfig, Credential)
 
 	//bizClient 用于调用业务接口
-	BizClient = service.NewClient(ClientConfig, Credential)
+	BizClient = NewClient(ClientConfig, Credential)
 }

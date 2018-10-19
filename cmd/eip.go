@@ -19,9 +19,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-
 	"github.com/spf13/cobra"
+
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+
 	. "github.com/ucloud/ucloud-cli/base"
 )
 
@@ -133,9 +134,9 @@ func NewCmdEIPAllocate() *cobra.Command {
 	req.Name = cmd.Flags().String("name", "EIP", "Name of your EIP.")
 	req.Remark = cmd.Flags().String("remark", "", "Remark of your EIP.")
 	req.CouponId = cmd.Flags().String("coupon-id", "", "Coupon ID, The Coupon can deducte part of the payment")
-	cmd.Flags().SetFlagValues("line", []string{"BGP", "International"})
-	cmd.Flags().SetFlagValues("charge-mode", []string{"Bandwidth", "Traffic", "ShareBandwidth"})
-	cmd.Flags().SetFlagValues("charge-type", []string{"Month", "Year", "Dynamic", "Trial"})
+	cmd.Flags().SetFlagValues("line", "BGP", "International")
+	cmd.Flags().SetFlagValues("charge-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	cmd.MarkFlagRequired("line")
 	cmd.MarkFlagRequired("bandwidth")
 	return cmd

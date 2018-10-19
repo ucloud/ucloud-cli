@@ -186,8 +186,8 @@ func NewCmdGsshCreate() *cobra.Command {
 	req.CouponId = cmd.Flags().String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
 	cmd.MarkFlagRequired("area")
 	cmd.MarkFlagRequired("target-ip")
-	cmd.Flags().SetFlagValues("area", []string{"LosAngeles", "Singapore", "HongKong", "Tokyo", "Washington", "Frankfurt"})
-	cmd.Flags().SetFlagValues("charge-type", []string{"Month", "Year", "Dynamic", "Trial"})
+	cmd.Flags().SetFlagValues("area", "LosAngeles", "Singapore", "HongKong", "Tokyo", "Washington", "Frankfurt")
+	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	return cmd
 }
 

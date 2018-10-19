@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	flag "github.com/spf13/pflag"
 )
@@ -1054,12 +1055,41 @@ func completeFlagValues(cmd *Command, args []string, word string) {
 		return
 	}
 
-	if _flag.Annotations != nil {
-		values := _flag.Annotations[flag.BashCompleteFlagValues]
-		for _, v := range values {
+	values := cmd.Flags().GetFlagValues(_flag.Name)
+	for _, v := range values {
+		if strings.HasPrefix(v, word) {
+			fmt.Fprintln(cmd.OutOrStdout(), v)
+		}
+	}
+
+	fetchFn := cmd.Flags().GetFlagValuesFunc(_flag.Name)
+	if fetchFn == nil {
+		return
+	}
+	fetchChan := make(chan string, 0)
+	go func() {
+		for _, item := range fetchFn() {
+			fetchChan <- item
+		}
+		close(fetchChan)
+	}()
+	timeoutDur, _ := time.ParseDuration("3s")
+	timeoutChan := time.After(timeoutDur)
+	intervalChan := time.Tick(time.Second / 1000)
+
+loop:
+	for range intervalChan {
+		select {
+		case v, ok := <-fetchChan:
+			if ok == false {
+				break loop
+			}
 			if strings.HasPrefix(v, word) {
 				fmt.Fprintln(cmd.OutOrStdout(), v)
 			}
+
+		case <-timeoutChan:
+			break loop
 		}
 	}
 }

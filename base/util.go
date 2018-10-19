@@ -13,10 +13,9 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	uerr "github.com/ucloud/ucloud-sdk-go/sdk/error"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
-	service "github.com/ucloud/ucloud-sdk-go/services"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
 )
@@ -34,7 +33,7 @@ var Cxt = model.GetContext(os.Stdout)
 var SdkClient *sdk.Client
 
 //BizClient 用于调用业务接口
-var BizClient *service.Client
+var BizClient *Client
 
 //GetHomePath 获取家目录
 func GetHomePath() string {

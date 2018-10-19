@@ -125,6 +125,12 @@ const (
 
 	//BashCompleteFlagValues the key in Flag.Annotations
 	BashCompleteFlagValues = "bash_complete_flag_values"
+
+	//BashCompleteFlagAsyncValues the key in Flag.Data
+	BashCompleteFlagAsyncValues = "bash_complete_flag_async_values"
+
+	//BashCompleteFlagValuesFunc the key in Flag.Data
+	BashCompleteFlagValuesFunc = "bash_complete_flag_values_func"
 )
 
 // ParseErrorsWhitelist defines the parsing errors that can be ignored
@@ -172,17 +178,18 @@ type FlagSet struct {
 
 // A Flag represents the state of a flag.
 type Flag struct {
-	Name                string              // name as it appears on command line
-	Shorthand           string              // one-letter abbreviated flag
-	Usage               string              // help message
-	Value               Value               // value as set
-	DefValue            string              // default value (as text); for usage message
-	Changed             bool                // If the user set the value (or if left to default)
-	NoOptDefVal         string              // default value (as text); if the flag is on the command line without any options
-	Deprecated          string              // If this flag is deprecated, this string is the new or now thing to use
-	Hidden              bool                // used by cobra.Command to allow flags to be hidden from help/usage text
-	ShorthandDeprecated string              // If the shorthand of this flag is deprecated, this string is the new or now thing to use
-	Annotations         map[string][]string // used by cobra.Command bash autocomple code
+	Name                string                 // name as it appears on command line
+	Shorthand           string                 // one-letter abbreviated flag
+	Usage               string                 // help message
+	Value               Value                  // value as set
+	DefValue            string                 // default value (as text); for usage message
+	Changed             bool                   // If the user set the value (or if left to default)
+	NoOptDefVal         string                 // default value (as text); if the flag is on the command line without any options
+	Deprecated          string                 // If this flag is deprecated, this string is the new or now thing to use
+	Hidden              bool                   // used by cobra.Command to allow flags to be hidden from help/usage text
+	ShorthandDeprecated string                 // If the shorthand of this flag is deprecated, this string is the new or now thing to use
+	Annotations         map[string][]string    // used by cobra.Command bash autocomple code
+	Data                map[string]interface{} // used by cobra.Command bash autocomple flag values
 }
 
 // Value is the interface to the dynamic value stored in a flag.
@@ -494,22 +501,39 @@ func (f *FlagSet) SetAnnotation(name, key string, values []string) error {
 	return nil
 }
 
-//SetFlagValues set values for a flag. Useful when auto completing the flag value
-func (f *FlagSet) SetFlagValues(name string, values []string) error {
+// SetFlagValuesFunc set a func which will be called to fetch flag values.
+func (f *FlagSet) SetFlagValuesFunc(name string, fn func() []string) {
+	flag := f.Lookup(name)
+	if flag == nil {
+		return
+	}
+	if flag.Data == nil {
+		flag.Data = map[string]interface{}{}
+	}
+	flag.Data[BashCompleteFlagValuesFunc] = fn
+}
+
+// GetFlagValuesFunc get the func that has been set to fetch flag values.
+func (f *FlagSet) GetFlagValuesFunc(name string) func() []string {
+	flag := f.Lookup(name)
+	if flag == nil || flag.Data == nil {
+		return nil
+	}
+	return flag.Data[BashCompleteFlagValuesFunc].(func() []string)
+}
+
+// SetFlagValues set values for a flag. Useful when auto completing the flag value
+func (f *FlagSet) SetFlagValues(name string, values ...string) error {
 	return f.SetAnnotation(name, BashCompleteFlagValues, values)
 }
 
-//GetFlagValues set values for a flag. Useful when auto completing the flag value
-func (f *FlagSet) GetFlagValues(name string) ([]string, error) {
-	normalName := f.normalizeFlagName(name)
-	flag, ok := f.formal[normalName]
-	if !ok {
-		return nil, fmt.Errorf("no such flag -%v", name)
+// GetFlagValues get values from the flag. Useful when auto completing the flag value
+func (f *FlagSet) GetFlagValues(name string) []string {
+	flag := f.Lookup(name)
+	if flag == nil || flag.Annotations == nil {
+		return nil
 	}
-	if flag.Annotations == nil {
-		flag.Annotations = map[string][]string{}
-	}
-	return flag.Annotations[BashCompleteFlagValues], nil
+	return flag.Annotations[BashCompleteFlagValues]
 }
 
 // Changed returns true if the flag was explicitly set during Parse() and false
