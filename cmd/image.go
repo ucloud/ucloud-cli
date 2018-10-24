@@ -75,7 +75,7 @@ func NewCmdUImageList() *cobra.Command {
 						list = append(list, row)
 					}
 				}
-				PrintTable(list, []string{"ImageName", "ImageID", "BasicImage", "ExtensibleFeature", "CreationTime", "State"})
+				PrintTable(list, []string{"ImageName", "ImageID", "BasicImage", "ExtensibleFeature", "CreationTime"})
 			}
 		},
 	}
@@ -87,5 +87,6 @@ func NewCmdUImageList() *cobra.Command {
 	req.ImageId = cmd.Flags().String("image-id", "", "iamge id such as 'uimage-xxx'")
 	req.Offset = cmd.Flags().Int("offset", 0, "offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 500, "max count")
+	cmd.Flags().SetFlagValues("image-type", "Base", "Business", "Custom")
 	return cmd
 }

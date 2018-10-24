@@ -35,12 +35,29 @@ func NewCmdRegion() *cobra.Command {
 		Long:    "List all region and zone",
 		Example: "ucloud region",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := listRegion(); err != nil {
-				Cxt.PrintErr(err)
+			regionMap, err := fetchRegion()
+			if err != nil {
+				HandleError(err)
+				return
+			}
+			regionList := make([]RegionTable, 0)
+			for region, zones := range regionMap {
+				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
+			}
+			if global.json {
+				PrintJSON(regionList)
+			} else {
+				PrintTableS(regionList)
 			}
 		},
 	}
 	return cmd
+}
+
+//RegionTable 为显示region表格创建的类型
+type RegionTable struct {
+	Region string
+	Zones  string
 }
 
 func getDefaultRegion() (string, string, error) {
@@ -60,35 +77,17 @@ func getDefaultRegion() (string, string, error) {
 	return "", "", fmt.Errorf("No default region")
 }
 
-//RegionTable 为显示region表格创建的类型
-type RegionTable struct {
-	Region string
-	Zones  string
-}
-
-func listRegion() error {
+func fetchRegion() (map[string][]string, error) {
 	req := &uaccount.GetRegionRequest{}
 	resp, err := BizClient.GetRegion(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if resp.RetCode != 0 {
-		return fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
-	}
-	regionList := make([]RegionTable, 0)
 	regionMap := make(map[string][]string)
 	for _, region := range resp.Regions {
 		regionMap[region.Region] = append(regionMap[region.Region], region.Zone)
 	}
-	for region, zones := range regionMap {
-		regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
-	}
-	if global.json {
-		PrintJSON(regionList)
-	} else {
-		PrintTable(regionList, []string{"Region", "Zones"})
-	}
-	return err
+	return regionMap, nil
 }
 
 func getDefaultProject() (string, string, error) {

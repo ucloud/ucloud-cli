@@ -15,9 +15,9 @@
 package cmd
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
+
+	"github.com/ucloud/ucloud-cli/ux"
 
 	"github.com/spf13/cobra"
 
@@ -46,16 +46,12 @@ func NewCmdInit() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			Cxt.Println(configDesc)
 			if len(config.PrivateKey) != 0 && len(config.PublicKey) != 0 {
-				Cxt.Printf("Your have already configured public-key and private-key. Do you want to overwrite it? (y/n):")
-				var overwrite string
-				_, err := fmt.Scanf("%s\n", &overwrite)
+				confirm, err := ux.Prompt("Your have already configured public-key and private-key. Do you want to overwrite it? (y/n):")
 				if err != nil {
 					Cxt.Println(err)
 					return
 				}
-				overwrite = strings.Trim(overwrite, " ")
-				overwrite = strings.ToLower(overwrite)
-				if overwrite != "yes" && overwrite != "y" {
+				if confirm {
 					printHello()
 					return
 				}
@@ -110,6 +106,43 @@ func NewCmdConfig() *cobra.Command {
 		Long:    `Configure UCloud CLI options such as private-key,public-key,default region and default project-id.`,
 		Example: "ucloud config list; ucloud config --region cn-bj2",
 		Run: func(cmd *cobra.Command, args []string) {
+			if cfg.Region != "" || cfg.Zone != "" {
+				regionMap, err := fetchRegion()
+				if err != nil {
+					HandleError(err)
+					return
+				}
+
+				region := cfg.Region
+				if region == "" {
+					region = config.Region
+				}
+
+				zones, ok := regionMap[region]
+				if !ok {
+					Cxt.Printf("Error, region[%s] not exist! See 'ucloud region'\n", region)
+					return
+				}
+
+				zone := cfg.Zone
+				if zone == "" {
+					zone = config.Zone
+				}
+
+				if zone != "" {
+					zoneExist := false
+					for _, zone := range zones {
+						if zone == cfg.Zone {
+							zoneExist = true
+						}
+					}
+					if !zoneExist {
+						Cxt.Printf("Error, zone[%s] not exist in region[%s]! See 'ucloud config list' and 'ucloud region'\n", zone, region)
+						return
+					}
+				}
+			}
+
 			tmpCfgVal := reflect.ValueOf(cfg)
 			configVal := reflect.ValueOf(config).Elem()
 			changed := false

@@ -720,9 +720,9 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 
 		line := ""
 		if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-			line = fmt.Sprintf("  -%s, --%s", flag.Shorthand, flag.Name)
+			line = fmt.Sprintf("  --%s, -%s", flag.Name, flag.Shorthand)
 		} else {
-			line = fmt.Sprintf("      --%s", flag.Name)
+			line = fmt.Sprintf("  --%s    ", flag.Name)
 		}
 
 		varname, usage := UnquoteUsage(flag)
@@ -772,7 +772,7 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 		sidx := strings.Index(line, "\x00")
 		spacing := strings.Repeat(" ", maxlen-sidx)
 		// maxlen + 2 comes from + 1 for the \x00 and + 1 for the (deliberate) off-by-one in maxlen-sidx
-		fmt.Fprintln(buf, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]))
+		fmt.Fprintln(buf, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]), "\n")
 	}
 
 	return buf.String()
@@ -781,7 +781,7 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 // FlagUsages returns a string containing the usage information for all flags in
 // the FlagSet
 func (f *FlagSet) FlagUsages() string {
-	return f.FlagUsagesWrapped(0)
+	return f.FlagUsagesWrapped(100)
 }
 
 //FlagNames returns a string containing all flags names in the FlagSet. Separated by " | "

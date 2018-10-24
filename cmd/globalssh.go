@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	. "github.com/ucloud/ucloud-cli/base"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
 
 //NewCmdGssh ucloud gssh
@@ -102,7 +103,7 @@ func NewCmdGsshList() *cobra.Command {
 func NewCmdGsshArea() *cobra.Command {
 	req := BizClient.NewDescribeGlobalSSHAreaRequest()
 	cmd := &cobra.Command{
-		Use:   "area",
+		Use:   "location",
 		Short: "List SSH server locations and covered areas",
 		Long:  "List SSH server locations and covered areas",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -175,7 +176,7 @@ func NewCmdGsshCreate() *cobra.Command {
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.AreaCode = cmd.Flags().String("area", "", "Required. Location of the source server. See 'ucloud gssh area'")
+	req.AreaCode = cmd.Flags().String("location", "", "Required. Location of the source server. See 'ucloud gssh location'")
 	req.TargetIP = cmd.Flags().String("target-ip", "", "Required. IP of the source server. Required")
 	req.Region = cmd.Flags().String("region", "", "Optional. Assign region")
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
@@ -184,9 +185,9 @@ func NewCmdGsshCreate() *cobra.Command {
 	req.ChargeType = cmd.Flags().String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.CouponId = cmd.Flags().String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
-	cmd.MarkFlagRequired("area")
+	cmd.MarkFlagRequired("location")
 	cmd.MarkFlagRequired("target-ip")
-	cmd.Flags().SetFlagValues("area", "LosAngeles", "Singapore", "HongKong", "Tokyo", "Washington", "Frankfurt")
+	cmd.Flags().SetFlagValues("location", "LosAngeles", "Singapore", "HongKong", "Tokyo", "Washington", "Frankfurt")
 	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	return cmd
 }
@@ -224,18 +225,18 @@ func NewCmdGsshDelete() *cobra.Command {
 func NewCmdGsshModify() *cobra.Command {
 	var gsshModifyPortReq = BizClient.NewModifyGlobalSSHPortRequest()
 	var gsshModifyRemarkReq = BizClient.NewModifyGlobalSSHRemarkRequest()
-	var region, project string
+	region := ConfigInstance.Region
+	project := ConfigInstance.ProjectID
 	var cmd = &cobra.Command{
 		Use:     "update",
 		Short:   "Update GlobalSSH instance",
 		Long:    "Update GlobalSSH instance, including port and remark attribute",
 		Example: "ucloud gssh update --id uga-xxx --port 22",
 		Run: func(cmd *cobra.Command, args []string) {
-			*gsshModifyPortReq.Region = region
-			*gsshModifyPortReq.ProjectId = project
-			*gsshModifyRemarkReq.Region = region
-			*gsshModifyRemarkReq.ProjectId = project
-
+			gsshModifyPortReq.Region = sdk.String(region)
+			gsshModifyPortReq.ProjectId = sdk.String(project)
+			gsshModifyRemarkReq.Region = sdk.String(region)
+			gsshModifyRemarkReq.ProjectId = sdk.String(project)
 			if *gsshModifyPortReq.Port == 0 && *gsshModifyRemarkReq.Remark == "" {
 				Cxt.Println("port or remark required")
 			}
@@ -269,6 +270,6 @@ func NewCmdGsshModify() *cobra.Command {
 	cmd.Flags().StringVar(&project, "project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	gsshModifyPortReq.Port = cmd.Flags().Int("port", 0, "Optional. Port of SSH service.")
 	gsshModifyRemarkReq.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("resource-id")
 	return cmd
 }

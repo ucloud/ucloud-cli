@@ -135,6 +135,10 @@ func NewCmdUHostCreate() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
+			images := strings.SplitN(*req.ImageId, "/", 2)
+			if len(images) >= 2 {
+				*req.ImageId = images[0]
+			}
 			resp, err := BizClient.CreateUHostInstance(req)
 			if err != nil {
 				HandleError(err)
@@ -181,7 +185,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.Disks[1].Type = flags.String("data-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[1].Size = flags.String("data-disk-size", "20", "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.NetworkId = flags.String("network-id", "", "Optional. Network ID (no need to fill in the case of VPC2.0). In the case of VPC1.0, if not filled in, we will choose the basic network; if it is filled in, we will choose the subnet. See DescribeSubnet.")
+	req.NetworkId = flags.String("network-id", "", "Optional. Network ID (no need to fill in the case of VPC2.0). In the case of VPC1.0, if not filled in, we will choose the basic network; if it is filled in, we will choose the subnet. See 'ucloud subnet list'.")
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("ugroup", "Default", "Optional. Business group")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see DescribeCoupon or https://accountv2.ucloud.cn")
@@ -215,11 +219,15 @@ func NewCmdUHostCreate() *cobra.Command {
 		}
 		req.Zone = sdk.String(zone)
 		req.ImageType = sdk.String("Base")
+		req.Limit = sdk.Int(1000)
 		result := make([]string, 0)
 		resp, err := BizClient.DescribeImage(req)
 		if err == nil {
 			for _, image := range resp.ImageSet {
-				result = append(result, image.ImageId)
+				if image.State == "Available" {
+					imageName := strings.Replace(image.ImageName, " ", "-", -1)
+					result = append(result, fmt.Sprintf("%s/%s", image.ImageId, imageName))
+				}
 			}
 		}
 		return result
@@ -387,14 +395,21 @@ func NewCmdUHostPoweroff() *cobra.Command {
 	req := BizClient.NewPoweroffUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "poweroff",
-		Short: "Analog power off Uhost instnace. Danger! this operation may affect data integrity or cause file system corruption",
-		Long:  "Analog power off Uhost instnace. Danger! this operation may affect data integrity or cause file system corruption",
+		Short: "Analog power off Uhost instnace",
+		Long:  "Analog power off Uhost instnace",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.PoweroffUHostInstance(req)
+			sure, err := ux.Prompt("Danger, it may affect data integrity. Are you sure you want to poweroff this host? (y/n):")
 			if err != nil {
-				HandleError(err)
-			} else {
-				Cxt.Printf("UHost:[%v] is power off\n", resp.UhostId)
+				Cxt.Println(err)
+				return
+			}
+			if sure {
+				resp, err := BizClient.PoweroffUHostInstance(req)
+				if err != nil {
+					HandleError(err)
+				} else {
+					Cxt.Printf("UHost:[%v] is power off\n", resp.UhostId)
+				}
 			}
 		},
 	}
@@ -402,6 +417,7 @@ func NewCmdUHostPoweroff() *cobra.Command {
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	req.UHostId = cmd.Flags().String("resource-id", "", "ResourceID of the uhost instance( or UHostId)")
+	cmd.MarkFlagRequired("resource-id")
 	return cmd
 }
 
@@ -410,8 +426,8 @@ func NewCmdUHostScale() *cobra.Command {
 	req := BizClient.NewResizeUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "scale",
-		Short: "Scale uhost instance,such as cpu core count, memory size, system disk size and data disk size",
-		Long:  "Scale uhost instance,such as cpu core count, memory size, system disk size and data disk size",
+		Short: "Scale uhost instance,such as cpu core count, memory size and disk size",
+		Long:  "Scale uhost instance,such as cpu core count, memory size and disk size",
 		Run: func(cmd *cobra.Command, args []string) {
 			if *req.CPU == 0 {
 				req.CPU = nil
@@ -427,6 +443,27 @@ func NewCmdUHostScale() *cobra.Command {
 			if *req.BootDiskSpace == 0 {
 				req.BootDiskSpace = nil
 			}
+			host, err := describeUHostByID(*req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
+			if err != nil {
+				Cxt.Println(err)
+				return
+			}
+			if host.State == "Running" {
+				agreeClose, err := ux.Prompt("Scale uhost must be after stop it. Do you want to stop this host? (y/n):")
+				if err != nil {
+					Cxt.Println(err)
+					return
+				}
+				if agreeClose {
+					_req := BizClient.NewStopUHostInstanceRequest()
+					_req.ProjectId = req.ProjectId
+					_req.Region = req.Region
+					_req.Zone = req.Zone
+					_req.UHostId = req.UHostId
+					stopUhostIns(_req)
+				}
+			}
+
 			resp, err := BizClient.ResizeUHostInstance(req)
 			if err != nil {
 				HandleError(err)

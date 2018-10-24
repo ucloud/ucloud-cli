@@ -89,9 +89,8 @@ Examples:
 {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
 Commands:{{range .Commands}}{{if .IsAvailableCommand}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
-
-Flags:
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}
+{{end}}{{end}}{{if .HasAvailableLocalFlags}}Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
 Global Flags:
