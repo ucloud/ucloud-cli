@@ -99,6 +99,12 @@
 			"revisionTime": "2018-10-15T11:12:01Z"
 		},
 		{
+			"checksumSHA1": "WMTXD2ama/EmXjmBbAheUSie7P4=",
+			"path": "github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter",
+			"revision": "ae92fcdf66a5f34c27d8ae1f81b10033648275f4",
+			"revisionTime": "2018-10-24T10:31:01Z"
+		},
+		{
 			"checksumSHA1": "a6tTIq01vKr4hQqYfZf/e3o8M+A=",
 			"path": "github.com/ucloud/ucloud-sdk-go/ucloud/log",
 			"revision": "ec0776932e60fda35bd18ec266b5e081777d1dea",
