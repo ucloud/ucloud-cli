@@ -1,3 +1,6 @@
+/*
+Package auth is the credential utilities of sdk
+*/
 package auth
 
 import (
@@ -9,6 +12,7 @@ import (
 	"strings"
 )
 
+// Credential is the information of credential keys
 type Credential struct {
 	PublicKey  string
 	PrivateKey string

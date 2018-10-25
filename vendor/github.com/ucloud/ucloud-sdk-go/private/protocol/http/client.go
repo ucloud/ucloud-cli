@@ -1,3 +1,6 @@
+/*
+Package http is an implementation of http protocol
+*/
 package http
 
 import (

@@ -19,4 +19,10 @@ type UHostIPSet struct {
 
 	// IP对应的带宽, 单位: Mb (内网IP不显示带宽信息)
 	Bandwidth int
+
+	// VPC ID
+	VPCId string
+
+	// Subnet Id
+	SubnetId string
 }

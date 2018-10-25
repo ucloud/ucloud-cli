@@ -1,3 +1,6 @@
+/*
+Package request is the request of service
+*/
 package request
 
 import "time"

@@ -1,3 +1,6 @@
+/*
+Package uerr is the error definition of service and sdk
+*/
 package uerr
 
 // Error is the ucloud sdk error

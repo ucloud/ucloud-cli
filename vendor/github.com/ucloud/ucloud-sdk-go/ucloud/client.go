@@ -1,3 +1,6 @@
+/*
+Package ucloud is a package of utilities to setup ucloud sdk and improve using experience
+*/
 package ucloud
 
 import (

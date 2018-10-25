@@ -28,4 +28,7 @@ type VIPDetailSet struct {
 
 	// VPC id
 	VPCId string
+
+	// Virtual IP 名称
+	Name string
 }

@@ -23,6 +23,12 @@ type UHostDiskSet struct {
 	// 磁盘大小，单位: GB
 	Size int
 
+	// 是否是系统盘
+	IsBoot string
+
+	// 磁盘类型
+	DiskType string
+
 	// 备份类型，DataArk
 	BackupType string
 }
