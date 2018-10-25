@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // CreateULBRequest is request schema for CreateULB action
@@ -51,14 +50,14 @@ type CreateULBResponse struct {
 
 // NewCreateULBRequest will create request of CreateULB action.
 func (c *ULBClient) NewCreateULBRequest() *CreateULBRequest {
-	cfg := c.client.GetConfig()
+	req := &CreateULBRequest{}
 
-	return &CreateULBRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CreateULB - 创建负载均衡实例，可以选择内网或者外网
@@ -68,7 +67,7 @@ func (c *ULBClient) CreateULB(req *CreateULBRequest) (*CreateULBResponse, error)
 
 	err = c.client.InvokeAction("CreateULB", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

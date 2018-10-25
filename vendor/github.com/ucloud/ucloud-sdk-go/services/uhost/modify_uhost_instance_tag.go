@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // ModifyUHostInstanceTagRequest is request schema for ModifyUHostInstanceTag action
@@ -33,14 +32,14 @@ type ModifyUHostInstanceTagResponse struct {
 
 // NewModifyUHostInstanceTagRequest will create request of ModifyUHostInstanceTag action.
 func (c *UHostClient) NewModifyUHostInstanceTagRequest() *ModifyUHostInstanceTagRequest {
-	cfg := c.client.GetConfig()
+	req := &ModifyUHostInstanceTagRequest{}
 
-	return &ModifyUHostInstanceTagRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // ModifyUHostInstanceTag - 修改指定UHost实例业务组标识。
@@ -50,7 +49,7 @@ func (c *UHostClient) ModifyUHostInstanceTag(req *ModifyUHostInstanceTagRequest)
 
 	err = c.client.InvokeAction("ModifyUHostInstanceTag", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

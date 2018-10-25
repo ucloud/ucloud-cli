@@ -103,4 +103,7 @@ type UHostInstanceSet struct {
 
 	// 系统盘状态 Normal: 已初始化完成
 	BootDiskState string
+
+	// 主机的存储空间
+	TotalDiskSpace int
 }

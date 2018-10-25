@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeFirewallRequest is request schema for DescribeFirewall action
@@ -39,14 +38,14 @@ type DescribeFirewallResponse struct {
 
 // NewDescribeFirewallRequest will create request of DescribeFirewall action.
 func (c *UNetClient) NewDescribeFirewallRequest() *DescribeFirewallRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeFirewallRequest{}
 
-	return &DescribeFirewallRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeFirewall - 获取防火墙组信息
@@ -56,7 +55,7 @@ func (c *UNetClient) DescribeFirewall(req *DescribeFirewallRequest) (*DescribeFi
 
 	err = c.client.InvokeAction("DescribeFirewall", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

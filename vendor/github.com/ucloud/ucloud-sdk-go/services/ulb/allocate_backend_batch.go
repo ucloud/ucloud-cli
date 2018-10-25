@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // AllocateBackendBatchRequest is request schema for AllocateBackendBatch action
@@ -21,6 +20,9 @@ type AllocateBackendBatchRequest struct {
 
 	// 用| 分割字段，格式：ResourceId| ResourceType| Port| Enabled|IP。ResourceId:所添加的后端资源的资源ID；ResourceType:所添加的后端资源的类型，枚举值：UHost -> 云主机；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器，默认值为“UHost”；Port:所添加的后端资源服务端口，取值范围[1-65535]；Enabled:后端实例状态开关，枚举值： 1：启用； 0：禁用；IP:后端资源内网ip；
 	Backends []string `required:"true"`
+
+	// 已弃用，指定 Api 版本
+	ApiVersion *int `required:"false"`
 }
 
 // AllocateBackendBatchResponse is response schema for AllocateBackendBatch action
@@ -33,14 +35,14 @@ type AllocateBackendBatchResponse struct {
 
 // NewAllocateBackendBatchRequest will create request of AllocateBackendBatch action.
 func (c *ULBClient) NewAllocateBackendBatchRequest() *AllocateBackendBatchRequest {
-	cfg := c.client.GetConfig()
+	req := &AllocateBackendBatchRequest{}
 
-	return &AllocateBackendBatchRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // AllocateBackendBatch - 批量添加VServer后端节点
@@ -50,7 +52,7 @@ func (c *ULBClient) AllocateBackendBatch(req *AllocateBackendBatchRequest) (*All
 
 	err = c.client.InvokeAction("AllocateBackendBatch", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

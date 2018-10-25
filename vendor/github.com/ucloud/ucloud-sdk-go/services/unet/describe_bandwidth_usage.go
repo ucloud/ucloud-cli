@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeBandwidthUsageRequest is request schema for DescribeBandwidthUsage action
@@ -36,14 +35,14 @@ type DescribeBandwidthUsageResponse struct {
 
 // NewDescribeBandwidthUsageRequest will create request of DescribeBandwidthUsage action.
 func (c *UNetClient) NewDescribeBandwidthUsageRequest() *DescribeBandwidthUsageRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeBandwidthUsageRequest{}
 
-	return &DescribeBandwidthUsageRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeBandwidthUsage - 获取带宽用量信息
@@ -53,7 +52,7 @@ func (c *UNetClient) DescribeBandwidthUsage(req *DescribeBandwidthUsageRequest) 
 
 	err = c.client.InvokeAction("DescribeBandwidthUsage", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

@@ -1,10 +1,16 @@
 package uhost
 
-// UHostPriceSet is a set to describe the price of uhost
+/*
+	UHostPriceSet - 主机价格
+
+	this model is auto created by ucloud code generater for open api,
+	you can also see https://docs.ucloud.cn for detail.
+*/
 type UHostPriceSet struct {
-	// 付费方式, 预付费:Year 按年,Month 按月,Dynamic 按需;后付费:Postpay(按月)
+
+	// 计费类型。Year，Month，Dynamic
 	ChargeType string
 
-	// 费用（元）
-	Price int
+	// 价格，单位: 元，保留小数点后两位有效数字
+	Price float64
 }

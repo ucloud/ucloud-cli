@@ -9,7 +9,7 @@ package unet
 type UnetShareBandwidthSet struct {
 
 	// 共享带宽值(预付费)/共享带宽峰值(后付费), 单位Mbps
-	Bandwidth int
+	ShareBandwidth int
 
 	// 共享带宽的资源ID
 	ShareBandwidthId string
@@ -23,12 +23,15 @@ type UnetShareBandwidthSet struct {
 	// 过期时间, 格式为Unix Timestamp
 	ExpireTime int
 
-	// EIP信息,详情见 EIPAddrSet
-	EIPSet []EIPAddrSet
+	// EIP信息,详情见 EIPSetData
+	EIPSet []EIPSetData
 
 	// 共享带宽保底值(后付费)
 	BandwidthGuarantee int
 
 	// 共享带宽后付费开始计费时间(后付费)
 	PostPayStartTime int
+
+	// 共享带宽名称
+	Name string
 }

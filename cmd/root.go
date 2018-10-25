@@ -21,7 +21,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
@@ -89,9 +89,8 @@ Examples:
 {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
 Commands:{{range .Commands}}{{if .IsAvailableCommand}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
-
-Flags:
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}
+{{end}}{{end}}{{if .HasAvailableLocalFlags}}Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
 Global Flags:

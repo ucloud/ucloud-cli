@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // CreateVPCRequest is request schema for CreateVPC action
@@ -24,6 +23,9 @@ type CreateVPCRequest struct {
 
 	// 备注
 	Remark *string `required:"false"`
+
+	// VPC类型
+	Type *int `required:"false"`
 }
 
 // CreateVPCResponse is response schema for CreateVPC action
@@ -36,14 +38,14 @@ type CreateVPCResponse struct {
 
 // NewCreateVPCRequest will create request of CreateVPC action.
 func (c *VPCClient) NewCreateVPCRequest() *CreateVPCRequest {
-	cfg := c.client.GetConfig()
+	req := &CreateVPCRequest{}
 
-	return &CreateVPCRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CreateVPC - 创建VPC
@@ -53,7 +55,7 @@ func (c *VPCClient) CreateVPC(req *CreateVPCRequest) (*CreateVPCResponse, error)
 
 	err = c.client.InvokeAction("CreateVPC", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

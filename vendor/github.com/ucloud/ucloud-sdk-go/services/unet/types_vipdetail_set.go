@@ -12,7 +12,7 @@ type VIPDetailSet struct {
 	VIPId string
 
 	// 创建时间
-	CreateTime string
+	CreateTime int
 
 	// 地域
 	Zone string

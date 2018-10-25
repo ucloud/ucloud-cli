@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeUHostInstanceRequest is request schema for DescribeUHostInstance action
@@ -45,14 +44,14 @@ type DescribeUHostInstanceResponse struct {
 
 // NewDescribeUHostInstanceRequest will create request of DescribeUHostInstance action.
 func (c *UHostClient) NewDescribeUHostInstanceRequest() *DescribeUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeUHostInstanceRequest{}
 
-	return &DescribeUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeUHostInstance - 获取主机或主机列表信息，并可根据数据中心，主机ID等参数进行过滤。
@@ -62,7 +61,7 @@ func (c *UHostClient) DescribeUHostInstance(req *DescribeUHostInstanceRequest) (
 
 	err = c.client.InvokeAction("DescribeUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

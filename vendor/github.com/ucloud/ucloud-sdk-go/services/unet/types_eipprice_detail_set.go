@@ -12,7 +12,7 @@ type EIPPriceDetailSet struct {
 	ChargeType string
 
 	// 弹性IP价格, 单位"元"
-	Price float32
+	Price float64
 
 	// 资源有效期, 以Unix Timestamp表示
 	PurchaseValue int

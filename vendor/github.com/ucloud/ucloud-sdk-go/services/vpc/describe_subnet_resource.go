@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeSubnetResourceRequest is request schema for DescribeSubnetResource action
@@ -39,14 +38,14 @@ type DescribeSubnetResourceResponse struct {
 
 // NewDescribeSubnetResourceRequest will create request of DescribeSubnetResource action.
 func (c *VPCClient) NewDescribeSubnetResourceRequest() *DescribeSubnetResourceRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeSubnetResourceRequest{}
 
-	return &DescribeSubnetResourceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeSubnetResource - 展示子网资源
@@ -56,7 +55,7 @@ func (c *VPCClient) DescribeSubnetResource(req *DescribeSubnetResourceRequest) (
 
 	err = c.client.InvokeAction("DescribeSubnetResource", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

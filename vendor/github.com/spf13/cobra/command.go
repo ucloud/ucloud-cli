@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	flag "github.com/spf13/pflag"
 )
@@ -985,12 +986,18 @@ func (c *Command) complete() error {
 	if err != nil {
 		return err
 	}
-	if length := len(line); p > length {
+	chars := []rune(line)
+	if length := len(chars); p > length {
 		p = length
 	}
-	compLine := line[0:p]
-	lastSpaceIndex := strings.LastIndex(compLine, " ")
-	currentWord := compLine[lastSpaceIndex+1 : p]
+	compLine := string(chars[0:p])
+	lastSpaceIndex := 0
+	for i, r := range chars {
+		if r == ' ' {
+			lastSpaceIndex = i
+		}
+	}
+	currentWord := string(chars[lastSpaceIndex+1 : p])
 	args := strings.Fields(compLine)[1:]
 	compCmd, _, err := c.Root().Find(args)
 	if err != nil {
@@ -1003,22 +1010,21 @@ func (c *Command) complete() error {
 		completeFlagValues(compCmd, args, currentWord)
 	} else if len(compCmd.Commands()) > 0 { //需要补全的单词开头没有‘-’，补全子命令
 		completeSubCommands(compCmd, currentWord)
-	} else if length := len(args); length > 0 && compLine[p-1] != 32 { //需要补全的单词开头没有‘-’，前一个单词也不是命令，光标当前位置非空格，尝试补全参数值（value)
+	} else { //需要补全的单词开头没有‘-’，前一个单词也不是命令，光标当前位置非空格，尝试补全参数值（value)
 		completeFlagValues(compCmd, args, currentWord)
-	} else { //需要补全的单词开头没有‘-’，也没有子命令，默认尝试补全参数 flag
-		completeFlags(compCmd, currentWord)
 	}
 	return nil
 }
 
-func completeFlags(cmd *Command, word string) {
-	cmd.mergePersistentFlags()
+func completeFlags(cmd *Command, word string) []string {
+	completeWords := []string{}
 	cmd.Flags().VisitAll(func(f *flag.Flag) {
-		completedWord := "--" + f.Name
-		if strings.HasPrefix(completedWord, word) {
-			fmt.Fprintln(cmd.OutOrStdout(), completedWord)
+		completeWord := "--" + f.Name
+		if strings.HasPrefix(completeWord, word) {
+			completeWords = append(completeWords, completeWord)
 		}
 	})
+	return completeWords
 }
 
 func completeSubCommands(cmd *Command, word string) {
@@ -1039,27 +1045,68 @@ func completeFlagValues(cmd *Command, args []string, word string) {
 		_flag = cmd.Flags().Lookup(lastArg[2:])
 	} else if strings.HasPrefix(lastArg, "-") && len(lastArg) == 2 {
 		_flag = cmd.Flags().ShorthandLookup(lastArg[1:])
-	} else if len(args) >= 2 {
+	} else if len(args) >= 2 && word != "" { //for completing values
 		arg := args[len(args)-2]
 		_flag = cmd.Flags().Lookup(arg[2:])
 	}
 
+	hasCompleted := false
 	if _flag == nil {
-		cmd.Flags().VisitAll(func(f *flag.Flag) {
-			completedWord := "--" + f.Name
-			if strings.HasPrefix(completedWord, word) {
-				fmt.Fprintln(cmd.OutOrStdout(), "--"+f.Name)
+		completedWords := completeFlags(cmd, word)
+		if completedWords != nil {
+			for _, word := range completedWords {
+				fmt.Fprintln(cmd.OutOrStdout(), word)
 			}
-		})
-		return
+			hasCompleted = true
+			return
+		}
 	}
 
-	if _flag.Annotations != nil {
-		values := _flag.Annotations[flag.BashCompleteFlagValues]
-		for _, v := range values {
-			if strings.HasPrefix(v, word) {
-				fmt.Fprintln(cmd.OutOrStdout(), v)
+	values := cmd.Flags().GetFlagValues(_flag.Name)
+	for _, v := range values {
+		if strings.HasPrefix(v, word) && v != word {
+			fmt.Fprintln(cmd.OutOrStdout(), v)
+			hasCompleted = true
+		}
+	}
+
+	fetchFn := cmd.Flags().GetFlagValuesFunc(_flag.Name)
+	//async completing is costly, only execute once.
+	if fetchFn != nil {
+		fetchChan := make(chan string, 0)
+		go func() {
+			for _, item := range fetchFn() {
+				fetchChan <- item
 			}
+			close(fetchChan)
+		}()
+		timeoutDur, _ := time.ParseDuration("3s")
+		timeoutChan := time.After(timeoutDur)
+		intervalChan := time.Tick(time.Second / 100)
+
+	loop:
+		for range intervalChan {
+			select {
+			case v, ok := <-fetchChan:
+				if ok == false {
+					break loop
+				}
+				if strings.HasPrefix(v, word) && v != word {
+					fmt.Fprintln(cmd.OutOrStdout(), v)
+					os.Stdout.Sync()
+					hasCompleted = true
+				}
+
+			case <-timeoutChan:
+				break loop
+			}
+		}
+	}
+
+	if !hasCompleted {
+		completeWords := completeFlags(cmd, word)
+		for _, word := range completeWords {
+			fmt.Fprintln(cmd.OutOrStdout(), word)
 		}
 	}
 }

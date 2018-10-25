@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // PoweroffUHostInstanceRequest is request schema for PoweroffUHostInstance action
@@ -30,14 +29,14 @@ type PoweroffUHostInstanceResponse struct {
 
 // NewPoweroffUHostInstanceRequest will create request of PoweroffUHostInstance action.
 func (c *UHostClient) NewPoweroffUHostInstanceRequest() *PoweroffUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &PoweroffUHostInstanceRequest{}
 
-	return &PoweroffUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // PoweroffUHostInstance - 直接关闭UHost实例电源，无需等待实例正常关闭。
@@ -47,7 +46,7 @@ func (c *UHostClient) PoweroffUHostInstance(req *PoweroffUHostInstanceRequest) (
 
 	err = c.client.InvokeAction("PoweroffUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

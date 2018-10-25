@@ -23,12 +23,12 @@ type ResourceSet struct {
 	// 绑定资源的资源类型
 	ResourceType string
 
-	// 状态
-	Status string
+	// 资源状态
+	Status int
 
 	// 业务组
 	Tag string
 
 	// 可用区
-	Zone string
+	Zone int
 }

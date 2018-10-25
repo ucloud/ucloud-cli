@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeVPCIntercomRequest is request schema for DescribeVPCIntercom action
@@ -33,14 +32,14 @@ type DescribeVPCIntercomResponse struct {
 
 // NewDescribeVPCIntercomRequest will create request of DescribeVPCIntercom action.
 func (c *VPCClient) NewDescribeVPCIntercomRequest() *DescribeVPCIntercomRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeVPCIntercomRequest{}
 
-	return &DescribeVPCIntercomRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeVPCIntercom - 获取VPC互通信息
@@ -50,7 +49,7 @@ func (c *VPCClient) DescribeVPCIntercom(req *DescribeVPCIntercomRequest) (*Descr
 
 	err = c.client.InvokeAction("DescribeVPCIntercom", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

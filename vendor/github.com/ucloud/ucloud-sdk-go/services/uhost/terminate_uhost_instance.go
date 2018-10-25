@@ -4,9 +4,8 @@
 package uhost
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // TerminateUHostInstanceRequest is request schema for TerminateUHostInstance action
@@ -42,14 +41,14 @@ type TerminateUHostInstanceResponse struct {
 
 // NewTerminateUHostInstanceRequest will create request of TerminateUHostInstance action.
 func (c *UHostClient) NewTerminateUHostInstanceRequest() *TerminateUHostInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &TerminateUHostInstanceRequest{}
 
-	return &TerminateUHostInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // TerminateUHostInstance - 删除指定数据中心的UHost实例。
@@ -59,7 +58,7 @@ func (c *UHostClient) TerminateUHostInstance(req *TerminateUHostInstanceRequest)
 
 	err = c.client.InvokeAction("TerminateUHostInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

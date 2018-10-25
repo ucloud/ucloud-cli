@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeFirewallResourceRequest is request schema for DescribeFirewallResource action
@@ -14,7 +13,7 @@ type DescribeFirewallResourceRequest struct {
 	request.CommonBase
 
 	// 防火墙ID
-	FWId *int `required:"true"`
+	FWId *string `required:"true"`
 
 	// 返回数据长度，默认为20，最大10000000
 	Limit *string `required:"false"`
@@ -29,18 +28,21 @@ type DescribeFirewallResourceResponse struct {
 
 	// 资源列表，见 ResourceSet
 	ResourceSet []ResourceSet
+
+	// 防火墙已绑定资源的总数
+	TotalCount int
 }
 
 // NewDescribeFirewallResourceRequest will create request of DescribeFirewallResource action.
 func (c *UNetClient) NewDescribeFirewallResourceRequest() *DescribeFirewallResourceRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeFirewallResourceRequest{}
 
-	return &DescribeFirewallResourceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeFirewallResource - 获取防火墙组所绑定资源的外网IP
@@ -50,7 +52,7 @@ func (c *UNetClient) DescribeFirewallResource(req *DescribeFirewallResourceReque
 
 	err = c.client.InvokeAction("DescribeFirewallResource", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

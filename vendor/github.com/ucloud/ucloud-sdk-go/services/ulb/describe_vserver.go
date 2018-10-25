@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeVServerRequest is request schema for DescribeVServer action
@@ -18,6 +17,12 @@ type DescribeVServerRequest struct {
 
 	// VServer实例的Id；若指定则返回指定的VServer实例的信息； 若不指定则返回当前负载均衡实例下所有VServer的信息
 	VServerId *string `required:"false"`
+
+	// 数据分页值
+	Limit *string `required:"false"`
+
+	// 数据偏移量
+	Offset *string `required:"false"`
 }
 
 // DescribeVServerResponse is response schema for DescribeVServer action
@@ -33,14 +38,14 @@ type DescribeVServerResponse struct {
 
 // NewDescribeVServerRequest will create request of DescribeVServer action.
 func (c *ULBClient) NewDescribeVServerRequest() *DescribeVServerRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeVServerRequest{}
 
-	return &DescribeVServerRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeVServer - 获取ULB下的VServer的详细信息
@@ -50,7 +55,7 @@ func (c *ULBClient) DescribeVServer(req *DescribeVServerRequest) (*DescribeVServ
 
 	err = c.client.InvokeAction("DescribeVServer", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

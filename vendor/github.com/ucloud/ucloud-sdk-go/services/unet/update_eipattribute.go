@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // UpdateEIPAttributeRequest is request schema for UpdateEIPAttribute action
@@ -33,14 +32,14 @@ type UpdateEIPAttributeResponse struct {
 
 // NewUpdateEIPAttributeRequest will create request of UpdateEIPAttribute action.
 func (c *UNetClient) NewUpdateEIPAttributeRequest() *UpdateEIPAttributeRequest {
-	cfg := c.client.GetConfig()
+	req := &UpdateEIPAttributeRequest{}
 
-	return &UpdateEIPAttributeRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // UpdateEIPAttribute - 更新弹性IP名称，业务组，备注等属性字段
@@ -50,7 +49,7 @@ func (c *UNetClient) UpdateEIPAttribute(req *UpdateEIPAttributeRequest) (*Update
 
 	err = c.client.InvokeAction("UpdateEIPAttribute", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

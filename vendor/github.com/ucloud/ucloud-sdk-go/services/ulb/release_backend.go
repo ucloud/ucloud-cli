@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // ReleaseBackendRequest is request schema for ReleaseBackend action
@@ -27,14 +26,14 @@ type ReleaseBackendResponse struct {
 
 // NewReleaseBackendRequest will create request of ReleaseBackend action.
 func (c *ULBClient) NewReleaseBackendRequest() *ReleaseBackendRequest {
-	cfg := c.client.GetConfig()
+	req := &ReleaseBackendRequest{}
 
-	return &ReleaseBackendRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // ReleaseBackend - 从VServer释放后端资源实例
@@ -44,7 +43,7 @@ func (c *ULBClient) ReleaseBackend(req *ReleaseBackendRequest) (*ReleaseBackendR
 
 	err = c.client.InvokeAction("ReleaseBackend", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

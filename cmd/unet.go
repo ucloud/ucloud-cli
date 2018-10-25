@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdSubnet  ucloud subnet

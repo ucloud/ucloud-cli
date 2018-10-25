@@ -23,15 +23,15 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	. "github.com/ucloud/ucloud-cli/util"
+	. "github.com/ucloud/ucloud-cli/base"
 )
 
 // NewCmdCompletion ucloud completion
 func NewCmdCompletion() *cobra.Command {
 	var completionCmd = &cobra.Command{
 		Use:   "completion",
-		Short: "Turn on auto completion according to the prompt",
-		Long:  "Turn on auto completion according to the prompt",
+		Short: "Print the description of how to enable auto completion",
+		Long:  "Print the description of how to enable auto completion",
 		Run: func(cmd *cobra.Command, args []string) {
 			shell, ok := os.LookupEnv("SHELL")
 			if ok {

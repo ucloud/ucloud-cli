@@ -4,9 +4,8 @@
 package vpc
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // CreateSubnetRequest is request schema for CreateSubnet action
@@ -42,14 +41,14 @@ type CreateSubnetResponse struct {
 
 // NewCreateSubnetRequest will create request of CreateSubnet action.
 func (c *VPCClient) NewCreateSubnetRequest() *CreateSubnetRequest {
-	cfg := c.client.GetConfig()
+	req := &CreateSubnetRequest{}
 
-	return &CreateSubnetRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // CreateSubnet - 创建子网
@@ -59,7 +58,7 @@ func (c *VPCClient) CreateSubnet(req *CreateSubnetRequest) (*CreateSubnetRespons
 
 	err = c.client.InvokeAction("CreateSubnet", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

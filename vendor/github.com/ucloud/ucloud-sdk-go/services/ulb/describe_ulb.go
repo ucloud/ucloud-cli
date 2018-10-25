@@ -4,9 +4,8 @@
 package ulb
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeULBRequest is request schema for DescribeULB action
@@ -45,14 +44,14 @@ type DescribeULBResponse struct {
 
 // NewDescribeULBRequest will create request of DescribeULB action.
 func (c *ULBClient) NewDescribeULBRequest() *DescribeULBRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeULBRequest{}
 
-	return &DescribeULBRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeULB - 获取ULB详细信息
@@ -62,7 +61,7 @@ func (c *ULBClient) DescribeULB(req *DescribeULBRequest) (*DescribeULBResponse, 
 
 	err = c.client.InvokeAction("DescribeULB", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

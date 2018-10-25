@@ -4,9 +4,8 @@
 package pathx
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DescribeGlobalSSHInstanceRequest is request schema for DescribeGlobalSSHInstance action
@@ -27,14 +26,14 @@ type DescribeGlobalSSHInstanceResponse struct {
 
 // NewDescribeGlobalSSHInstanceRequest will create request of DescribeGlobalSSHInstance action.
 func (c *PathXClient) NewDescribeGlobalSSHInstanceRequest() *DescribeGlobalSSHInstanceRequest {
-	cfg := c.client.GetConfig()
+	req := &DescribeGlobalSSHInstanceRequest{}
 
-	return &DescribeGlobalSSHInstanceRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DescribeGlobalSSHInstance - 获取GlobalSSH实例列表（传实例ID获取单个实例信息，不传获取项目下全部实例）
@@ -44,7 +43,7 @@ func (c *PathXClient) DescribeGlobalSSHInstance(req *DescribeGlobalSSHInstanceRe
 
 	err = c.client.InvokeAction("DescribeGlobalSSHInstance", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

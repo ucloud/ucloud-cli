@@ -15,7 +15,7 @@ type ResourceInfo struct {
 	ResourceId string
 
 	// 资源类型
-	ResourceType int
+	ResourceType string
 
 	// ip地址
 	IP string

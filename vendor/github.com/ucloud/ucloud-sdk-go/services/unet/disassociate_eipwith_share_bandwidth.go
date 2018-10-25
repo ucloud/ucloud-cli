@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // DisassociateEIPWithShareBandwidthRequest is request schema for DisassociateEIPWithShareBandwidth action
@@ -33,14 +32,14 @@ type DisassociateEIPWithShareBandwidthResponse struct {
 
 // NewDisassociateEIPWithShareBandwidthRequest will create request of DisassociateEIPWithShareBandwidth action.
 func (c *UNetClient) NewDisassociateEIPWithShareBandwidthRequest() *DisassociateEIPWithShareBandwidthRequest {
-	cfg := c.client.GetConfig()
+	req := &DisassociateEIPWithShareBandwidthRequest{}
 
-	return &DisassociateEIPWithShareBandwidthRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
 }
 
 // DisassociateEIPWithShareBandwidth - 将EIP移出共享带宽
@@ -50,7 +49,7 @@ func (c *UNetClient) DisassociateEIPWithShareBandwidth(req *DisassociateEIPWithS
 
 	err = c.client.InvokeAction("DisassociateEIPWithShareBandwidth", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil

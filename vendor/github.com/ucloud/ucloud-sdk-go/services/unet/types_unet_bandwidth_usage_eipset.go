@@ -9,7 +9,7 @@ package unet
 type UnetBandwidthUsageEIPSet struct {
 
 	// 最近5分钟带宽用量, 单位Mbps
-	CurBandwidth float32
+	CurBandwidth float64
 
 	// 弹性IP资源ID
 	EIPId string

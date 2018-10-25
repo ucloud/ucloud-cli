@@ -4,9 +4,8 @@
 package unet
 
 import (
-	"github.com/ucloud/ucloud-sdk-go/sdk"
-	"github.com/ucloud/ucloud-sdk-go/sdk/request"
-	"github.com/ucloud/ucloud-sdk-go/sdk/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
 // AllocateEIPRequest is request schema for AllocateEIP action
@@ -54,14 +53,14 @@ type AllocateEIPResponse struct {
 
 // NewAllocateEIPRequest will create request of AllocateEIP action.
 func (c *UNetClient) NewAllocateEIPRequest() *AllocateEIPRequest {
-	cfg := c.client.GetConfig()
+	req := &AllocateEIPRequest{}
 
-	return &AllocateEIPRequest{
-		CommonBase: request.CommonBase{
-			Region:    sdk.String(cfg.Region),
-			ProjectId: sdk.String(cfg.ProjectId),
-		},
-	}
+	// setup request with client config
+	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
 }
 
 // AllocateEIP - 根据提供信息, 申请弹性IP
@@ -71,7 +70,7 @@ func (c *UNetClient) AllocateEIP(req *AllocateEIPRequest) (*AllocateEIPResponse,
 
 	err = c.client.InvokeAction("AllocateEIP", req, &res)
 	if err != nil {
-		return nil, err
+		return &res, err
 	}
 
 	return &res, nil
