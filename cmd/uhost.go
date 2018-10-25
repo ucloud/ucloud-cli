@@ -252,6 +252,14 @@ func NewCmdUHostDelete() *cobra.Command {
 		Short: "Delete Uhost instance",
 		Long:  "Delete Uhost instance",
 		Run: func(cmd *cobra.Command, args []string) {
+			sure, err := ux.Prompt("Are you sure you want to delete this host? (y/n):")
+			if err != nil {
+				Cxt.Println(err)
+				return
+			}
+			if !sure {
+				return
+			}
 			if *isDestory {
 				req.Destroy = sdk.Int(1)
 			} else {

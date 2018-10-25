@@ -16,7 +16,7 @@ import (
 const configFile = "config.json"
 
 //Version 版本号
-const Version = "0.1.3"
+const Version = "0.1.4"
 
 //ConfigPath 配置文件路径
 

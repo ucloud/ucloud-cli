@@ -155,7 +155,7 @@ func NewCmdGsshCreate() *cobra.Command {
 		Use:     "create",
 		Short:   "Create GlobalSSH instance",
 		Long:    "Create GlobalSSH instance",
-		Example: "ucloud gssh create --area Washington --target-ip 8.8.8.8",
+		Example: "ucloud gssh create --location Washington --target-ip 8.8.8.8",
 		Run: func(cmd *cobra.Command, args []string) {
 			port := *req.Port
 			for code, area := range areaCodeMap {
@@ -200,7 +200,7 @@ func NewCmdGsshDelete() *cobra.Command {
 		Use:     "delete",
 		Short:   "Delete GlobalSSH instance",
 		Long:    "Delete GlobalSSH instance",
-		Example: "ucloud gssh delete --id uga-xx1  --id uga-xx2",
+		Example: "ucloud gssh delete --resource-id uga-xx1  --id uga-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range *gsshIds {
 				req.InstanceId = &id
@@ -217,7 +217,7 @@ func NewCmdGsshDelete() *cobra.Command {
 	gsshIds = cmd.Flags().StringArray("resource-id", make([]string, 0), "Required. ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple flags")
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("resource-id")
 	return cmd
 }
 
@@ -231,7 +231,7 @@ func NewCmdGsshModify() *cobra.Command {
 		Use:     "update",
 		Short:   "Update GlobalSSH instance",
 		Long:    "Update GlobalSSH instance, including port and remark attribute",
-		Example: "ucloud gssh update --id uga-xxx --port 22",
+		Example: "ucloud gssh update --resource-id uga-xxx --port 22",
 		Run: func(cmd *cobra.Command, args []string) {
 			gsshModifyPortReq.Region = sdk.String(region)
 			gsshModifyPortReq.ProjectId = sdk.String(project)
