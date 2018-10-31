@@ -57,6 +57,12 @@
 			"revisionTime": "2018-10-24T10:31:01Z"
 		},
 		{
+			"checksumSHA1": "/Q1QxXVSDx6egkzPBI4PxxBgpUI=",
+			"path": "github.com/ucloud/ucloud-sdk-go/services/udisk",
+			"revision": "ae92fcdf66a5f34c27d8ae1f81b10033648275f4",
+			"revisionTime": "2018-10-24T10:31:01Z"
+		},
+		{
 			"checksumSHA1": "mT4ix7tzri+ORhkQDUvNvRuGK4Y=",
 			"path": "github.com/ucloud/ucloud-sdk-go/services/uhost",
 			"revision": "ae92fcdf66a5f34c27d8ae1f81b10033648275f4",

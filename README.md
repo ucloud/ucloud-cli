@@ -57,7 +57,8 @@ complete -F /usr/local/bin/ucloud ucloud
 
 ## Getting Started
 
-Run the command to get started and configure ucloud-cli follow the steps. The public & private keys will be saved automatically and locally.
+Run the command to get started and configure ucloud-cli follow the steps. The public & private keys will be saved automatically and locally to directory ~/.ucloud.
+You can delete the directory whenever you want.
 
 ```
 $ ucloud init

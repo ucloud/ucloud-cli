@@ -76,6 +76,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdSubnet())
 	cmd.AddCommand(NewCmdVPC())
 	cmd.AddCommand(NewCmdFirewall())
+	cmd.AddCommand(NewCmdDisk())
 	return cmd
 }
 
@@ -90,7 +91,8 @@ Examples:
 
 Commands:{{range .Commands}}{{if .IsAvailableCommand}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}
-{{end}}{{end}}{{if .HasAvailableLocalFlags}}Flags:
+  {{end}}{{end}}{{if .HasAvailableLocalFlags}}
+Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
 Global Flags:

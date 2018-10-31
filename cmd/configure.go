@@ -51,7 +51,7 @@ func NewCmdInit() *cobra.Command {
 					Cxt.Println(err)
 					return
 				}
-				if confirm {
+				if !confirm {
 					printHello()
 					return
 				}

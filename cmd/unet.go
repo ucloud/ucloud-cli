@@ -39,7 +39,7 @@ func NewCmdSubnet() *cobra.Command {
 type SubnetRow struct {
 	SubnetName     string
 	ResourceID     string
-	UGroup         string
+	Group          string
 	AffiliatedVPC  string
 	NetworkSegment string
 	CreationTime   string
@@ -67,13 +67,13 @@ func NewCmdSubnetList() *cobra.Command {
 					row := SubnetRow{}
 					row.SubnetName = sn.SubnetName
 					row.ResourceID = sn.SubnetId
-					row.UGroup = sn.Tag
+					row.Group = sn.Tag
 					row.AffiliatedVPC = fmt.Sprintf("%s/%s", sn.VPCName, sn.VPCId)
 					row.NetworkSegment = fmt.Sprintf("%s/%s", sn.Subnet, sn.Netmask)
 					row.CreationTime = FormatDate(sn.CreateTime)
 					list = append(list, row)
 				}
-				PrintTable(list, []string{"SubnetName", "ResourceID", "UGroup", "AffiliatedVPC", "NetworkSegment", "CreationTime"})
+				PrintTable(list, []string{"SubnetName", "ResourceID", "Group", "AffiliatedVPC", "NetworkSegment", "CreationTime"})
 			}
 		},
 	}
@@ -84,7 +84,7 @@ func NewCmdSubnetList() *cobra.Command {
 	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	flags.StringSliceVar(&req.SubnetIds, "subnet-id", []string{}, "Optional. Multiple values separated by commas")
 	req.VPCId = flags.String("vpc-id", "", "Optional. ResourceID of VPC")
-	req.Tag = flags.String("ugroup", "", "Optional. UGroup")
+	req.Tag = flags.String("group", "", "Optional. Group")
 	req.Offset = flags.Int("offset", 0, "Optional. offset default 0")
 	req.Limit = flags.Int("limit", 50, "Optional. max count")
 
@@ -108,7 +108,7 @@ func NewCmdVPC() *cobra.Command {
 type VPCRow struct {
 	VPCName        string
 	ResourceID     string
-	UGroup         string
+	Group          string
 	NetworkSegment string
 	SubnetCount    int
 	CreationTime   string
@@ -136,13 +136,13 @@ func NewCmdVPCList() *cobra.Command {
 					row := VPCRow{}
 					row.VPCName = vpc.Name
 					row.ResourceID = vpc.VPCId
-					row.UGroup = vpc.Tag
+					row.Group = vpc.Tag
 					row.NetworkSegment = strings.Join(vpc.Network, ",")
 					row.SubnetCount = vpc.SubnetCount
 					row.CreationTime = FormatDate(vpc.CreateTime)
 					list = append(list, row)
 				}
-				PrintTable(list, []string{"VPCName", "ResourceID", "UGroup", "NetworkSegment", "SubnetCount", "CreationTime"})
+				PrintTable(list, []string{"VPCName", "ResourceID", "Group", "NetworkSegment", "SubnetCount", "CreationTime"})
 			}
 
 		},
@@ -151,7 +151,7 @@ func NewCmdVPCList() *cobra.Command {
 	flags.SortFlags = false
 	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	req.Tag = flags.String("ugroup", "", "Optional. UGroup")
+	req.Tag = flags.String("group", "", "Optional. Group")
 	flags.StringSliceVar(&req.VPCIds, "vpc-id", []string{}, "Optional. Multiple values separated by commas")
 
 	return cmd
@@ -175,7 +175,7 @@ type FirewallRow struct {
 	ResourceID          string
 	FirewallName        string
 	Remark              string
-	UGroup              string
+	Group               string
 	RuleAmount          int
 	BoundResourceAmount int
 	CreationTime        string
@@ -203,13 +203,13 @@ func NewCmdFirewallList() *cobra.Command {
 					row.ResourceID = fw.FWId
 					row.FirewallName = fw.Name
 					row.Remark = fw.Remark
-					row.UGroup = fw.Tag
+					row.Group = fw.Tag
 					row.RuleAmount = len(fw.Rule)
 					row.BoundResourceAmount = fw.ResourceCount
 					row.CreationTime = FormatDate(fw.CreateTime)
 					list = append(list, row)
 				}
-				PrintTable(list, []string{"ResourceID", "FirewallName", "Remark", "UGroup", "RuleAmount", "BoundResourceAmount", "CreationTime"})
+				PrintTable(list, []string{"ResourceID", "FirewallName", "Remark", "Group", "RuleAmount", "BoundResourceAmount", "CreationTime"})
 			}
 		},
 	}

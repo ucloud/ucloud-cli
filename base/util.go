@@ -15,6 +15,8 @@ import (
 
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
@@ -259,4 +261,60 @@ var RegionLabel = map[string]string{
 	"bra-saopaulo": "SaoPaulo",
 	"uk-london":    "London",
 	"afr-nigeria":  "Lagos",
+}
+
+//Poll 轮询
+func Poll(describeFunc func(string, string, string, string) (interface{}, error)) func(string, string, string, string, []string) chan bool {
+	stateFields := []string{"State", "Status"}
+	return func(resourceID, projectID, region, zone string, targetState []string) chan bool {
+		w := waiter.StateWaiter{
+			Pending: []string{"pending"},
+			Target:  []string{"avaliable"},
+			Refresh: func() (interface{}, string, error) {
+				inst, err := describeFunc(resourceID, projectID, region, zone)
+				if err != nil {
+					return nil, "", err
+				}
+
+				if inst == nil {
+					return nil, "pending", nil
+				}
+				instValue := reflect.ValueOf(inst)
+				instValue = reflect.Indirect(instValue)
+				instType := instValue.Type()
+				if instValue.Kind() != reflect.Struct {
+					return nil, "", fmt.Errorf("Instance is not struct")
+				}
+				state := ""
+				for i := 0; i < instValue.NumField(); i++ {
+					for _, sf := range stateFields {
+						if instType.Field(i).Name == sf {
+							state = instValue.Field(i).String()
+						}
+					}
+				}
+				if state != "" {
+					for _, t := range targetState {
+						if t == state {
+							return inst, "avaliable", nil
+						}
+					}
+				}
+				return nil, "pending", nil
+
+			},
+			Timeout: 5 * time.Minute,
+		}
+
+		done := make(chan bool)
+		go func() {
+			if resp, err := w.Wait(); err != nil {
+				log.Error(err)
+			} else {
+				log.Infof("%#v", resp)
+			}
+			done <- true
+		}()
+		return done
+	}
 }
