@@ -1,3 +1,6 @@
+/*
+Package log is the log utilities of sdk
+*/
 package log
 
 import (

@@ -30,7 +30,7 @@ type AllocateBackendBatchResponse struct {
 	response.CommonBase
 
 	// 所添加的后端资源ID，（为ULB系统中使用，与资源自身ID无关），可用于 UpdateBackendAttribute/UpdateBackendAttributeBatch/ReleaseBackend
-	BackendId string
+	BackendSet []BackendSet
 }
 
 // NewAllocateBackendBatchRequest will create request of AllocateBackendBatch action.

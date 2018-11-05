@@ -3,6 +3,7 @@ package uerr
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 var (
@@ -37,7 +38,7 @@ func NewClientError(name string, err error) ClientError {
 	return ClientError{
 		name:      name,
 		err:       err,
-		retryable: false,
+		retryable: isRetryableName(name),
 	}
 }
 
@@ -51,7 +52,7 @@ func (e ClientError) Code() int {
 	return -1
 }
 
-// HTTPStatusCode will return http status code
+// StatusCode will return http status code
 func (e ClientError) StatusCode() int {
 	return 0
 }
@@ -77,5 +78,17 @@ func IsNetworkError(err error) bool {
 		return false
 	}
 	_, isNetError := err.(net.Error)
-	return isNetError
+	if isNetError {
+		return true
+	}
+	return strings.HasPrefix(err.Error(), "net/http: request canceled")
+}
+
+func isRetryableName(name string) bool {
+	switch name {
+	case ErrNetwork:
+		return true
+	default:
+		return false
+	}
 }

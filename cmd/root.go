@@ -76,24 +76,32 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdSubnet())
 	cmd.AddCommand(NewCmdVPC())
 	cmd.AddCommand(NewCmdFirewall())
+	cmd.AddCommand(NewCmdDisk())
 	return cmd
 }
 
 const helpTmpl = `Usage:{{if .Runnable}}
+
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
 Aliases:
+
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
 Examples:
-{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+  {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
 Commands:{{range .Commands}}{{if .IsAvailableCommand}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}
-{{end}}{{end}}{{if .HasAvailableLocalFlags}}Flags:
+
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
 Global Flags:
+
 {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
 
 Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}

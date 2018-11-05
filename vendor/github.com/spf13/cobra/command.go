@@ -991,6 +991,7 @@ func (c *Command) complete() error {
 		p = length
 	}
 	compLine := string(chars[0:p])
+	chars = []rune(compLine)
 	lastSpaceIndex := 0
 	for i, r := range chars {
 		if r == ' ' {

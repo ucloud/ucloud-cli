@@ -1,3 +1,6 @@
+/*
+Package response is the response of service
+*/
 package response
 
 // Common describe a response of action,

@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"net"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -150,6 +151,7 @@ var areaCodeMap = map[string]string{
 
 //NewCmdGsshCreate ucloud gssh create
 func NewCmdGsshCreate() *cobra.Command {
+	var targetIP *net.IP
 	req := BizClient.NewCreateGlobalSSHInstanceRequest()
 	cmd := &cobra.Command{
 		Use:     "create",
@@ -167,17 +169,18 @@ func NewCmdGsshCreate() *cobra.Command {
 				Cxt.Println("The port number should be between 1 and 65535, and cannot be 80 or 443")
 				return
 			}
+			req.TargetIP = sdk.String(targetIP.String())
 			resp, err := BizClient.CreateGlobalSSHInstance(req)
 			if err != nil {
 				HandleError(err)
 			} else {
-				Cxt.Println("ResourceID:", resp.InstanceId)
+				Cxt.Printf("gssh[%s] created\n", resp.InstanceId)
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
 	req.AreaCode = cmd.Flags().String("location", "", "Required. Location of the source server. See 'ucloud gssh location'")
-	req.TargetIP = cmd.Flags().String("target-ip", "", "Required. IP of the source server. Required")
+	targetIP = cmd.Flags().IP("target-ip", nil, "Required. IP of the source server. Required")
 	req.Region = cmd.Flags().String("region", "", "Optional. Assign region")
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Port = cmd.Flags().Int("port", 22, "Optional. Port of The SSH service between 1 and 65535. Do not use ports such as 80,443.")
@@ -208,7 +211,7 @@ func NewCmdGsshDelete() *cobra.Command {
 				if err != nil {
 					HandleError(err)
 				} else {
-					Cxt.Printf("GlobalSSH[%s] was successfully deleted\n", id)
+					Cxt.Printf("gssh[%s] deleted\n", id)
 				}
 			}
 		},
@@ -251,7 +254,7 @@ func NewCmdGsshModify() *cobra.Command {
 				if err != nil {
 					HandleError(err)
 				} else {
-					Cxt.Println("Successfully updated")
+					Cxt.Printf("gssh[%s] updated\n", *gsshModifyPortReq.InstanceId)
 				}
 			}
 			if *gsshModifyRemarkReq.Remark != "" {
@@ -259,7 +262,7 @@ func NewCmdGsshModify() *cobra.Command {
 				if err != nil {
 					HandleError(err)
 				} else {
-					Cxt.Println("Successfully updated")
+					Cxt.Printf("gssh[%s] updated\n", *gsshModifyRemarkReq.InstanceId)
 				}
 			}
 		},

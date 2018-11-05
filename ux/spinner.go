@@ -32,8 +32,8 @@ func (s *Spinner) Start(doingText string) {
 func (s *Spinner) Stop() {
 	s.ticker.Stop()
 	s.reset()
-	s.output = fmt.Sprintf("%s...%s\n", s.DoingText, s.DoneText)
-	fmt.Printf(s.output)
+	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.DoneText)
+	fmt.Printf(output)
 }
 
 func (s *Spinner) reset() {
@@ -70,3 +70,8 @@ var spinnerFrames = []rune{'⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷
 
 // DotSpinner dot spinner
 var DotSpinner = &Spinner{frames: spinnerFrames, framesPerSecond: 12, DoingText: "running", DoneText: "done"}
+
+//NewDotSpinner get new DotSpinner instance
+func NewDotSpinner() *Spinner {
+	return &Spinner{frames: spinnerFrames, framesPerSecond: 12, DoingText: "running", DoneText: "done"}
+}

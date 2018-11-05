@@ -98,12 +98,12 @@ type UHostInstanceSet struct {
 	// 主机的生命周期类型。目前仅支持Normal：普通；
 	LifeCycle string
 
-	// 主机的 GPU 数量
+	// GPU个数
 	GPU int
 
-	// 系统盘状态 Normal: 已初始化完成
+	// 系统盘状态 Normal表示初始化完成；Initializing表示在初始化
 	BootDiskState string
 
-	// 主机的存储空间
+	// 总的存储空间
 	TotalDiskSpace int
 }
