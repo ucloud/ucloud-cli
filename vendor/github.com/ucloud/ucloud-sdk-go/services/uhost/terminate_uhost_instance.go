@@ -22,7 +22,9 @@ type TerminateUHostInstanceRequest struct {
 	Destroy *int `required:"false"`
 
 	// 是否释放绑定的EIP。yes: 解绑EIP后，并释放；其他值或不填：解绑EIP。
-	EIPReleased *string `required:"false"`
+	// EIPReleased *string `required:"false"`
+	ReleaseEIP   *bool `required:"false"`
+	ReleaseUDisk *bool `required:"false"`
 }
 
 // TerminateUHostInstanceResponse is response schema for TerminateUHostInstance action

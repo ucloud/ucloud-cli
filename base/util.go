@@ -318,3 +318,11 @@ func Poll(describeFunc func(string, string, string, string) (interface{}, error)
 		return done
 	}
 }
+
+//PickResourceID  uhost-xxx/uhost-name => uhost-xxx
+func PickResourceID(str string) string {
+	if strings.Index(str, "/") > -1 {
+		return strings.SplitN(str, "/", 2)[0]
+	}
+	return str
+}

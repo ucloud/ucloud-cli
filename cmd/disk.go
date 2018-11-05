@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ucloud/ucloud-sdk-go/services/udisk"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -30,9 +31,9 @@ import (
 //NewCmdDisk ucloud disk
 func NewCmdDisk() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "disk",
-		Short: "Read and manipulate ucloud disks",
-		Long:  "Read and manipulate ucloud disks",
+		Use:   "udisk",
+		Short: "Read and manipulate udisk instances",
+		Long:  "Read and manipulate udisk instances",
 	}
 	cmd.AddCommand(NewCmdDiskCreate())
 	cmd.AddCommand(NewCmdDiskList())
@@ -44,15 +45,21 @@ func NewCmdDisk() *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskCreate ucloud disk create
+//NewCmdDiskCreate ucloud udisk create
 func NewCmdDiskCreate() *cobra.Command {
+	var async *bool
+	var count *int
 	req := base.BizClient.NewCreateUDiskRequest()
 	enableDataArk := sdk.String("false")
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create ucloud disk",
-		Long:  "Create ucloud disk",
+		Short: "Create udisk instance",
+		Long:  "Create udisk instance",
 		Run: func(cmd *cobra.Command, args []string) {
+			if *count > 10 || *count < 1 {
+				base.Cxt.Printf("Error, count should be between 1 and 10\n")
+				return
+			}
 			if *enableDataArk == "true" {
 				req.UDataArkMode = sdk.String("Yes")
 			} else {
@@ -64,39 +71,46 @@ func NewCmdDiskCreate() *cobra.Command {
 			} else if *req.DiskType == "SSD" {
 				*req.DiskType = "SSDDataDisk"
 			}
-
-			resp, err := base.BizClient.CreateUDisk(req)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-			if count := len(resp.UDiskId); count == 1 {
-				text := fmt.Sprintf("udisk:%v is initializating", resp.UDiskId)
-				pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
-			} else if count > 1 {
-				base.Cxt.Printf("udisk:%v created\n", resp.UDiskId)
-			} else {
-				base.Cxt.PrintErr(fmt.Errorf("none disk created"))
+			for i := 0; i < *count; i++ {
+				resp, err := base.BizClient.CreateUDisk(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				if count := len(resp.UDiskId); count == 1 {
+					text := fmt.Sprintf("udisk:%v is initializing", resp.UDiskId)
+					if *async {
+						base.Cxt.Println(text)
+					} else {
+						pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+					}
+				} else if count > 1 {
+					base.Cxt.Printf("udisk:%v created\n", resp.UDiskId)
+				} else {
+					base.Cxt.PrintErr(fmt.Errorf("none udisk created"))
+				}
 			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	req.Name = flags.String("name", "", "Required. Name of the udisk to create")
+	req.Size = flags.Int("size-gb", 10, "Required. Size of the udisk to create. Unit:GB. Normal udisk [1,8000]; SSD udisk [1,4000] ")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.Name = flags.String("name", "", "Required. Name of the disk to create")
-	req.Size = flags.Int("size-gb", 10, "Required. Size of the disk to create. Unit:GB. Normal disk [1,8000]; SSD disk [1,4000] ")
 	req.ChargeType = flags.String("charge-type", "Dynamic", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours.")
+	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the udisk back to any moment within the last 12 hours.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
-	req.DiskType = flags.String("disk-type", "Oridinary", "Optional. 'Ordinary' or 'SSD'")
+	req.DiskType = flags.String("udisk-type", "Oridinary", "Optional. 'Ordinary' or 'SSD'")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment.See https://accountv2.ucloud.cn")
+	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
+	count = flags.Int("count", 1, "Optional. The count of udisk to create. Range [1,10]")
 
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	flags.SetFlagValues("enable-data-ark", "true", "false")
-	flags.SetFlagValues("disk-type", "Oridinary", "SSD")
+	flags.SetFlagValues("udisk-type", "Oridinary", "SSD")
 
 	cmd.MarkFlagRequired("size-gb")
 	cmd.MarkFlagRequired("name")
@@ -133,8 +147,8 @@ func NewCmdDiskList() *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List ucloud disk",
-		Long:  "List ucloud disk",
+		Short: "List udisk instance",
+		Long:  "List udisk instance",
 		Run: func(cmd *cobra.Command, args []string) {
 			for key, val := range typeMap {
 				if *req.DiskType == val {
@@ -155,15 +169,22 @@ func NewCmdDiskList() *cobra.Command {
 					Size:           fmt.Sprintf("%dGB", disk.Size),
 					Type:           typeMap[disk.DiskType],
 					EnableDataArk:  arkModeMap[disk.UDataArkMode],
-					MountUHost:     disk.UHostIP,
-					MountPoint:     fmt.Sprintf("%s", disk.DeviceName),
+					MountUHost:     fmt.Sprintf("%s/%s", disk.UHostName, disk.UHostIP),
+					MountPoint:     disk.DeviceName,
 					State:          disk.Status,
 					CreationTime:   base.FormatDate(disk.CreateTime),
 					ExpirationTime: base.FormatDate(disk.ExpiredTime),
 				}
+				if disk.UHostIP == "" {
+					row.MountUHost = ""
+				}
 				list = append(list, row)
 			}
-			base.PrintTableS(list)
+			if global.json {
+				base.PrintJSON(list)
+			} else {
+				base.PrintTableS(list)
+			}
 		},
 	}
 	flags := cmd.Flags()
@@ -171,126 +192,196 @@ func NewCmdDiskList() *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UDiskId = flags.String("resource-id", "", "Optional. Resource ID of the disk to search")
-	req.DiskType = flags.String("disk-type", "", "Optional. Optional. Type of the disk to search. 'Oridinary-Data-Disk','Oridinary-System-Disk' or 'SSD-Data-Disk'")
+	req.UDiskId = flags.String("resource-id", "", "Optional. Resource ID of the udisk to search")
+	req.DiskType = flags.String("udisk-type", "", "Optional. Optional. Type of the udisk to search. 'Oridinary-Data-Disk','Oridinary-System-Disk' or 'SSD-Data-Disk'")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit")
-	flags.SetFlagValues("disk-type", "Oridinary-Data-Disk", "Oridinary-System-Disk", "SSD-Data-Disk")
+	flags.SetFlagValues("udisk-type", "Oridinary-Data-Disk", "Oridinary-System-Disk", "SSD-Data-Disk")
 	return cmd
 }
 
 //NewCmdDiskAttach ucloud disk attach
 func NewCmdDiskAttach() *cobra.Command {
+	var async *bool
+	var udiskIDs *[]string
+
 	req := base.BizClient.NewAttachUDiskRequest()
 	cmd := &cobra.Command{
-		Use:   "attach",
-		Short: "Attach a disk to an uhost instance",
-		Long:  "Attach a disk to an uhost instance",
+		Use:     "attach",
+		Short:   "Attach udisk instances to an uhost",
+		Long:    "Attach udisk instances to an uhost",
+		Example: "ucloud udisk attach --uhost-id uhost-xxxx --udisk-id bs-xxx1,bs-xxx2",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.AttachUDisk(req)
-			if err != nil {
-				base.HandleError(err)
-				return
+			for _, id := range *udiskIDs {
+				id = base.PickResourceID(id)
+				req.UDiskId = &id
+				*req.UHostId = base.PickResourceID(*req.UHostId)
+				resp, err := base.BizClient.AttachUDisk(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				text := fmt.Sprintf("udisk[%s] is attaching to uhost uhost[%s]", *req.UDiskId, *req.UHostId)
+				if *async {
+					base.Cxt.Println(text)
+				} else {
+					pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_INUSE, status.DISK_FAILED})
+				}
 			}
-			text := fmt.Sprintf("udisk[%s] is attaching to uhost uhost[%s]", *req.UDiskId, *req.UHostId)
-			pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_INUSE, status.DISK_FAILED})
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	req.UHostId = flags.String("uhost-id", "", "Required. Resource ID of the uhost instance which you want to attach the disk")
+	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisk instances to attach")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UHostId = flags.String("uhost-id", "", "Resource ID of the uhost instance which you want to attach the disk")
-	req.UDiskId = flags.String("disk-id", "", "Resource ID of the udisk instance to attach")
+	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
+
+	flags.SetFlagValuesFunc("udisk-id", func() []string {
+		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
+	})
+	flags.SetFlagValuesFunc("uhost-id", func() []string {
+		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+	})
 
 	cmd.MarkFlagRequired("uhost-id")
-	cmd.MarkFlagRequired("disk-id")
+	cmd.MarkFlagRequired("udisk-id")
 
 	return cmd
 }
 
-//NewCmdDiskDetach ucloud disk detach
+//NewCmdDiskDetach ucloud udisk detach
 func NewCmdDiskDetach() *cobra.Command {
+	var async, yes *bool
+	var udiskIDs *[]string
 	req := base.BizClient.NewDetachUDiskRequest()
 	cmd := &cobra.Command{
 		Use:   "detach",
-		Short: "Detach an ucloud disk from uhost",
-		Long:  "Detach an ucloud disk from uhost",
+		Short: "Detach udisk instances from an uhost",
+		Long:  "Detach udisk instances from an uhost",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DetachUDisk(req)
-			if err != nil {
-				base.HandleError(err)
-				return
+			text := `Please confirm that you have already unmounted file system corresponding to this hard drive,(See "https://docs.ucloud.cn/storage_cdn/udisk/userguide/umount" for help), otherwise it will cause file system damage and UHost cannot be normally shut down. Sure to detach?`
+			if !*yes {
+				sure, err := ux.Prompt(text)
+				if err != nil {
+					base.Cxt.PrintErr(err)
+					return
+				}
+				if !sure {
+					return
+				}
 			}
-			text := fmt.Sprintf("udisk[%s] is detaching from uhost[%s]", resp.UDiskId, resp.UHostId)
-			pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+			for _, id := range *udiskIDs {
+				id = base.PickResourceID(id)
+				any, err := describeUdiskByID(id, *req.ProjectId, *req.Region, *req.Zone)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				if any == nil {
+					base.Cxt.PrintErr(fmt.Errorf("udisk[%v] is not exist", any))
+					continue
+				}
+				ins, ok := any.(*udisk.UDiskDataSet)
+				if !ok {
+					base.Cxt.PrintErr(fmt.Errorf("%#v convert to udisk failed", any))
+					continue
+				}
+				req.UHostId = &ins.UHostId
+				req.UDiskId = &id
+				*req.UHostId = base.PickResourceID(*req.UHostId)
+				resp, err := base.BizClient.DetachUDisk(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				text := fmt.Sprintf("udisk[%s] is detaching from uhost[%s]", resp.UDiskId, resp.UHostId)
+				if *async {
+					base.Cxt.Println(text)
+				} else {
+					pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+				}
+			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisk instances to detach")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UHostId = flags.String("uhost-id", "", "Resource ID of the uhost instance, from which you want to detach the disk")
-	req.UDiskId = flags.String("disk-id", "", "Resource ID of the udisk instance to detach")
+	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
+	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
-	cmd.MarkFlagRequired("uhost-id")
-	cmd.MarkFlagRequired("disk-id")
+	flags.SetFlagValuesFunc("udisk-id", func() []string {
+		return getDiskList([]string{status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	cmd.MarkFlagRequired("udisk-id")
 	return cmd
 }
 
-//NewCmdDiskDelete ucloud disk delete
+//NewCmdDiskDelete ucloud udisk delete
 func NewCmdDiskDelete() *cobra.Command {
+	var yes *bool
+	var udiskIDs *[]string
 	req := base.BizClient.NewDeleteUDiskRequest()
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Delete an ucloud disk",
-		Long:  "Delete an ucloud disk",
+		Short: "Delete udisk instances",
+		Long:  "Delete udisk instances",
 		Run: func(cmd *cobra.Command, args []string) {
-			if strings.Index(*req.UDiskId, "/") > -1 {
-				*req.UDiskId = strings.SplitN(*req.UDiskId, "/", 2)[0]
+			if !*yes {
+				sure, err := ux.Prompt(fmt.Sprintf("Are you sure to delete udisk(s)?"))
+				if err != nil {
+					base.Cxt.PrintErr(err)
+					return
+				}
+				if !sure {
+					return
+				}
 			}
-			sure, err := ux.Prompt(fmt.Sprintf("Are you sure to delete disk[%s]?", *req.UDiskId))
-			if err != nil {
-				base.Cxt.PrintErr(err)
-				return
+			for _, id := range *udiskIDs {
+				id := base.PickResourceID(id)
+				req.UDiskId = &id
+				_, err := base.BizClient.DeleteUDisk(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				} else {
+					base.Cxt.Printf("udisk[%s] deleted\n", *req.UDiskId)
+				}
 			}
-			if !sure {
-				return
-			}
-			_, err = base.BizClient.DeleteUDisk(req)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-			base.Cxt.Printf("udisk[%s] deleted\n", *req.UDiskId)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. The Resource ID of udisks to delete")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UDiskId = flags.String("resource-id", "", "Required. The Resource ID of a disk to delete")
+	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
-	flags.SetFlagValuesFunc("resource-id", func() []string {
+	flags.SetFlagValuesFunc("udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE, status.DISK_FAILED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
-	cmd.MarkFlagRequired("resource-id")
+	cmd.MarkFlagRequired("udisk-id")
 
 	return cmd
 }
 
 //NewCmdDiskClone ucloud disk clone
 func NewCmdDiskClone() *cobra.Command {
+	var async *bool
 	req := base.BizClient.NewCloneUDiskRequest()
 	enableDataArk := sdk.String("false")
 	cmd := &cobra.Command{
 		Use:   "clone",
-		Short: "Clone an ucloud disk",
-		Long:  "Clone an ucloud disk",
+		Short: "Clone an udisk",
+		Long:  "Clone an udisk",
 		Run: func(cmd *cobra.Command, args []string) {
 			if *enableDataArk == "true" {
 				req.UDataArkMode = sdk.String("Yes")
@@ -306,24 +397,29 @@ func NewCmdDiskClone() *cobra.Command {
 				return
 			}
 			if len(resp.UDiskId) == 1 {
-				pollText := fmt.Sprintf("cloned disk:[%s] is initializating", resp.UDiskId[0])
-				pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, pollText, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+				text := fmt.Sprintf("cloned udisk:[%s] is initializing", resp.UDiskId[0])
+				if *async {
+					base.Cxt.Println(text)
+				} else {
+					pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+				}
 			} else {
-				base.Cxt.Printf("disk[%v] cloned", resp.UDiskId)
+				base.Cxt.Printf("udisk[%v] cloned", resp.UDiskId)
 			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.SourceId = flags.String("source-id", "", "Required. Resource ID of parent disk")
-	req.Name = flags.String("name", "", "Required. Name of new disk")
+	req.SourceId = flags.String("source-id", "", "Required. Resource ID of parent udisk")
+	req.Name = flags.String("name", "", "Required. Name of new udisk")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours.")
+	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the udisk back to any moment within the last 12 hours.")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see https://accountv2.ucloud.cn")
+	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	flags.SetFlagValues("enable-data-ark", "true", "false")
@@ -338,42 +434,45 @@ func NewCmdDiskClone() *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskExpand ucloud disk expand
+//NewCmdDiskExpand ucloud udisk expand
 func NewCmdDiskExpand() *cobra.Command {
+	var udiskIDs *[]string
 	req := base.BizClient.NewResizeUDiskRequest()
 	cmd := &cobra.Command{
 		Use:   "expand",
-		Short: "Expand disk size",
-		Long:  "Expand disk size",
+		Short: "Expand udisk size",
+		Long:  "Expand udisk size",
 		Run: func(cmd *cobra.Command, args []string) {
-			if strings.Index(*req.UDiskId, "/") > -1 {
-				*req.UDiskId = strings.SplitN(*req.UDiskId, "/", 2)[0]
-			}
 			if *req.Size > 8000 || *req.Size < 1 {
 				base.Cxt.Println("size-gb should be between 1 and 8000")
-			}
-			_, err := base.BizClient.ResizeUDisk(req)
-			if err != nil {
-				base.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("disk:[%s] expanded to %d GB\n", *req.UDiskId, *req.Size)
+			for _, id := range *udiskIDs {
+				id = base.PickResourceID(id)
+				req.UDiskId = &id
+				_, err := base.BizClient.ResizeUDisk(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				base.Cxt.Printf("udisk:[%s] expanded to %d GB\n", *req.UDiskId, *req.Size)
+			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.UDiskId = flags.String("disk-id", "", "Required. Resource ID of the disk to expand")
-	req.Size = flags.Int("size-gb", 0, "Required. Size of the disk after expanded. Unit: GB. Range [1,8000]")
+	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisks to expand")
+	req.Size = flags.Int("size-gb", 0, "Required. Size of the udisk after expanded. Unit: GB. Range [1,8000]")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see https://accountv2.ucloud.cn")
 
-	flags.SetFlagValuesFunc("disk-id", func() []string {
+	flags.SetFlagValuesFunc("udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
-	cmd.MarkFlagRequired("disk-id")
+	cmd.MarkFlagRequired("udisk-id")
 	cmd.MarkFlagRequired("size-gb")
 
 	return cmd
