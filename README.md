@@ -78,8 +78,46 @@ $ ucloud help
 
 ## Example
 
-Taking configure globalssh to uhost instance as an example, which will acceleare the instance SSH management efficiency (TCP 22 as default):
+Taking create uhost in Nigeria (region: air-nigeria) and bind a public IP as an example, then configure GlobalSSH to accelerate the SSH efficiency beyond China mainland.
+
+First to create an uhost instance:
 
 ```
-$ ucloud gssh create --location Washington --target-ip 128.14.225.161
+$ ucloud uhost create --cpu 1 --memory 1 --password mypassword123 --image-id uimage-fya3qr
+
+UHost:[uhost-tr1eau] created successfully!
+```
+
+*Note* 
+
+Run follow command to get details regarding the parameters to create new uhost instance.
+
+```
+$ ucloud uhost create --help
+```
+
+And suggest run the command to get the image-id first.
+
+```
+$ ucloud image list
+```
+
+Secondly, we're going to allocate an EIP and bind to the instance created above.
+
+```
+$ ucloud eip allocate --line International --bandwidth 1
+EIPId:eip-xov13b,IP:152.32.140.92,Line:International 
+
+$ ucloud eip bind --eip-id eip-xov13b --resource-id uhost-tr1eau
+EIP: [eip-xov13b] bind with uhost:[uhost-tr1eau] successfully 
+```
+
+Configure the GlobalSSH to the uhost instance and login the instance via GlobalSSH
+
+```
+$ ucloud gssh create --location Washington --target-ip 152.32.140.92
+ResourceID: uga-pdhxvs
+
+$ ssh root@152.32.140.92.ipssh.net
+root@152.32.140.92.ipssh.net's password: password of the uhost instance
 ```

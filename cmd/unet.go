@@ -91,19 +91,6 @@ func NewCmdSubnetList() *cobra.Command {
 	return cmd
 }
 
-//NewCmdVPC  ucloud vpc
-func NewCmdVPC() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "vpc",
-		Short: "List vpc",
-		Long:  `List vpc`,
-		Args:  cobra.NoArgs,
-	}
-	cmd.AddCommand(NewCmdVPCList())
-
-	return cmd
-}
-
 //VPCRow 表格行
 type VPCRow struct {
 	VPCName        string

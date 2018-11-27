@@ -74,7 +74,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdGssh())
 	cmd.AddCommand(NewCmdUImage())
 	cmd.AddCommand(NewCmdSubnet())
-	cmd.AddCommand(NewCmdVPC())
+	cmd.AddCommand(NewCmdVpc())
 	cmd.AddCommand(NewCmdFirewall())
 	cmd.AddCommand(NewCmdDisk())
 	return cmd
