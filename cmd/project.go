@@ -148,3 +148,16 @@ func listProject() error {
 	}
 	return nil
 }
+
+func getProjectList() []string {
+	req := &uaccount.GetProjectListRequest{}
+	resp, err := BizClient.GetProjectList(req)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, p := range resp.ProjectSet {
+		list = append(list, p.ProjectId+"/"+p.ProjectName)
+	}
+	return list
+}

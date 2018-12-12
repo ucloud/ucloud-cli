@@ -21,7 +21,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	. "github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
@@ -40,12 +40,12 @@ var global GlobalFlag
 func NewCmdRoot() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:                    "ucloud",
-		Short:                  "UCloud CLI v" + Version,
+		Short:                  "UCloud CLI v" + base.Version,
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.version {
-				Cxt.Printf("ucloud cli %s\n", Version)
+				base.Cxt.Printf("ucloud cli %s\n", base.Version)
 			} else if global.completion {
 				NewCmdCompletion().Run(cmd, args)
 			} else if global.config {
@@ -135,7 +135,7 @@ func Execute() {
 func init() {
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(initialize)
-	Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
+	base.Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
 func resetHelpFunc(cmd *cobra.Command) {
@@ -147,25 +147,41 @@ func resetHelpFunc(cmd *cobra.Command) {
 }
 
 func initialize(cmd *cobra.Command) {
+	flags := cmd.Flags()
+	project, err := flags.GetString("project-id")
+	if err == nil {
+		base.ClientConfig.ProjectId = project
+	}
+
+	region, err := flags.GetString("region")
+	if err == nil {
+		base.ClientConfig.Region = region
+	}
+
+	zone, err := flags.GetString("zone")
+	if err == nil {
+		base.ClientConfig.Zone = zone
+	}
+
 	if global.debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	userInfo, err := LoadUserInfo()
+	userInfo, err := base.LoadUserInfo()
 	if err == nil {
-		Cxt.AppendInfo("userName", userInfo.UserEmail)
-		Cxt.AppendInfo("companyName", userInfo.CompanyName)
+		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
+		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
 	} else {
-		Cxt.PrintErr(err)
+		base.Cxt.PrintErr(err)
 	}
 
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if config.PrivateKey == "" {
-			Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
+			base.Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
 		if config.PublicKey == "" {
-			Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
+			base.Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
 	}

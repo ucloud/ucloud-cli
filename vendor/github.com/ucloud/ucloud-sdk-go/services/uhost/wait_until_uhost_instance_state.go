@@ -10,6 +10,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
 
+// WaitUntilUHostInstanceStateRequest is the request of uhost instance state waiter
 type WaitUntilUHostInstanceStateRequest struct {
 	request.CommonBase
 
@@ -61,9 +62,9 @@ func (c *UHostClient) WaitUntilUHostInstanceState(req *WaitUntilUHostInstanceSta
 
 			if len(resp.UHostSet) > 0 {
 				return true, nil
-			} else {
-				return false, nil
 			}
+
+			return false, nil
 		},
 	}
 	return waiter.WaitForCompletion()

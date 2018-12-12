@@ -16,10 +16,12 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/ucloud/ucloud-sdk-go/private/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/services/udisk"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
@@ -35,22 +37,28 @@ func NewCmdDisk() *cobra.Command {
 		Short: "Read and manipulate udisk instances",
 		Long:  "Read and manipulate udisk instances",
 	}
-	cmd.AddCommand(NewCmdDiskCreate())
+	writer := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdDiskCreate(writer))
 	cmd.AddCommand(NewCmdDiskList())
-	cmd.AddCommand(NewCmdDiskAttach())
-	cmd.AddCommand(NewCmdDiskDetach())
+	cmd.AddCommand(NewCmdDiskAttach(writer))
+	cmd.AddCommand(NewCmdDiskDetach(writer))
 	cmd.AddCommand(NewCmdDiskDelete())
-	cmd.AddCommand(NewCmdDiskClone())
+	cmd.AddCommand(NewCmdDiskClone(writer))
 	cmd.AddCommand(NewCmdDiskExpand())
+	cmd.AddCommand(NewCmdDiskSnapshot(writer))
+	cmd.AddCommand(NewCmdDiskRestore(writer))
+	cmd.AddCommand(NewCmdSnapshotList(writer))
+	cmd.AddCommand(NewCmdSnapshotDelete(writer))
 	return cmd
 }
 
 //NewCmdDiskCreate ucloud udisk create
-func NewCmdDiskCreate() *cobra.Command {
+func NewCmdDiskCreate(out io.Writer) *cobra.Command {
 	var async *bool
 	var count *int
+	var enableDataArk *string
+	var snapshotID *string
 	req := base.BizClient.NewCreateUDiskRequest()
-	enableDataArk := sdk.String("false")
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create udisk instance",
@@ -71,23 +79,57 @@ func NewCmdDiskCreate() *cobra.Command {
 			} else if *req.DiskType == "SSD" {
 				*req.DiskType = "SSDDataDisk"
 			}
-			for i := 0; i < *count; i++ {
-				resp, err := base.BizClient.CreateUDisk(req)
-				if err != nil {
-					base.HandleError(err)
-					return
-				}
-				if count := len(resp.UDiskId); count == 1 {
-					text := fmt.Sprintf("udisk:%v is initializing", resp.UDiskId)
-					if *async {
-						base.Cxt.Println(text)
-					} else {
-						pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+			if *snapshotID != "" {
+				cloneReq := base.BizClient.NewCloneUDiskSnapshotRequest()
+				cloneReq.UDataArkMode = req.UDataArkMode
+				cloneReq.SourceId = snapshotID
+				cloneReq.ProjectId = req.ProjectId
+				cloneReq.Region = req.Region
+				cloneReq.Zone = req.Zone
+				cloneReq.Name = req.Name
+				cloneReq.Size = req.Size
+				cloneReq.ChargeType = req.ChargeType
+				cloneReq.Quantity = req.Quantity
+				for i := 0; i < *count; i++ {
+					resp, err := base.BizClient.CloneUDiskSnapshot(cloneReq)
+					if err != nil {
+						base.HandleError(err)
+						return
 					}
-				} else if count > 1 {
-					base.Cxt.Printf("udisk:%v created\n", resp.UDiskId)
-				} else {
-					base.Cxt.PrintErr(fmt.Errorf("none udisk created"))
+					if count := len(resp.UDiskId); count == 1 {
+						text := fmt.Sprintf("udisk:%v is initializing", resp.UDiskId)
+						if *async {
+							fmt.Fprintln(out, text)
+						} else {
+							poller := base.NewSpoller(describeUdiskByID, out)
+							poller.Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+						}
+					} else if count > 1 {
+						base.Cxt.Printf("udisk:%v created\n", resp.UDiskId)
+					} else {
+						base.Cxt.PrintErr(fmt.Errorf("none udisk created"))
+					}
+				}
+			} else {
+				for i := 0; i < *count; i++ {
+					resp, err := base.BizClient.CreateUDisk(req)
+					if err != nil {
+						base.HandleError(err)
+						return
+					}
+					if count := len(resp.UDiskId); count == 1 {
+						text := fmt.Sprintf("udisk:%v is initializing", resp.UDiskId)
+						if *async {
+							fmt.Fprintln(out, text)
+						} else {
+							poller := base.NewSpoller(describeUdiskByID, out)
+							poller.Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+						}
+					} else if count > 1 {
+						base.Cxt.Printf("udisk:%v created\n", resp.UDiskId)
+					} else {
+						base.Cxt.PrintErr(fmt.Errorf("none udisk created"))
+					}
 				}
 			}
 		},
@@ -96,6 +138,7 @@ func NewCmdDiskCreate() *cobra.Command {
 	flags.SortFlags = false
 	req.Name = flags.String("name", "", "Required. Name of the udisk to create")
 	req.Size = flags.Int("size-gb", 10, "Required. Size of the udisk to create. Unit:GB. Normal udisk [1,8000]; SSD udisk [1,4000] ")
+	snapshotID = flags.String("snapshot-id", "", "Optional. Resource ID of a snapshot, which will apply to the udisk being created. If you set this option, 'udisk-type' will be omitted.")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
@@ -104,7 +147,6 @@ func NewCmdDiskCreate() *cobra.Command {
 	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the udisk back to any moment within the last 12 hours.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.DiskType = flags.String("udisk-type", "Oridinary", "Optional. 'Ordinary' or 'SSD'")
-	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment.See https://accountv2.ucloud.cn")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	count = flags.Int("count", 1, "Optional. The count of udisk to create. Range [1,10]")
 
@@ -192,7 +234,7 @@ func NewCmdDiskList() *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.UDiskId = flags.String("resource-id", "", "Optional. Resource ID of the udisk to search")
+	req.UDiskId = flags.String("udisk-id", "", "Optional. Resource ID of the udisk to search")
 	req.DiskType = flags.String("udisk-type", "", "Optional. Optional. Type of the udisk to search. 'Oridinary-Data-Disk','Oridinary-System-Disk' or 'SSD-Data-Disk'")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit")
@@ -201,7 +243,7 @@ func NewCmdDiskList() *cobra.Command {
 }
 
 //NewCmdDiskAttach ucloud disk attach
-func NewCmdDiskAttach() *cobra.Command {
+func NewCmdDiskAttach(out io.Writer) *cobra.Command {
 	var async *bool
 	var udiskIDs *[]string
 
@@ -223,9 +265,10 @@ func NewCmdDiskAttach() *cobra.Command {
 				}
 				text := fmt.Sprintf("udisk[%s] is attaching to uhost uhost[%s]", *req.UDiskId, *req.UHostId)
 				if *async {
-					base.Cxt.Println(text)
+					fmt.Fprintln(out, text)
 				} else {
-					pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_INUSE, status.DISK_FAILED})
+					poller := base.NewSpoller(describeUdiskByID, out)
+					poller.Spoll(resp.UDiskId, text, []string{status.DISK_INUSE, status.DISK_FAILED})
 				}
 			}
 		},
@@ -253,7 +296,7 @@ func NewCmdDiskAttach() *cobra.Command {
 }
 
 //NewCmdDiskDetach ucloud udisk detach
-func NewCmdDiskDetach() *cobra.Command {
+func NewCmdDiskDetach(out io.Writer) *cobra.Command {
 	var async, yes *bool
 	var udiskIDs *[]string
 	req := base.BizClient.NewDetachUDiskRequest()
@@ -275,33 +318,10 @@ func NewCmdDiskDetach() *cobra.Command {
 			}
 			for _, id := range *udiskIDs {
 				id = base.PickResourceID(id)
-				any, err := describeUdiskByID(id, *req.ProjectId, *req.Region, *req.Zone)
+				err := detachUdisk(*async, id, out)
 				if err != nil {
-					base.HandleError(err)
+					base.Cxt.Println(err)
 					continue
-				}
-				if any == nil {
-					base.Cxt.PrintErr(fmt.Errorf("udisk[%v] is not exist", any))
-					continue
-				}
-				ins, ok := any.(*udisk.UDiskDataSet)
-				if !ok {
-					base.Cxt.PrintErr(fmt.Errorf("%#v convert to udisk failed", any))
-					continue
-				}
-				req.UHostId = &ins.UHostId
-				req.UDiskId = &id
-				*req.UHostId = base.PickResourceID(*req.UHostId)
-				resp, err := base.BizClient.DetachUDisk(req)
-				if err != nil {
-					base.HandleError(err)
-					continue
-				}
-				text := fmt.Sprintf("udisk[%s] is detaching from uhost[%s]", resp.UDiskId, resp.UHostId)
-				if *async {
-					base.Cxt.Println(text)
-				} else {
-					pollDisk(resp.UDiskId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
 				}
 			}
 		},
@@ -312,7 +332,7 @@ func NewCmdDiskDetach() *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
+	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
@@ -321,6 +341,35 @@ func NewCmdDiskDetach() *cobra.Command {
 
 	cmd.MarkFlagRequired("udisk-id")
 	return cmd
+}
+
+func detachUdisk(async bool, udiskID string, out io.Writer) error {
+	any, err := describeUdiskByID(udiskID)
+	if err != nil {
+		return err
+	}
+	if any == nil {
+		return fmt.Errorf("udisk[%v] is not exist", any)
+	}
+	ins, ok := any.(*udisk.UDiskDataSet)
+	if !ok {
+		return fmt.Errorf("%#v convert to udisk failed", any)
+	}
+	req := base.BizClient.NewDetachUDiskRequest()
+	req.UHostId = sdk.String(ins.UHostId)
+	req.UDiskId = sdk.String(udiskID)
+	resp, err := base.BizClient.DetachUDisk(req)
+	if err != nil {
+		return err
+	}
+	text := fmt.Sprintf("udisk[%s] is detaching from uhost[%s]", resp.UDiskId, resp.UHostId)
+	if async {
+		fmt.Fprintln(out, text)
+	} else {
+		poller := base.NewSpoller(describeUdiskByID, out)
+		poller.Spoll(udiskID, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+	}
+	return nil
 }
 
 //NewCmdDiskDelete ucloud udisk delete
@@ -374,7 +423,7 @@ func NewCmdDiskDelete() *cobra.Command {
 }
 
 //NewCmdDiskClone ucloud disk clone
-func NewCmdDiskClone() *cobra.Command {
+func NewCmdDiskClone(out io.Writer) *cobra.Command {
 	var async *bool
 	req := base.BizClient.NewCloneUDiskRequest()
 	enableDataArk := sdk.String("false")
@@ -399,9 +448,10 @@ func NewCmdDiskClone() *cobra.Command {
 			if len(resp.UDiskId) == 1 {
 				text := fmt.Sprintf("cloned udisk:[%s] is initializing", resp.UDiskId[0])
 				if *async {
-					base.Cxt.Println(text)
+					fmt.Fprintln(out, text)
 				} else {
-					pollDisk(resp.UDiskId[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+					poller := base.NewSpoller(describeUdiskByID, out)
+					poller.Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
 				}
 			} else {
 				base.Cxt.Printf("udisk[%v] cloned", resp.UDiskId)
@@ -478,6 +528,208 @@ func NewCmdDiskExpand() *cobra.Command {
 	return cmd
 }
 
+//NewCmdDiskSnapshot ucloud udisk snapshot
+func NewCmdDiskSnapshot(out io.Writer) *cobra.Command {
+	var async *bool
+	var udiskIDs *[]string
+	req := base.BizClient.NewCreateUDiskSnapshotRequest()
+	cmd := &cobra.Command{
+		Use:   "snapshot",
+		Short: "Create shapshots for udisks",
+		Long:  "Create shapshots for udisks",
+		Run: func(c *cobra.Command, args []string) {
+			for _, id := range *udiskIDs {
+				id = base.PickResourceID(id)
+				req.UDiskId = &id
+				resp, err := base.BizClient.CreateUDiskSnapshot(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				if len(resp.SnapshotId) == 1 {
+					text := fmt.Sprintf("snapshot[%s] is creating", resp.SnapshotId[0])
+					if *async {
+						fmt.Fprintln(out, text)
+					} else {
+						poller := base.NewSpoller(describeSnapshotByID, out)
+						poller.Spoll(resp.SnapshotId[0], text, []string{status.SNAPSHOT_NORMAL})
+					}
+				} else {
+					fmt.Fprintf(out, "snapshot%v is creating. expect snapshot count 1, accept %d\n", resp.SnapshotId, len(resp.SnapshotId))
+				}
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of udisks to snapshot")
+	req.Name = flags.String("name", "", "Required. Name of snapshots")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.Comment = flags.String("comment", "", "Optional. Description of snapshots")
+	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
+	flags.SetFlagValuesFunc("udisk-id", func() []string {
+		return getDiskList([]string{status.DISK_AVAILABLE, status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
+	})
+	cmd.MarkFlagRequired("udisk-id")
+	cmd.MarkFlagRequired("name")
+	return cmd
+}
+
+//NewCmdDiskRestore ucloud udisk restore
+func NewCmdDiskRestore(out io.Writer) *cobra.Command {
+	var snapshotIDs *[]string
+	req := base.BizClient.NewRestoreUHostDiskRequest()
+	cmd := &cobra.Command{
+		Use:   "restore",
+		Short: "Restore udisk from snapshot",
+		Long:  "Restore udisk from snapshot",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, snapshotID := range *snapshotIDs {
+				snapshotID = base.PickResourceID(snapshotID)
+				any, err := describeSnapshotByID(snapshotID)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				snapshot, ok := any.(*uhost.SnapshotSet)
+				if !ok {
+					fmt.Fprintf(out, "snapshot[%s] doesn't exist\n", snapshotID)
+					continue
+				}
+				if snapshot.UHostId != "" {
+					text := fmt.Sprintf("can we detach udisk[%s] from uhost[%s]?", snapshot.DiskId, snapshot.UHostId)
+					sure, err := ux.Prompt(text)
+					if err != nil {
+						base.HandleError(err)
+						continue
+					}
+					if !sure {
+						continue
+					}
+					detachUdisk(false, snapshot.DiskId, out)
+				}
+				req.SnapshotIds = append(req.SnapshotIds, snapshotID)
+				_, err = base.BizClient.RestoreUHostDisk(req)
+
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+
+				text := fmt.Sprintf("udisk[%s] has been restored from snapshot[%s]", snapshot.DiskId, snapshot.SnapshotId)
+				fmt.Fprintln(out, text)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	snapshotIDs = flags.StringSlice("snapshot-id", nil, "Required. Resourece ID of the snapshots to restore from")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	flags.SetFlagValuesFunc("snapshot-id", func() []string {
+		return getSnapshotList([]string{status.SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
+	})
+	cmd.MarkFlagRequired("snapshot-id")
+	return cmd
+}
+
+//SnapshotRow 表格行
+type SnapshotRow struct {
+	Name             string
+	ResourceID       string
+	AvailabilityZone string
+	BoundUDisk       string
+	Size             string
+	State            string
+	UDiskType        string
+	CreationTime     string
+}
+
+//NewCmdSnapshotList ucloud udisk list-snapshot
+func NewCmdSnapshotList(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewDescribeSnapshotRequest()
+	cmd := &cobra.Command{
+		Use:   "list-snapshot",
+		Short: "List snaphosts",
+		Long:  "List snaphosts",
+		Run: func(c *cobra.Command, args []string) {
+			resp, err := base.BizClient.DescribeSnapshot(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			list := []SnapshotRow{}
+			for _, snapshot := range resp.UHostSnapshotSet {
+				row := SnapshotRow{
+					Name:             snapshot.SnapshotName,
+					ResourceID:       snapshot.SnapshotId,
+					AvailabilityZone: snapshot.Zone,
+					BoundUDisk:       snapshot.DiskId,
+					Size:             fmt.Sprintf("%dGB", snapshot.Size),
+					State:            snapshot.State,
+					UDiskType:        snapshot.DiskType,
+					CreationTime:     base.FormatDate(snapshot.CreateTime),
+				}
+				list = append(list, row)
+			}
+			if global.json {
+				base.PrintJSON(list)
+			} else {
+				base.PrintTableS(list)
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.SnapshotIds = *flags.StringSlice("snaphost-id", nil, "Optional. Resource ID of snapshots to list")
+	req.UHostId = flags.String("uhost-id", "", "Optional. Snapshots of the uhost")
+	req.DiskId = flags.String("disk-id", "", "Optional. Snapshots of the udisk")
+	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
+	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit, length of snaphost list")
+
+	return cmd
+}
+
+//NewCmdSnapshotDelete ucloud udisk delete-snapshot
+func NewCmdSnapshotDelete(out io.Writer) *cobra.Command {
+	var snapshotIds *[]string
+	req := base.BizClient.NewDeleteSnapshotRequest()
+	cmd := &cobra.Command{
+		Use:   "delete-snapshot",
+		Short: "Delete snapshots",
+		Long:  "Delete snapshots",
+		Run: func(c *cobra.Command, args []string) {
+			for _, snapshotID := range *snapshotIds {
+				req.SnapshotId = sdk.String(base.PickResourceID(snapshotID))
+				resp, err := base.BizClient.DeleteSnapshot(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				fmt.Fprintf(out, "snapshot[%s] deleted\n", resp.SnapshotId)
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	snapshotIds = flags.StringSlice("snaphost-id", nil, "Optional. Resource ID of snapshots to delete")
+	cmd.MarkFlagRequired("snapshot-id")
+	return cmd
+}
+
 func getDiskList(states []string, project, region, zone string) []string {
 	req := base.BizClient.NewDescribeUDiskRequest()
 	req.ProjectId = sdk.String(project)
@@ -500,20 +752,9 @@ func getDiskList(states []string, project, region, zone string) []string {
 	return list
 }
 
-func pollDisk(resourceID, projectID, region, zone, pollText string, targetState []string) {
-	pollFunc := base.Poll(describeUdiskByID)
-	done := pollFunc(resourceID, projectID, region, zone, targetState)
-	ux.DotSpinner.Start(pollText)
-	<-done
-	ux.DotSpinner.Stop()
-}
-
-func describeUdiskByID(udiskID, project, region, zone string) (interface{}, error) {
+func describeUdiskByID(udiskID string) (interface{}, error) {
 	req := base.BizClient.NewDescribeUDiskRequest()
 	req.UDiskId = sdk.String(udiskID)
-	req.ProjectId = sdk.String(project)
-	req.Region = sdk.String(region)
-	req.Zone = sdk.String(zone)
 	req.Limit = sdk.Int(50)
 	resp, err := base.BizClient.DescribeUDisk(req)
 	if err != nil {
@@ -523,4 +764,39 @@ func describeUdiskByID(udiskID, project, region, zone string) (interface{}, erro
 		return nil, nil
 	}
 	return &resp.DataSet[0], nil
+}
+
+func getSnapshotList(states []string, project, region, zone string) []string {
+	req := base.BizClient.NewDescribeUDiskSnapshotRequest()
+	req.Limit = sdk.Int(50)
+	req.ProjectId = &project
+	req.Region = &region
+	req.Zone = &zone
+	resp, err := base.BizClient.DescribeUDiskSnapshot(req)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, snapshot := range resp.DataSet {
+		for _, s := range states {
+			if snapshot.Status == s {
+				list = append(list, snapshot.SnapshotId+"/"+strings.Replace(snapshot.Name, " ", "-", -1))
+			}
+		}
+	}
+	return list
+}
+
+func describeSnapshotByID(snapshotID string) (interface{}, error) {
+	req := base.BizClient.NewDescribeSnapshotRequest()
+	req.SnapshotIds = append(req.SnapshotIds, snapshotID)
+	req.Limit = sdk.Int(50)
+	resp, err := base.BizClient.DescribeSnapshot(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.UHostSnapshotSet) != 1 {
+		return nil, nil
+	}
+	return &resp.UHostSnapshotSet[0], nil
 }

@@ -6,10 +6,15 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
+// Config is the config of ucloud sdk, use for setting up client
 type Config struct {
 	// Region is the region of backend service
 	// See also <https://docs.ucloud.cn/api/summary/regionlist> ...
 	Region string `default:""`
+
+	// Zone is the zone of backend service
+	// See also <https://docs.ucloud.cn/api/summary/regionlist> ...
+	Zone string `default:""`
 
 	// ProjectId is the unique identify of project, used for organize resources,
 	// Most of resources should belong to a project.

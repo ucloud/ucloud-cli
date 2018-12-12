@@ -3,7 +3,6 @@ package ucloud
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -23,6 +22,10 @@ func (c *Client) SetupRequest(req request.Common) request.Common {
 	// set optional client level variables
 	if len(req.GetRegion()) == 0 && len(cfg.Region) > 0 {
 		req.SetRegion(cfg.Region)
+	}
+
+	if len(req.GetZone()) == 0 && len(cfg.Zone) > 0 {
+		req.SetZone(cfg.Zone)
 	}
 
 	if len(req.GetProjectId()) == 0 && len(cfg.ProjectId) > 0 {
@@ -47,10 +50,10 @@ func (c *Client) buildHTTPRequest(req request.Common) (*http.HttpRequest, error)
 		return nil, errors.Errorf("convert request to map failed, %s", err)
 	}
 
-	// check credential information is avaliable
+	// check credential information is available
 	credential := c.GetCredential()
 	if credential == nil {
-		return nil, errors.Errorf("invalid credential infomation, please set it before request.")
+		return nil, errors.Errorf("invalid credential information, please set it before request.")
 	}
 
 	config := c.GetConfig()
@@ -71,18 +74,10 @@ func (c *Client) buildHTTPRequest(req request.Common) (*http.HttpRequest, error)
 }
 
 // unmarshalHTTPReponse will get body from http response and unmarshal it's data into response struct
-func (c *Client) unmarshalHTTPReponse(httpResp *http.HttpResponse, resp response.Common) error {
-	body := httpResp.GetBody()
+func (c *Client) unmarshalHTTPReponse(body []byte, resp response.Common) error {
 	if len(body) < 0 {
 		return nil
 	}
 
-	body = patchForRetCodeString(body)
-	return json.Unmarshal([]byte(body), &resp)
-}
-
-var patchForCodePattern = regexp.MustCompile(`"RetCode":\s*"(\d+)"`)
-
-func patchForRetCodeString(body []byte) []byte {
-	return patchForCodePattern.ReplaceAll(body, []byte(`"RetCode": $1`))
+	return json.Unmarshal(body, &resp)
 }

@@ -17,9 +17,6 @@ type StartUHostInstanceRequest struct {
 
 	// UHost实例ID 参见 [DescribeUHostInstance](describe_uhost_instance.html)
 	UHostId *string `required:"true"`
-
-	// 加密盘密码
-	DiskPassword *string `required:"false"`
 }
 
 // StartUHostInstanceResponse is response schema for StartUHostInstance action

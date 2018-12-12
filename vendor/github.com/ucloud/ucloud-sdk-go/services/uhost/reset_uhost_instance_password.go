@@ -4,6 +4,9 @@
 package uhost
 
 import (
+	"encoding/base64"
+
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
@@ -46,6 +49,7 @@ func (c *UHostClient) NewResetUHostInstancePasswordRequest() *ResetUHostInstance
 func (c *UHostClient) ResetUHostInstancePassword(req *ResetUHostInstancePasswordRequest) (*ResetUHostInstancePasswordResponse, error) {
 	var err error
 	var res ResetUHostInstancePasswordResponse
+	req.Password = ucloud.String(base64.StdEncoding.EncodeToString([]byte(ucloud.StringValue(req.Password))))
 
 	err = c.client.InvokeAction("ResetUHostInstancePassword", req, &res)
 	if err != nil {

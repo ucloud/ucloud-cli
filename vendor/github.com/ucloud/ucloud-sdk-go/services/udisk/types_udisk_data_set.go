@@ -1,12 +1,15 @@
 package udisk
 
 /*
-	UDiskDataSet - DescribeUDisk
+UDiskDataSet - DescribeUDisk
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type UDiskDataSet struct {
+
+	// 可用区
+	Zone string
 
 	// UDisk实例Id
 	UDiskId string

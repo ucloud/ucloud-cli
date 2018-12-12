@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
@@ -158,6 +159,22 @@ func fetchAllEip(projectID, region string) ([]unet.UnetEIPSet, error) {
 	return list, nil
 }
 
+func getAllEip(states []string, projectID, region string) []string {
+	list, err := fetchAllEip(projectID, region)
+	if err != nil {
+		return nil
+	}
+	strs := []string{}
+	for _, item := range list {
+		ips := []string{}
+		for _, ip := range item.EIPAddr {
+			ips = append(ips, ip.IP)
+		}
+		strs = append(strs, item.EIPId+"/"+strings.Join(ips, ","))
+	}
+	return strs
+}
+
 //NewCmdEIPAllocate ucloud eip allocate
 func NewCmdEIPAllocate() *cobra.Command {
 	var count *int
@@ -166,7 +183,7 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Use:     "allocate",
 		Short:   "Allocate EIP",
 		Long:    "Allocate EIP",
-		Example: "ucloud eip allocate --line Bgp --bandwidth 2",
+		Example: "ucloud eip allocate --line BGP --bandwidth 2",
 		Run: func(cmd *cobra.Command, args []string) {
 			if *req.OperatorName == "BGP" {
 				*req.OperatorName = "Bgp"

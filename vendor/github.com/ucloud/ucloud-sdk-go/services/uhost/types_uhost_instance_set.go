@@ -1,10 +1,10 @@
 package uhost
 
 /*
-	UHostInstanceSet - DescribeUHostInstance
+UHostInstanceSet - DescribeUHostInstance
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type UHostInstanceSet struct {
 
@@ -14,13 +14,13 @@ type UHostInstanceSet struct {
 	// UHost实例ID
 	UHostId string
 
-	// UHost类型，枚举为：N1：标准型系列1；N2：标准型系列2 ；I1：高IO型系列1；I2：高IO型系列2；D1：大数据型系列1；G1：GPU型系列1；G2：GPU型系列2；G3：GPU型系列2
+	// 云主机机型。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	UHostType string
 
-	// 系统盘与数据盘的磁盘类型。 枚举值为：LocalDisk，本地磁盘; UDisk，云硬盘
+	// 【建议不再使用】主机磁盘类型。 枚举值为：\\ > LocalDisk，本地磁盘; \\ > UDisk 云盘。\\只要有一块磁盘为本地盘，即返回LocalDisk。
 	StorageType string
 
-	// 镜像ID
+	// 【建议不再使用】主机的系统盘ID。
 	ImageId string
 
 	// 基础镜像ID（指当前自定义镜像的来源镜像）
@@ -38,7 +38,7 @@ type UHostInstanceSet struct {
 	// UHost实例名称
 	Name string
 
-	// 实例状态， 初始化: Initializing; 启动中: Starting; 运行中: Running; 关机中: Stopping; 关机: Stopped 安装失败: Install Fail; 重启中: Rebooting
+	// 实例状态，枚举值：\\ >初始化: Initializing; \\ >启动中: Starting; \\> 运行中: Running; \\> 关机中: Stopping; \\ >关机: Stopped \\ >安装失败: Install Fail; \\ >重启中: Rebooting
 	State string
 
 	// 创建时间，格式为Unix时间戳
@@ -68,25 +68,25 @@ type UHostInstanceSet struct {
 	// 网络增强。目前仅支持Normal和Super
 	NetCapability string
 
-	// 网络状态 连接：Connected， 断开：NotConnected
+	// 【建议不再使用】网络状态。 连接：Connected， 断开：NotConnected
 	NetworkState string
 
-	// yes: 开启方舟； no，未开启方舟
+	// 【建议不再使用】数据方舟模式。枚举值：\\ > Yes: 开启方舟； \\ > no，未开启方舟
 	TimemachineFeature string
 
 	// true: 开启热升级； false，未开启热升级
 	HotplugFeature bool
 
-	// 基础网络：Default；子网：Private
+	// 【建议不再使用】仅北京A的云主机会返回此字段。基础网络模式：Default；子网模式：Private
 	SubnetType string
 
-	// 内网或者子网的IP地址
+	// 内网的IP地址
 	IPs []string
 
-	// Os名称
+	// 创建主机的最初来源镜像的操作系统名称（若直接通过基础镜像创建，此处返回和BasicImageName一致）
 	OsName string
 
-	// "Linux"或者"Windows"
+	// 操作系统类别。返回"Linux"或者"Windows"
 	OsType string
 
 	// 删除时间，格式为Unix时间戳
@@ -101,9 +101,9 @@ type UHostInstanceSet struct {
 	// GPU个数
 	GPU int
 
-	// 系统盘状态 Normal表示初始化完成；Initializing表示在初始化
+	// 系统盘状态 Normal表示初始化完成；Initializing表示在初始化。仍在初始化的系统盘无法制作镜像。
 	BootDiskState string
 
-	// 总的存储空间
+	// 总的存储空间。包含系统盘与全部数据盘的总容量。
 	TotalDiskSpace int
 }

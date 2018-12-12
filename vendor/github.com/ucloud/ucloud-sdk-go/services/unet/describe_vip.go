@@ -32,7 +32,7 @@ type DescribeVIPRequest struct {
 type DescribeVIPResponse struct {
 	response.CommonBase
 
-	// 内网VIP详情
+	// 内网VIP详情，请见VIPDetailSet
 	VIPSet []VIPDetailSet
 
 	// 内网VIP地址列表

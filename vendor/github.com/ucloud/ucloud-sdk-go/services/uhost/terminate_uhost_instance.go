@@ -21,9 +21,10 @@ type TerminateUHostInstanceRequest struct {
 	// 是否直接删除，0表示按照原来的逻辑（有回收站权限，则进入回收站），1表示直接删除
 	Destroy *int `required:"false"`
 
-	// 是否释放绑定的EIP。yes: 解绑EIP后，并释放；其他值或不填：解绑EIP。
-	// EIPReleased *string `required:"false"`
-	ReleaseEIP   *bool `required:"false"`
+	// 是否释放绑定的EIP。true: 解绑EIP后，并释放；其他值或不填：解绑EIP。
+	ReleaseEIP *bool `required:"false"`
+
+	// 是否删除挂载的数据盘。true删除，其他不删除。
 	ReleaseUDisk *bool `required:"false"`
 }
 
@@ -31,13 +32,10 @@ type TerminateUHostInstanceRequest struct {
 type TerminateUHostInstanceResponse struct {
 	response.CommonBase
 
-	// UHost 实例 Id
-	UHostIds []string
-
 	// 放入回收站:"Yes", 彻底删除：“No”
 	InRecycle string
 
-	// 主机 ID
+	// UHost 实例 Id
 	UHostId string
 }
 

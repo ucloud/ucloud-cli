@@ -1,10 +1,10 @@
 package unet
 
 /*
-	ResourceSet - 资源信息
+ResourceSet - 资源信息
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type ResourceSet struct {
 
@@ -23,7 +23,7 @@ type ResourceSet struct {
 	// 绑定资源的资源类型
 	ResourceType string
 
-	// 资源状态
+	// 状态
 	Status int
 
 	// 业务组

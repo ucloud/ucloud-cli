@@ -1,10 +1,10 @@
 package unet
 
 /*
-	VIPSet - VIPSet
+VIPSet - VIPSet
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type VIPSet struct {
 

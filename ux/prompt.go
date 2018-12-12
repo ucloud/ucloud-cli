@@ -3,8 +3,6 @@ package ux
 import (
 	"fmt"
 	"strings"
-
-	"github.com/ucloud/ucloud-cli/base"
 )
 
 // Prompt confirm
@@ -12,7 +10,7 @@ func Prompt(text string) (bool, error) {
 	if !strings.HasSuffix(text, "(y/n):") {
 		text += " (y/n):"
 	}
-	base.Cxt.Printf(text)
+	fmt.Printf(text)
 	var agreeClose string
 	_, err := fmt.Scanf("%s\n", &agreeClose)
 	if err != nil {

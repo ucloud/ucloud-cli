@@ -32,7 +32,7 @@ type AllocateShareBandwidthRequest struct {
 type AllocateShareBandwidthResponse struct {
 	response.CommonBase
 
-	// 共享带宽 ID
+	// 共享带宽资源Id
 	ShareBandwidthId string
 }
 

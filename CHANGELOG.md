@@ -1,4 +1,11 @@
 ## Change Log
+v0.1.5
+* support batch operation.
+
+v0.1.4
+* add udisk.
+* polling udisk and uhost long time operation
+* async complete resource-id
 
 v0.1.3
 * integrate auto completion.

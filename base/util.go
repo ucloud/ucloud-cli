@@ -20,6 +20,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 //ConfigPath 配置文件路径
@@ -263,59 +264,162 @@ var RegionLabel = map[string]string{
 	"afr-nigeria":  "Lagos",
 }
 
-//Poll 轮询
-func Poll(describeFunc func(string, string, string, string) (interface{}, error)) func(string, string, string, string, []string) chan bool {
-	stateFields := []string{"State", "Status"}
-	return func(resourceID, projectID, region, zone string, targetState []string) chan bool {
-		w := waiter.StateWaiter{
-			Pending: []string{"pending"},
-			Target:  []string{"avaliable"},
-			Refresh: func() (interface{}, string, error) {
-				inst, err := describeFunc(resourceID, projectID, region, zone)
-				if err != nil {
-					return nil, "", err
-				}
+//Poller 轮询器
+type Poller struct {
+	stateFields   []string
+	DescribeFunc  func(string, string, string, string) (interface{}, error)
+	Out           io.Writer
+	Timeout       time.Duration
+	SdescribeFunc func(string) (interface{}, error)
+}
 
-				if inst == nil {
-					return nil, "pending", nil
-				}
-				instValue := reflect.ValueOf(inst)
-				instValue = reflect.Indirect(instValue)
-				instType := instValue.Type()
-				if instValue.Kind() != reflect.Struct {
-					return nil, "", fmt.Errorf("Instance is not struct")
-				}
-				state := ""
-				for i := 0; i < instValue.NumField(); i++ {
-					for _, sf := range stateFields {
-						if instType.Field(i).Name == sf {
-							state = instValue.Field(i).String()
-						}
-					}
-				}
-				if state != "" {
-					for _, t := range targetState {
-						if t == state {
-							return inst, "avaliable", nil
-						}
-					}
-				}
-				return nil, "pending", nil
-
-			},
-			Timeout: 5 * time.Minute,
-		}
-
-		done := make(chan bool)
-		go func() {
-			if resp, err := w.Wait(); err != nil {
-				log.Error(err)
-			} else {
-				log.Infof("%#v", resp)
+//Spoll 简化版
+func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
+	w := waiter.StateWaiter{
+		Pending: []string{"pending"},
+		Target:  []string{"avaliable"},
+		Refresh: func() (interface{}, string, error) {
+			inst, err := p.SdescribeFunc(resourceID)
+			if err != nil {
+				return nil, "", err
 			}
-			done <- true
-		}()
-		return done
+
+			if inst == nil {
+				return nil, "pending", nil
+			}
+			instValue := reflect.ValueOf(inst)
+			instValue = reflect.Indirect(instValue)
+			instType := instValue.Type()
+			if instValue.Kind() != reflect.Struct {
+				return nil, "", fmt.Errorf("Instance is not struct")
+			}
+			state := ""
+			for i := 0; i < instValue.NumField(); i++ {
+				for _, sf := range p.stateFields {
+					if instType.Field(i).Name == sf {
+						state = instValue.Field(i).String()
+					}
+				}
+			}
+			if state != "" {
+				for _, t := range targetStates {
+					if t == state {
+						return inst, "avaliable", nil
+					}
+				}
+			}
+			return nil, "pending", nil
+
+		},
+		Timeout: p.Timeout,
+	}
+
+	done := make(chan bool)
+	go func() {
+		if resp, err := w.Wait(); err != nil {
+			log.Error(err)
+			if _, ok := err.(*waiter.TimeoutError); ok {
+				done <- false
+				return
+			}
+		} else {
+			log.Infof("%#v", resp)
+		}
+		done <- true
+	}()
+
+	spinner := ux.NewDotSpinner(p.Out)
+	spinner.Start(pollText)
+	ret := <-done
+	if ret {
+		spinner.Stop()
+	} else {
+		spinner.Timeout()
+	}
+}
+
+//Poll function
+func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targetState []string) {
+	w := waiter.StateWaiter{
+		Pending: []string{"pending"},
+		Target:  []string{"avaliable"},
+		Refresh: func() (interface{}, string, error) {
+			inst, err := p.DescribeFunc(resourceID, projectID, region, zone)
+			if err != nil {
+				return nil, "", err
+			}
+
+			if inst == nil {
+				return nil, "pending", nil
+			}
+			instValue := reflect.ValueOf(inst)
+			instValue = reflect.Indirect(instValue)
+			instType := instValue.Type()
+			if instValue.Kind() != reflect.Struct {
+				return nil, "", fmt.Errorf("Instance is not struct")
+			}
+			state := ""
+			for i := 0; i < instValue.NumField(); i++ {
+				for _, sf := range p.stateFields {
+					if instType.Field(i).Name == sf {
+						state = instValue.Field(i).String()
+					}
+				}
+			}
+			if state != "" {
+				for _, t := range targetState {
+					if t == state {
+						return inst, "avaliable", nil
+					}
+				}
+			}
+			return nil, "pending", nil
+
+		},
+		Timeout: p.Timeout,
+	}
+
+	done := make(chan bool)
+	go func() {
+		if resp, err := w.Wait(); err != nil {
+			log.Error(err)
+			if _, ok := err.(*waiter.TimeoutError); ok {
+				done <- false
+				return
+			}
+		} else {
+			log.Infof("%#v", resp)
+		}
+		done <- true
+	}()
+
+	spinner := ux.NewDotSpinner(p.Out)
+	spinner.Start(pollText)
+	ret := <-done
+	if ret {
+		spinner.Stop()
+	} else {
+		spinner.Timeout()
+	}
+}
+
+//NewSpoller simple
+func NewSpoller(describeFunc func(string) (interface{}, error), out io.Writer) *Poller {
+	return &Poller{
+		SdescribeFunc: describeFunc,
+		Out:           out,
+		stateFields:   []string{"State", "Status"},
+		Timeout:       10 * time.Minute,
+	}
+}
+
+//NewPoller 轮询
+func NewPoller(describeFunc func(string, string, string, string) (interface{}, error), out io.Writer) *Poller {
+	return &Poller{
+		DescribeFunc: describeFunc,
+		Out:          out,
+		stateFields:  []string{"State", "Status"},
+		Timeout:      10 * time.Minute,
 	}
 }
 

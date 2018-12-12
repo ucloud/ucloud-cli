@@ -23,14 +23,14 @@ type FuncWaiter struct {
 	cancel chan struct{}
 }
 
-// WaitForCompletion will wait until the state of consdition is avaliable.
+// WaitForCompletion will wait until the state of consdition is available.
 // It will call the condition function to ensure state with interval.
 func (w *FuncWaiter) WaitForCompletion() error {
 	for i := 0; ; i++ {
 		log.Infof("Waiting for completion ... attempted %v times, %v total", i, w.MaxAttempts)
 
 		if i >= w.MaxAttempts {
-			return errors.New("maximum attemps are reached")
+			return errors.New("maximum attempts are reached")
 		}
 
 		if ok, err := w.Checker(); ok || (!w.IgnoreError && err != nil) {

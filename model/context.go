@@ -48,6 +48,11 @@ func (c *Context) AppendInfo(key string, content interface{}) {
 	c.data[key] = content
 }
 
+//GetWriter 获取Writer
+func (c *Context) GetWriter() io.Writer {
+	return c.writer
+}
+
 // GetContext 创建一个单例的Context
 func GetContext(writer io.Writer) *Context {
 	once.Do(func() {

@@ -19,6 +19,7 @@ func Init(level Level) {
 	})
 }
 
+// Level is the log level of sdk logger
 type Level logrus.Level
 
 var (

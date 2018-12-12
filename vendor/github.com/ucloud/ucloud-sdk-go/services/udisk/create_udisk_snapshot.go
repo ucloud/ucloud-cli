@@ -42,7 +42,12 @@ type CreateUDiskSnapshotResponse struct {
 // NewCreateUDiskSnapshotRequest will create request of CreateUDiskSnapshot action.
 func (c *UDiskClient) NewCreateUDiskSnapshotRequest() *CreateUDiskSnapshotRequest {
 	req := &CreateUDiskSnapshotRequest{}
+
+	// setup request with client config
 	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
 	return req
 }
 
