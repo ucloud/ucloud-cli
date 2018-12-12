@@ -10,4 +10,5 @@ var DefaultHeaders = map[string]string{
 	// "X-SDK-VERSION": VERSION,
 }
 
+// DefaultTimeout is the default timeout of each request
 var DefaultTimeout = 30 * time.Second

@@ -1,7 +1,7 @@
 package uhost
 
 /*
-	UHostDisk - the request query for disk of uhost
+UHostDisk - the request query for disk of uhost
 */
 type UHostDisk struct {
 	// 磁盘大小，单位GB。

@@ -7,8 +7,10 @@ import (
 )
 
 var (
+	// ErrHTTPStatus is error type of http status
 	ErrHTTPStatus = "server.HTTPStatusError"
-	ErrRetCode    = "server.RetCodeError"
+	// ErrRetCode is error type of server return code is larger than 0
+	ErrRetCode = "server.RetCodeError"
 )
 
 // ServerError is the ucloud common error for server response
@@ -62,7 +64,7 @@ func (e ServerError) Code() int {
 	return e.retCode
 }
 
-// HTTPStatusCode will return http status code
+// StatusCode will return http status code
 func (e ServerError) StatusCode() int {
 	return e.statusCode
 }
@@ -82,8 +84,8 @@ func (e ServerError) Retryable() bool {
 	return isIn(e.statusCode, []int{429, 502, 503, 504}) || e.retryable
 }
 
-func isIn(i int, avaliables []int) bool {
-	for _, v := range avaliables {
+func isIn(i int, availables []int) bool {
+	for _, v := range availables {
 		if i == v {
 			return true
 		}

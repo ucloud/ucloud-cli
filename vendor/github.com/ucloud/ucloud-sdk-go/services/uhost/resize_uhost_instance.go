@@ -18,16 +18,16 @@ type ResizeUHostInstanceRequest struct {
 	// UHost实例ID 参见 [DescribeUHostInstance](describe_uhost_instance.html)
 	UHostId *string `required:"true"`
 
-	// 虚拟CPU核数，单位：个，系列1范围：[1,16]，系列2范围：[1,32]，最小值为1，其他值是2的倍数，默认值为当前实例的CPU核数
+	// 虚拟CPU核数。可选参数：1-32（可选范围与UHostType相关）。默认值为当前实例的CPU核数
 	CPU *int `required:"false"`
 
-	// 内存大小，单位：MB，范围[2048,131072]，步长：2048，默认值为当前实例的内存大小（BGP-C数据中心最小支持1024，限Linux系统）
+	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围与UHostType相关）。默认值为当前实例的内存大小。
 	Memory *int `required:"false"`
 
-	// 数据盘大小，单位：GB，范围[10,1000]； SSD机型，单位：GB，范围[100,500]；步长：10，默认值为当前实例的数据盘大小，数据盘不支持缩容，因此不允许输入比当前实例数据盘大小的值
+	// 【待废弃】数据盘大小，单位：GB，范围[10,1000]； SSD机型，单位：GB，范围[100,500]；步长：10，默认值为当前实例的数据盘大小，数据盘不支持缩容，因此不允许输入比当前实例数据盘大小的值
 	DiskSpace *int `required:"false"`
 
-	// 系统盘大小，单位：GB，范围[20,100]，步长：10，系统盘不支持缩容，因此不允许输入比当前实例系统盘小的值
+	// 【待废弃】系统盘大小，单位：GB，范围[20,100]，步长：10，系统盘不支持缩容，因此不允许输入比当前实例系统盘小的值
 	BootDiskSpace *int `required:"false"`
 
 	// 网卡升降级（1，表示升级，2表示降级，0表示不变）
@@ -54,7 +54,7 @@ func (c *UHostClient) NewResizeUHostInstanceRequest() *ResizeUHostInstanceReques
 	return req
 }
 
-// ResizeUHostInstance - 修改指定UHost实例的资源配置，如CPU核心数，内存容量大小，磁盘空间大小,网络增强等。
+// ResizeUHostInstance - 修改指定UHost实例的资源配置，如CPU核心数，内存容量大小，网络增强等。可选配置范围请参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 func (c *UHostClient) ResizeUHostInstance(req *ResizeUHostInstanceRequest) (*ResizeUHostInstanceResponse, error) {
 	var err error
 	var res ResizeUHostInstanceResponse

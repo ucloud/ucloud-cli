@@ -1,10 +1,10 @@
 package pathx
 
 /*
-	GlobalSSHInfo - GlobalSSH实例信息
+GlobalSSHInfo - GlobalSSH实例信息
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type GlobalSSHInfo struct {
 

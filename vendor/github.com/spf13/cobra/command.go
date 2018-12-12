@@ -1000,7 +1000,8 @@ func (c *Command) complete() error {
 	}
 	currentWord := string(chars[lastSpaceIndex+1 : p])
 	args := strings.Fields(compLine)[1:]
-	compCmd, _, err := c.Root().Find(args)
+	compCmd, flags, err := c.Root().Find(args)
+	compCmd.ParseFlags(flags)
 	if err != nil {
 		compCmd = c
 	}

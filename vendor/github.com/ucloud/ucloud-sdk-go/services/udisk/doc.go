@@ -1,11 +1,11 @@
 /*
-	Package udisk include resources of ucloud disk product
+Package udisk include resources of ucloud disk product
 
-	See also
+See also
 
-		- API: https://docs.ucloud.cn/api/udisk-api/index
-		- Product: https://www.ucloud.cn/site/product/udisk.html
+	- API: https://docs.ucloud.cn/api/udisk-api/index
+	- Product: https://www.ucloud.cn/site/product/udisk.html
 
-	for detail.
+for detail.
 */
 package udisk

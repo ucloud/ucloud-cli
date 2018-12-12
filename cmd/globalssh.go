@@ -203,7 +203,7 @@ func NewCmdGsshDelete() *cobra.Command {
 		Use:     "delete",
 		Short:   "Delete GlobalSSH instance",
 		Long:    "Delete GlobalSSH instance",
-		Example: "ucloud gssh delete --resource-id uga-xx1  --id uga-xx2",
+		Example: "ucloud gssh delete --gssh-id uga-xx1  --id uga-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range *gsshIds {
 				req.InstanceId = &id
@@ -217,10 +217,10 @@ func NewCmdGsshDelete() *cobra.Command {
 		},
 	}
 	cmd.Flags().SortFlags = false
-	gsshIds = cmd.Flags().StringArray("resource-id", make([]string, 0), "Required. ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple flags")
+	gsshIds = cmd.Flags().StringArray("gssh-id", make([]string, 0), "Required. ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple flags")
 	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
-	cmd.MarkFlagRequired("resource-id")
+	cmd.MarkFlagRequired("gssh-id")
 	return cmd
 }
 
@@ -234,7 +234,7 @@ func NewCmdGsshModify() *cobra.Command {
 		Use:     "update",
 		Short:   "Update GlobalSSH instance",
 		Long:    "Update GlobalSSH instance, including port and remark attribute",
-		Example: "ucloud gssh update --resource-id uga-xxx --port 22",
+		Example: "ucloud gssh update --gssh-id uga-xxx --port 22",
 		Run: func(cmd *cobra.Command, args []string) {
 			gsshModifyPortReq.Region = sdk.String(region)
 			gsshModifyPortReq.ProjectId = sdk.String(project)
@@ -268,11 +268,11 @@ func NewCmdGsshModify() *cobra.Command {
 		},
 	}
 	cmd.Flags().SortFlags = false
-	gsshModifyRemarkReq.InstanceId = cmd.Flags().String("resource-id", "", "Required. InstanceID of your GlobalSSH")
+	gsshModifyRemarkReq.InstanceId = cmd.Flags().String("gssh-id", "", "Required. InstanceID of your GlobalSSH")
 	cmd.Flags().StringVar(&region, "region", ConfigInstance.Region, "Optional. Assign region")
 	cmd.Flags().StringVar(&project, "project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
 	gsshModifyPortReq.Port = cmd.Flags().Int("port", 0, "Optional. Port of SSH service.")
 	gsshModifyRemarkReq.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
-	cmd.MarkFlagRequired("resource-id")
+	cmd.MarkFlagRequired("gssh-id")
 	return cmd
 }

@@ -4,6 +4,8 @@ package ux
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/ucloud/ucloud-cli/ansi"
@@ -11,15 +13,17 @@ import (
 
 // Spinner type
 type Spinner struct {
+	out             io.Writer
 	frames          []rune
 	framesPerSecond int
 	DoingText       string
 	DoneText        string
+	TimeoutText     string
 	ticker          *time.Ticker
 	output          string
 }
 
-// Start start rendor
+// Start start render
 func (s *Spinner) Start(doingText string) {
 	if doingText != "" {
 		s.DoingText = doingText
@@ -28,12 +32,20 @@ func (s *Spinner) Start(doingText string) {
 	s.render()
 }
 
-// Stop stop rendor
+// Stop stop render
 func (s *Spinner) Stop() {
 	s.ticker.Stop()
 	s.reset()
 	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.DoneText)
-	fmt.Printf(output)
+	fmt.Fprintf(s.out, output)
+}
+
+// Timeout  stop render
+func (s *Spinner) Timeout() {
+	s.ticker.Stop()
+	s.reset()
+	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.TimeoutText)
+	fmt.Fprintf(s.out, output)
 }
 
 func (s *Spinner) reset() {
@@ -69,9 +81,16 @@ func (s *Spinner) newFrameFactory() func() rune {
 var spinnerFrames = []rune{'⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'}
 
 // DotSpinner dot spinner
-var DotSpinner = &Spinner{frames: spinnerFrames, framesPerSecond: 12, DoingText: "running", DoneText: "done"}
+var DotSpinner = NewDotSpinner(os.Stdout)
 
 //NewDotSpinner get new DotSpinner instance
-func NewDotSpinner() *Spinner {
-	return &Spinner{frames: spinnerFrames, framesPerSecond: 12, DoingText: "running", DoneText: "done"}
+func NewDotSpinner(out io.Writer) *Spinner {
+	return &Spinner{
+		out:             out,
+		frames:          spinnerFrames,
+		framesPerSecond: 12,
+		DoingText:       "running",
+		DoneText:        "done",
+		TimeoutText:     "timeout",
+	}
 }

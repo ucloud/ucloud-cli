@@ -16,6 +16,9 @@ type Common interface {
 	GetProjectId() string
 	SetProjectId(string) error
 
+	GetZone() string
+	SetZone(string) error
+
 	SetRetryCount(int)
 	GetRetryCount() int
 
@@ -36,6 +39,7 @@ type Common interface {
 type CommonBase struct {
 	Action    *string
 	Region    *string
+	Zone      *string
 	ProjectId *string
 
 	maxRetries  int
@@ -121,6 +125,20 @@ func (c *CommonBase) GetRegion() string {
 // SetRegion will set region of request
 func (c *CommonBase) SetRegion(val string) error {
 	c.Region = &val
+	return nil
+}
+
+// GetZone will return zone of request
+func (c *CommonBase) GetZone() string {
+	if c.Zone == nil {
+		return ""
+	}
+	return *c.Zone
+}
+
+// SetZone will set zone of request
+func (c *CommonBase) SetZone(val string) error {
+	c.Zone = &val
 	return nil
 }
 

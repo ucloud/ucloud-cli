@@ -4,6 +4,9 @@
 package uhost
 
 import (
+	"encoding/base64"
+
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
@@ -58,6 +61,7 @@ func (c *UHostClient) NewReinstallUHostInstanceRequest() *ReinstallUHostInstance
 func (c *UHostClient) ReinstallUHostInstance(req *ReinstallUHostInstanceRequest) (*ReinstallUHostInstanceResponse, error) {
 	var err error
 	var res ReinstallUHostInstanceResponse
+	req.Password = ucloud.String(base64.StdEncoding.EncodeToString([]byte(ucloud.StringValue(req.Password))))
 
 	err = c.client.InvokeAction("ReinstallUHostInstance", req, &res)
 	if err != nil {

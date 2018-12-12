@@ -1,12 +1,18 @@
 package unet
 
 /*
-	FirewallDataSet - DescribeFirewall
+FirewallDataSet - DescribeFirewall
 
-	this model is auto created by ucloud code generater for open api,
-	you can also see https://docs.ucloud.cn for detail.
+this model is auto created by ucloud code generater for open api,
+you can also see https://docs.ucloud.cn for detail.
 */
 type FirewallDataSet struct {
+
+	// 防火墙ID
+	FWId string
+
+	// 安全组ID（即将废弃）
+	GroupId string
 
 	// 防火墙名称
 	Name string
@@ -28,10 +34,4 @@ type FirewallDataSet struct {
 
 	// 防火墙组中的规则列表，参见 FirewallRuleSet
 	Rule []FirewallRuleSet
-
-	// 防火墙 ID
-	FWId string
-
-	// 安全组 ID（即将弃用）
-	GroupId string
 }

@@ -30,7 +30,12 @@ type ModifyGlobalSSHRemarkResponse struct {
 // NewModifyGlobalSSHRemarkRequest will create request of ModifyGlobalSSHRemark action.
 func (c *PathXClient) NewModifyGlobalSSHRemarkRequest() *ModifyGlobalSSHRemarkRequest {
 	req := &ModifyGlobalSSHRemarkRequest{}
+
+	// setup request with client config
 	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
 	return req
 }
 

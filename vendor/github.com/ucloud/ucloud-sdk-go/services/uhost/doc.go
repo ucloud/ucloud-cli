@@ -1,11 +1,11 @@
 /*
-	Package uhost include resources of ucloud host product
+Package uhost include resources of ucloud host product
 
-	See also
+See also
 
-		- API: https://docs.ucloud.cn/api/uhost-api/index
-		- Product: https://www.ucloud.cn/site/product/uhost.html
+	- API: https://docs.ucloud.cn/api/uhost-api/index
+	- Product: https://www.ucloud.cn/site/product/uhost.html
 
-	for detail.
+for detail.
 */
 package uhost

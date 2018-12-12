@@ -51,7 +51,12 @@ type CloneUDiskSnapshotResponse struct {
 // NewCloneUDiskSnapshotRequest will create request of CloneUDiskSnapshot action.
 func (c *UDiskClient) NewCloneUDiskSnapshotRequest() *CloneUDiskSnapshotRequest {
 	req := &CloneUDiskSnapshotRequest{}
+
+	// setup request with client config
 	c.client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
 	return req
 }
 

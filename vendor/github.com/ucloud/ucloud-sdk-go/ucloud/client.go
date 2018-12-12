@@ -6,6 +6,8 @@ package ucloud
 import (
 	"time"
 
+	"github.com/ucloud/ucloud-sdk-go/private/utils"
+
 	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
@@ -48,6 +50,11 @@ func (c *Client) GetConfig() *Config {
 
 // InvokeAction will do an action request from a request struct and set response value into res struct pointer
 func (c *Client) InvokeAction(action string, req request.Common, resp response.Common) error {
+	return c.InvokeActionWithPatcher(action, req, resp, utils.RetCodePatcher)
+}
+
+// InvokeActionWithPatcher will invoke action by patchers
+func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp response.Common, patches ...utils.Patch) error {
 	req.SetAction(action)
 	req.SetRequestTime(time.Now())
 
@@ -68,7 +75,14 @@ func (c *Client) InvokeAction(action string, req request.Common, resp response.C
 		httpResp, err = handler(c, httpReq, httpResp, err)
 	}
 
-	err = c.unmarshalHTTPReponse(httpResp, resp)
+	// use patch object to resolve the http response body
+	// in general, it will be fix common server error before server bugfix is released.
+	body := httpResp.GetBody()
+	for _, patch := range patches {
+		body = patch.Patch(body)
+	}
+
+	err = c.unmarshalHTTPReponse(body, resp)
 	if err != nil {
 		return err
 	}

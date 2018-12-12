@@ -72,9 +72,6 @@ type CreateUHostInstanceRequest struct {
 	// 是否开启热升级特性。True为开启，False为未开启，默认False。仅系列1云主机需要使用此字段，系列2云主机根据镜像是否支持云主机。
 	HotplugFeature *bool `required:"false"`
 
-	// 加密盘的密码。若输入此字段，自动选择加密盘。加密盘需要权限位。
-	DiskPassword *string `required:"false"`
-
 	// 网络ID（VPC2.0情况下无需填写）。VPC1.0情况下，若不填写，代表选择基础网络； 若填写，代表选择子网。参见DescribeSubnet。
 	NetworkId *string `required:"false"`
 

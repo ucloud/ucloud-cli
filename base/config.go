@@ -187,7 +187,6 @@ func init() {
 	ConfigInstance.LoadConfig()
 	timeout, _ := time.ParseDuration("15s")
 	ClientConfig = &sdk.Config{
-		ProjectId: ConfigInstance.ProjectID,
 		BaseUrl:   "https://api.ucloud.cn/",
 		Timeout:   timeout,
 		UserAgent: fmt.Sprintf("UCloud CLI v%s", Version),

@@ -29,7 +29,7 @@ type DescribeFirewallResourceResponse struct {
 	// 资源列表，见 ResourceSet
 	ResourceSet []ResourceSet
 
-	// 防火墙已绑定资源的总数
+	// 绑定资源总数
 	TotalCount int
 }
 

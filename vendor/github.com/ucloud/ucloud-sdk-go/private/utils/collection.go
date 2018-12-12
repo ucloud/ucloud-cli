@@ -24,8 +24,8 @@ func SetMapIfNotExists(m map[string]string, k string, v string) {
 }
 
 // IsStringIn will return if the value is contains by an array
-func IsStringIn(val string, avaliables []string) bool {
-	for _, choice := range avaliables {
+func IsStringIn(val string, availables []string) bool {
+	for _, choice := range availables {
 		if val == choice {
 			return true
 		}
@@ -35,9 +35,9 @@ func IsStringIn(val string, avaliables []string) bool {
 }
 
 // CheckStringIn will check if the value is contains by an array
-func CheckStringIn(val string, avaliables []string) error {
-	if IsStringIn(val, avaliables) {
+func CheckStringIn(val string, availables []string) error {
+	if IsStringIn(val, availables) {
 		return nil
 	}
-	return fmt.Errorf("got %s, should be one of %s", val, strings.Join(avaliables, ","))
+	return fmt.Errorf("got %s, should be one of %s", val, strings.Join(availables, ","))
 }

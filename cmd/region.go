@@ -90,8 +90,36 @@ func fetchRegion() (map[string][]string, error) {
 	return regionMap, nil
 }
 
+func getRegionList() []string {
+	regionMap, err := fetchRegion()
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for region := range regionMap {
+		list = append(list, region)
+	}
+	return list
+}
+
+func getZoneList() []string {
+	regionMap, err := fetchRegion()
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, zones := range regionMap {
+		list = append(list, zones...)
+	}
+	return list
+}
+
+// func setupRequest(req request.Common) {
+// req.SetZone()
+// }
 func getDefaultProject() (string, string, error) {
 	req := BizClient.NewGetProjectListRequest()
+
 	resp, err := BizClient.GetProjectList(req)
 	if err != nil {
 		return "", "", err
