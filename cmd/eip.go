@@ -21,13 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/services/unet"
-
 	"github.com/spf13/cobra"
 
+	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	. "github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdEIP ucloud eip
@@ -43,6 +42,8 @@ func NewCmdEIP() *cobra.Command {
 	cmd.AddCommand(NewCmdEIPRelease())
 	cmd.AddCommand(NewCmdEIPBind())
 	cmd.AddCommand(NewCmdEIPUnbind())
+	cmd.AddCommand(NewCmdEIPModifyBandwidth())
+	cmd.AddCommand(NewCmdEIPSetChargeMode())
 	return cmd
 }
 
@@ -52,7 +53,7 @@ type EIPRow struct {
 	IP             string
 	ResourceID     string
 	Group          string
-	Billing        string
+	ChargeMode     string
 	Bandwidth      string
 	BindResource   string
 	Status         string
@@ -61,7 +62,7 @@ type EIPRow struct {
 
 //NewCmdEIPList ucloud eip list
 func NewCmdEIPList() *cobra.Command {
-	req := BizClient.NewDescribeEIPRequest()
+	req := base.BizClient.NewDescribeEIPRequest()
 	fetchAll := sdk.Bool(false)
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -73,21 +74,21 @@ func NewCmdEIPList() *cobra.Command {
 			if *fetchAll == true {
 				list, err := fetchAllEip(*req.ProjectId, *req.Region)
 				if err != nil {
-					HandleError(err)
+					base.HandleError(err)
 					return
 				}
 				eipList = list
 			} else {
-				resp, err := BizClient.DescribeEIP(req)
+				resp, err := base.BizClient.DescribeEIP(req)
 				if err != nil {
-					HandleError(err)
+					base.HandleError(err)
 					return
 				}
 				eipList = resp.EIPSet
 			}
 
 			if global.json {
-				PrintJSON(eipList)
+				base.PrintJSON(eipList)
 			} else {
 				list := make([]EIPRow, 0)
 				for _, eip := range eipList {
@@ -98,7 +99,7 @@ func NewCmdEIPList() *cobra.Command {
 					}
 					row.ResourceID = eip.EIPId
 					row.Group = eip.Tag
-					row.Billing = eip.PayMode
+					row.ChargeMode = eip.PayMode
 					row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
 					if eip.Resource.ResourceId != "" {
 						row.BindResource = fmt.Sprintf("%s|%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceId, eip.Resource.ResourceType)
@@ -107,13 +108,13 @@ func NewCmdEIPList() *cobra.Command {
 					row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
 					list = append(list, row)
 				}
-				PrintTable(list, []string{"Name", "IP", "ResourceID", "Group", "Billing", "Bandwidth", "BindResource", "Status", "ExpirationTime"})
+				base.PrintTableS(list)
 			}
 		},
 	}
 
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Assign project-id")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Assign region")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
 	fetchAll = cmd.Flags().Bool("list-all", false, "List all eip")
@@ -138,14 +139,14 @@ func getEIPIDbyIP(ip net.IP, projectID, region string) (string, error) {
 }
 
 func fetchAllEip(projectID, region string) ([]unet.UnetEIPSet, error) {
-	req := BizClient.NewDescribeEIPRequest()
+	req := base.BizClient.NewDescribeEIPRequest()
 	list := []unet.UnetEIPSet{}
 	req.ProjectId = sdk.String(projectID)
 	req.Region = sdk.String(region)
 	for offset, step := 0, 100; ; offset += step {
 		req.Offset = &offset
 		req.Limit = &step
-		resp, err := BizClient.DescribeEIP(req)
+		resp, err := base.BizClient.DescribeEIP(req)
 		if err != nil {
 			return nil, err
 		}
@@ -159,13 +160,39 @@ func fetchAllEip(projectID, region string) ([]unet.UnetEIPSet, error) {
 	return list, nil
 }
 
-func getAllEip(states []string, projectID, region string) []string {
+//states,paymodes 为nil时，不作为过滤条件
+func getAllEip(projectID, region string, states, paymodes []string) []string {
 	list, err := fetchAllEip(projectID, region)
 	if err != nil {
 		return nil
 	}
 	strs := []string{}
 	for _, item := range list {
+		rightState := false
+		if states == nil {
+			rightState = true
+		} else {
+			for _, s := range states {
+				if item.Status == s {
+					rightState = true
+				}
+			}
+		}
+
+		rightPayMode := false
+		if paymodes == nil {
+			rightPayMode = true
+		} else {
+			for _, m := range paymodes {
+				if item.PayMode == m {
+					rightPayMode = true
+				}
+			}
+		}
+		if !rightPayMode || !rightState {
+			continue
+		}
+
 		ips := []string{}
 		for _, ip := range item.EIPAddr {
 			ips = append(ips, ip.IP)
@@ -175,10 +202,23 @@ func getAllEip(states []string, projectID, region string) []string {
 	return strs
 }
 
+func getEIP(eipID string) (*unet.UnetEIPSet, error) {
+	req := base.BizClient.NewDescribeEIPRequest()
+	req.EIPIds = append(req.EIPIds, eipID)
+	resp, err := base.BizClient.DescribeEIP(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.EIPSet) == 1 {
+		return &resp.EIPSet[0], nil
+	}
+	return nil, fmt.Errorf("eip[%s] may not exist", eipID)
+}
+
 //NewCmdEIPAllocate ucloud eip allocate
 func NewCmdEIPAllocate() *cobra.Command {
 	var count *int
-	var req = BizClient.NewAllocateEIPRequest()
+	var req = base.BizClient.NewAllocateEIPRequest()
 	var cmd = &cobra.Command{
 		Use:     "allocate",
 		Short:   "Allocate EIP",
@@ -189,14 +229,14 @@ func NewCmdEIPAllocate() *cobra.Command {
 				*req.OperatorName = "Bgp"
 			}
 			for i := 0; i < *count; i++ {
-				resp, err := BizClient.AllocateEIP(req)
+				resp, err := base.BizClient.AllocateEIP(req)
 				if err != nil {
-					HandleError(err)
+					base.HandleError(err)
 				} else {
 					for _, eip := range resp.EIPSet {
-						Cxt.Printf("allocate EIP[%s] ", eip.EIPId)
+						base.Cxt.Printf("allocate EIP[%s] ", eip.EIPId)
 						for _, ip := range eip.EIPAddr {
-							Cxt.Printf("IP:%s  Line:%s \n", ip.IP, ip.OperatorName)
+							base.Cxt.Printf("IP:%s  Line:%s \n", ip.IP, ip.OperatorName)
 						}
 					}
 				}
@@ -206,8 +246,8 @@ func NewCmdEIPAllocate() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	req.OperatorName = cmd.Flags().String("line", "", "Required. 'BGP' or 'International'. 'BGP' could be set in China mainland regions, such as cn-bj2 etc. 'International' could be set in the regions beyond mainland, such as hk, tw-kh, us-ws etc.")
 	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 200]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	req.PayMode = cmd.Flags().String("charge-mode", "Bandwidth", "Optional. charge-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	req.ShareBandwidthId = cmd.Flags().String("share-bandwidth-id", "", "Optional. ShareBandwidthId, required only when charge-mode is 'ShareBandwidth'")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
@@ -242,8 +282,8 @@ func NewCmdEIPBind() *cobra.Command {
 	eipID = cmd.Flags().String("eip-id", "", "Required. EIPId to bind")
 	resourceID = cmd.Flags().String("resource-id", "", "Required. ResourceID , which is the UHostId of uhost")
 	resourceType = cmd.Flags().String("resource-type", "uhost", "Requried. ResourceType, type of resource to bind with eip. 'uhost','vrouter','ulb','upm','hadoophost'.eg..")
-	projectID = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
-	region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	projectID = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("resource-id")
 	cmd.Flags().SetFlagValues("resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
@@ -251,24 +291,24 @@ func NewCmdEIPBind() *cobra.Command {
 }
 
 func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
-	req := BizClient.NewBindEIPRequest()
+	req := base.BizClient.NewBindEIPRequest()
 	req.ResourceId = resourceID
 	req.ResourceType = resourceType
 	req.EIPId = eipID
 	req.ProjectId = projectID
 	req.Region = region
-	_, err := BizClient.BindEIP(req)
+	_, err := base.BizClient.BindEIP(req)
 	if err != nil {
-		HandleError(err)
+		base.HandleError(err)
 	} else {
-		Cxt.Printf("bind EIP[%s] with %s[%s]\n", *req.EIPId, *req.ResourceType, *req.ResourceId)
+		base.Cxt.Printf("bind EIP[%s] with %s[%s]\n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 	}
 }
 
 //NewCmdEIPUnbind ucloud eip unbind
 func NewCmdEIPUnbind() *cobra.Command {
 
-	var req = BizClient.NewUnBindEIPRequest()
+	var req = base.BizClient.NewUnBindEIPRequest()
 	var cmd = &cobra.Command{
 		Use:     "unbind",
 		Short:   "Unbind EIP with uhost",
@@ -276,19 +316,19 @@ func NewCmdEIPUnbind() *cobra.Command {
 		Example: "ucloud eip unbind --eip-id eip-xxx --resource-id uhost-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
 			req.ResourceType = sdk.String("uhost")
-			_, err := BizClient.UnBindEIP(req)
+			_, err := base.BizClient.UnBindEIP(req)
 			if err != nil {
-				HandleError(err)
+				base.HandleError(err)
 			} else {
-				Cxt.Printf("unbind EIP[%s] with %s[%s]\n", *req.EIPId, *req.ResourceType, *req.ResourceId)
+				base.Cxt.Printf("unbind EIP[%s] with %s[%s]\n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
 	req.EIPId = cmd.Flags().String("eip-id", "", "Required. EIPId to unbind")
 	req.ResourceId = cmd.Flags().String("resource-id", "", "Required. ResourceID , which is the UHostId of uhost")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("resource-id")
 
@@ -298,7 +338,7 @@ func NewCmdEIPUnbind() *cobra.Command {
 //NewCmdEIPRelease ucloud eip release
 func NewCmdEIPRelease() *cobra.Command {
 	var ids []string
-	var req = BizClient.NewReleaseEIPRequest()
+	var req = base.BizClient.NewReleaseEIPRequest()
 	var cmd = &cobra.Command{
 		Use:     "release",
 		Short:   "Release EIP",
@@ -307,20 +347,96 @@ func NewCmdEIPRelease() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
 				req.EIPId = &id
-				_, err := BizClient.ReleaseEIP(req)
+				_, err := base.BizClient.ReleaseEIP(req)
 				if err != nil {
-					HandleError(err)
+					base.HandleError(err)
 				} else {
-					Cxt.Printf("released EIP[%v]\n", *req.EIPId)
+					base.Cxt.Printf("released EIP[%v]\n", *req.EIPId)
 				}
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", make([]string, 0), "Required. EIPIds of the EIP you want to release")
-	req.ProjectId = cmd.Flags().String("project-id", ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("bandwidth")
+	return cmd
+}
+
+//NewCmdEIPModifyBandwidth ucloud eip modify-bandwidth
+func NewCmdEIPModifyBandwidth() *cobra.Command {
+	ids := []string{}
+	req := base.BizClient.NewModifyEIPBandwidthRequest()
+	cmd := &cobra.Command{
+		Use:   "modify-bandwidth",
+		Short: "Modify bandwith of EIP instances",
+		Long:  "Modify bandwith of EIP instances",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, id := range ids {
+				id = base.PickResourceID(id)
+				req.EIPId = &id
+				_, err := base.BizClient.ModifyEIPBandwidth(req)
+				if err != nil {
+					base.HandleError(err)
+				} else {
+					base.Cxt.Printf("eip[%s]'s bandwidth modified\n", id)
+				}
+			}
+		},
+	}
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", nil, "Required, Resource ID of EIPs to modify bandwidth")
+	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth of EIP after modifed. Charge by traffic, range [1,300]; charge by bandwidth, range [1,800]")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
+	})
+	cmd.MarkFlagRequired("eip-id")
+	cmd.MarkFlagRequired("bandwidth-mb")
+	return cmd
+}
+
+//NewCmdEIPSetChargeMode ucloud eip modify-charge-mode
+func NewCmdEIPSetChargeMode() *cobra.Command {
+	ids := []string{}
+	req := base.BizClient.NewSetEIPPayModeRequest()
+	cmd := &cobra.Command{
+		Use:   "modify-charge-mode",
+		Short: "Modify charge mode of EIP instances",
+		Long:  "Modify charge mode of EIP instances",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, id := range ids {
+				id = base.PickResourceID(id)
+				req.EIPId = &id
+				eipIns, err := getEIP(id)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				req.Bandwidth = sdk.Int(eipIns.Bandwidth)
+				_, err = base.BizClient.SetEIPPayMode(req)
+				if err != nil {
+					base.HandleError(err)
+				} else {
+					base.Cxt.Printf("eip[%s]'s charge mode modified to %s\n", id, *req.PayMode)
+				}
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", nil, "Required, Resource ID of EIPs to modify charge mode")
+	req.PayMode = cmd.Flags().String("charge-mode", "", "Required, Charge mode of eip, 'traffic' or 'bandwidth'")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	cmd.Flags().SetFlagValues("charge-mode", "Bandwidth", "Traffic")
+	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
+	})
+	cmd.MarkFlagRequired("eip-id")
+	cmd.MarkFlagRequired("charge-mode")
 	return cmd
 }

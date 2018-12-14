@@ -77,6 +77,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdVpc())
 	cmd.AddCommand(NewCmdFirewall())
 	cmd.AddCommand(NewCmdDisk())
+	cmd.AddCommand(NewCmdBandwidthPkg())
 	return cmd
 }
 

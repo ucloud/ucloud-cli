@@ -15,3 +15,10 @@ const DISK_FAILED = "Failed"
 const DISK_RESTORING = "Restoring"
 
 const SNAPSHOT_NORMAL = "Normal"
+
+const EIP_FREE = "free"
+const EIP_USED = "used"
+
+const EIP_CHARGE_BANDWIDTH = "Bandwidth"
+const EIP_CHARGE_TRAFFIC = "Traffic"
+const EIP_CHARGE_SHARE = "ShareBandwidth"

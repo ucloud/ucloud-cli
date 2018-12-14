@@ -239,6 +239,11 @@ func FormatDate(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02")
 }
 
+//FormatDateTime 格式化时间,把以秒为单位的时间戳格式化未年月日/时分秒
+func FormatDateTime(seconds int) string {
+	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
+}
+
 //RegionLabel regionlable
 var RegionLabel = map[string]string{
 	"cn-bj1":       "Beijing1",
