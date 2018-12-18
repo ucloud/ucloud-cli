@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/model/status"
 )
 
 //NewCmdEIP ucloud eip
@@ -44,6 +45,8 @@ func NewCmdEIP() *cobra.Command {
 	cmd.AddCommand(NewCmdEIPUnbind())
 	cmd.AddCommand(NewCmdEIPModifyBandwidth())
 	cmd.AddCommand(NewCmdEIPSetChargeMode())
+	cmd.AddCommand(NewCmdEIPJoinSharedBW())
+	cmd.AddCommand(NewCmdEIPLeaveSharedBW())
 	return cmd
 }
 
@@ -438,5 +441,112 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 	})
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("charge-mode")
+	return cmd
+}
+
+//NewCmdEIPJoinSharedBW ucloud eip join-shared-bw
+func NewCmdEIPJoinSharedBW() *cobra.Command {
+	eipIDs := []string{}
+	req := base.BizClient.NewAssociateEIPWithShareBandwidthRequest()
+	cmd := &cobra.Command{
+		Use:   "join-shared-bw",
+		Short: "Join shared bandwidth",
+		Long:  "Join shared bandwidth",
+		Run: func(c *cobra.Command, args []string) {
+			for _, eip := range eipIDs {
+				req.EIPIds = append(req.EIPIds, base.PickResourceID(eip))
+			}
+			req.ShareBandwidthId = sdk.String(base.PickResourceID(*req.ShareBandwidthId))
+			_, err := base.BizClient.AssociateEIPWithShareBandwidth(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			base.Cxt.Printf("eip%v joined shared bandwidth[%s]\n", req.EIPIds, *req.ShareBandwidthId)
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVar(&eipIDs, "eip-id", nil, "Required. Resource ID of EIPs to join shared bandwdith")
+	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth to be joined")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	flags.SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_BANDWIDTH, status.EIP_CHARGE_TRAFFIC})
+	})
+	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
+		return list
+	})
+	cmd.MarkFlagRequired("eip-id")
+	cmd.MarkFlagRequired("shared-bw-id")
+
+	return cmd
+}
+
+//NewCmdEIPLeaveSharedBW ucloud eip leave-shared-bw
+func NewCmdEIPLeaveSharedBW() *cobra.Command {
+	eipIDs := []string{}
+	req := base.BizClient.NewDisassociateEIPWithShareBandwidthRequest()
+	cmd := &cobra.Command{
+		Use:   "leave-shared-bw",
+		Short: "Leave shared bandwidth",
+		Long:  "Leave shared bandwidth",
+		Run: func(c *cobra.Command, args []string) {
+			if *req.ShareBandwidthId == "" {
+				for _, eipID := range eipIDs {
+					eipIns, err := getEIP(base.PickResourceID(eipID))
+					if err != nil {
+						base.HandleError(err)
+						continue
+					}
+					sharedBWID := eipIns.ShareBandwidthSet.ShareBandwidthId
+					if sharedBWID == "" {
+						base.Cxt.Printf("eip[%s] doesn't join any shared bandwidth\n", eipID)
+						continue
+					}
+					req.ShareBandwidthId = sdk.String(sharedBWID)
+					req.EIPIds = []string{base.PickResourceID(eipID)}
+					_, err = base.BizClient.DisassociateEIPWithShareBandwidth(req)
+					if err != nil {
+						base.HandleError(err)
+						continue
+					}
+					base.Cxt.Printf("eip[%s] left shared bandwidth[%s]\n", eipID, sharedBWID)
+				}
+			} else {
+				for _, id := range eipIDs {
+					req.EIPIds = append(req.EIPIds, base.PickResourceID(id))
+				}
+				*req.ShareBandwidthId = base.PickResourceID(*req.ShareBandwidthId)
+				_, err := base.BizClient.DisassociateEIPWithShareBandwidth(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				base.Cxt.Printf("eip%v left shared bandwidth[%s]\n", eipIDs, *req.ShareBandwidthId)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVar(&eipIDs, "eip-id", nil, "Required. Resource ID of EIPs to leave shared bandwidth")
+	req.Bandwidth = flags.Int("bandwidth-mb", 1, "Required. Bandwidth of EIP after leaving shared bandwidth, ranging [1,300] for 'Traffic' charge mode, ranging [1,800] for 'Bandwidth' charge mode. Unit:Mb")
+	req.PayMode = flags.String("charge-mode", "Bandwidth", "Optional. Charge mode of the EIP after leaving shared bandwidth, 'Bandwidth' or 'Traffic'")
+	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Optional. Resource ID of shared bandwidth instance, assign this flag to make the operation faster")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	flags.SetFlagValues("charge-mode", "Bandwidth", "Traffic")
+	flags.SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_SHARE})
+	})
+	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
+		return list
+	})
+
+	cmd.MarkFlagRequired("bandwidth")
+	cmd.MarkFlagRequired("eip-id")
 	return cmd
 }

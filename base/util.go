@@ -175,36 +175,48 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 	for i := 0; i < listVal.Len(); i++ {
 		elemVal := listVal.Index(i)
 		elemType := elemVal.Type()
-		row := make(map[string]interface{})
+		rows := []map[string]interface{}{}
 		for j := 0; j < elemVal.NumField(); j++ {
 			field := elemVal.Field(j)
 			fieldName := elemType.Field(j).Name
 			if _, ok := showFieldMap[fieldName]; ok {
-				row[fieldName] = field.Interface()
 				text := fmt.Sprintf("%v", field.Interface())
-				width := calcWidth(text)
-				if showFieldMap[fieldName] < width {
-					showFieldMap[fieldName] = width
+				cells := strings.Split(text, "\n")
+				for i, cell := range cells {
+					width := calcWidth(cell)
+					if showFieldMap[fieldName] < width {
+						showFieldMap[fieldName] = width
+					}
+					if len(rows) == i {
+						rows = append(rows, make(map[string]interface{}))
+					}
+					rows[i][fieldName] = cell
 				}
 			}
 		}
-		rowList = append(rowList, row)
+		rowList = append(rowList, rows...)
 	}
 	printTable(rowList, fieldList, showFieldMap)
 }
 
 func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidthMap map[string]int) {
+	//打印表头
 	for _, field := range fieldList {
 		tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]+GAP) + "s"
 		fmt.Printf(tmpl, field)
 	}
 	fmt.Printf("\n")
 
+	//打印数据
 	for _, row := range rowList {
 		for _, field := range fieldList {
 			cutWidth := calcCutWidth(fmt.Sprintf("%v", row[field]))
 			tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]-cutWidth+GAP) + "v"
-			fmt.Printf(tmpl, row[field])
+			if row[field] != nil {
+				fmt.Printf(tmpl, row[field])
+			} else {
+				fmt.Printf(tmpl, "")
+			}
 		}
 		fmt.Printf("\n")
 	}
