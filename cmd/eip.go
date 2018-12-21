@@ -349,7 +349,7 @@ func NewCmdEIPRelease() *cobra.Command {
 		Example: "ucloud eip release --eip-id eip-xx1,eip-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
-				req.EIPId = &id
+				req.EIPId = sdk.String(id)
 				_, err := base.BizClient.ReleaseEIP(req)
 				if err != nil {
 					base.HandleError(err)

@@ -33,7 +33,8 @@ type DescribeFirewallResponse struct {
 	response.CommonBase
 
 	// 获取的防火墙组详细信息 参见 FirewallDataSet
-	DataSet []FirewallDataSet
+	DataSet    []FirewallDataSet
+	TotalCount int
 }
 
 // NewDescribeFirewallRequest will create request of DescribeFirewall action.
