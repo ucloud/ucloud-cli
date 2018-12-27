@@ -290,12 +290,16 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 				for r := range ruleMap {
 					req.Rule = append(req.Rule, r)
 				}
+				if len(req.Rule) == 0 {
+					fmt.Fprintf(out, "Error: rules can't be all deleted\n")
+					return
+				}
 				_, err = base.BizClient.UpdateFirewall(req)
 				if err != nil {
 					base.HandleError(err)
 					return
 				}
-				base.Cxt.Printf("firewall[%s] updated\n", fwID)
+				fmt.Fprintf(out, "firewall[%s] updated\n", fwID)
 			}
 		},
 	}
@@ -322,9 +326,10 @@ func NewCmdFirewallApply() *cobra.Command {
 	resourceIDs := []string{}
 	fwID := ""
 	cmd := &cobra.Command{
-		Use:   "apply",
-		Short: "Applay firewall to ucloud service",
-		Long:  "Applay firewall to ucloud service",
+		Use:     "apply",
+		Short:   "Applay firewall to ucloud service",
+		Long:    "Applay firewall to ucloud service",
+		Example: "ucloud firewall apply --fw-id firewall-xxx --resource-id uhost-xxx --resource-type uhost",
 		Run: func(c *cobra.Command, args []string) {
 			req.FWId = sdk.String(base.PickResourceID(fwID))
 			for _, id := range resourceIDs {
@@ -365,9 +370,10 @@ func NewCmdFirewallCopy() *cobra.Command {
 	srcRegion := ""
 	req := base.BizClient.NewCreateFirewallRequest()
 	cmd := &cobra.Command{
-		Use:   "copy",
-		Short: "Copy firewall",
-		Long:  "Copy firewall",
+		Use:     "copy",
+		Short:   "Copy firewall",
+		Long:    "Copy firewall",
+		Example: "ucloud firewall copy --src-fw firewall-xxx --target-region cn-bj2 --name test",
 		Run: func(c *cobra.Command, args []string) {
 			fwID := base.PickResourceID(srcFirewall)
 			firewall, err := getFirewall(fwID, *req.ProjectId, srcRegion)
@@ -415,9 +421,10 @@ func NewCmdFirewallDelete() *cobra.Command {
 	req := base.BizClient.NewDeleteFirewallRequest()
 	ids := []string{}
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete firewall by resource ids or names",
-		Long:  "Delete firewall by resource ids or names",
+		Use:     "delete",
+		Short:   "Delete firewall by resource ids or names",
+		Long:    "Delete firewall by resource ids or names",
+		Example: "ucloud firewall delete --fw-id firewall-xxx",
 		Run: func(c *cobra.Command, args []string) {
 			for _, id := range ids {
 				req.FWId = sdk.String(base.PickResourceID(id))
@@ -518,6 +525,15 @@ func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
 			if *req.Name == "" && *req.Tag == "" && *req.Remark == "" {
 				fmt.Fprintln(out, "Error: name, group and remark can't be all empty")
 				return
+			}
+			if *req.Name == "" {
+				req.Name = nil
+			}
+			if *req.Tag == "" {
+				req.Tag = nil
+			}
+			if *req.Remark == "" {
+				req.Remark = nil
 			}
 			for _, id := range fwIDs {
 				req.FWId = sdk.String(base.PickResourceID(id))

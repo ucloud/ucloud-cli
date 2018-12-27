@@ -69,7 +69,9 @@ func NewCmdSharedBWCreate() *cobra.Command {
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
+
 	cmd.MarkFlagRequired("name")
+
 	return cmd
 }
 
@@ -125,9 +127,10 @@ func NewCmdSharedBWList() *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	flags.StringSliceVar(&req.ShareBandwidthIds, "resource-id", nil, "Resource ID of shared bandwidth instances to list")
+	flags.StringSliceVar(&req.ShareBandwidthIds, "shared-bw-id", nil, "Resource ID of shared bandwidth instances to list")
 
 	return cmd
 }
@@ -153,16 +156,23 @@ func NewCmdSharedBWResize() *cobra.Command {
 			base.Cxt.Printf("shared bandwidth[%s] resized to %dMb\n", *req.ShareBandwidthId, *req.ShareBandwidth)
 		},
 	}
+
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ShareBandwidthId = flags.String("resource-id", "", "Required. Resource ID of shared bandwidth instance to resize")
+
+	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth instance to resize")
 	req.ShareBandwidth = flags.Int("bandwidth-mb", 0, "Required. Unit:Mb. resize to bandwidth value")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	flags.SetFlagValuesFunc("resource-id", func() []string {
+
+	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
+
+	cmd.MarkFlagRequired("shared-bw-id")
+	cmd.MarkFlagRequired("bandwidth-mb")
+
 	return cmd
 }
 
@@ -188,17 +198,19 @@ func NewCmdSharedBWDelete() *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	flags.StringSliceVar(&ids, "resource-id", nil, "Required. Resource ID of shared bandwidth instances to delete")
+
+	flags.StringSliceVar(&ids, "shared-bw-id", nil, "Required. Resource ID of shared bandwidth instances to delete")
 	req.EIPBandwidth = flags.Int("eip-bandwidth-mb", 1, "Optional. Bandwidth of the joined EIPs,after deleting the shared bandwidth instance")
 	req.PayMode = flags.String("charge-mode", "", "Optional. Charge mode of joined EIPs,after deleting the shared bandwidth")
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	flags.SetFlagValuesFunc("resource-id", func() []string {
+	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
 	flags.SetFlagValues("charge-mode", "Bandwidth", "Traffic")
-	cmd.MarkFlagRequired("resource-id")
+
+	cmd.MarkFlagRequired("shared-bw-id")
 
 	return cmd
 }

@@ -20,10 +20,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/services/udpn"
-
 	"github.com/spf13/cobra"
 
+	"github.com/ucloud/ucloud-sdk-go/services/udpn"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -167,9 +166,10 @@ func NewCmdBandwidthPkgDelete() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewDeleteBandwidthPackageRequest()
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete bandwidth packages",
-		Long:  "Delete bandwidth packages",
+		Use:     "delete",
+		Short:   "Delete bandwidth packages",
+		Long:    "Delete bandwidth packages",
+		Example: "ucloud bw-pkg delete --resource-id bwpack-xxx",
 		Run: func(c *cobra.Command, args []string) {
 			for _, id := range ids {
 				id := base.PickResourceID(id)

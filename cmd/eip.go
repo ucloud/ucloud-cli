@@ -90,27 +90,27 @@ func NewCmdEIPList() *cobra.Command {
 				eipList = resp.EIPSet
 			}
 
-			if global.json {
-				base.PrintJSON(eipList)
-			} else {
-				list := make([]EIPRow, 0)
-				for _, eip := range eipList {
-					row := EIPRow{}
-					row.Name = eip.Name
-					for _, ip := range eip.EIPAddr {
-						row.IP += ip.IP + " " + ip.OperatorName + "   "
-					}
-					row.ResourceID = eip.EIPId
-					row.Group = eip.Tag
-					row.ChargeMode = eip.PayMode
-					row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
-					if eip.Resource.ResourceId != "" {
-						row.BindResource = fmt.Sprintf("%s|%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceId, eip.Resource.ResourceType)
-					}
-					row.Status = eip.Status
-					row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
-					list = append(list, row)
+			list := make([]EIPRow, 0)
+			for _, eip := range eipList {
+				row := EIPRow{}
+				row.Name = eip.Name
+				for _, ip := range eip.EIPAddr {
+					row.IP += ip.IP + " " + ip.OperatorName + "   "
 				}
+				row.ResourceID = eip.EIPId
+				row.Group = eip.Tag
+				row.ChargeMode = eip.PayMode
+				row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
+				if eip.Resource.ResourceId != "" {
+					row.BindResource = fmt.Sprintf("%s|%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceId, eip.Resource.ResourceType)
+				}
+				row.Status = eip.Status
+				row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
+				list = append(list, row)
+			}
+			if global.json {
+				base.PrintJSON(list)
+			} else {
 				base.PrintTableS(list)
 			}
 		},
@@ -368,14 +368,15 @@ func NewCmdEIPRelease() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPModifyBandwidth ucloud eip modify-bandwidth
+//NewCmdEIPModifyBandwidth ucloud eip modify-bw
 func NewCmdEIPModifyBandwidth() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewModifyEIPBandwidthRequest()
 	cmd := &cobra.Command{
-		Use:   "modify-bandwidth",
-		Short: "Modify bandwith of EIP instances",
-		Long:  "Modify bandwith of EIP instances",
+		Use:     "modify-bw",
+		Short:   "Modify bandwith of EIP instances",
+		Long:    "Modify bandwith of EIP instances",
+		Example: "ucloud eip modify-bw --eip-id eip-xxx --bandwidth-mb 20",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
 				id = base.PickResourceID(id)
@@ -407,9 +408,10 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewSetEIPPayModeRequest()
 	cmd := &cobra.Command{
-		Use:   "modify-charge-mode",
-		Short: "Modify charge mode of EIP instances",
-		Long:  "Modify charge mode of EIP instances",
+		Use:     "modify-charge-mode",
+		Short:   "Modify charge mode of EIP instances",
+		Long:    "Modify charge mode of EIP instances",
+		Example: "ucloud eip modify-charge-mode --eip-id eip-xxx --charge-mode Traffic",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
 				id = base.PickResourceID(id)
@@ -424,7 +426,7 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					base.Cxt.Printf("eip[%s]'s charge mode modified to %s\n", id, *req.PayMode)
+					base.Cxt.Printf("eip[%s]'s charge mode was modified to %s\n", id, *req.PayMode)
 				}
 			}
 		},
@@ -449,9 +451,10 @@ func NewCmdEIPJoinSharedBW() *cobra.Command {
 	eipIDs := []string{}
 	req := base.BizClient.NewAssociateEIPWithShareBandwidthRequest()
 	cmd := &cobra.Command{
-		Use:   "join-shared-bw",
-		Short: "Join shared bandwidth",
-		Long:  "Join shared bandwidth",
+		Use:     "join-shared-bw",
+		Short:   "Join shared bandwidth",
+		Long:    "Join shared bandwidth",
+		Example: "ucloud eip join-shared-bw --eip-id eip-xxx --shared-bw-id bwshare-xxx",
 		Run: func(c *cobra.Command, args []string) {
 			for _, eip := range eipIDs {
 				req.EIPIds = append(req.EIPIds, base.PickResourceID(eip))
@@ -489,9 +492,10 @@ func NewCmdEIPLeaveSharedBW() *cobra.Command {
 	eipIDs := []string{}
 	req := base.BizClient.NewDisassociateEIPWithShareBandwidthRequest()
 	cmd := &cobra.Command{
-		Use:   "leave-shared-bw",
-		Short: "Leave shared bandwidth",
-		Long:  "Leave shared bandwidth",
+		Use:     "leave-shared-bw",
+		Short:   "Leave shared bandwidth",
+		Long:    "Leave shared bandwidth",
+		Example: "ucloud eip leave-shared-bw --eip-id eip-b2gvu3",
 		Run: func(c *cobra.Command, args []string) {
 			if *req.ShareBandwidthId == "" {
 				for _, eipID := range eipIDs {
