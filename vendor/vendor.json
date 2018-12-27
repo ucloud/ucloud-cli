@@ -75,6 +75,12 @@
 			"revisionTime": "2018-11-21T10:11:50Z"
 		},
 		{
+			"checksumSHA1": "dF+V9PFP/Kf2cfd81uAlCd0Usqw=",
+			"path": "github.com/ucloud/ucloud-sdk-go/services/udpn",
+			"revision": "d5828884a7a4a702815a15ff6417df0fd2b50893",
+			"revisionTime": "2018-12-18T04:06:49Z"
+		},
+		{
 			"checksumSHA1": "1misM0pqLF7LVdkEtemvhvAs+nQ=",
 			"path": "github.com/ucloud/ucloud-sdk-go/services/uhost",
 			"revision": "e4a5beab94162b24b60e41b3df8bc8e565144030",

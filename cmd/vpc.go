@@ -1,9 +1,17 @@
 package cmd
 
 import (
+	"fmt"
+	"io"
+	"net"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/ucloud/ucloud-sdk-go/services/vpc"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+
 	"github.com/ucloud/ucloud-cli/base"
 )
 
@@ -22,18 +30,7 @@ func NewCmdVpc() *cobra.Command {
 	cmd.AddCommand(NewCmdVpcCreatePeer())
 	cmd.AddCommand(NewCmdVpcListPeer())
 	cmd.AddCommand(NewCmdVpcDeletePeer())
-	cmd.AddCommand(NewCmdSubnetCreate())
 	return cmd
-}
-
-//VPCIntercomRow 表格行
-type VPCIntercomRow struct {
-	ProjectID string
-	Network   []string
-	DstRegion string
-	Name      string
-	VPCId     string
-	Tag       string
 }
 
 //VPCRow 表格行
@@ -48,6 +45,7 @@ type VPCRow struct {
 
 //NewCmdVPCList ucloud vpc list
 func NewCmdVPCList() *cobra.Command {
+	vpcIDs := []string{}
 	req := base.BizClient.NewDescribeVPCRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -55,28 +53,30 @@ func NewCmdVPCList() *cobra.Command {
 		Long:  "List vpc",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			for _, id := range vpcIDs {
+				req.VPCIds = append(req.VPCIds, base.PickResourceID(id))
+			}
 			resp, err := base.BizClient.DescribeVPC(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
-			if global.json {
-				base.PrintJSON(resp.DataSet)
-			} else {
-				list := []VPCRow{}
-				for _, vpc := range resp.DataSet {
-					row := VPCRow{}
-					row.VPCName = vpc.Name
-					row.ResourceID = vpc.VPCId
-					row.Group = vpc.Tag
-					row.NetworkSegment = strings.Join(vpc.Network, ",")
-					row.SubnetCount = vpc.SubnetCount
-					row.CreationTime = base.FormatDate(vpc.CreateTime)
-					list = append(list, row)
-				}
-				base.PrintTable(list, []string{"VPCName", "ResourceID", "Group", "NetworkSegment", "SubnetCount", "CreationTime"})
+			list := []VPCRow{}
+			for _, vpc := range resp.DataSet {
+				row := VPCRow{}
+				row.VPCName = vpc.Name
+				row.ResourceID = vpc.VPCId
+				row.Group = vpc.Tag
+				row.NetworkSegment = strings.Join(vpc.Network, ",")
+				row.SubnetCount = vpc.SubnetCount
+				row.CreationTime = base.FormatDate(vpc.CreateTime)
+				list = append(list, row)
 			}
-
+			if global.json {
+				base.PrintJSON(list)
+			} else {
+				base.PrintTableS(list)
+			}
 		},
 	}
 	flags := cmd.Flags()
@@ -84,7 +84,11 @@ func NewCmdVPCList() *cobra.Command {
 	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	req.Tag = flags.String("group", "", "Optional. Group")
-	flags.StringSliceVar(&req.VPCIds, "vpc-id", []string{}, "Optional. Multiple values separated by commas")
+	flags.StringSliceVar(&vpcIDs, "vpc-id", []string{}, "Optional. Multiple values separated by commas")
+
+	flags.SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
 
 	return cmd
 }
@@ -97,7 +101,7 @@ func NewCmdVpcCreate() *cobra.Command {
 		Use:     "create",
 		Short:   "Create vpc network",
 		Long:    "Create vpc network",
-		Example: "ucloud vpc create --name xxx --segment xxx",
+		Example: "ucloud vpc create --name xxx --segment 192.168.0.0/16",
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			req.Network = *segments
@@ -106,7 +110,7 @@ func NewCmdVpcCreate() *cobra.Command {
 				base.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("VPC: %v created successfully!\n", resp.VPCId)
+			base.Cxt.Printf("vpc[%s] created\n", resp.VPCId)
 		},
 	}
 	flags := cmd.Flags()
@@ -114,10 +118,15 @@ func NewCmdVpcCreate() *cobra.Command {
 
 	req.Name = cmd.Flags().String("name", "", "Required. Name of the vpc network.")
 	segments = cmd.Flags().StringSlice("segment", nil, "Required. The segment for private network.")
-	req.Tag = cmd.Flags().String("Group", "Default", "Optional. Business group.")
-	req.Remark = cmd.Flags().String("Remark", "Default", "Optional. The description of the vpc.")
+	req.Tag = cmd.Flags().String("group", "", "Optional. Business group.")
+	req.Remark = cmd.Flags().String("remark", "", "Optional. The description of the vpc.")
 	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign the region of the VPC")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign the project-id")
+
+	flags.SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("segment")
 
@@ -126,27 +135,36 @@ func NewCmdVpcCreate() *cobra.Command {
 
 //NewCmdVpcDelete ucloud vpc delete
 func NewCmdVpcDelete() *cobra.Command {
+	idNames := []string{}
 	req := base.BizClient.NewDeleteVPCRequest()
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete vpc network",
 		Long:    "Delete vpc network",
-		Example: "ucloud vpc delete --vpc-id",
+		Example: "ucloud vpc delete --vpc-id uvnet-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DeleteVPC(req)
-			if err != nil {
-				base.HandleError(err)
-			} else {
-				base.Cxt.Printf("VPC [%s] was successfully deleted\n ", resp)
+			for _, idname := range idNames {
+				req.VPCId = sdk.String(base.PickResourceID(idname))
+				_, err := base.BizClient.DeleteVPC(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				base.Cxt.Printf("vpc[%s] deleted\n", idname)
 			}
 		},
 	}
 
 	cmd.Flags().SortFlags = false
 
-	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The vpc network you want to delete")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Clarify the region of the vpc")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of the vpc")
+	cmd.Flags().StringSliceVar(&idNames, "vpc-id", nil, "Required. Resource ID of the vpc network to delete")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Region of the vpc")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Project id of the vpc")
+
+	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+
 	cmd.MarkFlagRequired("vpc-id")
 
 	return cmd
@@ -157,31 +175,57 @@ func NewCmdVpcCreatePeer() *cobra.Command {
 	req := base.BizClient.NewCreateVPCIntercomRequest()
 	cmd := &cobra.Command{
 		Use:     "create-intercome",
-		Short:   "create intercome with other vpc",
-		Long:    "create intercome with other vpc",
-		Example: "ucloud vpc create-intercome --vpc-id --dstvpc-id --destregion",
+		Short:   "Create intercome with other vpc",
+		Long:    "Create intercome with other vpc",
+		Example: "ucloud vpc create-intercome --vpc-id xx --dst-vpc-id xx --dst-region xx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.CreateVPCIntercom(req)
+			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
+			req.DstProjectId = sdk.String(base.PickResourceID(*req.DstProjectId))
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
+			req.DstVPCId = sdk.String(base.PickResourceID(*req.DstVPCId))
+			_, err := base.BizClient.CreateVPCIntercom(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("The intercome [%s] has been establish", resp)
+			base.Cxt.Printf("intercome [%s<-->%s] establish", *req.VPCId, *req.DstVPCId)
 		},
 	}
 
 	cmd.Flags().SortFlags = false
 
 	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The source vpc you want to establish the intercome")
-	req.DstVPCId = cmd.Flags().String("dstvpc-id", "", "Required. The target vpc you want to establish the intercome")
-	req.DstRegion = cmd.Flags().String("dstregion", "", "Required. If the intercome established across different regions")
+	req.DstVPCId = cmd.Flags().String("dst-vpc-id", "", "Required. The target vpc you want to establish the intercome")
+	req.DstRegion = cmd.Flags().String("dst-region", base.ConfigInstance.Region, "Required. If the intercome established across different regions")
 	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optioanl. The region of source vpc which will establish the intercome")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of the source vpc")
+	req.DstProjectId = cmd.Flags().String("dst-project-id", base.ConfigInstance.ProjectID, "Optional. The project id of the source vpc")
+
 	cmd.MarkFlagRequired("vpc-id")
-	cmd.MarkFlagRequired("dstvpc-id")
-	cmd.MarkFlagRequired("dstregion")
+	cmd.MarkFlagRequired("dst-vpc-id")
+
+	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	cmd.Flags().SetFlagValuesFunc("dst-vpc-id", func() []string {
+		return getAllVPCIdNames(*req.DstProjectId, *req.DstRegion)
+	})
+	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
+	cmd.Flags().SetFlagValuesFunc("dst-region", getRegionList)
+	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
+	cmd.Flags().SetFlagValuesFunc("dst-project-id", getProjectList)
 
 	return cmd
+}
+
+//VPCIntercomRow 表格行
+type VPCIntercomRow struct {
+	VPCName    string
+	ResourceID string
+	Segments   string
+	ProjectID  string
+	DstRegion  string
+	Group      string
 }
 
 //NewCmdVpcListPeer ucloud vpc list-intercome
@@ -193,32 +237,40 @@ func NewCmdVpcListPeer() *cobra.Command {
 		Long:    "list intercome",
 		Example: "ucloud vpc list-intercome --vpc-id xx",
 		Run: func(cmd *cobra.Command, args []string) {
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			resp, err := base.BizClient.DescribeVPCIntercom(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
+			list := make([]VPCIntercomRow, 0)
+			for _, VPCIntercom := range resp.DataSet {
+				row := VPCIntercomRow{}
+				row.ProjectID = VPCIntercom.ProjectId
+				row.Segments = strings.Join(VPCIntercom.Network, ",")
+				row.DstRegion = VPCIntercom.DstRegion
+				row.VPCName = VPCIntercom.Name
+				row.ResourceID = VPCIntercom.VPCId
+				row.Group = VPCIntercom.Tag
+				list = append(list, row)
+			}
 			if global.json {
-				base.PrintJSON(resp.DataSet)
+				base.PrintJSON(list)
 			} else {
-				list := make([]VPCIntercomRow, 0)
-				for _, VPCIntercom := range resp.DataSet {
-					row := VPCIntercomRow{}
-					row.ProjectID = VPCIntercom.ProjectId
-					row.Network = VPCIntercom.Network
-					row.DstRegion = VPCIntercom.DstRegion
-					row.Name = VPCIntercom.Name
-					row.VPCId = VPCIntercom.VPCId
-					row.Tag = VPCIntercom.Tag
-				}
 				base.PrintTableS(list)
 			}
-
 		},
 	}
 	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The vpc id which you wnat to describe the information")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of source vpc")
 	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional, The region of source vpc")
+
+	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
+	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
+
 	cmd.MarkFlagRequired("vpc-id")
 
 	return cmd
@@ -231,57 +283,211 @@ func NewCmdVpcDeletePeer() *cobra.Command {
 		Use:     "delete-intercome",
 		Short:   "delete the vpc intercome",
 		Long:    "delete the vpc intercome",
-		Example: "ucloud vpc delete-intercome --vpc-id xxx --dstvpc-id xxx",
+		Example: "ucloud vpc delete-intercome --vpc-id xxx --dst-vpc-id xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DeleteVPCIntercom(req)
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
+			req.DstVPCId = sdk.String(base.PickResourceID(*req.DstVPCId))
+			_, err := base.BizClient.DeleteVPCIntercom(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("The intercome [%s] was deleted successfully", resp)
+			base.Cxt.Printf("intercome [%s<-->%s] deleted\n", *req.VPCId, *req.DstVPCId)
 		},
 	}
 
 	cmd.Flags().SortFlags = false
 
-	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The source vpc id from which you want to disconnect")
-	req.DstVPCId = cmd.Flags().String("dstvpc-id", "", "Required. The target vpc which you want to disconnect with source vpc")
+	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. Resource ID of source VPC to disconnect with destination VPC")
+	req.DstVPCId = cmd.Flags().String("dst-vpc-id", "", "Required. Resource ID of destination VPC to disconnect with source VPC")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of source vpc")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. The region of source vpc from which you want to disconnect")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. The region of source vpc to disconnect")
+	req.DstRegion = cmd.Flags().String("dst-region", "", "Optional. The region of dest vpc to disconnect")
+
 	cmd.MarkFlagRequired("vpc-id")
-	cmd.MarkFlagRequired("dstvpc-id")
+	cmd.MarkFlagRequired("dst-vpc-id")
+	cmd.MarkFlagRequired("dst-region")
+
+	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	cmd.Flags().SetFlagValuesFunc("dst-region", getRegionList)
+
+	return cmd
+}
+
+func getAllVPCIns(project, region string) ([]vpc.VPCInfo, error) {
+	req := base.BizClient.NewDescribeVPCRequest()
+	req.ProjectId = &project
+	req.Region = &region
+	resp, err := base.BizClient.DescribeVPC(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.DataSet, nil
+}
+
+func getAllVPCIdNames(project, region string) []string {
+	vpcInsList, err := getAllVPCIns(project, region)
+	list := []string{}
+	if err != nil {
+		return nil
+	}
+	for _, vpc := range vpcInsList {
+		list = append(list, fmt.Sprintf("%s/%s", vpc.VPCId, vpc.Name))
+	}
+	return list
+}
+
+//NewCmdSubnet  ucloud subnet
+func NewCmdSubnet() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "subnet",
+		Short: "List subnet",
+		Long:  `List subnet`,
+		Args:  cobra.NoArgs,
+	}
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdSubnetList())
+	cmd.AddCommand(NewCmdSubnetCreate())
+	cmd.AddCommand(NewCmdSubnetDelete(out))
+
+	return cmd
+}
+
+//SubnetRow 表格行
+type SubnetRow struct {
+	SubnetName     string
+	ResourceID     string
+	Group          string
+	AffiliatedVPC  string
+	NetworkSegment string
+	CreationTime   string
+}
+
+//NewCmdSubnetList ucloud subnet list
+func NewCmdSubnetList() *cobra.Command {
+	req := base.BizClient.NewDescribeSubnetRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List subnet",
+		Long:  `List subnet`,
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			resp, err := base.BizClient.DescribeSubnet(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			list := make([]SubnetRow, 0)
+			for _, sn := range resp.DataSet {
+				row := SubnetRow{}
+				row.SubnetName = sn.SubnetName
+				row.ResourceID = sn.SubnetId
+				row.Group = sn.Tag
+				row.AffiliatedVPC = fmt.Sprintf("%s/%s", sn.VPCId, sn.VPCName)
+				row.NetworkSegment = fmt.Sprintf("%s/%s", sn.Subnet, sn.Netmask)
+				row.CreationTime = base.FormatDate(sn.CreateTime)
+				list = append(list, row)
+			}
+			if global.json {
+				base.PrintJSON(list)
+			} else {
+				base.PrintTableS(list)
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	flags.StringSliceVar(&req.SubnetIds, "subnet-id", []string{}, "Optional. Multiple values separated by commas")
+	req.VPCId = flags.String("vpc-id", "", "Optional. Resource ID of VPC")
+	req.Tag = flags.String("group", "", "Optional. Group")
+	req.Offset = flags.Int("offset", 0, "Optional. Offset")
+	req.Limit = flags.Int("limit", 50, "Optional. Limit")
+
 	return cmd
 }
 
 //NewCmdSubnetCreate  ucloud subnet create
 func NewCmdSubnetCreate() *cobra.Command {
+	var segment *net.IPNet
 	req := base.BizClient.NewCreateSubnetRequest()
 	cmd := &cobra.Command{
-		Use:     "create-subnet",
+		Use:     "create",
 		Short:   "Create subnet of vpc network",
 		Long:    "Create subnet of vpc network",
-		Example: "ucloud subnet create --vpc-id --segment",
+		Example: "ucloud subnet create --vpc-id uvnet-vpcxid --name testName --segment 192.168.2.0/24",
 		Run: func(cmd *cobra.Command, args []string) {
+			ipMaskStrs := strings.SplitN(segment.String(), "/", 2)
+			req.Subnet = sdk.String(ipMaskStrs[0])
+			mask, err := strconv.Atoi(ipMaskStrs[1])
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			req.Netmask = sdk.Int(mask)
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			resp, err := base.BizClient.CreateSubnet(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("Subnet : %v created successfully!\n", resp.SubnetId)
+			base.Cxt.Printf("subnet[%s] created\n", resp.SubnetId)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
 	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. Assign the VPC network of the subnet")
-	req.Subnet = cmd.Flags().String("segment", "", "Required. Same as the vpc network")
+	segment = cmd.Flags().IPNet("segment", net.IPNet{}, "Required. Segment of subnet. For example '192.168.0.0/24'")
+	req.SubnetName = cmd.Flags().String("name", "Subnet", "Optional. Name of subnet to create")
 	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. The region of the subnet")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of the subnet")
-	req.Netmask = cmd.Flags().Int("netmask", 24, "Optional. The number of the IPs, default is 24")
-	req.SubnetName = cmd.Flags().String("name", "Subnet", "Optional. The default is Subnet")
-	req.Tag = cmd.Flags().String("Group", "Default", "Optional. Business group")
+	req.Tag = cmd.Flags().String("group", "", "Optional. Business group")
+	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of subnet to create")
+
+	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+
 	cmd.MarkFlagRequired("vpc-id")
 	cmd.MarkFlagRequired("segment")
+
+	return cmd
+}
+
+//NewCmdSubnetDelete ucloud subnet delete
+func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
+	idNames := []string{}
+	req := base.BizClient.NewDeleteSubnetRequest()
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete subnet",
+		Long:  "Delete subnet",
+		Run: func(c *cobra.Command, args []string) {
+			for _, id := range idNames {
+				req.SubnetId = sdk.String(id)
+				_, err := base.BizClient.DeleteSubnet(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				fmt.Fprintf(out, "subnet[%s] deleted\n", id)
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "subnet-id", nil, "Required. Resource ID of subent")
+	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. The region of the subnet")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. The project id of the subnet")
+
+	cmd.MarkFlagRequired("subnet-id")
 
 	return cmd
 }
