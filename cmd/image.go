@@ -32,8 +32,8 @@ import (
 func NewCmdUImage() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "image",
-		Short: "List images",
-		Long:  `List images`,
+		Short: "List and manipulate images",
+		Long:  `List and manipulate images`,
 		Args:  cobra.NoArgs,
 	}
 	writer := base.Cxt.GetWriter()

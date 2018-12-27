@@ -16,198 +16,423 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
+	"io"
+	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
-	. "github.com/ucloud/ucloud-cli/base"
+
+	"github.com/ucloud/ucloud-sdk-go/services/udpn"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+
+	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdSubnet  ucloud subnet
-func NewCmdSubnet() *cobra.Command {
+//NewCmdBandwidthPkg ucloud bw-pkg
+func NewCmdBandwidthPkg() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "subnet",
-		Short: "List subnet",
-		Long:  `List subnet`,
-		Args:  cobra.NoArgs,
+		Use:   "bw-pkg",
+		Short: "List, create and delete bandwidth package",
+		Long:  "List, create and delete bandwidth package",
 	}
-	cmd.AddCommand(NewCmdSubnetList())
+	cmd.AddCommand(NewCmdBandwidthPkgCreate())
+	cmd.AddCommand(NewCmdBandwidthPkgList())
+	cmd.AddCommand(NewCmdBandwidthPkgDelete())
+	return cmd
+}
+
+//NewCmdBandwidthPkgCreate ucloud bw-pkg create
+func NewCmdBandwidthPkgCreate() *cobra.Command {
+	var start, end *string
+	timeLayout := "2006-01-02/15:04:05"
+	ids := []string{}
+	req := base.BizClient.NewCreateBandwidthPackageRequest()
+	loc, _ := time.LoadLocation("Local")
+	cmd := &cobra.Command{
+		Use:     "create",
+		Short:   "Create bandwidth package",
+		Long:    "Create bandwidth package",
+		Example: "ucloud bw-pkg create --eip-id eip-xxx --bandwidth-mb 20 --start-time 2018-12-15/09:20:00 --end-time 2018-12-16/09:20:00",
+		Run: func(c *cobra.Command, args []string) {
+			st, err := time.ParseInLocation(timeLayout, *start, loc)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			et, err := time.ParseInLocation(timeLayout, *end, loc)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			if st.Sub(time.Now()) < 0 {
+				base.Cxt.Println("start-time must be after the current time")
+				return
+			}
+			du := et.Unix() - st.Unix()
+			if du <= 0 {
+				base.Cxt.Println("end-time must be after the start-time")
+				return
+			}
+			req.EnableTime = sdk.Int(int(st.Unix()))
+			req.TimeRange = sdk.Int(int(du))
+
+			for _, id := range ids {
+				id = base.PickResourceID(id)
+				req.EIPId = &id
+				resp, err := base.BizClient.CreateBandwidthPackage(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				base.Cxt.Printf("bandwidth package[%s] created for eip[%s]\n", resp.BandwidthPackageId, id)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	flags.StringSliceVar(&ids, "eip-id", nil, "Resource ID of eip to be bound with created bandwidth package")
+	start = flags.String("start-time", "", "The time to enable bandwidth package. Local time, for example '2018-12-25/08:30:00'")
+	end = flags.String("end-time", "", "The time to disable bandwidth package. Local time, for example '2018-12-26/08:30:00'")
+	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Optional, bandwidth of the bandwidth package to create, unit:'Mb'")
+	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_USED}, []string{status.EIP_CHARGE_BANDWIDTH})
+	})
+	cmd.MarkFlagRequired("eip-id")
+	cmd.MarkFlagRequired("start-time")
+	cmd.MarkFlagRequired("end-time")
+	cmd.MarkFlagRequired("bandwidth-mb")
+	return cmd
+}
+
+//BandwidthPkgRow 表格行
+type BandwidthPkgRow struct {
+	ResourceID string
+	EIP        string
+	Bandwidth  string
+	StartTime  string
+	EndTime    string
+}
+
+//NewCmdBandwidthPkgList ucloud bw-pkg list
+func NewCmdBandwidthPkgList() *cobra.Command {
+	req := base.BizClient.NewDescribeBandwidthPackageRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List bandwidth packages",
+		Long:  "List bandwidth packages",
+		Run: func(c *cobra.Command, args []string) {
+			resp, err := base.BizClient.DescribeBandwidthPackage(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			list := []BandwidthPkgRow{}
+			for _, bp := range resp.DataSets {
+				row := BandwidthPkgRow{
+					ResourceID: bp.BandwidthPackageId,
+					Bandwidth:  strconv.Itoa(bp.Bandwidth) + "MB",
+					StartTime:  base.FormatDateTime(bp.EnableTime),
+					EndTime:    base.FormatDateTime(bp.DisableTime),
+				}
+				eip := bp.EIPId
+				for _, addr := range bp.EIPAddr {
+					eip += "/" + addr.IP + "/" + addr.OperatorName
+				}
+				row.EIP = eip
+				list = append(list, row)
+			}
+			if global.json {
+				base.PrintJSON(list)
+			} else {
+				base.PrintTableS(list)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
+	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit range [0,10000000]")
 
 	return cmd
 }
 
-//SubnetRow 表格行
-type SubnetRow struct {
-	SubnetName     string
-	ResourceID     string
-	Group          string
-	AffiliatedVPC  string
-	NetworkSegment string
-	CreationTime   string
+//NewCmdBandwidthPkgDelete ucloud bw-pkg delete
+func NewCmdBandwidthPkgDelete() *cobra.Command {
+	ids := []string{}
+	req := base.BizClient.NewDeleteBandwidthPackageRequest()
+	cmd := &cobra.Command{
+		Use:     "delete",
+		Short:   "Delete bandwidth packages",
+		Long:    "Delete bandwidth packages",
+		Example: "ucloud bw-pkg delete --resource-id bwpack-xxx",
+		Run: func(c *cobra.Command, args []string) {
+			for _, id := range ids {
+				id := base.PickResourceID(id)
+				req.BandwidthPackageId = &id
+				_, err := base.BizClient.DeleteBandwidthPackage(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				base.Cxt.Printf("bandwidth package[%s] deleted\n", id)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVar(&ids, "resource-id", nil, "Required, Resource ID of bandwidth package to delete")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	return cmd
 }
 
-//NewCmdSubnetList ucloud subnet list
-func NewCmdSubnetList() *cobra.Command {
-	req := BizClient.NewDescribeSubnetRequest()
+//NewCmdUDPN ucloud udpn
+func NewCmdUDPN(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List subnet",
-		Long:  `List subnet`,
-		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.DescribeSubnet(req)
-			if err != nil {
-				HandleError(err)
+		Use:   "udpn",
+		Short: "List and manipulate udpn instances",
+		Long:  "List and manipulate udpn instances",
+	}
+
+	cmd.AddCommand(NewCmdUDPNCreate(out))
+	cmd.AddCommand(NewCmdUDPNList(out))
+	cmd.AddCommand(NewCmdUdpnDelete(out))
+	cmd.AddCommand(NewCmdUdpnModifyBW(out))
+
+	return cmd
+}
+
+//NewCmdUDPNCreate ucloud udpn create
+func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewAllocateUDPNRequest()
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create UDPN tunnel",
+		Long:  "Create UDPN tunnel",
+		Run: func(c *cobra.Command, args []string) {
+			if *req.Bandwidth < 2 || *req.Bandwidth > 1000 {
+				fmt.Fprintln(out, "Error, bandwidth must be between 2Mb and 1000Mb")
 				return
 			}
+			if *req.Peer1 == *req.Peer2 {
+				fmt.Fprintln(out, "Error, flags peer1 and peer2 can't be equal")
+				return
+			}
+			resp, err := base.BizClient.AllocateUDPN(req)
+			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			fmt.Fprintf(out, "udpn[%s] created\n", resp.UDPNId)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.Peer1 = flags.String("peer1", base.ConfigInstance.Region, "Required. One end of the tunnel to create")
+	req.Peer2 = flags.String("peer2", "", "Required. The other end of the tunnel create")
+	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Required. Bandwidth of the tunnel to create. Unit:Mb. Rnange [2,1000]")
+	req.ChargeType = flags.String("charge-type", "", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
+	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
+	flags.SetFlagValuesFunc("project-id", getProjectList)
+	flags.SetFlagValuesFunc("peer1", getRegionList)
+	//peer1和peer2不相等
+	flags.SetFlagValuesFunc("peer2", func() []string {
+		regions := getRegionList()
+		list := []string{}
+		for _, r := range regions {
+			if r != *req.Peer1 {
+				list = append(list, r)
+			}
+		}
+		return list
+	})
+
+	cmd.MarkFlagRequired("peer1")
+	cmd.MarkFlagRequired("peer2")
+	cmd.MarkFlagRequired("bandwidth-mb")
+
+	return cmd
+}
+
+//UDPNRow 表格行
+type UDPNRow struct {
+	ResourceID   string
+	Peers        string
+	Bandwidth    string
+	ChargeType   string
+	CreationTime string
+}
+
+//NewCmdUDPNList ucloud udpn list
+func NewCmdUDPNList(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewDescribeUDPNRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List udpn instances",
+		Long:  "List udpn instances",
+		Run: func(c *cobra.Command, args []string) {
+			req.UDPNId = sdk.String(base.PickResourceID(*req.UDPNId))
+			resp, err := base.BizClient.DescribeUDPN(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			list := []UDPNRow{}
+			for _, udpn := range resp.DataSet {
+				row := UDPNRow{}
+				row.ResourceID = udpn.UDPNId
+				row.Peers = fmt.Sprintf("%s <--> %s", udpn.Peer1, udpn.Peer2)
+				row.Bandwidth = fmt.Sprintf("%dMb", udpn.Bandwidth)
+				row.ChargeType = udpn.ChargeType
+				row.CreationTime = base.FormatDate(udpn.CreateTime)
+				list = append(list, row)
+			}
 			if global.json {
-				PrintJSON(resp.DataSet)
+				base.PrintJSON(list)
 			} else {
-				list := make([]SubnetRow, 0)
-				for _, sn := range resp.DataSet {
-					row := SubnetRow{}
-					row.SubnetName = sn.SubnetName
-					row.ResourceID = sn.SubnetId
-					row.Group = sn.Tag
-					row.AffiliatedVPC = fmt.Sprintf("%s/%s", sn.VPCName, sn.VPCId)
-					row.NetworkSegment = fmt.Sprintf("%s/%s", sn.Subnet, sn.Netmask)
-					row.CreationTime = FormatDate(sn.CreateTime)
-					list = append(list, row)
-				}
-				PrintTable(list, []string{"SubnetName", "ResourceID", "Group", "AffiliatedVPC", "NetworkSegment", "CreationTime"})
+				base.PrintTableS(list)
 			}
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	flags.StringSliceVar(&req.SubnetIds, "subnet-id", []string{}, "Optional. Multiple values separated by commas")
-	req.VPCId = flags.String("vpc-id", "", "Optional. ResourceID of VPC")
-	req.Tag = flags.String("group", "", "Optional. Group")
-	req.Offset = flags.Int("offset", 0, "Optional. offset default 0")
-	req.Limit = flags.Int("limit", 50, "Optional. max count")
+
+	req.UDPNId = flags.String("udpn-id", "", "Optional. Resource ID of udpn instances to list")
+	req.Offset = flags.Int("offset", 0, "Optional. Offset")
+	req.Limit = flags.Int("limit", 50, "Optional. Limit")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("project-id", getRegionList)
+	flags.SetFlagValuesFunc("udpn-id", func() []string {
+		return getAllUDPNIdNames(*req.ProjectId, *req.Region)
+	})
 
 	return cmd
 }
 
-//VPCRow 表格行
-type VPCRow struct {
-	VPCName        string
-	ResourceID     string
-	Group          string
-	NetworkSegment string
-	SubnetCount    int
-	CreationTime   string
-}
-
-//NewCmdVPCList ucloud vpc list
-func NewCmdVPCList() *cobra.Command {
-	req := BizClient.NewDescribeVPCRequest()
+//NewCmdUdpnDelete ucloud udpn delete
+func NewCmdUdpnDelete(out io.Writer) *cobra.Command {
+	idNames := []string{}
+	req := base.BizClient.NewReleaseUDPNRequest()
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List vpc",
-		Long:  "List vpc",
-		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.DescribeVPC(req)
-			if err != nil {
-				HandleError(err)
-				return
-			}
-			if global.json {
-				PrintJSON(resp.DataSet)
-			} else {
-				list := []VPCRow{}
-				for _, vpc := range resp.DataSet {
-					row := VPCRow{}
-					row.VPCName = vpc.Name
-					row.ResourceID = vpc.VPCId
-					row.Group = vpc.Tag
-					row.NetworkSegment = strings.Join(vpc.Network, ",")
-					row.SubnetCount = vpc.SubnetCount
-					row.CreationTime = FormatDate(vpc.CreateTime)
-					list = append(list, row)
+		Use:   "delete",
+		Short: "delete udpn instances",
+		Long:  "delete udpn instances",
+		Run: func(c *cobra.Command, args []string) {
+			for _, idname := range idNames {
+				req.UDPNId = sdk.String(base.PickResourceID(idname))
+				_, err := base.BizClient.ReleaseUDPN(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
 				}
-				PrintTable(list, []string{"VPCName", "ResourceID", "Group", "NetworkSegment", "SubnetCount", "CreationTime"})
-			}
-
-		},
-	}
-	flags := cmd.Flags()
-	flags.SortFlags = false
-	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	req.Tag = flags.String("group", "", "Optional. Group")
-	flags.StringSliceVar(&req.VPCIds, "vpc-id", []string{}, "Optional. Multiple values separated by commas")
-
-	return cmd
-}
-
-//NewCmdFirewall  ucloud firewall
-func NewCmdFirewall() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "firewall",
-		Short: "List extranet firewall",
-		Long:  `List extranet firewall`,
-		Args:  cobra.NoArgs,
-	}
-	cmd.AddCommand(NewCmdFirewallList())
-
-	return cmd
-}
-
-//FirewallRow 表格行
-type FirewallRow struct {
-	ResourceID          string
-	FirewallName        string
-	Remark              string
-	Group               string
-	RuleAmount          int
-	BoundResourceAmount int
-	CreationTime        string
-}
-
-//NewCmdFirewallList ucloud firewall list
-func NewCmdFirewallList() *cobra.Command {
-	req := BizClient.NewDescribeFirewallRequest()
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List extranet firewall",
-		Long:  `List extranet firewall`,
-		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.DescribeFirewall(req)
-			if err != nil {
-				HandleError(err)
-				return
-			}
-			if global.json {
-				PrintJSON(resp.DataSet)
-			} else {
-				list := []FirewallRow{}
-				for _, fw := range resp.DataSet {
-					row := FirewallRow{}
-					row.ResourceID = fw.FWId
-					row.FirewallName = fw.Name
-					row.Remark = fw.Remark
-					row.Group = fw.Tag
-					row.RuleAmount = len(fw.Rule)
-					row.BoundResourceAmount = fw.ResourceCount
-					row.CreationTime = FormatDate(fw.CreateTime)
-					list = append(list, row)
-				}
-				PrintTable(list, []string{"ResourceID", "FirewallName", "Remark", "Group", "RuleAmount", "BoundResourceAmount", "CreationTime"})
+				fmt.Fprintf(out, "udpn[%s] deleted\n", idname)
 			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.Region = flags.String("region", ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	req.FWId = flags.String("firewall-id", "", "Optional. The Resource ID of firewall. Return all firewalls by default.")
-	req.ResourceType = flags.String("bound-resource-type", "", "Optional. The type of resource bound on the firewall")
-	req.ResourceId = flags.String("bound-resource-id", "", "Optional. The resource ID of resource bound on the firewall")
-	req.Offset = flags.String("offset", "0", "Optional. offset default 0")
-	req.Limit = flags.String("limit", "50", "Optional. max count")
+
+	flags.StringSliceVar(&idNames, "udpn-id", nil, "Required. Resource ID of udpn instances to delete")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	flags.SetFlagValuesFunc("project-id", getRegionList)
+	flags.SetFlagValuesFunc("udpn-id", func() []string {
+		return getAllUDPNIdNames(*req.ProjectId, base.ConfigInstance.Region)
+	})
+
+	cmd.MarkFlagRequired("udpn-id")
+
 	return cmd
+}
+
+//NewCmdUdpnModifyBW ucloud udpn modify-bw
+func NewCmdUdpnModifyBW(out io.Writer) *cobra.Command {
+	idNames := []string{}
+	req := base.BizClient.NewModifyUDPNBandwidthRequest()
+	cmd := &cobra.Command{
+		Use:   "modify-bw",
+		Short: "Modify bandwidth of UDPN tunnel",
+		Long:  "Modify bandwidth of UDPN tunnel",
+		Run: func(c *cobra.Command, args []string) {
+			if *req.Bandwidth < 2 || *req.Bandwidth > 1000 {
+				fmt.Fprintln(out, "Error, bandwidth must be between 2Mb and 1000Mb")
+				return
+			}
+			for _, idname := range idNames {
+				req.UDPNId = sdk.String(base.PickResourceID(idname))
+				_, err := base.BizClient.ModifyUDPNBandwidth(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				fmt.Fprintf(out, "udpn[%s]'s bandwidth modified\n", idname)
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udpn-id", nil, "Required. Resource ID of UDPN to modify bandwidth")
+	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Required. Bandwidth of UDPN tunnel. Unit:Mb. Range [2,1000]")
+	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+
+	flags.SetFlagValuesFunc("udpn-id", func() []string {
+		return getAllUDPNIdNames(*req.ProjectId, *req.Region)
+	})
+
+	cmd.MarkFlagRequired("udpn-id")
+	cmd.MarkFlagRequired("bandwidth-mb")
+
+	return cmd
+}
+
+func getAllUDPNIns(project, region string) ([]udpn.UDPNData, error) {
+	req := base.BizClient.NewDescribeUDPNRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	list := make([]udpn.UDPNData, 0)
+	for offset, limit := 0, 50; ; offset += limit {
+		req.Offset = sdk.Int(offset)
+		req.Limit = sdk.Int(limit)
+		resp, err := base.BizClient.DescribeUDPN(req)
+		if err != nil {
+			return nil, err
+		}
+		for _, u := range resp.DataSet {
+			list = append(list, u)
+		}
+		if offset+limit > resp.TotalCount {
+			break
+		}
+	}
+	return list, nil
+}
+
+func getAllUDPNIdNames(project, region string) []string {
+	udpnInsList, err := getAllUDPNIns(project, region)
+	if err != nil {
+		return nil
+	}
+	idNameList := []string{}
+	for _, udpn := range udpnInsList {
+		idNameList = append(idNameList, fmt.Sprintf("%s/%s:%s", udpn.UDPNId, udpn.Peer1, udpn.Peer2))
+	}
+	return idNameList
 }

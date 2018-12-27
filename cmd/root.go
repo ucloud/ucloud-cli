@@ -38,7 +38,8 @@ var global GlobalFlag
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
-	var cmd = &cobra.Command{
+	out := base.Cxt.GetWriter()
+	cmd := &cobra.Command{
 		Use:                    "ucloud",
 		Short:                  "UCloud CLI v" + base.Version,
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
@@ -77,6 +78,10 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdVpc())
 	cmd.AddCommand(NewCmdFirewall())
 	cmd.AddCommand(NewCmdDisk())
+	cmd.AddCommand(NewCmdBandwidthPkg())
+	cmd.AddCommand(NewCmdSharedBW())
+	cmd.AddCommand(NewCmdUDPN(out))
+
 	return cmd
 }
 
