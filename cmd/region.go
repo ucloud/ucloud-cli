@@ -102,14 +102,18 @@ func getRegionList() []string {
 	return list
 }
 
-func getZoneList() []string {
+func getZoneList(region string) []string {
 	regionMap, err := fetchRegion()
 	if err != nil {
 		return nil
 	}
 	list := []string{}
-	for _, zones := range regionMap {
-		list = append(list, zones...)
+	if region == "" {
+		for _, zones := range regionMap {
+			list = append(list, zones...)
+		}
+	} else {
+		list = regionMap[region]
 	}
 	return list
 }

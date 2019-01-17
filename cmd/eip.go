@@ -116,8 +116,8 @@ func NewCmdEIPList() *cobra.Command {
 		},
 	}
 
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Assign region")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
 	fetchAll = cmd.Flags().Bool("list-all", false, "List all eip")
@@ -249,8 +249,8 @@ func NewCmdEIPAllocate() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	req.OperatorName = cmd.Flags().String("line", "", "Required. 'BGP' or 'International'. 'BGP' could be set in China mainland regions, such as cn-bj2 etc. 'International' could be set in the regions beyond mainland, such as hk, tw-kh, us-ws etc.")
 	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 200]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.PayMode = cmd.Flags().String("charge-mode", "Bandwidth", "Optional. charge-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	req.ShareBandwidthId = cmd.Flags().String("share-bandwidth-id", "", "Optional. ShareBandwidthId, required only when charge-mode is 'ShareBandwidth'")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
@@ -285,8 +285,8 @@ func NewCmdEIPBind() *cobra.Command {
 	eipID = cmd.Flags().String("eip-id", "", "Required. EIPId to bind")
 	resourceID = cmd.Flags().String("resource-id", "", "Required. ResourceID , which is the UHostId of uhost")
 	resourceType = cmd.Flags().String("resource-type", "uhost", "Requried. ResourceType, type of resource to bind with eip. 'uhost','vrouter','ulb','upm','hadoophost'.eg..")
-	projectID = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	projectID = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("resource-id")
 	cmd.Flags().SetFlagValues("resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
@@ -330,8 +330,8 @@ func NewCmdEIPUnbind() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	req.EIPId = cmd.Flags().String("eip-id", "", "Required. EIPId to unbind")
 	req.ResourceId = cmd.Flags().String("resource-id", "", "Required. ResourceID , which is the UHostId of uhost")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("resource-id")
 
@@ -361,8 +361,8 @@ func NewCmdEIPRelease() *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", make([]string, 0), "Required. EIPIds of the EIP you want to release")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("bandwidth")
 	return cmd
@@ -393,8 +393,8 @@ func NewCmdEIPModifyBandwidth() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", nil, "Required, Resource ID of EIPs to modify bandwidth")
 	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth of EIP after modifed. Charge by traffic, range [1,300]; charge by bandwidth, range [1,800]")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
 	})
@@ -435,8 +435,8 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", nil, "Required, Resource ID of EIPs to modify charge mode")
 	req.PayMode = cmd.Flags().String("charge-mode", "", "Required, Charge mode of eip, 'traffic' or 'bandwidth'")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	cmd.Flags().SetFlagValues("charge-mode", "Bandwidth", "Traffic")
 	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
@@ -472,8 +472,8 @@ func NewCmdEIPJoinSharedBW() *cobra.Command {
 	flags.SortFlags = false
 	flags.StringSliceVar(&eipIDs, "eip-id", nil, "Required. Resource ID of EIPs to join shared bandwdith")
 	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth to be joined")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	flags.SetFlagValuesFunc("eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_BANDWIDTH, status.EIP_CHARGE_TRAFFIC})
 	})
@@ -538,8 +538,8 @@ func NewCmdEIPLeaveSharedBW() *cobra.Command {
 	req.Bandwidth = flags.Int("bandwidth-mb", 1, "Required. Bandwidth of EIP after leaving shared bandwidth, ranging [1,300] for 'Traffic' charge mode, ranging [1,800] for 'Bandwidth' charge mode. Unit:Mb")
 	req.PayMode = flags.String("charge-mode", "Bandwidth", "Optional. Charge mode of the EIP after leaving shared bandwidth, 'Bandwidth' or 'Traffic'")
 	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Optional. Resource ID of shared bandwidth instance, assign this flag to make the operation faster")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValues("charge-mode", "Bandwidth", "Traffic")
 	flags.SetFlagValuesFunc("eip-id", func() []string {

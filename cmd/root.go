@@ -50,7 +50,7 @@ func NewCmdRoot() *cobra.Command {
 			} else if global.completion {
 				NewCmdCompletion().Run(cmd, args)
 			} else if global.config {
-				config.ListConfig(global.json)
+				base.ListAggConfig(global.json)
 			} else if global.signup {
 				NewCmdSignup().Run(cmd, args)
 			} else {
@@ -118,7 +118,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 //概要帮助信息模板
 const usageTmpl = `Usage:{{if .Runnable}}
  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
- {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 2)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
+ {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 1)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
  {{"flags may be" | printf "%-20s"}} {{.Flags.FlagNames}}
 
 Use "{{.CommandPath}} --help" for details.{{end}}
@@ -181,11 +181,11 @@ func initialize(cmd *cobra.Command) {
 	}
 
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
-		if config.PrivateKey == "" {
+		if base.ConfigIns.PrivateKey == "" {
 			base.Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
 			os.Exit(0)
 		}
-		if config.PublicKey == "" {
+		if base.ConfigIns.PublicKey == "" {
 			base.Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
 			os.Exit(0)
 		}
