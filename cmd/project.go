@@ -19,7 +19,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	. "github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdProject ucloud project
@@ -39,7 +39,7 @@ func NewCmdProject() *cobra.Command {
 
 //NewCmdProjectList ucloud project list
 func NewCmdProjectList() *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List project",
 		Long:    "List project",
@@ -53,21 +53,21 @@ func NewCmdProjectList() *cobra.Command {
 
 //NewCmdProjectCreate ucloud project create
 func NewCmdProjectCreate() *cobra.Command {
-	req := BizClient.NewCreateProjectRequest()
+	req := base.BizClient.NewCreateProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Create project",
 		Long:    "Create project",
 		Example: "ucloud project create --name xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.CreateProject(req)
+			resp, err := base.BizClient.CreateProject(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				base.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					HandleBizError(resp)
+					base.HandleBizError(resp)
 				} else {
-					Cxt.Printf("Project:%q created successfully.\n", resp.ProjectId)
+					base.Cxt.Printf("Project:%q created successfully.\n", resp.ProjectId)
 				}
 			}
 		},
@@ -80,21 +80,21 @@ func NewCmdProjectCreate() *cobra.Command {
 
 //NewCmdProjectUpdate ucloud project update
 func NewCmdProjectUpdate() *cobra.Command {
-	req := BizClient.NewModifyProjectRequest()
+	req := base.BizClient.NewModifyProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "update",
 		Short:   "Update project name",
 		Long:    "Update project name",
 		Example: "ucloud project update --id org-xxx --name new_name",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.ModifyProject(req)
+			resp, err := base.BizClient.ModifyProject(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				base.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					HandleBizError(resp)
+					base.HandleBizError(resp)
 				} else {
-					Cxt.Printf("Project:%s updated successfully.\n", *req.ProjectId)
+					base.Cxt.Printf("Project:%s updated successfully.\n", *req.ProjectId)
 				}
 			}
 		},
@@ -108,21 +108,21 @@ func NewCmdProjectUpdate() *cobra.Command {
 
 //NewCmdProjectDelete ucloud project delete
 func NewCmdProjectDelete() *cobra.Command {
-	req := BizClient.NewTerminateProjectRequest()
+	req := base.BizClient.NewTerminateProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete project",
 		Long:    "Delete project",
 		Example: "ucloud project delete --id org-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := BizClient.TerminateProject(req)
+			resp, err := base.BizClient.TerminateProject(req)
 			if err != nil {
-				Cxt.PrintErr(err)
+				base.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					HandleBizError(resp)
+					base.HandleBizError(resp)
 				} else {
-					Cxt.Printf("Project:%s deleted successfully.\n", *req.ProjectId)
+					base.Cxt.Printf("Project:%s deleted successfully.\n", *req.ProjectId)
 				}
 			}
 		},
@@ -134,24 +134,24 @@ func NewCmdProjectDelete() *cobra.Command {
 
 func listProject() error {
 	req := &uaccount.GetProjectListRequest{}
-	resp, err := BizClient.GetProjectList(req)
+	resp, err := base.BizClient.GetProjectList(req)
 	if err != nil {
 		return err
 	}
 	if resp.RetCode != 0 {
-		return HandleBizError(resp)
+		return base.HandleBizError(resp)
 	}
 	if global.json {
-		PrintJSON(resp.ProjectSet)
+		base.PrintJSON(resp.ProjectSet)
 	} else {
-		PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
+		base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
 	}
 	return nil
 }
 
 func getProjectList() []string {
 	req := &uaccount.GetProjectListRequest{}
-	resp, err := BizClient.GetProjectList(req)
+	resp, err := base.BizClient.GetProjectList(req)
 	if err != nil {
 		return nil
 	}

@@ -91,8 +91,8 @@ func NewCmdUImageList() *cobra.Command {
 			}
 		},
 	}
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	req.ImageType = cmd.Flags().String("image-type", "", "Optional. 'Base',Standard image; 'Business',image market; 'Custom',custom image; Return all types by default")
 	req.OsType = cmd.Flags().String("os-type", "", "Optional. Linux or Windows. Return all types by default")
@@ -131,8 +131,8 @@ func NewCmdUImageDelete() *cobra.Command {
 	flags.SortFlags = false
 
 	imageIDs = cmd.Flags().StringSlice("image-id", nil, "Required. Resource ID of images")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.MarkFlagRequired("image-id")
 	flags.SetFlagValuesFunc("image-id", func() []string {
@@ -174,11 +174,11 @@ func NewCmdImageCopy(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	imageIDs = cmd.Flags().StringSlice("source-image-id", nil, "Required. Resource ID of source image")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = cmd.Flags().String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
-	req.TargetRegion = flags.String("target-region", base.ConfigInstance.Region, "Optional. Target region. See 'ucloud region'")
-	req.TargetProjectId = flags.String("target-project", base.ConfigInstance.ProjectID, "Optional. Target Project ID. See 'ucloud project list'")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = cmd.Flags().String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
+	req.TargetRegion = flags.String("target-region", base.ConfigIns.Region, "Optional. Target region. See 'ucloud region'")
+	req.TargetProjectId = flags.String("target-project", base.ConfigIns.ProjectID, "Optional. Target Project ID. See 'ucloud project list'")
 	req.TargetImageName = flags.String("target-image-name", "", "Optional. Name of target image")
 	req.TargetImageDescription = flags.String("target-image-desc", "", "Optional. Description of target image")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
@@ -188,7 +188,9 @@ func NewCmdImageCopy(out io.Writer) *cobra.Command {
 	})
 	flags.SetFlagValuesFunc("project-id", getProjectList)
 	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("zone", getZoneList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(*req.Region)
+	})
 	flags.SetFlagValuesFunc("target-region", getRegionList)
 	flags.SetFlagValuesFunc("target-project", getProjectList)
 

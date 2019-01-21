@@ -91,8 +91,8 @@ func NewCmdBandwidthPkgCreate() *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	flags.StringSliceVar(&ids, "eip-id", nil, "Resource ID of eip to be bound with created bandwidth package")
 	start = flags.String("start-time", "", "The time to enable bandwidth package. Local time, for example '2018-12-25/08:30:00'")
 	end = flags.String("end-time", "", "The time to disable bandwidth package. Local time, for example '2018-12-26/08:30:00'")
@@ -153,8 +153,8 @@ func NewCmdBandwidthPkgList() *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit range [0,10000000]")
 
@@ -186,8 +186,8 @@ func NewCmdBandwidthPkgDelete() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&ids, "resource-id", nil, "Required, Resource ID of bandwidth package to delete")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	return cmd
 }
@@ -237,12 +237,12 @@ func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.Peer1 = flags.String("peer1", base.ConfigInstance.Region, "Required. One end of the tunnel to create")
+	req.Peer1 = flags.String("peer1", base.ConfigIns.Region, "Required. One end of the tunnel to create")
 	req.Peer2 = flags.String("peer2", "", "Required. The other end of the tunnel create")
 	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Required. Bandwidth of the tunnel to create. Unit:Mb. Rnange [2,1000]")
 	req.ChargeType = flags.String("charge-type", "", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
 	flags.SetFlagValuesFunc("project-id", getProjectList)
@@ -313,8 +313,8 @@ func NewCmdUDPNList(out io.Writer) *cobra.Command {
 	req.UDPNId = flags.String("udpn-id", "", "Optional. Resource ID of udpn instances to list")
 	req.Offset = flags.Int("offset", 0, "Optional. Offset")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValuesFunc("region", getRegionList)
 	flags.SetFlagValuesFunc("project-id", getRegionList)
@@ -349,11 +349,11 @@ func NewCmdUdpnDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udpn-id", nil, "Required. Resource ID of udpn instances to delete")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValuesFunc("project-id", getRegionList)
 	flags.SetFlagValuesFunc("udpn-id", func() []string {
-		return getAllUDPNIdNames(*req.ProjectId, base.ConfigInstance.Region)
+		return getAllUDPNIdNames(*req.ProjectId, base.ConfigIns.Region)
 	})
 
 	cmd.MarkFlagRequired("udpn-id")
@@ -390,8 +390,8 @@ func NewCmdUdpnModifyBW(out io.Writer) *cobra.Command {
 
 	flags.StringSliceVar(&idNames, "udpn-id", nil, "Required. Resource ID of UDPN to modify bandwidth")
 	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Required. Bandwidth of UDPN tunnel. Unit:Mb. Range [2,1000]")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValuesFunc("udpn-id", func() []string {
 		return getAllUDPNIdNames(*req.ProjectId, *req.Region)

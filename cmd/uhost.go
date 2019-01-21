@@ -122,8 +122,8 @@ func NewCmdUHostList() *cobra.Command {
 		},
 	}
 	cmd.Flags().SortFlags = false
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. UHost Instance ID, multiple values separated by comma(without space)")
 	req.Tag = cmd.Flags().String("group", "", "Optional. Group")
@@ -213,7 +213,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 		"hk-01":     true,
 	}
 	defaultUhostType := "N2"
-	if _, ok := n1Zone[base.ConfigInstance.Zone]; ok {
+	if _, ok := n1Zone[base.ConfigIns.Zone]; ok {
 		defaultUhostType = "N1"
 	}
 
@@ -241,9 +241,9 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2' means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
 	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
@@ -333,8 +333,8 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Requried. ResourceIDs(UhostIds) of the uhost instance")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle If you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", false, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
@@ -371,8 +371,8 @@ func NewCmdUHostStop(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(UHostIds) of the uhost instances")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
@@ -429,8 +429,8 @@ func NewCmdUHostStart(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Requried. ResourceIDs(UHostIds) of the uhost instance")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
@@ -471,8 +471,8 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(UHostIds) of the uhost instance")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	req.DiskPassword = cmd.Flags().String("disk-password", "", "Optional. Encrypted disk password")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
@@ -522,8 +522,8 @@ func NewCmdUHostPoweroff() *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "ResourceIDs(UHostIds) of the uhost instance")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.MarkFlagRequired("uhost-id")
@@ -604,8 +604,8 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(or UhostIDs) of the uhost instances")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigInstance.Region, "Optional. Assign region")
+	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	req.CPU = cmd.Flags().Int("cpu", 0, "Optional. The number of virtual CPU cores. Series1 {1, 2, 4, 8, 12, 16, 24, 32}. Series2 {1,2,4,8,16}")
 	req.Memory = cmd.Flags().Int("memory-gb", 0, "Optional. memory size. Unit: GB. Range: [1, 128], multiple of 2")
@@ -755,9 +755,9 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	uhostID = flags.String("uhost-id", "", "Required. Resource ID of the uhost to clone from")
 	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
 	req.Name = flags.String("name", "", "Optional. Name of the uhost to clone")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	flags.SetFlagValuesFunc("uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
@@ -797,9 +797,9 @@ func NewCmdUhostCreateImage(out io.Writer) *cobra.Command {
 	req.UHostId = flags.String("uhost-id", "", "Resource ID of uhost to create image from")
 	req.ImageName = flags.String("image-name", "", "Required. Name of the image to create")
 	req.ImageDescription = flags.String("image-desc", "", "Optional. Description of the image to create")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	flags.SetFlagValuesFunc("uhost-id", func() []string {
@@ -852,9 +852,9 @@ func NewCmdUhostResetPassword(out io.Writer) *cobra.Command {
 
 	uhostIDs = flags.StringSlice("uhost-id", nil, "Required. Resource IDs of the uhosts to reset the administrator's password")
 	req.Password = flags.String("password", "", "Required. New Password")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	flags.SetFlagValuesFunc("uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
@@ -972,9 +972,9 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	req.UHostId = flags.String("uhost-id", "", "Required. Resource ID of the uhost to reinstall operating system")
 	req.Password = flags.String("password", "", "Required. Password of the administrator")
 	req.ImageId = flags.String("image-id", "", "Optional. Resource ID the image to install. See 'ucloud image list'. Default is original image of the uhost")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	isReserveDataDisk = flags.Bool("keep-data-disk", false, "Keep data disk or not. If you keep data disk, you can't change OS type(Linux->Window,e.g.)")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")

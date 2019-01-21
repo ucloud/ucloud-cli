@@ -64,8 +64,8 @@ func NewCmdSharedBWCreate() *cobra.Command {
 	flags.SortFlags = false
 	req.Name = flags.String("name", "", "Required. Name of the shared bandwidth instance")
 	req.ShareBandwidth = flags.Int("bandwidth-mb", 20, "Optional. Unit:Mb. Bandwidth of the shared bandwidth. Range [20,5000]")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
@@ -128,8 +128,8 @@ func NewCmdSharedBWList() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	flags.StringSliceVar(&req.ShareBandwidthIds, "shared-bw-id", nil, "Resource ID of shared bandwidth instances to list")
 
 	return cmd
@@ -162,8 +162,8 @@ func NewCmdSharedBWResize() *cobra.Command {
 
 	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth instance to resize")
 	req.ShareBandwidth = flags.Int("bandwidth-mb", 0, "Required. Unit:Mb. resize to bandwidth value")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
@@ -202,8 +202,8 @@ func NewCmdSharedBWDelete() *cobra.Command {
 	flags.StringSliceVar(&ids, "shared-bw-id", nil, "Required. Resource ID of shared bandwidth instances to delete")
 	req.EIPBandwidth = flags.Int("eip-bandwidth-mb", 1, "Optional. Bandwidth of the joined EIPs,after deleting the shared bandwidth instance")
 	req.PayMode = flags.String("charge-mode", "", "Optional. Charge mode of joined EIPs,after deleting the shared bandwidth")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list

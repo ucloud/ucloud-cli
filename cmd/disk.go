@@ -139,9 +139,9 @@ func NewCmdDiskCreate(out io.Writer) *cobra.Command {
 	req.Name = flags.String("name", "", "Required. Name of the udisk to create")
 	req.Size = flags.Int("size-gb", 10, "Required. Size of the udisk to create. Unit:GB. Normal udisk [1,8000]; SSD udisk [1,4000] ")
 	snapshotID = flags.String("snapshot-id", "", "Optional. Resource ID of a snapshot, which will apply to the udisk being created. If you set this option, 'udisk-type' will be omitted.")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.ChargeType = flags.String("charge-type", "Dynamic", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the udisk back to any moment within the last 12 hours.")
@@ -231,9 +231,9 @@ func NewCmdDiskList() *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.UDiskId = flags.String("udisk-id", "", "Optional. Resource ID of the udisk to search")
 	req.DiskType = flags.String("udisk-type", "", "Optional. Optional. Type of the udisk to search. 'Oridinary-Data-Disk','Oridinary-System-Disk' or 'SSD-Data-Disk'")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
@@ -277,9 +277,9 @@ func NewCmdDiskAttach(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.UHostId = flags.String("uhost-id", "", "Required. Resource ID of the uhost instance which you want to attach the disk")
 	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisk instances to attach")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
@@ -329,9 +329,9 @@ func NewCmdDiskDetach(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisk instances to detach")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
@@ -408,9 +408,9 @@ func NewCmdDiskDelete() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. The Resource ID of udisks to delete")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
@@ -462,9 +462,9 @@ func NewCmdDiskClone(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.SourceId = flags.String("source-id", "", "Required. Resource ID of parent udisk")
 	req.Name = flags.String("name", "", "Required. Name of new udisk")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	enableDataArk = flags.String("enable-data-ark", "false", "Optional. DataArk supports real-time backup, which can restore the udisk back to any moment within the last 12 hours.")
@@ -513,9 +513,9 @@ func NewCmdDiskExpand() *cobra.Command {
 	flags.SortFlags = false
 	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of the udisks to expand")
 	req.Size = flags.Int("size-gb", 0, "Required. Size of the udisk after expanded. Unit: GB. Range [1,8000]")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see https://accountv2.ucloud.cn")
 
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
@@ -564,9 +564,9 @@ func NewCmdDiskSnapshot(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	udiskIDs = flags.StringSlice("udisk-id", nil, "Required. Resource ID of udisks to snapshot")
 	req.Name = flags.String("name", "", "Required. Name of snapshots")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.Comment = flags.String("comment", "", "Optional. Description of snapshots")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
@@ -626,9 +626,9 @@ func NewCmdDiskRestore(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	snapshotIDs = flags.StringSlice("snapshot-id", nil, "Required. Resourece ID of the snapshots to restore from")
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	flags.SetFlagValuesFunc("snapshot-id", func() []string {
 		return getSnapshotList([]string{status.SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
@@ -686,9 +686,9 @@ func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.SnapshotIds = *flags.StringSlice("snaphost-id", nil, "Optional. Resource ID of snapshots to list")
 	req.UHostId = flags.String("uhost-id", "", "Optional. Snapshots of the uhost")
 	req.DiskId = flags.String("disk-id", "", "Optional. Snapshots of the udisk")
@@ -722,9 +722,9 @@ func NewCmdSnapshotDelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.ProjectId = flags.String("project-id", base.ConfigInstance.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigInstance.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigInstance.Zone, "Optional. Assign availability zone")
+	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
+	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	snapshotIds = flags.StringSlice("snaphost-id", nil, "Optional. Resource ID of snapshots to delete")
 	cmd.MarkFlagRequired("snapshot-id")
 	return cmd

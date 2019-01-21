@@ -15,16 +15,13 @@
 package cmd
 
 import (
+	"fmt"
 	"reflect"
-
-	"github.com/ucloud/ucloud-cli/ux"
 
 	"github.com/spf13/cobra"
 
-	. "github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/base"
 )
-
-var config = ConfigInstance
 
 const configDesc = `Public-key and private-key could be acquired from https://console.ucloud.cn/uapi/apikey.`
 
@@ -44,41 +41,39 @@ func NewCmdInit() *cobra.Command {
 		Short: "Initialize UCloud CLI options",
 		Long:  `Initialize UCloud CLI options such as private-key,public-key,default region,zone and project.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			Cxt.Println(configDesc)
-			if len(config.PrivateKey) != 0 && len(config.PublicKey) != 0 {
-				confirm, err := ux.Prompt("Your have already configured public-key and private-key. Do you want to overwrite it? (y/n):")
-				if err != nil {
-					Cxt.Println(err)
-					return
-				}
-				if !confirm {
-					printHello()
-					return
-				}
+			if base.ConfigIns.PrivateKey != "" && base.ConfigIns.PublicKey != "" {
+				printHello()
+				return
 			}
-			config.ClearConfig()
-			ClientConfig.Region = ""
-			ClientConfig.ProjectId = ""
-			config.ConfigPublicKey()
-			config.ConfigPrivateKey()
+
+			base.Cxt.Println(configDesc)
+			base.ConfigIns.ConfigPublicKey()
+			base.ConfigIns.ConfigPrivateKey()
 
 			region, zone, err := getDefaultRegion()
 			if err != nil {
-				Cxt.Println(err)
+				base.Cxt.Println(err)
 				return
 			}
-			config.Region = region
-			config.Zone = zone
-			Cxt.Printf("Configured default region:%s zone:%s\n", region, zone)
+			base.ConfigIns.Region = region
+			base.ConfigIns.Zone = zone
+			base.Cxt.Printf("Configured default region:%s zone:%s\n", region, zone)
 
-			projectId, projectName, err := getDefaultProject()
+			projectID, projectName, err := getDefaultProject()
 			if err != nil {
-				Cxt.Println(err)
+				base.Cxt.Println(err)
 				return
 			}
-			config.ProjectID = projectId
-			Cxt.Printf("Configured default project:%s %s\n", projectId, projectName)
-			config.SaveConfig()
+			base.ConfigIns.ProjectID = projectID
+			base.Cxt.Printf("Configured default project:%s %s\n", projectID, projectName)
+			base.ConfigIns.Timeout = base.DefaultTimeoutSec
+			base.ConfigIns.BaseURL = base.DefaultBaseURL
+			base.ConfigIns.Active = true
+			base.Cxt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
+			base.Cxt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
+			base.Cxt.Printf("default name of CLI profile:%s\n", base.ConfigIns.Profile)
+			base.Cxt.Println("You can change the default settings by running 'ucloud config'")
+			base.ConfigIns.Save()
 			printHello()
 		},
 	}
@@ -87,46 +82,53 @@ func NewCmdInit() *cobra.Command {
 
 func printHello() {
 	userInfo, err := getUserInfo()
-	Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
+	base.Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
 	certified := isUserCertified(userInfo)
 	if err != nil {
-		Cxt.PrintErr(err)
+		base.Cxt.PrintErr(err)
 	} else if certified == false {
-		Cxt.Println("\nWarning: Please authenticate the account with your valid documentation at 'https://accountv2.ucloud.cn/authentication'.")
+		base.Cxt.Println("\nWarning: Please authenticate the account with your valid documentation at 'https://accountv2.ucloud.cn/authentication'.")
 	}
-	Cxt.Println(helloUcloud)
+	base.Cxt.Println(helloUcloud)
 }
 
 //NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
-	cfg := Config{}
+	cfg := base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:     "config",
 		Short:   "Configure UCloud CLI options",
 		Long:    `Configure UCloud CLI options such as private-key,public-key,default region and default project-id.`,
-		Example: "ucloud config list; ucloud config --region cn-bj2",
-		Run: func(cmd *cobra.Command, args []string) {
+		Example: "ucloud config --profile=test --region=cn-bj2 --active",
+		Run: func(c *cobra.Command, args []string) {
+			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
+			cacheConfig, err := base.GetAggConfigByProfile(cfg.Profile)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			//如有设置Region和Zone，确保设置的Region和Zone真实存在
 			if cfg.Region != "" || cfg.Zone != "" {
 				regionMap, err := fetchRegion()
 				if err != nil {
-					HandleError(err)
+					base.HandleError(err)
 					return
 				}
 
 				region := cfg.Region
 				if region == "" {
-					region = config.Region
+					region = cacheConfig.Region
 				}
 
 				zones, ok := regionMap[region]
 				if !ok {
-					Cxt.Printf("Error, region[%s] not exist! See 'ucloud region'\n", region)
+					base.Cxt.Printf("Error, region[%s] is not exist! See 'ucloud region'\n", region)
 					return
 				}
 
 				zone := cfg.Zone
 				if zone == "" {
-					zone = config.Zone
+					zone = cacheConfig.Zone
 				}
 
 				if zone != "" {
@@ -137,64 +139,114 @@ func NewCmdConfig() *cobra.Command {
 						}
 					}
 					if !zoneExist {
-						Cxt.Printf("Error, zone[%s] not exist in region[%s]! See 'ucloud config list' and 'ucloud region'\n", zone, region)
+						base.Cxt.Printf("Error, zone[%s] not exist in region[%s]! See 'ucloud config list' and 'ucloud region'\n", zone, region)
 						return
 					}
 				}
 			}
+			if cfg.Timeout <= 0 {
+				base.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
+				return
+			}
 
-			tmpCfgVal := reflect.ValueOf(cfg)
-			configVal := reflect.ValueOf(config).Elem()
 			changed := false
+			cfg.ProjectID = base.PickResourceID(cfg.ProjectID)
+			tmpCfgVal := reflect.ValueOf(cfg)
+			configVal := reflect.ValueOf(cacheConfig).Elem()
 			for i := 0; i < tmpCfgVal.NumField(); i++ {
-				if fieldVal := tmpCfgVal.Field(i).String(); fieldVal != "" {
-					configVal.Field(i).SetString(fieldVal)
+				if fieldVal := tmpCfgVal.Field(i); fieldVal.Interface() != reflect.Zero(fieldVal.Type()).Interface() {
+					configVal.Field(i).Set(fieldVal)
 					changed = true
 				}
 			}
 			if changed {
-				config.SaveConfig()
+				err := cacheConfig.Save()
+				if err != nil {
+					base.HandleError(err)
+				}
 			} else {
-				cmd.HelpFunc()(cmd, args)
+				c.HelpFunc()(c, args)
 			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	flags.StringVar(&cfg.Profile, "profile", "", "Required. Set name of CLI profile")
 	flags.StringVar(&cfg.PublicKey, "public-key", "", "Optional. Set public key")
 	flags.StringVar(&cfg.PrivateKey, "private-key", "", "Optional. Set private key")
 	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
+	flags.StringVar(&cfg.BaseURL, "base-url", base.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
+	flags.BoolVar(&cfg.Active, "active", false, "Optional. Mark the profile to be effective")
+
+	flags.SetFlagValuesFunc("profile", base.GetProfileNameList)
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("project-id", getProjectList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(cfg.Region)
+	})
+
+	cmd.MarkFlagRequired("profile")
 
 	cmd.AddCommand(NewCmdConfigList())
-	cmd.AddCommand(NewCmdConfigClear())
-
+	cmd.AddCommand(NewCmdConfigDelete())
 	return cmd
 }
 
 //NewCmdConfigList ucloud config list
 func NewCmdConfigList() *cobra.Command {
-	configListCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "list all settings",
 		Long:  `list all settings`,
-		Run: func(cmd *cobra.Command, args []string) {
-			config.ListConfig(global.json)
+		Run: func(c *cobra.Command, args []string) {
+			base.ListAggConfig(global.json)
 		},
 	}
-	return configListCmd
+	return cmd
 }
 
-//NewCmdConfigClear ucloud config clear
-func NewCmdConfigClear() *cobra.Command {
-	configClearCmd := &cobra.Command{
-		Use:   "clear",
-		Short: "clear all settings",
-		Long:  "clear all settings",
-		Run: func(cmd *cobra.Command, args []string) {
-			config.ClearConfig()
+//NewCmdConfigDelete ucloud config Delete
+func NewCmdConfigDelete() *cobra.Command {
+	var profile string
+	cmd := &cobra.Command{
+		Use:     "delete",
+		Short:   "delete settings by profile name",
+		Long:    "delete settings by profile name",
+		Example: "ucloud config delete --profile test",
+		Run: func(c *cobra.Command, args []string) {
+			profiles := base.GetProfileNameList()
+			if profiles != nil {
+				exist := false
+				for _, p := range profiles {
+					if p == profile {
+						exist = true
+						break
+					}
+				}
+				if !exist {
+					base.HandleError(fmt.Errorf("profile:%s is not exists", profile))
+					return
+				}
+			}
+			aggc, err := base.GetAggConfigByProfile(profile)
+			if err != nil {
+				base.HandleError(err)
+			}
+			if aggc.Active {
+				base.HandleError(fmt.Errorf("the active config can not be deleted,please switch it to another one by 'ucloud config --profile xxx --active' and try again"))
+				return
+			}
+			err = base.DeleteAggConfigByProfile(profile)
+			if err != nil {
+				base.HandleError(err)
+			}
 		},
 	}
-	return configClearCmd
+	cmd.Flags().StringVar(&profile, "profile", "", "Required. Name of settings item")
+	cmd.MarkFlagRequired("profile")
+	cmd.Flags().SetFlagValuesFunc("profile", base.GetProfileNameList)
+	return cmd
 }

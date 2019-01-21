@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"runtime"
@@ -51,12 +52,12 @@ func GetHomePath() string {
 }
 
 //MosaicString 对字符串敏感部分打马赛克 如公钥私钥
-func MosaicString(s string, beginChars, lastChars int) string {
-	r := len(s) - lastChars - beginChars
-	if r > 0 {
-		return s[:beginChars] + strings.Repeat("*", r) + s[(r+beginChars):]
+func MosaicString(str string, beginChars, lastChars int) string {
+	r := len(str) - lastChars - beginChars
+	if r > 5 {
+		return str[:beginChars] + strings.Repeat("*", 5) + str[(r+beginChars):]
 	}
-	return strings.Repeat("*", len(s))
+	return strings.Repeat("*", len(str))
 }
 
 //AppendToFile 添加到文件中
@@ -446,4 +447,18 @@ func PickResourceID(str string) string {
 		return strings.SplitN(str, "/", 2)[0]
 	}
 	return str
+}
+
+//WriteJSONFile 写json文件
+func WriteJSONFile(list interface{}, fileName string) error {
+	byts, err := json.Marshal(list)
+	if err != nil {
+		return err
+	}
+	filePath := GetConfigPath() + "/" + fileName
+	err = ioutil.WriteFile(filePath, byts, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }
