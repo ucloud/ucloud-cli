@@ -17,10 +17,13 @@ package cobra
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -1072,37 +1075,54 @@ func completeFlagValues(cmd *Command, args []string, word string) {
 		}
 	}
 
-	fetchFn := cmd.Flags().GetFlagValuesFunc(_flag.Name)
-	//async completing is costly, only execute once.
-	if fetchFn != nil {
-		fetchChan := make(chan string, 0)
-		go func() {
-			for _, item := range fetchFn() {
-				fetchChan <- item
-			}
-			close(fetchChan)
-		}()
-		timeoutDur, _ := time.ParseDuration("3s")
-		timeoutChan := time.After(timeoutDur)
-		intervalChan := time.Tick(time.Second / 100)
+	compLine := strings.Join(args, " ")
+	if args[len(args)-1] == word {
+		compLine = strings.Join(args[:len(args)-1], " ")
+	}
+	cache, err := readCompCache()
+	if err != nil || cache[compLine] == nil {
+		fetchFn := cmd.Flags().GetFlagValuesFunc(_flag.Name)
+		//async completing is costly, only execute once.
+		if fetchFn != nil {
+			fetchChan := make(chan string, 0)
+			go func() {
+				words := fetchFn()
+				for _, item := range words {
+					fetchChan <- item
+				}
+				close(fetchChan)
+				cache = make(map[string][]string)
+				cache[compLine] = words
+				saveCompCache(cache)
+			}()
+			timeoutDur, _ := time.ParseDuration("3s")
+			timeoutChan := time.After(timeoutDur)
+			intervalChan := time.Tick(time.Second / 100)
 
-	loop:
-		for range intervalChan {
-			select {
-			case v, ok := <-fetchChan:
-				if ok == false {
+		loop:
+			for range intervalChan {
+				select {
+				case v, ok := <-fetchChan:
+					if ok == false {
+						break loop
+					}
+					if strings.HasPrefix(v, word) && v != word {
+						fmt.Fprintln(cmd.OutOrStdout(), v)
+						os.Stdout.Sync()
+						hasCompleted = true
+					}
+
+				case <-timeoutChan:
 					break loop
 				}
-				if strings.HasPrefix(v, word) && v != word {
-					fmt.Fprintln(cmd.OutOrStdout(), v)
-					os.Stdout.Sync()
-					hasCompleted = true
-				}
-
-			case <-timeoutChan:
-				break loop
 			}
 		}
+	} else {
+		words := cache[compLine]
+		for _, word := range words {
+			fmt.Fprintln(cmd.OutOrStdout(), word)
+		}
+		hasCompleted = true
 	}
 
 	if !hasCompleted {
@@ -1111,6 +1131,64 @@ func completeFlagValues(cmd *Command, args []string, word string) {
 			fmt.Fprintln(cmd.OutOrStdout(), word)
 		}
 	}
+
+}
+
+func readCompCache() (map[string][]string, error) {
+	filePath := getCachePath()
+	filePath += "/cache"
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return nil, err
+	}
+	if ct := fileInfo.ModTime(); time.Now().Sub(ct) <= 10*1e9 {
+		byts, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return nil, err
+		}
+		cacheMap := map[string][]string{}
+		err = json.Unmarshal(byts, &cacheMap)
+		if err != nil {
+			return nil, err
+		}
+		return cacheMap, nil
+	}
+	return nil, fmt.Errorf("no available cache")
+}
+
+func saveCompCache(cache map[string][]string) error {
+	byts, err := json.Marshal(cache)
+	if err != nil {
+		return err
+	}
+	filePath := getCachePath()
+	filePath += "/cache"
+	err = ioutil.WriteFile(filePath, byts, 0600)
+	return err
+}
+
+//GetHomePath 获取家目录
+func getHomePath() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
+//GetConfigPath 获取配置文件的绝对路径
+func getCachePath() string {
+	path := getHomePath() + "/.ucloud"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err = os.MkdirAll(path, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return path
 }
 
 // ResetCommands delete parent, subcommand and help command from c.

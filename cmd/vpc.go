@@ -343,8 +343,8 @@ func getAllVPCIdNames(project, region string) []string {
 func NewCmdSubnet() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "subnet",
-		Short: "List subnet",
-		Long:  `List subnet`,
+		Short: "List, create and delete subnet",
+		Long:  "List, create and delete subnet",
 		Args:  cobra.NoArgs,
 	}
 	out := base.Cxt.GetWriter()

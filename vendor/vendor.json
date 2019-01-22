@@ -27,6 +27,12 @@
 			"revisionTime": "2018-09-15T22:22:04Z"
 		},
 		{
+			"checksumSHA1": "8jPcnwUo/UUnNvfFKdcKYtJJUYM=",
+			"path": "github.com/spf13/cobra/doc",
+			"revision": "ff9bf816a1557ee800e8afc7299bfa4c05eb7a05",
+			"revisionTime": "2018-12-27T10:25:35Z"
+		},
+		{
 			"checksumSHA1": "9ay5PqAnQlhXvDO8XEmizyHGl2g=",
 			"path": "github.com/spf13/pflag",
 			"revision": "3ebe029320b2676d667ae88da602a5f854788a8a",
@@ -85,6 +91,12 @@
 			"path": "github.com/ucloud/ucloud-sdk-go/services/uhost",
 			"revision": "e4a5beab94162b24b60e41b3df8bc8e565144030",
 			"revisionTime": "2018-11-21T10:11:50Z"
+		},
+		{
+			"checksumSHA1": "PHNVFy9+X1evds8wKHba4tsNROw=",
+			"path": "github.com/ucloud/ucloud-sdk-go/services/ulb",
+			"revision": "9ad84960331eeace7b8e427ed07104deadc74217",
+			"revisionTime": "2019-01-22T02:05:40Z"
 		},
 		{
 			"checksumSHA1": "rTHjcXtmwEqyvuTz0gxXANcPoOc=",

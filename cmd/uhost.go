@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"net"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -83,42 +82,38 @@ func NewCmdUHostList() *cobra.Command {
 				base.HandleError(err)
 				return
 			}
-			if global.json {
-				base.PrintJSON(resp.UHostSet)
-			} else {
-				list := make([]UHostRow, 0)
-				for _, host := range resp.UHostSet {
-					row := UHostRow{}
-					row.UHostName = host.Name
-					row.ResourceID = host.UHostId
-					row.Group = host.Tag
-					for _, ip := range host.IPSet {
-						if row.PublicIP != "" {
-							row.PublicIP += " | "
-						}
-						if ip.Type == "Private" {
-							row.PrivateIP = ip.IP
-						} else {
-							row.PublicIP += fmt.Sprintf("%s %s", ip.IP, ip.Type)
-						}
+			list := make([]UHostRow, 0)
+			for _, host := range resp.UHostSet {
+				row := UHostRow{}
+				row.UHostName = host.Name
+				row.ResourceID = host.UHostId
+				row.Group = host.Tag
+				for _, ip := range host.IPSet {
+					if row.PublicIP != "" {
+						row.PublicIP += " | "
 					}
-					osName := strings.SplitN(host.OsName, " ", 2)
-					cupCore := host.CPU
-					memorySize := host.Memory / 1024
-					diskSize := 0
-					for _, disk := range host.DiskSet {
-						if disk.Type == "Data" || disk.Type == "Udisk" {
-							diskSize += disk.Size
-						}
+					if ip.Type == "Private" {
+						row.PrivateIP = ip.IP
+					} else {
+						row.PublicIP += fmt.Sprintf("%s %s", ip.IP, ip.Type)
 					}
-					row.Config = fmt.Sprintf("%s cpu:%d memory:%dG disk:%dG", osName[0], cupCore, memorySize, diskSize)
-					row.CreationTime = base.FormatDate(host.CreateTime)
-					row.State = host.State
-					row.Type = host.UHostType + "/" + host.HostType
-					list = append(list, row)
 				}
-				base.PrintTableS(list)
+				osName := strings.SplitN(host.OsName, " ", 2)
+				cupCore := host.CPU
+				memorySize := host.Memory / 1024
+				diskSize := 0
+				for _, disk := range host.DiskSet {
+					if disk.Type == "Data" || disk.Type == "Udisk" {
+						diskSize += disk.Size
+					}
+				}
+				row.Config = fmt.Sprintf("%s cpu:%d memory:%dG disk:%dG", osName[0], cupCore, memorySize, diskSize)
+				row.CreationTime = base.FormatDate(host.CreateTime)
+				row.State = host.State
+				row.Type = host.UHostType + "/" + host.HostType
+				list = append(list, row)
 			}
+			base.PrintList(list, global.json)
 		},
 	}
 	cmd.Flags().SortFlags = false
@@ -126,9 +121,10 @@ func NewCmdUHostList() *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. UHost Instance ID, multiple values separated by comma(without space)")
-	req.Tag = cmd.Flags().String("group", "", "Optional. Group")
+	// req.Tag = cmd.Flags().String("group", "", "Optional. Business group")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
+	bindGroup(req, cmd.Flags())
 
 	return cmd
 }
@@ -148,6 +144,8 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
+			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
 
 			resp, err := base.BizClient.CreateUHostInstance(req)
 			if err != nil {
@@ -167,21 +165,10 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 				fmt.Fprintf(out, "expect uhost count 1 , accept %d", len(resp.UHostIds))
 				return
 			}
-
+			bindEipID = sdk.String(base.PickResourceID(*bindEipID))
 			if *bindEipID != "" && len(resp.UHostIds) == 1 {
-				ip := net.ParseIP(*bindEipID)
-				if ip != nil {
-					eipID, err := getEIPIDbyIP(ip, *req.ProjectId, *req.Region)
-					if err != nil {
-						base.HandleError(err)
-					} else {
-						*bindEipID = eipID
-					}
-				}
 				bindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), bindEipID, req.ProjectId, req.Region)
-			}
-
-			if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
+			} else if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
 				eipReq.ChargeType = req.ChargeType
 				eipReq.Tag = req.Tag
 				eipReq.Quantity = req.Quantity
@@ -231,19 +218,20 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
 	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
-	bindEipID = flags.String("bind-eip", "", "Optional. Bind eip to uhost. Value could be resource id or IP Address")
-	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of created eip to bind with the uhost")
-	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 200]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
+	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created uhost")
+	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of the created eip to be bound with the new created uhost")
+	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
 	eipReq.PayMode = cmd.Flags().String("create-eip-charge-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
 	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional.Remark of your EIP.")
-	eipReq.CouponId = cmd.Flags().String("create-eip-coupon-id", "", "Optional.Coupon ID, The Coupon can deducte part of the payment,see https://accountv2.ucloud.cn")
 
-	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
+	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
-	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
+	bindProjectID(req, flags)
+	bindRegion(req, flags)
+	// bindZone(req, flags)
+	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Override default available zone, see 'ucloud region'")
+
 	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2' means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
 	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
@@ -255,19 +243,28 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 
-	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
-	cmd.Flags().SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
-	cmd.Flags().SetFlagValues("type", "N2", "N1", "I2", "D1", "G1", "G2", "G3")
-	cmd.Flags().SetFlagValues("net-capability", "Normal", "Super")
-	cmd.Flags().SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
-	cmd.Flags().SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
-	cmd.Flags().SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
-	cmd.Flags().SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
-	cmd.Flags().SetFlagValues("create-eip-line", "BGP", "International")
-	cmd.Flags().SetFlagValues("create-eip-charge-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
+	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
+	flags.SetFlagValues("type", "N2", "N1", "I2", "D1", "G1", "G2", "G3")
+	flags.SetFlagValues("net-capability", "Normal", "Super")
+	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
+	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
+	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
+	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
+	flags.SetFlagValues("create-eip-line", "BGP", "International")
+	flags.SetFlagValues("create-eip-charge-mode", "Bandwidth", "Traffic", "ShareBandwidth")
 
-	cmd.Flags().SetFlagValuesFunc("image-id", func() []string {
+	flags.SetFlagValuesFunc("image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE}, cli.IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
+	})
+	flags.SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("bind-eip", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
+	})
+	flags.SetFlagValuesFunc("firewall-id", func() []string {
+		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("cpu")
@@ -336,9 +333,9 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
-	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle If you have permission; true,the uhost instance will be deleted directly")
+	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", false, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
-	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional.false,Detach cloud disk only; true, Detach cloud disk and delete it")
+	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false,Detach cloud disk only; true, Detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.Flags().SetFlagValues("destory", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")

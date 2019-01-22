@@ -156,6 +156,28 @@ func PrintTableS(dataSet interface{}) {
 	}
 }
 
+//PrintList 打印表格或者JSON
+func PrintList(dataSet interface{}, json bool) {
+	if json {
+		PrintJSON(dataSet)
+	} else {
+		PrintTableS(dataSet)
+	}
+}
+
+//PrintDescribe 打印详情
+func PrintDescribe(attrs []DescribeTableRow, json bool) {
+	if json {
+		PrintJSON(attrs)
+	} else {
+		for _, attr := range attrs {
+			fmt.Println(attr.Attribute)
+			fmt.Println(attr.Content)
+			fmt.Println()
+		}
+	}
+}
+
 //PrintTable 以表格方式打印数据集合
 func PrintTable(dataSet interface{}, fieldList []string) {
 	dataSetVal := reflect.ValueOf(dataSet)
@@ -221,6 +243,12 @@ func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidth
 		}
 		fmt.Printf("\n")
 	}
+}
+
+//DescribeTableRow 详情表格通用表格行
+type DescribeTableRow struct {
+	Attribute string
+	Content   string
 }
 
 func calcCutWidth(text string) int {

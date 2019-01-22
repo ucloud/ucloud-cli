@@ -226,7 +226,7 @@ func NewCmdEIPAllocate() *cobra.Command {
 		Use:     "allocate",
 		Short:   "Allocate EIP",
 		Long:    "Allocate EIP",
-		Example: "ucloud eip allocate --line BGP --bandwidth 2",
+		Example: "ucloud eip allocate --line BGP --bandwidth-mb 2",
 		Run: func(cmd *cobra.Command, args []string) {
 			if *req.OperatorName == "BGP" {
 				*req.OperatorName = "Bgp"
@@ -258,7 +258,6 @@ func NewCmdEIPAllocate() *cobra.Command {
 	req.Tag = cmd.Flags().String("group", "Default", "Optional. Group of your EIP.")
 	req.Name = cmd.Flags().String("name", "EIP", "Optional. Name of your EIP.")
 	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your EIP.")
-	req.CouponId = cmd.Flags().String("coupon-id", "", "Optional. Coupon ID, The Coupon can deducte part of the payment")
 	count = cmd.Flags().Int("count", 1, "Optional. Count of EIP to allocate")
 
 	cmd.Flags().SetFlagValues("line", "BGP", "International")
@@ -287,13 +286,28 @@ func NewCmdEIPBind() *cobra.Command {
 	resourceType = cmd.Flags().String("resource-type", "uhost", "Requried. ResourceType, type of resource to bind with eip. 'uhost','vrouter','ulb','upm','hadoophost'.eg..")
 	projectID = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+
+	cmd.Flags().SetFlagValues("resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
+	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*projectID, *region, []string{status.EIP_FREE}, nil)
+	})
+
 	cmd.MarkFlagRequired("eip-id")
 	cmd.MarkFlagRequired("resource-id")
-	cmd.Flags().SetFlagValues("resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
+
 	return cmd
 }
 
 func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
+	ip := net.ParseIP(*resourceID)
+	if ip != nil {
+		eipID, err := getEIPIDbyIP(ip, *projectID, *region)
+		if err != nil {
+			base.HandleError(err)
+		} else {
+			*resourceID = eipID
+		}
+	}
 	req := base.BizClient.NewBindEIPRequest()
 	req.ResourceId = resourceID
 	req.ResourceType = resourceType
@@ -310,30 +324,44 @@ func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
 
 //NewCmdEIPUnbind ucloud eip unbind
 func NewCmdEIPUnbind() *cobra.Command {
-
-	var req = base.BizClient.NewUnBindEIPRequest()
-	var cmd = &cobra.Command{
+	eipIDs := []string{}
+	req := base.BizClient.NewUnBindEIPRequest()
+	cmd := &cobra.Command{
 		Use:     "unbind",
 		Short:   "Unbind EIP with uhost",
 		Long:    "Unbind EIP with uhost",
-		Example: "ucloud eip unbind --eip-id eip-xxx --resource-id uhost-xxx",
+		Example: "ucloud eip unbind --eip-id eip-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			req.ResourceType = sdk.String("uhost")
-			_, err := base.BizClient.UnBindEIP(req)
-			if err != nil {
-				base.HandleError(err)
-			} else {
+			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
+			for _, eip := range eipIDs {
+				eipIns, err := getEIP(base.PickResourceID(eip))
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				req.EIPId = sdk.String(base.PickResourceID(eip))
+				req.ResourceId = sdk.String(eipIns.Resource.ResourceId)
+				req.ResourceType = sdk.String(eipIns.Resource.ResourceType)
+				_, err = base.BizClient.UnBindEIP(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
 				base.Cxt.Printf("unbind EIP[%s] with %s[%s]\n", *req.EIPId, *req.ResourceType, *req.ResourceId)
 			}
 		},
 	}
-	cmd.Flags().SortFlags = false
-	req.EIPId = cmd.Flags().String("eip-id", "", "Required. EIPId to unbind")
-	req.ResourceId = cmd.Flags().String("resource-id", "", "Required. ResourceID , which is the UHostId of uhost")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&eipIDs, "eip-id", nil, "Required. Resource ID of eips to unbind with some resource")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+
 	cmd.MarkFlagRequired("eip-id")
-	cmd.MarkFlagRequired("resource-id")
+	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_USED}, nil)
+	})
 
 	return cmd
 }
@@ -341,30 +369,35 @@ func NewCmdEIPUnbind() *cobra.Command {
 //NewCmdEIPRelease ucloud eip release
 func NewCmdEIPRelease() *cobra.Command {
 	var ids []string
-	var req = base.BizClient.NewReleaseEIPRequest()
-	var cmd = &cobra.Command{
+	req := base.BizClient.NewReleaseEIPRequest()
+	cmd := &cobra.Command{
 		Use:     "release",
 		Short:   "Release EIP",
 		Long:    "Release EIP",
 		Example: "ucloud eip release --eip-id eip-xx1,eip-xx2",
 		Run: func(cmd *cobra.Command, args []string) {
+			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
 			for _, id := range ids {
-				req.EIPId = sdk.String(id)
+				req.EIPId = sdk.String(base.PickResourceID(id))
 				_, err := base.BizClient.ReleaseEIP(req)
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					base.Cxt.Printf("released EIP[%v]\n", *req.EIPId)
+					base.Cxt.Printf("eip[%s] released\n", *req.EIPId)
 				}
 			}
 		},
 	}
-	cmd.Flags().SortFlags = false
-	cmd.Flags().StringSliceVarP(&ids, "eip-id", "", make([]string, 0), "Required. EIPIds of the EIP you want to release")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVarP(&ids, "eip-id", "", nil, "Required. Resource ID of the EIPs you want to release")
+	bindProjectID(req, flags)
+	bindRegion(req, flags)
 	cmd.MarkFlagRequired("eip-id")
-	cmd.MarkFlagRequired("bandwidth")
+	flags.SetFlagValuesFunc("eip-id", func() []string {
+		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
+	})
+
 	return cmd
 }
 

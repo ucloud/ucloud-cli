@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ucloud/ucloud-cli/base"
 	. "github.com/ucloud/ucloud-cli/base"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
@@ -71,26 +72,22 @@ func NewCmdGsshList() *cobra.Command {
 			if err != nil {
 				HandleError(err)
 			} else {
-				if global.json {
-					PrintJSON(resp.InstanceSet)
-				} else {
-					list := make([]GSSHRow, 0)
-					for _, gssh := range resp.InstanceSet {
-						row := GSSHRow{}
-						row.ResourceID = gssh.InstanceId
-						row.SSHServerIP = gssh.TargetIP
-						row.AcceleratingDomain = gssh.AcceleratingDomain
-						row.SSHPort = gssh.Port
-						row.Remark = gssh.Remark
-						if val, ok := areaMap[gssh.Area]; ok {
-							row.SSHServerLocation = val
-						} else {
-							row.SSHServerLocation = gssh.Area
-						}
-						list = append(list, row)
+				list := make([]GSSHRow, 0)
+				for _, gssh := range resp.InstanceSet {
+					row := GSSHRow{}
+					row.ResourceID = gssh.InstanceId
+					row.SSHServerIP = gssh.TargetIP
+					row.AcceleratingDomain = gssh.AcceleratingDomain
+					row.SSHPort = gssh.Port
+					row.Remark = gssh.Remark
+					if val, ok := areaMap[gssh.Area]; ok {
+						row.SSHServerLocation = val
+					} else {
+						row.SSHServerLocation = gssh.Area
 					}
-					PrintTable(list, []string{"ResourceID", "SSHServerIP", "AcceleratingDomain", "SSHServerLocation", "SSHPort", "Remark"})
+					list = append(list, row)
 				}
+				base.PrintList(list, global.json)
 			}
 		},
 	}

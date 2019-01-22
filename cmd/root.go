@@ -61,7 +61,7 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.json, "json", "j", false, "Print result in JSON format whenever possible")
-	cmd.Flags().BoolVar(&global.version, "version", false, "Display version")
+	cmd.Flags().BoolVarP(&global.version, "version", "v", false, "Display version")
 	cmd.Flags().BoolVar(&global.completion, "completion", false, "Turn on auto completion according to the prompt")
 	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
@@ -81,6 +81,9 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdBandwidthPkg())
 	cmd.AddCommand(NewCmdSharedBW())
 	cmd.AddCommand(NewCmdUDPN(out))
+	cmd.AddCommand(NewCmdULB())
+	cmd.AddCommand(NewCmdULBVserver())
+	cmd.AddCommand(NewCmdULBSSL())
 
 	return cmd
 }
@@ -132,6 +135,8 @@ func Execute() {
 	rootCmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(rootCmd)
 
+	// err := doc.GenReSTTree(rootCmd, "./doc")
+	// fmt.Println(err)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
