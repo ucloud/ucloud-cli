@@ -14,9 +14,7 @@
 
 package main
 
-import (
-	"github.com/ucloud/ucloud-cli/cmd"
-)
+import "github.com/ucloud/ucloud-cli/cmd"
 
 func main() {
 	cmd.Execute()

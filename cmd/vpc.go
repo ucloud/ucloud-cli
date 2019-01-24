@@ -343,14 +343,15 @@ func getAllVPCIdNames(project, region string) []string {
 func NewCmdSubnet() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "subnet",
-		Short: "List subnet",
-		Long:  `List subnet`,
+		Short: "List, create and delete subnet",
+		Long:  "List, create and delete subnet",
 		Args:  cobra.NoArgs,
 	}
 	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdSubnetList())
 	cmd.AddCommand(NewCmdSubnetCreate())
 	cmd.AddCommand(NewCmdSubnetDelete(out))
+	cmd.AddCommand(NewCmdSubnetListResource(out))
 
 	return cmd
 }
@@ -468,8 +469,9 @@ func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 		Short: "Delete subnet",
 		Long:  "Delete subnet",
 		Run: func(c *cobra.Command, args []string) {
+			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
 			for _, id := range idNames {
-				req.SubnetId = sdk.String(id)
+				req.SubnetId = sdk.String(base.PickResourceID(id))
 				_, err := base.BizClient.DeleteSubnet(req)
 				if err != nil {
 					base.HandleError(err)
@@ -484,10 +486,100 @@ func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "subnet-id", nil, "Required. Resource ID of subent")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. The region of the subnet")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. The project id of the subnet")
-
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
 	cmd.MarkFlagRequired("subnet-id")
+	flags.SetFlagValuesFunc("subnet-id", func() []string {
+		return getAllSubnetIDNames("", *req.ProjectId, *req.Region)
+	})
 
 	return cmd
+}
+
+//SubnetResourceRow 表格行
+type SubnetResourceRow struct {
+	ResourceName string
+	ResourceID   string
+	ResourceType string
+	PrivateIP    string
+}
+
+//NewCmdSubnetListResource ucloud subnet list-resource
+func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewDescribeSubnetResourceRequest()
+	cmd := &cobra.Command{
+		Use:   "list-resource",
+		Short: "List resources belong to subnet",
+		Long:  "List resources belong to subnet",
+		Run: func(c *cobra.Command, args []string) {
+			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
+			resp, err := base.BizClient.DescribeSubnetResource(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			list := []SubnetResourceRow{}
+			for _, r := range resp.DataSet {
+				row := SubnetResourceRow{
+					ResourceName: r.Name,
+					ResourceID:   r.ResourceId,
+					ResourceType: r.ResourceType,
+					PrivateIP:    r.IP,
+				}
+				list = append(list, row)
+			}
+			base.PrintList(list, global.json)
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	req.SubnetId = flags.String("subnet-id", "", "Required. Resource ID of subnet which resources to list belong to")
+	req.ResourceType = flags.String("resource-type", "", "Optional. Resource type of resources to list. Accept values:'uhost','phost','ulb','uhadoophost','ufortresshost','unatgw','ukafka','umem','docker','udb','udw' and 'vip'")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+	bindLimit(req, flags)
+	bindOffset(req, flags)
+	cmd.MarkFlagRequired("subnet-id")
+	flags.SetFlagValuesFunc("subnet-id", func() []string {
+		return getAllSubnetIDNames("", *req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValues("resource-type", "uhost", "phost", "ulb", "uhadoophost", "ufortresshost", "unatgw", "ukafka", "umem", "docker", "udb", "udw", "vip")
+
+	return cmd
+}
+
+func getAllSubnets(vpcID, project, region string) ([]vpc.VPCSubnetInfoSet, error) {
+	req := base.BizClient.NewDescribeSubnetRequest()
+	req.ProjectId = sdk.String(base.PickResourceID(project))
+	req.Region = sdk.String(region)
+	if vpcID != "" {
+		req.VPCId = sdk.String(base.PickResourceID(vpcID))
+	}
+	subnets := []vpc.VPCSubnetInfoSet{}
+	for limit, offset := 50, 0; ; offset += limit {
+		req.Limit = sdk.Int(limit)
+		req.Offset = sdk.Int(offset)
+		resp, err := base.BizClient.DescribeSubnet(req)
+		if err != nil {
+			base.HandleError(err)
+			return nil, err
+		}
+		subnets = append(subnets, resp.DataSet...)
+		if limit+offset >= resp.TotalCount {
+			break
+		}
+	}
+	return subnets, nil
+}
+
+func getAllSubnetIDNames(vpcID, project, region string) []string {
+	subnets, err := getAllSubnets(vpcID, project, region)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, s := range subnets {
+		list = append(list, fmt.Sprintf("%s/%s", s.SubnetId, s.SubnetName))
+	}
+	return list
 }

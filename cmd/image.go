@@ -71,24 +71,20 @@ func NewCmdUImageList() *cobra.Command {
 				base.HandleError(err)
 				return
 			}
-			if global.json {
-				base.PrintJSON(resp.ImageSet)
-			} else {
-				list := make([]ImageRow, 0)
-				for _, image := range resp.ImageSet {
-					row := ImageRow{}
-					row.ImageName = image.ImageName
-					row.ImageID = image.ImageId
-					row.BasicImage = image.OsName
-					row.ExtensibleFeature = strings.Join(image.Features, ",")
-					row.CreationTime = base.FormatDate(image.CreateTime)
-					row.State = image.State
-					if row.State == "Available" {
-						list = append(list, row)
-					}
+			list := make([]ImageRow, 0)
+			for _, image := range resp.ImageSet {
+				row := ImageRow{}
+				row.ImageName = image.ImageName
+				row.ImageID = image.ImageId
+				row.BasicImage = image.OsName
+				row.ExtensibleFeature = strings.Join(image.Features, ",")
+				row.CreationTime = base.FormatDate(image.CreateTime)
+				row.State = image.State
+				if row.State == "Available" {
+					list = append(list, row)
 				}
-				base.PrintTable(list, []string{"ImageName", "ImageID", "BasicImage", "ExtensibleFeature", "CreationTime"})
 			}
+			base.PrintList(list, global.json)
 		},
 	}
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
