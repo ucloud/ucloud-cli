@@ -23,7 +23,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	. "github.com/ucloud/ucloud-cli/base"
+
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 // NewCmdCompletion ucloud completion
@@ -78,7 +79,7 @@ func zshCompletion(cmd *cobra.Command) {
 autoload -U +X bashcompinit && bashcompinit
 complete -F /usr/local/bin/ucloud ucloud`)
 	fmt.Println("If the following scripts are included in '~/.bash_profile' or '~/.bashrc', please remove it. The scripts used to auto complete words before ucloud cli v0.1.3")
-	fmt.Printf("fpath=(~/%s $fpath)\n", ConfigPath)
+	fmt.Printf("fpath=(~/%s $fpath)\n", base.ConfigPath)
 	fmt.Println("autoload -U +X compinit && compinit")
 }
 
@@ -86,7 +87,7 @@ func getBashVersion() (version string, err error) {
 	lookupBashVersion := exec.Command("bash", "-version")
 	out, err := lookupBashVersion.Output()
 	if err != nil {
-		Cxt.PrintErr(err)
+		base.Cxt.PrintErr(err)
 	}
 
 	// Example

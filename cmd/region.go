@@ -24,7 +24,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	. "github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 //NewCmdRegion ucloud region
@@ -37,7 +37,7 @@ func NewCmdRegion() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			regionMap, err := fetchRegion()
 			if err != nil {
-				HandleError(err)
+				base.HandleError(err)
 				return
 			}
 			regionList := make([]RegionTable, 0)
@@ -45,9 +45,9 @@ func NewCmdRegion() *cobra.Command {
 				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
 			}
 			if global.json {
-				PrintJSON(regionList)
+				base.PrintJSON(regionList)
 			} else {
-				PrintTableS(regionList)
+				base.PrintTableS(regionList)
 			}
 		},
 	}
@@ -62,7 +62,7 @@ type RegionTable struct {
 
 func getDefaultRegion() (string, string, error) {
 	req := &uaccount.GetRegionRequest{}
-	resp, err := BizClient.GetRegion(req)
+	resp, err := base.BizClient.GetRegion(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -79,7 +79,7 @@ func getDefaultRegion() (string, string, error) {
 
 func fetchRegion() (map[string][]string, error) {
 	req := &uaccount.GetRegionRequest{}
-	resp, err := BizClient.GetRegion(req)
+	resp, err := base.BizClient.GetRegion(req)
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +122,9 @@ func getZoneList(region string) []string {
 // req.SetZone()
 // }
 func getDefaultProject() (string, string, error) {
-	req := BizClient.NewGetProjectListRequest()
+	req := base.BizClient.NewGetProjectListRequest()
 
-	resp, err := BizClient.GetProjectList(req)
+	resp, err := base.BizClient.GetProjectList(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -144,9 +144,9 @@ func isUserCertified(userInfo *uaccount.UserInfo) bool {
 }
 
 func getUserInfo() (*uaccount.UserInfo, error) {
-	req := BizClient.NewGetUserInfoRequest()
+	req := base.BizClient.NewGetUserInfoRequest()
 	var userInfo uaccount.UserInfo
-	resp, err := BizClient.GetUserInfo(req)
+	resp, err := base.BizClient.GetUserInfo(req)
 
 	if err != nil {
 		return nil, err
@@ -157,13 +157,13 @@ func getUserInfo() (*uaccount.UserInfo, error) {
 	}
 	if len(resp.DataSet) == 1 {
 		userInfo = resp.DataSet[0]
-		Cxt.AppendInfo("userName", userInfo.UserEmail)
-		Cxt.AppendInfo("companyName", userInfo.CompanyName)
+		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
+		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
 		bytes, err := json.Marshal(userInfo)
 		if err != nil {
 			return nil, err
 		}
-		fileFullPath := GetConfigPath() + "/user.json"
+		fileFullPath := base.GetConfigPath() + "/user.json"
 		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
 		if err != nil {
 			return nil, err

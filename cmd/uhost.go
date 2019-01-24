@@ -145,6 +145,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 			req.LoginMode = sdk.String("Password")
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
+			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
 
 			resp, err := base.BizClient.CreateUHostInstance(req)
@@ -265,6 +266,9 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	})
 	flags.SetFlagValuesFunc("firewall-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("subnet-id", func() []string {
+		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("cpu")
