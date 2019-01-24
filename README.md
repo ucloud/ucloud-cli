@@ -83,9 +83,9 @@ Taking create uhost in Nigeria (region: air-nigeria) and bind a public IP as an 
 First to create an uhost instance:
 
 ```
-$ ucloud uhost create --cpu 1 --memory 1 --password mypassword123 --image-id uimage-fya3qr
+$ ucloud uhost create --cpu 1 --memory 1 --password **** --image-id uimage-fya3qr
 
-UHost:[uhost-tr1eau] created successfully!
+UHost:[uhost-tr1e] created successfully!
 ```
 
 *Note* 
@@ -116,7 +116,7 @@ Configure the GlobalSSH to the uhost instance and login the instance via GlobalS
 
 ```
 $ ucloud gssh create --location Washington --target-ip 152.32.140.92
-ResourceID: uga-pdhxvs
+gssh[uga-0psxxx] created
 
 $ ssh root@152.32.140.92.ipssh.net
 root@152.32.140.92.ipssh.net's password: password of the uhost instance
