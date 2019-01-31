@@ -41,7 +41,7 @@ func NewCmdCompletion() *cobra.Command {
 				} else if strings.HasSuffix(shell, "zsh") {
 					zshCompletion(cmd)
 				} else {
-					fmt.Println("Unknow shell: %", shell)
+					fmt.Printf("So far, shell %s is not supported\n", shell)
 				}
 			} else {
 				fmt.Println("Lookup shell failed")
@@ -54,33 +54,18 @@ func NewCmdCompletion() *cobra.Command {
 func bashCompletion(cmd *cobra.Command) {
 	platform := runtime.GOOS
 	if platform == "darwin" {
-		fmt.Println(`Please append 'complete -C /usr/local/bin/ucloud ucloud' to file '~/.bash_profile'
-If the following scripts are included in '~/.bash_profile', please remove it. Those scripts used to auto complete words before ucloud cli v0.1.3"
-
-if [ -f $(brew --prefix)/etc/bash_completion ]; then
-  . $(brew --prefix)/etc/bash_completion
-fi
-source ~/.ucloud/ucloud.sh`)
+		fmt.Println(`Please append 'complete -C $(which ucloud) ucloud' to file '~/.bash_profile'`)
 
 	} else if platform == "linux" {
-		fmt.Println(`Please append 'complete -C /usr/local/bin/ucloud ucloud' to file '~/.bashrc'
-If the following scripts are included in '~/.bashrc', please remove it. Those scripts used to auto complete words before ucloud cli v0.1.3"
-
-if [ -f /etc/bash_completion ]; then
-  . /etc/bash_completion
-fi
-
-source ~/.ucloud/ucloud.sh`)
+		fmt.Println(`Please append 'complete -C $(which ucloud) ucloud' to file '~/.bashrc'`)
 	}
 }
 
 func zshCompletion(cmd *cobra.Command) {
 	fmt.Println(`Please append the following scripts to file '~/.zshrc'.
+
 autoload -U +X bashcompinit && bashcompinit
-complete -F /usr/local/bin/ucloud ucloud`)
-	fmt.Println("If the following scripts are included in '~/.bash_profile' or '~/.bashrc', please remove it. The scripts used to auto complete words before ucloud cli v0.1.3")
-	fmt.Printf("fpath=(~/%s $fpath)\n", base.ConfigPath)
-	fmt.Println("autoload -U +X compinit && compinit")
+complete -F $(which ucloud) ucloud`)
 }
 
 func getBashVersion() (version string, err error) {

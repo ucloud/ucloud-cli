@@ -67,7 +67,7 @@ func NewCmdProjectCreate() *cobra.Command {
 				if resp.RetCode != 0 {
 					base.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%q created successfully.\n", resp.ProjectId)
+					base.Cxt.Printf("Project:%q created\n", resp.ProjectId)
 				}
 			}
 		},
@@ -94,7 +94,7 @@ func NewCmdProjectUpdate() *cobra.Command {
 				if resp.RetCode != 0 {
 					base.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%s updated successfully.\n", *req.ProjectId)
+					base.Cxt.Printf("Project:%s updated\n", *req.ProjectId)
 				}
 			}
 		},
@@ -122,7 +122,7 @@ func NewCmdProjectDelete() *cobra.Command {
 				if resp.RetCode != 0 {
 					base.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%s deleted successfully.\n", *req.ProjectId)
+					base.Cxt.Printf("Project:%s deleted\n", *req.ProjectId)
 				}
 			}
 		},

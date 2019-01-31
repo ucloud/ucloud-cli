@@ -78,12 +78,9 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdVpc())
 	cmd.AddCommand(NewCmdFirewall())
 	cmd.AddCommand(NewCmdDisk())
-	cmd.AddCommand(NewCmdBandwidthPkg())
-	cmd.AddCommand(NewCmdSharedBW())
+	cmd.AddCommand(NewCmdBandwidth())
 	cmd.AddCommand(NewCmdUDPN(out))
 	cmd.AddCommand(NewCmdULB())
-	cmd.AddCommand(NewCmdULBVserver())
-	cmd.AddCommand(NewCmdULBSSL())
 
 	return cmd
 }
@@ -181,8 +178,6 @@ func initialize(cmd *cobra.Command) {
 	if err == nil {
 		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
 		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
-	} else {
-		base.Cxt.PrintErr(err)
 	}
 
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {

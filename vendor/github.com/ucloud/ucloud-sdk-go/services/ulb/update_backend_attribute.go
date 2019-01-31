@@ -23,6 +23,7 @@ type UpdateBackendAttributeRequest struct {
 
 	// 后端实例状态开关
 	Enabled *int `required:"false"`
+	Weight  *int
 }
 
 // UpdateBackendAttributeResponse is response schema for UpdateBackendAttribute action
