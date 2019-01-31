@@ -42,6 +42,8 @@ func NewCmdULB() *cobra.Command {
 	cmd.AddCommand(NewCmdULBCreate(out))
 	cmd.AddCommand(NewCmdULBUpdate(out))
 	cmd.AddCommand(NewCmdULBDelete(out))
+	cmd.AddCommand(NewCmdULBVserver())
+	cmd.AddCommand(NewCmdULBSSL())
 
 	return cmd
 }
@@ -141,6 +143,8 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 				fmt.Fprintln(out, "Error, flag mode should be 'outer' or 'inner'")
 				return
 			}
+			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
+			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			resp, err := base.BizClient.CreateULB(req)
 			if err != nil {
 				base.HandleError(err)
@@ -151,6 +155,9 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 				return
 			}
 			bindEipID = sdk.String(base.PickResourceID(*bindEipID))
+			if mode == "outer" {
+				return
+			}
 			if *bindEipID != "" {
 				bindEIP(sdk.String(resp.ULBId), sdk.String("ulb"), bindEipID, req.ProjectId, req.Region)
 			} else if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
@@ -182,22 +189,30 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&mode, "mode", "outer", "Required. Network mode of ULB instance, outer or inner.")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
+	req.VPCId = flags.String("vpc-id", "", "Optional. Resource ID of VPC which the ULB to create belong to. See 'ucloud vpc list'")
+	req.SubnetId = flags.String("subnet-id", "", "Optional. Resource ID of subnet. This flag will be discarded when you are creating an outter mode ULB. See 'ucloud subnet list'")
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.Remark = flags.String("remark", "", "Optional. Remark of instance to create.")
-	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created ulb")
-	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of created eip to bind with the new created ulb")
+	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created outer mode ulb")
+	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of created eip to bind with the new created outer mode ulb")
 	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
-	eipReq.PayMode = cmd.Flags().String("create-eip-charge-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
-	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
+	eipReq.PayMode = cmd.Flags().String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
+	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the new created outer mode ulb")
 	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional. Remark of your EIP.")
 
 	flags.SetFlagValues("mode", "outer", "inner")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
 	flags.SetFlagValues("create-eip-line", "BGP", "International")
-	flags.SetFlagValues("create-eip-charge-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
 	flags.SetFlagValuesFunc("bind-eip", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
+	})
+	flags.SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("subnet-id", func() []string {
+		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("mode")
@@ -338,7 +353,7 @@ func getAllULBIDNames(project, region string) []string {
 //NewCmdULBVserver ucloud ulb-vserver
 func NewCmdULBVserver() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ulb-vserver",
+		Use:   "vserver",
 		Short: "List and manipulate ULB Vserver instances",
 		Long:  "List and manipulate ULB Vserver instances",
 	}
@@ -348,14 +363,8 @@ func NewCmdULBVserver() *cobra.Command {
 	cmd.AddCommand(NewCmdULBVServerCreate(out))
 	cmd.AddCommand(NewCmdULBVServerUpdate(out))
 	cmd.AddCommand(NewCmdULBVServerDelete(out))
-	cmd.AddCommand(NewCmdULBVServerListNode(out))
-	cmd.AddCommand(NewCmdULBVServerAddNode(out))
-	cmd.AddCommand(NewCmdULBVServerUpdateNode(out))
-	cmd.AddCommand(NewCmdULBVServerDeleteNode(out))
-	cmd.AddCommand(NewCmdULBVServerCreatePolicy(out))
-	cmd.AddCommand(NewCmdULBVServerListPolicy(out))
-	cmd.AddCommand(NewCmdULBVServerUpdatePolicy(out))
-	cmd.AddCommand(NewCmdULBVServerDeletePolicy(out))
+	cmd.AddCommand(NewCmdULBVServerNode())
+	cmd.AddCommand(NewCmdULBVServerPolicy())
 
 	return cmd
 }
@@ -524,8 +533,8 @@ func NewCmdULBVServerUpdate(out io.Writer) *cobra.Command {
 	vserverIDs := []string{}
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update attributes of VServer instance",
-		Long:  "Update attributes of VServer instance",
+		Short: "Update attributes of VServer instances",
+		Long:  "Update attributes of VServer instances",
 		Run: func(c *cobra.Command, args []string) {
 			if *req.VServerName == "" {
 				req.VServerName = nil
@@ -643,11 +652,26 @@ func NewCmdULBVServerDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+//NewCmdULBVServerNode ucloud ulb vserver node
+func NewCmdULBVServerNode() *cobra.Command {
+	out := base.Cxt.GetWriter()
+	cmd := &cobra.Command{
+		Use:   "backend",
+		Short: "List and manipulate VServer backend nodes",
+		Long:  "List and manipulate VServer backend nodes",
+	}
+	cmd.AddCommand(NewCmdULBVServerListNode(out))
+	cmd.AddCommand(NewCmdULBVServerAddNode(out))
+	cmd.AddCommand(NewCmdULBVServerUpdateNode(out))
+	cmd.AddCommand(NewCmdULBVServerDeleteNode(out))
+	return cmd
+}
+
 //ULBVServerNode 表格行
 type ULBVServerNode struct {
 	Name        string
 	ResourceID  string
-	NodeID      string
+	BackendID   string
 	PrivateIP   string
 	Port        int
 	HealthCheck string
@@ -659,7 +683,7 @@ type ULBVServerNode struct {
 func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeVServerRequest()
 	cmd := &cobra.Command{
-		Use:   "list-node",
+		Use:   "list",
 		Short: "List ULB VServer backend nodes",
 		Long:  "List ULB VServer backend nodes",
 		Run: func(c *cobra.Command, args []string) {
@@ -681,7 +705,7 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 				row := ULBVServerNode{}
 				row.Name = node.ResourceName
 				row.ResourceID = node.ResourceId
-				row.NodeID = node.BackendId
+				row.BackendID = node.BackendId
 				row.PrivateIP = node.PrivateIP
 				row.Weight = node.Weight
 				row.Port = node.Port
@@ -703,8 +727,8 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the nodes belong to")
-	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer which the nodes belong to")
+	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the backend nodes belong to")
+	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer which the backend nodes belong to")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
@@ -728,20 +752,20 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	var weight *int
 	req := base.BizClient.NewAllocateBackendRequest()
 	cmd := &cobra.Command{
-		Use:   "add-node",
-		Short: "Add nodes for ULB Vserver instance",
-		Long:  "Add nodes for ULB Vserver instance",
+		Use:   "add",
+		Short: "Add backend nodes for ULB Vserver instance",
+		Long:  "Add backend nodes for ULB Vserver instance",
 		Run: func(c *cobra.Command, args []string) {
 			if *enable == "enable" {
 				req.Enabled = sdk.Int(1)
 			} else if *enable == "disable" {
 				req.Enabled = sdk.Int(0)
 			} else {
-				fmt.Fprintln(out, "Error, node-mode must be enable or disable")
+				fmt.Fprintln(out, "Error, backend-mode must be enable or disable")
 				return
 			}
-			if *weight < 1 || *weight > 100 {
-				fmt.Fprintln(out, "Error, weight must be between 1 and 100")
+			if *weight < 0 || *weight > 100 {
+				fmt.Fprintln(out, "Error, weight must be between 0 and 100")
 				return
 			}
 			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
@@ -752,24 +776,24 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 				base.HandleError(err)
 				return
 			}
-			fmt.Fprintf(out, "node[%s] added, node-id:%s\n", *req.ResourceId, resp.BackendId)
+			fmt.Fprintf(out, "backend node[%s] added, backend-id:%s\n", *req.ResourceId, resp.BackendId)
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the nodes belong to")
-	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer which the nodes belong to")
-	req.ResourceId = flags.String("resource-id", "", "Required. Resource ID of the node to add")
+	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the backend nodes belong to")
+	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer which the backend nodes belong to")
+	req.ResourceId = flags.String("resource-id", "", "Required. Resource ID of the backend node to add")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
-	req.ResourceType = flags.String("resource-type", "UHost", "Optional. Resource type of the node to add. Accept values: UHost,UPM,UDHost,UDocker")
-	req.Port = flags.Int("port", 80, "Optional. Which port the server on the node listening on")
-	enable = flags.String("node-mode", "enable", "Optional. Enable node or not. Accept values: enable, disable")
+	req.ResourceType = flags.String("resource-type", "UHost", "Optional. Resource type of the backend node to add. Accept values: UHost,UPM,UDHost,UDocker")
+	req.Port = flags.Int("port", 80, "Optional. The port of your real server on the backend node listening on")
+	enable = flags.String("backend-mode", "enable", "Optional. Enable backend node or not. Accept values: enable, disable")
 	weight = flags.Int("weight", 1, "Optional. effective for lb-method WeightRoundrobin. Rnage [0,100]")
 
 	flags.SetFlagValues("resource-type", "Uhost", "UPM", "UDHost", "UDocker")
-	flags.SetFlagValues("node-mode", "enable", "disable")
+	flags.SetFlagValues("backend-mode", "enable", "disable")
 	flags.SetFlagValuesFunc("ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
@@ -787,12 +811,13 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 //NewCmdULBVServerUpdateNode ucloud ulb-vserver update-node
 func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 	var mode *string
+	var weight *int
 	backendIDs := []string{}
 	req := base.BizClient.NewUpdateBackendAttributeRequest()
 	cmd := &cobra.Command{
-		Use:   "update-node",
-		Short: "Update attributes of ULB nodes",
-		Long:  "Update attributes of ULB nodes",
+		Use:   "update",
+		Short: "Update attributes of ULB backend nodes",
+		Long:  "Update attributes of ULB backend nodes",
 		Run: func(c *cobra.Command, args []string) {
 			if *mode == "enable" {
 				req.Enabled = sdk.Int(1)
@@ -801,8 +826,15 @@ func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 			} else if *mode == "" {
 				req.Enabled = nil
 			} else {
-				fmt.Fprintln(out, "Error, node-mode must be enable or disable")
+				fmt.Fprintln(out, "Error, backend-mode must be enable or disable")
 				return
+			}
+			if *weight != -1 && (*weight < 0 || *weight > 100) {
+				fmt.Fprintln(out, "Error, weight must be between 0 and 100")
+				return
+			}
+			if *weight != -1 {
+				req.Weight = weight
 			}
 
 			if *req.Port == 0 {
@@ -817,31 +849,32 @@ func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 					base.HandleError(err)
 					continue
 				}
-				fmt.Fprintf(out, "node[%s] updated\n", bid)
+				fmt.Fprintf(out, "backend node[%s] updated\n", bid)
 			}
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the nodes belong to")
-	flags.StringSliceVar(&backendIDs, "node-id", nil, "Required. BackendID of nodes to update")
-	req.Port = flags.Int("port", 0, "Optional. Port of nodes to update. Rnage [1,65535]")
-	mode = flags.String("node-mode", "", "Optional. Enable node or not. Accept values: enable, disable")
+	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the backend nodes belong to")
+	flags.StringSliceVar(&backendIDs, "backend-id", nil, "Required. BackendID of backend nodes to update")
+	req.Port = flags.Int("port", 0, "Optional. Port of your real server listening on backend nodes to update. Rnage [1,65535]")
+	mode = flags.String("backend-mode", "", "Optional. Enable backend node or not. Accept values: enable, disable")
+	weight = flags.Int("weight", -1, "Optional. effective for lb-method WeightRoundrobin. Rnage [0,100], -1 meaning no update")
 
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValues("node-mode", "enable", "disable")
+	flags.SetFlagValues("backend-mode", "enable", "disable")
 	flags.SetFlagValuesFunc("ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("node-id", func() []string {
+	flags.SetFlagValuesFunc("backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, "", *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("ulb-id")
-	cmd.MarkFlagRequired("node-id")
+	cmd.MarkFlagRequired("backend-id")
 
 	return cmd
 }
@@ -851,9 +884,9 @@ func NewCmdULBVServerDeleteNode(out io.Writer) *cobra.Command {
 	backendIDs := []string{}
 	req := base.BizClient.NewReleaseBackendRequest()
 	cmd := &cobra.Command{
-		Use:   "delete-node",
-		Short: "Delete ULB VServer nodes",
-		Long:  "Delete ULB VServer nodes",
+		Use:   "delete",
+		Short: "Delete ULB VServer backend nodes",
+		Long:  "Delete ULB VServer backend nodes",
 		Run: func(c *cobra.Command, args []string) {
 			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
 			req.ULBId = sdk.String(base.PickResourceID(*req.ULBId))
@@ -864,26 +897,41 @@ func NewCmdULBVServerDeleteNode(out io.Writer) *cobra.Command {
 					base.HandleError(err)
 					continue
 				}
-				fmt.Fprintf(out, "node[%s] deleted\n", idname)
+				fmt.Fprintf(out, "backend node[%s] deleted\n", idname)
 			}
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the nodes belong to")
-	flags.StringSliceVar(&backendIDs, "node-id", nil, "Required. BackendID of nodes to update")
+	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the backend nodes belong to")
+	flags.StringSliceVar(&backendIDs, "backend-id", nil, "Required. BackendID of backend nodes to update")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
 	cmd.MarkFlagRequired("ulb-id")
-	cmd.MarkFlagRequired("node-id")
+	cmd.MarkFlagRequired("backend-id")
 
 	flags.SetFlagValuesFunc("ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("node-id", func() []string {
+	flags.SetFlagValuesFunc("backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, "", *req.ProjectId, *req.Region)
 	})
+	return cmd
+}
+
+//NewCmdULBVServerPolicy ucloud ulb vserver policy
+func NewCmdULBVServerPolicy() *cobra.Command {
+	out := base.Cxt.GetWriter()
+	cmd := &cobra.Command{
+		Use:   "policy",
+		Short: "List and manipulate forward policy for VServer",
+		Long:  "List and manipulate forward policy for VServer",
+	}
+	cmd.AddCommand(NewCmdULBVServerCreatePolicy(out))
+	cmd.AddCommand(NewCmdULBVServerListPolicy(out))
+	cmd.AddCommand(NewCmdULBVServerUpdatePolicy(out))
+	cmd.AddCommand(NewCmdULBVServerDeletePolicy(out))
 	return cmd
 }
 
@@ -892,7 +940,7 @@ func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 	backendIDs := []string{}
 	req := base.BizClient.NewCreatePolicyRequest()
 	cmd := &cobra.Command{
-		Use:   "add-policy",
+		Use:   "add",
 		Short: "Add content forward policy for VServer",
 		Long:  "Add content forward policy for VServer",
 		Run: func(c *cobra.Command, args []string) {
@@ -920,7 +968,7 @@ func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer")
-	flags.StringSliceVar(&backendIDs, "node-id", nil, "Required. NodeID of the VServer's nodes")
+	flags.StringSliceVar(&backendIDs, "backend-id", nil, "Required. BackendID of the VServer's backend nodes")
 	req.Type = flags.String("forward-method", "", "Required. Forward method, accept values:Domain and Path; Both forwarding methods can be described by using regular expressions or wildcards")
 	req.Match = flags.String("expression", "", "Required. Expression of domain or path, such as \"www.[123].demo.com\" or \"/path/img/*.jpg\"")
 	bindRegion(req, flags)
@@ -933,13 +981,13 @@ func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 	flags.SetFlagValuesFunc("vserver-id", func() []string {
 		return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("node-id", func() []string {
+	flags.SetFlagValuesFunc("backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("ulb-id")
 	cmd.MarkFlagRequired("vserver-id")
-	cmd.MarkFlagRequired("node-id")
+	cmd.MarkFlagRequired("backend-id")
 	cmd.MarkFlagRequired("forward-method")
 	cmd.MarkFlagRequired("expression")
 
@@ -952,7 +1000,7 @@ type ULBVServerPolicy struct {
 	Expression    string
 	PolicyID      string
 	PolicyType    string
-	Nodes         string
+	Backends      string
 }
 
 //NewCmdULBVServerListPolicy ucloud ulb-vserver list-policy
@@ -961,7 +1009,7 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 	region := base.ConfigIns.Region
 	project := base.ConfigIns.ProjectID
 	cmd := &cobra.Command{
-		Use:   "list-policy",
+		Use:   "list",
 		Short: "List content forward policies of the VServer instance",
 		Long:  "List content forward policies of the VServer instance",
 		Run: func(c *cobra.Command, args []string) {
@@ -985,7 +1033,7 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 					for _, b := range p.BackendSet {
 						nodes = append(nodes, fmt.Sprintf("%s|%s:%d|%s", b.BackendId, b.PrivateIP, b.Port, b.ResourceName))
 					}
-					row.Nodes = strings.Join(nodes, ",")
+					row.Backends = strings.Join(nodes, ",")
 					list = append(list, row)
 				}
 				base.PrintList(list, global.json)
@@ -1020,7 +1068,7 @@ func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	removeBackendIDs := []string{}
 	req := base.BizClient.NewUpdatePolicyRequest()
 	cmd := &cobra.Command{
-		Use:   "update-policy",
+		Use:   "update",
 		Short: "Update content forward policies of ULB VServer",
 		Long:  "Update content forward policies ULB VServer",
 		Run: func(c *cobra.Command, args []string) {
@@ -1096,9 +1144,9 @@ func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer")
 	flags.StringSliceVar(&policyIDs, "policy-id", nil, "Required. PolicyID of policies to update")
-	flags.StringSliceVar(&backendIDs, "node-id", nil, "Optional. NodeID of nodes. If assign this flag, it will rewrite all nodes of the policy")
-	flags.StringSliceVar(&addBackendIDs, "add-node-id", nil, "Optional. NodeID of nodes. Add nodes to the policy")
-	flags.StringSliceVar(&removeBackendIDs, "remove-node-id", nil, "Optional. NodeID of nodes. Remove those nodes from the policy")
+	flags.StringSliceVar(&backendIDs, "backend-id", nil, "Optional. BackendID of backend nodes. If assign this flag, it will rewrite all backend nodes of the policy")
+	flags.StringSliceVar(&addBackendIDs, "add-backend-id", nil, "Optional. BackendID of backend nodes. Add backend nodes to the policy")
+	flags.StringSliceVar(&removeBackendIDs, "remove-backend-id", nil, "Optional. BackendID of backend nodes. Remove those backend nodes from the policy")
 	req.Type = flags.String("forward-method", "", "Optional. Forward method of policy, accept values:Domain and Path")
 	req.Match = flags.String("expression", "", "Optional. Expression of domain or path, such as \"www.[123].demo.com\" or \"/path/img/*.jpg\"")
 
@@ -1114,13 +1162,13 @@ func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	flags.SetFlagValuesFunc("vserver-id", func() []string {
 		return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("node-id", func() []string {
+	flags.SetFlagValuesFunc("backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("add-node-id", func() []string {
+	flags.SetFlagValuesFunc("add-backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("remove-node-id", func() []string {
+	flags.SetFlagValuesFunc("remove-backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
 
@@ -1132,7 +1180,7 @@ func NewCmdULBVServerDeletePolicy(out io.Writer) *cobra.Command {
 	policyIDs := []string{}
 	req := base.BizClient.NewDeletePolicyRequest()
 	cmd := &cobra.Command{
-		Use:   "delete-policy",
+		Use:   "delete",
 		Short: "Delete content forward policies of ULB VServer",
 		Long:  "Delete content forward policies of ULB VServer",
 		Run: func(c *cobra.Command, args []string) {
@@ -1164,7 +1212,7 @@ func NewCmdULBVServerDeletePolicy(out io.Writer) *cobra.Command {
 //NewCmdULBSSL ucloud ulb-ssl-certificate
 func NewCmdULBSSL() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ulb-ssl-certificate",
+		Use:   "ssl",
 		Short: "List and manipulate SSL Certificates for ULB",
 		Long:  "List and manipulate SSL Certificates for ULB",
 	}
@@ -1370,6 +1418,18 @@ func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	keyPath = flags.String("private-key-file", "", "Optional. Path of private key file, *.key. Required if all-in-one-file is omitted")
 	caPath = flags.String("ca-certificate-file", "", "Optional. Path of CA certificate file, *.crt")
 	cmd.MarkFlagRequired("name")
+	flags.SetFlagValuesFunc("all-in-one-file", func() []string {
+		return base.GetFileList("")
+	})
+	flags.SetFlagValuesFunc("private-key-file", func() []string {
+		return base.GetFileList(".key")
+	})
+	flags.SetFlagValuesFunc("ca-certificate-file", func() []string {
+		return base.GetFileList(".crt")
+	})
+	flags.SetFlagValuesFunc("site-certificate-file", func() []string {
+		return base.GetFileList(".crt")
+	})
 	return cmd
 }
 

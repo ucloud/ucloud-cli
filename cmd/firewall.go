@@ -173,6 +173,9 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	req.Tag = flags.String("group", "", "Optional. Group of the firewall to create")
 	req.Remark = flags.String("remark", "", "Optional. Remark of the firewall to create")
 	cmd.MarkFlagRequired("name")
+	flags.SetFlagValuesFunc("rules-file", func() []string {
+		return base.GetFileList("")
+	})
 	return cmd
 }
 
@@ -240,6 +243,9 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 
 	flags.SetFlagValuesFunc("fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("rules-file", func() []string {
+		return base.GetFileList("")
 	})
 
 	cmd.MarkFlagRequired("fw-id")

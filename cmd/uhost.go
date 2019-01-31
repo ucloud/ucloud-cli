@@ -222,7 +222,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created uhost")
 	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of the created eip to be bound with the new created uhost")
 	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
-	eipReq.PayMode = cmd.Flags().String("create-eip-charge-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
+	eipReq.PayMode = cmd.Flags().String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
 	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional.Remark of your EIP.")
 
@@ -253,7 +253,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
 	flags.SetFlagValues("create-eip-line", "BGP", "International")
-	flags.SetFlagValues("create-eip-charge-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
 
 	flags.SetFlagValuesFunc("image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE}, cli.IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
@@ -332,10 +332,12 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().SortFlags = false
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Requried. ResourceIDs(UhostIds) of the uhost instance")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", false, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")

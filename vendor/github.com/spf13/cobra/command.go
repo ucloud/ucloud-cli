@@ -1011,11 +1011,12 @@ func (c *Command) complete() error {
 	compCmd.InitDefaultHelpFlag()
 
 	//complete flags, flag values or sub commands
-	if length := len(args); length > 0 && strings.HasPrefix(args[length-1], "-") { //需要被补全的单词开头是‘-’时，补全flag和value
+	//需要被补全的单词或前一个单词开头是‘-’时，补全flag和value
+	if length := len(args); (length >= 1 && strings.HasPrefix(args[length-1], "-")) || (length >= 2 && strings.HasPrefix(args[length-2], "-")) {
 		completeFlagValues(compCmd, args, currentWord)
 	} else if len(compCmd.Commands()) > 0 { //需要补全的单词开头没有‘-’，补全子命令
 		completeSubCommands(compCmd, currentWord)
-	} else { //需要补全的单词开头没有‘-’，前一个单词也不是命令，光标当前位置非空格，尝试补全参数值（value)
+	} else { //需要补全的单词开头没有‘-’，k前一个单词也不是命令，光标当前位置非空格，尝试补全参数值（value)
 		completeFlagValues(compCmd, args, currentWord)
 	}
 	return nil
@@ -1042,7 +1043,6 @@ func completeSubCommands(cmd *Command, word string) {
 
 func completeFlagValues(cmd *Command, args []string, word string) {
 	cmd.mergePersistentFlags()
-
 	var _flag *flag.Flag
 	var lastArg = args[len(args)-1]
 
@@ -1055,83 +1055,110 @@ func completeFlagValues(cmd *Command, args []string, word string) {
 		_flag = cmd.Flags().Lookup(arg[2:])
 	}
 
-	hasCompleted := false
 	if _flag == nil {
 		completedWords := completeFlags(cmd, word)
 		if completedWords != nil {
 			for _, word := range completedWords {
 				fmt.Fprintln(cmd.OutOrStdout(), word)
 			}
-			hasCompleted = true
 			return
 		}
 	}
 
 	values := cmd.Flags().GetFlagValues(_flag.Name)
-	for _, v := range values {
-		if strings.HasPrefix(v, word) && v != word {
-			fmt.Fprintln(cmd.OutOrStdout(), v)
-			hasCompleted = true
+	if values != nil {
+		for _, v := range values {
+			if strings.HasPrefix(v, word) && v != word {
+				fmt.Fprintln(cmd.OutOrStdout(), v)
+			}
 		}
+		return
 	}
 
 	compLine := strings.Join(args, " ")
 	if args[len(args)-1] == word {
 		compLine = strings.Join(args[:len(args)-1], " ")
 	}
+
 	cache, err := readCompCache()
 	if err != nil || cache[compLine] == nil {
 		fetchFn := cmd.Flags().GetFlagValuesFunc(_flag.Name)
 		//async completing is costly, only execute once.
 		if fetchFn != nil {
-			fetchChan := make(chan string, 0)
+			fetchChan := make(chan []string, 0)
 			go func() {
 				words := fetchFn()
-				for _, item := range words {
-					fetchChan <- item
-				}
-				close(fetchChan)
 				cache = make(map[string][]string)
 				cache[compLine] = words
+				fetchChan <- words
+				cache[compLine] = words
 				saveCompCache(cache)
+				close(fetchChan)
 			}()
 			timeoutDur, _ := time.ParseDuration("3s")
 			timeoutChan := time.After(timeoutDur)
 			intervalChan := time.Tick(time.Second / 100)
 
-		loop:
 			for range intervalChan {
 				select {
-				case v, ok := <-fetchChan:
-					if ok == false {
-						break loop
+				case compValues, ok := <-fetchChan:
+					if !ok {
+						return
 					}
-					if strings.HasPrefix(v, word) && v != word {
-						fmt.Fprintln(cmd.OutOrStdout(), v)
-						os.Stdout.Sync()
-						hasCompleted = true
+					if strings.Contains(word, ",") {
+						values := strings.Split(word, ",")
+						list := completeMultipleValues(values[:len(values)-1], compValues)
+						for _, s := range list {
+							fmt.Fprintln(cmd.OutOrStdout(), s)
+						}
+					} else {
+						for _, v := range compValues {
+							if strings.Contains(v, word) && v != word {
+								fmt.Fprintln(cmd.OutOrStdout(), v)
+							}
+						}
 					}
 
 				case <-timeoutChan:
-					break loop
+					return
 				}
 			}
 		}
 	} else {
-		words := cache[compLine]
-		for _, word := range words {
-			fmt.Fprintln(cmd.OutOrStdout(), word)
+		var list []string
+		compValues := cache[compLine]
+		if strings.Contains(word, ",") {
+			values := strings.Split(word, ",")
+			values = values[:len(values)-1]
+			list = completeMultipleValues(values, compValues)
+		} else {
+			list = compValues
 		}
-		hasCompleted = true
+		for _, v := range list {
+			fmt.Fprintln(cmd.OutOrStdout(), v)
+		}
+		return
 	}
 
-	if !hasCompleted {
-		completeWords := completeFlags(cmd, word)
-		for _, word := range completeWords {
-			fmt.Fprintln(cmd.OutOrStdout(), word)
+	completeWords := completeFlags(cmd, word)
+	for _, word := range completeWords {
+		fmt.Fprintln(cmd.OutOrStdout(), word)
+	}
+}
+
+func completeMultipleValues(values, compValues []string) []string {
+	vMap := map[string]bool{}
+	for _, v := range values {
+		vMap[v] = true
+	}
+	flagValue := strings.Join(values, ",")
+	list := []string{}
+	for _, cv := range compValues {
+		if !vMap[cv] {
+			list = append(list, flagValue+","+cv)
 		}
 	}
-
+	return list
 }
 
 func readCompCache() (map[string][]string, error) {
@@ -1141,7 +1168,7 @@ func readCompCache() (map[string][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ct := fileInfo.ModTime(); time.Now().Sub(ct) <= 10*1e9 {
+	if ct := fileInfo.ModTime(); time.Now().Sub(ct) <= 30*1e9 {
 		byts, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return nil, err

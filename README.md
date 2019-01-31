@@ -42,18 +42,33 @@ $ make install
 
 ## Command Completion
 
-The ucloud-cli include command completion feature and need configure it manually. Add following scripts to  ~/.bash_profile or ~/.bashrc 
+The ucloud-cli include command completion feature and need configure it manually. 
+
+**Bash shell** Add following scripts to  ~/.bash_profile or ~/.bashrc 
 
 ```
-complete -C /usr/local/bin/ucloud ucloud
+complete -C $(which ucloud) ucloud
 ```
 
 **Zsh shell** please add following scripts to ~/.zshrc 
 
 ```
 autoload -U +X bashcompinit && bashcompinit
-complete -F /usr/local/bin/ucloud ucloud
+complete -F $(which ucloud) ucloud
 ```
+Zsh builtin command bashcompinit may not work on some platform. If the scripts don't work on your OS, try following scripts
+```
+_ucloud() {
+        read -l;
+        local cl="$REPLY";
+        read -ln;
+        local cp="$REPLY";
+        reply=(`COMP_SHELL=zsh COMP_LINE="$cl" COMP_POINT="$cp" ucloud`)
+}
+
+compctl -K _ucloud ucloud
+```
+
 
 ## Getting Started
 
@@ -106,10 +121,10 @@ Secondly, we're going to allocate an EIP and bind to the instance created above.
 
 ```
 $ ucloud eip allocate --line International --bandwidth 1
-EIPId:eip-xov13b,IP:152.32.140.92,Line:International 
+allocate EIP[eip-xxx] IP:106.75.xx.xx  Line:BGP
 
-$ ucloud eip bind --eip-id eip-xov13b --resource-id uhost-tr1eau
-EIP: [eip-xov13b] bind with uhost:[uhost-tr1eau] successfully 
+$ ucloud eip bind --eip-id eip-xxx --resource-id uhost-xxx
+bind EIP[eip-xxx] with uhost[uhost-xxx]
 ```
 
 Configure the GlobalSSH to the uhost instance and login the instance via GlobalSSH
