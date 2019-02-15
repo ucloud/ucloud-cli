@@ -34,5 +34,7 @@ type ULBBackendSet struct {
 
 	// 后端资源实例的资源所在的子网的ID
 	SubnetId string
-	Weight   int
+
+	// ULB 后端实例的权重
+	Weight int
 }

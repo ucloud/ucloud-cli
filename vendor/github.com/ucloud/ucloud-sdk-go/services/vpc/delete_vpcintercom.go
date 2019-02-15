@@ -12,16 +12,22 @@ import (
 type DeleteVPCIntercomRequest struct {
 	request.CommonBase
 
+	// [公共参数] 源VPC所在地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 源VPC所在项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// 源VPC短ID
 	VPCId *string `required:"true"`
 
 	// 目的VPC短ID
 	DstVPCId *string `required:"true"`
 
-	// 目的所在地域
+	// 目的VPC所在地域，默认为源VPC所在地域
 	DstRegion *string `required:"false"`
 
-	// 目的项目ID（如果目的VPC和源VPC不在同一个地域，两个地域需要建立跨域通道，且该字段必选）
+	// 目的VPC所在项目ID，默认为源VPC所在项目ID
 	DstProjectId *string `required:"false"`
 }
 

@@ -12,6 +12,12 @@ import (
 type AllocateEIPRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。
+	// ProjectId *string `required:"false"`
+
 	// 弹性IP的线路如下: 国际: International BGP: Bgp  各地域允许的线路参数如下:  cn-sh1: Bgp cn-sh2: Bgp cn-gd: Bgp cn-bj1: Bgp cn-bj2: Bgp hk: International us-ca: International th-bkk: International  kr-seoul:International  us-ws:International  ge-fra:International  sg:International  tw-kh:International.其他海外线路均为 International
 	OperatorName *string `required:"true"`
 

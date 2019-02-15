@@ -12,22 +12,28 @@ import (
 type GetUHostUpgradePriceRequest struct {
 	request.CommonBase
 
-	// 可用区。参见 [可用区列表](../summary/regionlist.html)
-	Zone *string `required:"false"`
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
 
-	// UHost实例ID 参见 [DescribeUHostInstance](describe_uhost_instance.html)
+	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// Zone *string `required:"false"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
+	// 	UHost实例ID。 参见 [DescribeUHostInstance](describe_uhost_instance.html)。
 	UHostId *string `required:"true"`
 
-	// 虚拟CPU核心数，单位: 个，范围: [1,16]，最小值为1，其他值是2的整数倍 默认值是该主机当前CPU数。
+	// 虚拟CPU核数。可选参数：1-32（可选范围与UHostType相关）。默认值为当前实例的CPU核数。
 	CPU *int `required:"false"`
 
-	// 内存容量大小，单位: MB，范围: [2048,65536]，步长: 2048 北京BGP C机房最小支持1024（限Linux系统）。 默认值是该主机当前内存大小。
+	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围与UHostType相关）。默认值为当前实例的内存大小。
 	Memory *int `required:"false"`
 
-	// 数据盘大小，单位: GB，范围[0,1000]，步长: 10， 默认值是该主机当前数据盘大小。
+	// 【待废弃】数据盘大小，单位: GB，范围[0,1000]，步长: 10， 默认值是该主机当前数据盘大小。
 	DiskSpace *int `required:"false"`
 
-	// 系统大小，单位: GB，范围[20,100]，步长: 10。
+	// 【待废弃】系统大小，单位: GB，范围[20,100]，步长: 10。
 	BootDiskSpace *int `required:"false"`
 
 	// 方舟机型。No，Yes。默认是No。
@@ -36,7 +42,7 @@ type GetUHostUpgradePriceRequest struct {
 	// 网卡升降级（1，表示升级，2表示降级，0表示不变）
 	NetCapValue *int `required:"false"`
 
-	// 主机系列，目前支持N1,N2
+	// 【待废弃】主机系列，目前支持N1,N2
 	HostType *string `required:"false"`
 }
 
@@ -44,7 +50,7 @@ type GetUHostUpgradePriceRequest struct {
 type GetUHostUpgradePriceResponse struct {
 	response.CommonBase
 
-	// 升级差价
+	// 规格调整差价。精确到小数点后2位。
 	Price float64
 }
 
@@ -60,7 +66,7 @@ func (c *UHostClient) NewGetUHostUpgradePriceRequest() *GetUHostUpgradePriceRequ
 	return req
 }
 
-// GetUHostUpgradePrice - 获取UHost实例升级配置的价格。
+// GetUHostUpgradePrice - 获取UHost实例升级配置的价格。可选配置范围请参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 func (c *UHostClient) GetUHostUpgradePrice(req *GetUHostUpgradePriceRequest) (*GetUHostUpgradePriceResponse, error) {
 	var err error
 	var res GetUHostUpgradePriceResponse

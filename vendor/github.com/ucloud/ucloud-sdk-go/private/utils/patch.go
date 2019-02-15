@@ -25,11 +25,17 @@ func NewRegexpPatcher(regex string, repl string) *RegexpPatcher {
 
 // Patch will convert a bytes to another bytes with patch rules
 func (p *RegexpPatcher) Patch(body []byte) []byte {
-	return p.pattern.ReplaceAll(body, []byte(p.replacement))
+	// TODO: ensure why the pattern will be disabled when there are multiple goroutines for bytes replacement
+	return []byte(p.PatchString(string(body)))
+}
+
+// PatchString will convert a string to another string with patch rules
+func (p *RegexpPatcher) PatchString(body string) string {
+	return p.pattern.ReplaceAllString(body, p.replacement)
 }
 
 // RetCodePatcher will convert `RetCode` as integer
 var RetCodePatcher = NewRegexpPatcher(`"RetCode":\s*"(\d+)"`, `"RetCode": $1`)
 
-// PortPatcher will convert `RetCode` as integer
+// PortPatcher will convert `Port` as integer
 var PortPatcher = NewRegexpPatcher(`"Port":\s*"(\d+)"`, `"Port": $1`)

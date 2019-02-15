@@ -11,28 +11,36 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
 
+// RequestHandler receive request and write data into this request memory area
+type RequestHandler func(c *Client, req request.Common) (request.Common, error)
+
+// HttpRequestHandler receive http request and return a new http request
+type HttpRequestHandler func(c *Client, req *http.HttpRequest) (*http.HttpRequest, error)
+
 // ReponseHandler receive response and write data into this response memory area
 type ReponseHandler func(c *Client, req request.Common, resp response.Common, err error) (response.Common, error)
 
 // HttpReponseHandler receive http response and return a new http response
 type HttpReponseHandler func(c *Client, req *http.HttpRequest, resp *http.HttpResponse, err error) (*http.HttpResponse, error)
 
+var defaultRequestHandlers = []RequestHandler{}
+var defaultHttpRequestHandlers = []HttpRequestHandler{}
 var defaultResponseHandlers = []ReponseHandler{errorHandler, logHandler, retryHandler}
 var defaultHttpResponseHandlers = []HttpReponseHandler{errorHTTPHandler, logDebugHTTPHandler}
 
 func retryHandler(c *Client, req request.Common, resp response.Common, err error) (response.Common, error) {
-	retryCount := req.GetRetryCount()
-	retryCount++
-	req.SetRetryCount(retryCount)
-
 	if !req.GetRetryable() || err == nil || !err.(uerr.Error).Retryable() {
 		return resp, err
 	}
 
+	retryCount := req.GetRetryCount()
+
 	// if max retries number is reached, stop and raise last error
-	if req.GetRetryCount() > req.GetMaxretries() {
+	if retryCount >= req.GetMaxretries() {
 		return resp, err
 	}
+
+	req.SetRetryCount(retryCount + 1)
 
 	// use exponential backoff constant as retry delay
 	delay := getExpBackoffDelay(retryCount)
@@ -74,31 +82,49 @@ func errorHandler(c *Client, req request.Common, resp response.Common, err error
 }
 
 func errorHTTPHandler(c *Client, req *http.HttpRequest, resp *http.HttpResponse, err error) (*http.HttpResponse, error) {
+	if err == nil {
+		return resp, err
+	}
+
 	if statusErr, ok := err.(http.StatusError); ok {
 		return resp, uerr.NewServerStatusError(statusErr.StatusCode, statusErr.Message)
 	}
+
 	return resp, err
 }
 
 func logHandler(c *Client, req request.Common, resp response.Common, err error) (response.Common, error) {
 	action := req.GetAction()
-	if err != nil {
-		log.Warnf("do %s failed, %s", action, err)
-	} else {
-		log.Infof("do %s successful!", action)
+
+	// get strictest logging level
+	level := c.config.GetActionLevel(action)
+
+	if err != nil && level >= log.WarnLevel {
+		c.logger.Warnf("do %s failed, %s", action, err)
+	} else if level >= log.InfoLevel {
+		c.logger.Infof("do %s successful!", action)
 	}
 	return resp, err
 }
 
 func logDebugHTTPHandler(c *Client, req *http.HttpRequest, resp *http.HttpResponse, err error) (*http.HttpResponse, error) {
-	log.Debugf("%s", req)
+	action := req.GetQuery("Action")
 
-	if err != nil {
-		log.Errorf("%s", err)
-	} else if resp.GetStatusCode() > 400 {
-		log.Warnf("%s", resp.GetStatusCode())
-	} else {
-		log.Debugf("%s - %v", resp.GetBody(), resp.GetStatusCode())
+	// get strictest logging level
+	level := c.config.GetActionLevel(action)
+
+	// logging request
+	if level >= log.DebugLevel {
+		c.logger.Debugf("%s", req)
+	}
+
+	// logging response
+	if err != nil && level >= log.ErrorLevel {
+		c.logger.Errorf("%s", err)
+	} else if resp.GetStatusCode() > 400 && level >= log.WarnLevel {
+		c.logger.Warnf("%s", resp.GetStatusCode())
+	} else if level >= log.DebugLevel {
+		c.logger.Debugf("%s - %v", resp.GetBody(), resp.GetStatusCode())
 	}
 
 	return resp, err

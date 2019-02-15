@@ -65,7 +65,7 @@ type UHostInstanceSet struct {
 	// 详细信息见 UHostIPSet
 	IPSet []UHostIPSet
 
-	// 网络增强。目前仅支持Normal和Super
+	// 网络增强。Normal: 无；Super： 网络增强1.0； Ultra: 网络增强2.0
 	NetCapability string
 
 	// 【建议不再使用】网络状态。 连接：Connected， 断开：NotConnected
@@ -106,4 +106,7 @@ type UHostInstanceSet struct {
 
 	// 总的存储空间。包含系统盘与全部数据盘的总容量。
 	TotalDiskSpace int
+
+	// 隔离组id，不在隔离组则返回""
+	IsolationGroup string
 }

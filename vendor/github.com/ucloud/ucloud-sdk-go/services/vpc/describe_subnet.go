@@ -12,6 +12,12 @@ import (
 type DescribeSubnetRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// 子网id数组，适用于一次查询多个子网信息
 	SubnetIds []string `required:"false"`
 
@@ -27,10 +33,10 @@ type DescribeSubnetRequest struct {
 	// 业务组
 	BusinessId *string `required:"false"`
 
-	// 默认为0
+	// 偏移量，默认为0
 	Offset *int `required:"false"`
 
-	// 默认为20
+	// 列表长度，默认为20
 	Limit *int `required:"false"`
 }
 

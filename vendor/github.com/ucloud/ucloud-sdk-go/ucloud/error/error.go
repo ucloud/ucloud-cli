@@ -38,7 +38,7 @@ func NewRetryableError(err error) Error {
 		return e
 	}
 
-	e := NewClientError(ErrUnexcepted, err)
+	e := NewClientError(ErrUnexpected, err)
 	e.retryable = true
 	return e
 }
@@ -55,7 +55,7 @@ func NewNonRetryableError(err error) Error {
 		return e
 	}
 
-	e := NewClientError(ErrUnexcepted, err)
+	e := NewClientError(ErrUnexpected, err)
 	e.retryable = false
 	return e
 }

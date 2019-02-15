@@ -38,9 +38,9 @@ type SnapshotSet struct {
 	// 指定的制作快照时间，unix时间
 	SnapshotTime int
 
-	// 可用区id
-	Zone string
-
 	// 资源名字。本地盘对应主机名字，网络盘对应udisk名字
 	ResourceName string
+
+	// 配置文件所在的可用区
+	Zone string
 }
