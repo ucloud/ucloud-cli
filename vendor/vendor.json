@@ -21,6 +21,12 @@
 			"revisionTime": "2018-03-11T21:45:15Z"
 		},
 		{
+			"checksumSHA1": "xTmkE7bYrgO9gXGRDPIba8A5M/U=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "cdb2f3857cfba7388d28dfe38316b0a39e694215",
+			"revisionTime": "2019-02-10T13:00:17Z"
+		},
+		{
 			"checksumSHA1": "YcW7CHAiI6Ch0gmYpcL1759s8nU=",
 			"path": "github.com/spf13/cobra",
 			"revision": "8d114be902bc9f08717804830a55c48378108a28",
