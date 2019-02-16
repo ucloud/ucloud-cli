@@ -71,6 +71,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdRegion())
 	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
+	cmd.AddCommand(NewCmdUMem())
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
 	cmd.AddCommand(NewCmdUImage())
