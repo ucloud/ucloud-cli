@@ -78,20 +78,26 @@ type UDBSlaveInstanceSet struct {
 	Role string
 
 	// DB实例磁盘已使用空间，单位GB
-	DiskUsedSize int
+	DiskUsedSize float64
 
 	// DB实例数据文件大小，单位GB
-	DataFileSize int
+	DataFileSize float64
 
 	// DB实例系统文件大小，单位GB
-	SystemFileSize int
+	SystemFileSize float64
 
 	// DB实例日志文件大小，单位GB
-	LogFileSize int
+	LogFileSize float64
 
 	// 备份日期标记位。共7位,每一位为一周中一天的备份情况 0表示关闭当天备份,1表示打开当天备份。最右边的一位 为星期天的备份开关，其余从右到左依次为星期一到星期 六的备份配置开关，每周必须至少设置两天备份。 例如：1100000 表示打开星期六和星期五的自动备份功能
 	BackupDate string
 
 	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例;"HA": 高可用版UDB实例
 	InstanceMode string
+
+	InstanceType string
+	Zone         string
+	Tag          string
+	VPCId        string
+	SubnetId     string
 }

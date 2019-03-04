@@ -100,6 +100,7 @@ type UDBInstanceSet struct {
 
 	// UDB实例模式类型, 可选值如下: “Normal”： 普通版UDB实例 “HA”: 高可用版UDB实例
 	InstanceMode string
+	InstanceType string
 
 	// 如果列表操作，则有从库DB实例信息列表 参数同UDBSlaveInstanceSet
 	DataSet []UDBSlaveInstanceSet
