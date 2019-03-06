@@ -222,11 +222,7 @@ func NewCmdDiskList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
@@ -516,7 +512,6 @@ func NewCmdDiskExpand() *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
-	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see https://accountv2.ucloud.cn")
 
 	flags.SetFlagValuesFunc("udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
@@ -675,11 +670,7 @@ func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 

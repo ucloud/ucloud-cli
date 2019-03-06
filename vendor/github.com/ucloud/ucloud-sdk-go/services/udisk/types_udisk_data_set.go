@@ -64,4 +64,13 @@ type UDiskDataSet struct {
 
 	// 云硬盘类型: 普通数据盘:DataDisk,普通系统盘:SystemDisk,SSD数据盘:SSDDataDisk
 	DiskType string
+
+	// 是否支持克隆，1支持 ，0不支持
+	CloneEnable int
+
+	// 是否支持快照，1支持 ，0不支持
+	SnapEnable int
+
+	// 是否支持开启方舟，1支持 ，0不支持
+	ArkSwitchEnable int
 }

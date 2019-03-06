@@ -12,6 +12,12 @@ import (
 type CreateULBRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"true"`
+
 	// 负载均衡的名字，默认值为“ULB”
 	ULBName *string `required:"false"`
 
@@ -26,6 +32,9 @@ type CreateULBRequest struct {
 
 	// 创建的ULB是否为内网模式
 	InnerMode *string `required:"false"`
+
+	// 创建内网ULB时指定内网IP。若不传值，则随机分配当前子网下的IP（暂时不对外开放，创建外网ULB该字段会忽略）
+	PrivateIp *string `required:"false"`
 
 	// 付费方式
 	ChargeType *string `required:"false"`

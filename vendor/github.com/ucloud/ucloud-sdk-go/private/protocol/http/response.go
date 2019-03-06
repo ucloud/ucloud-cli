@@ -7,6 +7,7 @@ import (
 // HttpResponse is a simple wrapper of "net/http" response
 type HttpResponse struct {
 	body               []byte
+	statusCode         int
 	originHttpResponse *http.Response // origin "net/http" response
 }
 
@@ -20,19 +21,25 @@ func (h *HttpResponse) GetBody() []byte {
 	return h.body
 }
 
-// GetStatusCode will return status code of origin http response
-func (h *HttpResponse) GetStatusCode() int {
-	return h.originHttpResponse.StatusCode
-}
-
-// setBody will set body into http response
+// SetBody will set body into http response
 // it usually used for restore the body already read from an stream
 // it will also cause extra memory usage
-func (h *HttpResponse) setBody(body []byte) error {
+func (h *HttpResponse) SetBody(body []byte) error {
 	h.body = body
 	return nil
 }
 
+// GetStatusCode will return status code of origin http response
+func (h *HttpResponse) GetStatusCode() int {
+	return h.statusCode
+}
+
+// SetStatusCode will return status code of origin http response
+func (h *HttpResponse) SetStatusCode(code int) {
+	h.statusCode = code
+}
+
 func (h *HttpResponse) setHttpReponse(resp *http.Response) {
+	h.statusCode = resp.StatusCode
 	h.originHttpResponse = resp
 }

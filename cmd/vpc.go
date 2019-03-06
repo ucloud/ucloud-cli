@@ -19,8 +19,8 @@ import (
 func NewCmdVpc() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vpc",
-		Short: "List and manipulate vpc instances",
-		Long:  "List and manipulate vpc instances",
+		Short: "List and manipulate VPC instances",
+		Long:  "List and manipulate VPC instances",
 		Args:  cobra.NoArgs,
 	}
 
@@ -72,11 +72,7 @@ func NewCmdVPCList() *cobra.Command {
 				row.CreationTime = base.FormatDate(vpc.CreateTime)
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
@@ -254,11 +250,7 @@ func NewCmdVpcListPeer() *cobra.Command {
 				row.Group = VPCIntercom.Tag
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The vpc id which you wnat to describe the information")
@@ -391,11 +383,7 @@ func NewCmdSubnetList() *cobra.Command {
 				row.CreationTime = base.FormatDate(sn.CreateTime)
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 
@@ -528,7 +516,7 @@ func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()

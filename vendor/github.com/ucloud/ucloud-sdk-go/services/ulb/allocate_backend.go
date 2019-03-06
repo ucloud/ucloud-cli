@@ -12,6 +12,12 @@ import (
 type AllocateBackendRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"true"`
+
 	// 负载均衡实例的ID
 	ULBId *string `required:"true"`
 
@@ -27,9 +33,11 @@ type AllocateBackendRequest struct {
 	// 所添加的后端资源服务端口，取值范围[1-65535]，默认80
 	Port *int `required:"false"`
 
+	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[0-100]，默认为1
+	Weight *int `required:"false"`
+
 	// 后端实例状态开关，枚举值： 1：启用； 0：禁用 默认为启用
 	Enabled *int `required:"false"`
-	Weight  *int
 }
 
 // AllocateBackendResponse is response schema for AllocateBackend action

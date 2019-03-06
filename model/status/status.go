@@ -14,6 +14,15 @@ const DISK_AVAILABLE = "Available"
 const DISK_FAILED = "Failed"
 const DISK_RESTORING = "Restoring"
 
+const UDB_INIT = "Init"
+const UDB_FAIL = "Fail"
+const UDB_RUNNING = "Running"
+const UDB_SHUTOFF = "Shutoff"
+const UDB_DELETE = "Delete"
+const UDB_RECOVER_FAIL = "Recover fail"
+const UDB_UPGRADE_FAIL = "UpgradeFail"
+const UDB_TOBE_SWITCH = "WaitForSwitch"
+
 const SNAPSHOT_NORMAL = "Normal"
 
 const EIP_FREE = "free"

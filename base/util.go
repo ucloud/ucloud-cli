@@ -157,8 +157,8 @@ func PrintTableS(dataSet interface{}) {
 }
 
 //PrintList 打印表格或者JSON
-func PrintList(dataSet interface{}, json bool) {
-	if json {
+func PrintList(dataSet interface{}) {
+	if Global.JSON {
 		PrintJSON(dataSet)
 	} else {
 		PrintTableS(dataSet)
@@ -280,6 +280,9 @@ func FormatDate(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02")
 }
 
+//DateTimeLayout 时间格式
+const DateTimeLayout = "2006-01-02/15:04:05"
+
 //FormatDateTime 格式化时间,把以秒为单位的时间戳格式化未年月日/时分秒
 func FormatDateTime(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
@@ -362,14 +365,12 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 
 	done := make(chan bool)
 	go func() {
-		if resp, err := w.Wait(); err != nil {
+		if _, err := w.Wait(); err != nil {
 			log.Error(err)
 			if _, ok := err.(*waiter.TimeoutError); ok {
 				done <- false
 				return
 			}
-		} else {
-			log.Infof("%#v", resp)
 		}
 		done <- true
 	}()
@@ -427,14 +428,12 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 
 	done := make(chan bool)
 	go func() {
-		if resp, err := w.Wait(); err != nil {
+		if _, err := w.Wait(); err != nil {
 			log.Error(err)
 			if _, ok := err.(*waiter.TimeoutError); ok {
 				done <- false
 				return
 			}
-		} else {
-			log.Infof("%#v", resp)
 		}
 		done <- true
 	}()
@@ -509,7 +508,6 @@ func GetFileList(suffix string) []string {
 	}
 	files, err := ioutil.ReadDir(pathPrefix)
 	if err != nil {
-		log.Fatal(err)
 		return nil
 	}
 	names := []string{}
@@ -528,4 +526,17 @@ func GetFileList(suffix string) []string {
 		}
 	}
 	return names
+}
+
+//Confirm 二次确认
+func Confirm(yes bool, text string) bool {
+	if yes {
+		return true
+	}
+	sure, err := ux.Prompt(text)
+	if err != nil {
+		Cxt.Println(err)
+		return false
+	}
+	return sure
 }

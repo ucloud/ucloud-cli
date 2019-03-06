@@ -90,7 +90,7 @@ func NewCmdGsshList() *cobra.Command {
 					}
 					list = append(list, row)
 				}
-				base.PrintList(list, global.json)
+				base.PrintList(list)
 			}
 		},
 	}

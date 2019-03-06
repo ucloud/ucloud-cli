@@ -12,6 +12,12 @@ import (
 type DescribeBandwidthUsageRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// 返回数据分页值, 取值范围为 [0,10000000] 之间的整数, 默认为20
 	Limit *int `required:"false"`
 

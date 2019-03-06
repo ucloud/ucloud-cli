@@ -18,8 +18,8 @@ var (
 	// ErrNetwork is retryable
 	ErrNetwork = "client.NetworkError"
 
-	// ErrUnexcepted is the error for any unexcepted error
-	ErrUnexcepted = "client.UnexceptedError"
+	// ErrUnexpected is the error for any unexpected error
+	ErrUnexpected = "client.UnexpectedError"
 )
 
 // ClientError is the ucloud common errorfor server response

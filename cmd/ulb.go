@@ -95,7 +95,7 @@ func NewCmdULBList() *cobra.Command {
 				list = append(list, row)
 			}
 
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 
@@ -417,7 +417,7 @@ func NewCmdULBVServerList(out io.Writer) *cobra.Command {
 				row.HealthCheckPath = vs.Path
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 
@@ -721,7 +721,7 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
@@ -1036,7 +1036,7 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 					row.Backends = strings.Join(nodes, ",")
 					list = append(list, row)
 				}
-				base.PrintList(list, global.json)
+				base.PrintList(list)
 			}
 		},
 	}
@@ -1264,7 +1264,7 @@ func NewCmdSSLList() *cobra.Command {
 				row.BindResource = strings.Join(targets, ",")
 				rows = append(rows, row)
 			}
-			base.PrintList(rows, global.json)
+			base.PrintList(rows)
 		},
 	}
 	flags := cmd.Flags()
@@ -1335,7 +1335,7 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 					Content:   sslcf.SSLContent,
 				},
 			}
-			base.PrintDescribe(rows, global.json)
+			base.PrintDescribe(rows, global.JSON)
 		},
 	}
 	flags := cmd.Flags()

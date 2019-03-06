@@ -12,6 +12,12 @@ import (
 type DescribeEIPRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写
+	// ProjectId *string `required:"false"`
+
 	// 弹性IP的资源ID如果为空, 则返回当前 Region中符合条件的的所有EIP
 	EIPIds []string `required:"false"`
 

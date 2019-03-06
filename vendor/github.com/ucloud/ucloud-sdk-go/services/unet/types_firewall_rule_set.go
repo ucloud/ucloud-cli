@@ -22,4 +22,7 @@ type FirewallRuleSet struct {
 
 	// 防火墙动作
 	RuleAction string
+
+	// 防火墙规则备注
+	Remark string
 }

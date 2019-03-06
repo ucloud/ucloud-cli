@@ -10,6 +10,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
@@ -17,10 +18,17 @@ import (
 
 // Client 客户端
 type Client struct {
+	// configurations
 	credential *auth.Credential
 	config     *Config
-	httpClient *http.HttpClient
 
+	// composited instances
+	httpClient http.Client
+	logger     log.Logger
+
+	// internal properties
+	requestHandlers      []RequestHandler
+	httpRequestHandlers  []HttpRequestHandler
 	responseHandlers     []ReponseHandler
 	httpResponseHandlers []HttpReponseHandler
 }
@@ -32,10 +40,21 @@ func NewClient(config *Config, credential *auth.Credential) *Client {
 		config:     config,
 	}
 
+	client.requestHandlers = append(client.requestHandlers, defaultRequestHandlers...)
+	client.httpRequestHandlers = append(client.httpRequestHandlers, defaultHttpRequestHandlers...)
 	client.responseHandlers = append(client.responseHandlers, defaultResponseHandlers...)
 	client.httpResponseHandlers = append(client.httpResponseHandlers, defaultHttpResponseHandlers...)
-	log.Init(config.LogLevel)
+
+	client.logger = log.New()
+	client.logger.SetLevel(config.LogLevel)
+
 	return &client
+}
+
+// SetHttpClient will setup a http client
+func (c *Client) SetHttpClient(httpClient http.Client) error {
+	c.httpClient = httpClient
+	return nil
 }
 
 // GetCredential will return the creadential config of client.
@@ -55,19 +74,35 @@ func (c *Client) InvokeAction(action string, req request.Common, resp response.C
 
 // InvokeActionWithPatcher will invoke action by patchers
 func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp response.Common, patches ...utils.Patch) error {
+	var err error
 	req.SetAction(action)
 	req.SetRequestTime(time.Now())
 
-	httpReq, err := c.buildHTTPRequest(req)
-	if err != nil {
-		return err
+	for _, handler := range c.requestHandlers {
+		req, err = handler(c, req)
+		if err != nil {
+			return uerr.NewClientError(uerr.ErrInvalidRequest, err)
+		}
 	}
 
-	httpClient := http.NewHttpClient()
-	httpResp, err := httpClient.Send(httpReq)
+	httpReq, err := c.buildHTTPRequest(req)
 	if err != nil {
-		return err
+		return uerr.NewClientError(uerr.ErrInvalidRequest, err)
 	}
+
+	for _, handler := range c.httpRequestHandlers {
+		httpReq, err = handler(c, httpReq)
+		if err != nil {
+			return uerr.NewClientError(uerr.ErrInvalidRequest, err)
+		}
+	}
+
+	if c.httpClient == nil {
+		httpClient := http.NewHttpClient()
+		c.httpClient = &httpClient
+	}
+
+	httpResp, err := c.httpClient.Send(httpReq)
 
 	// use response middleware to handle http response
 	// such as convert some http status to error
@@ -75,16 +110,16 @@ func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp
 		httpResp, err = handler(c, httpReq, httpResp, err)
 	}
 
-	// use patch object to resolve the http response body
-	// in general, it will be fix common server error before server bugfix is released.
-	body := httpResp.GetBody()
-	for _, patch := range patches {
-		body = patch.Patch(body)
-	}
+	if err == nil {
+		// use patch object to resolve the http response body
+		// in general, it will be fix common server error before server bugfix is released.
+		body := httpResp.GetBody()
 
-	err = c.unmarshalHTTPReponse(body, resp)
-	if err != nil {
-		return err
+		for _, patch := range patches {
+			body = patch.Patch(body)
+		}
+
+		err = c.unmarshalHTTPReponse(body, resp)
 	}
 
 	// use response middle to build and convert response when response has been created.
@@ -94,4 +129,28 @@ func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp
 	}
 
 	return err
+}
+
+// AddHttpRequestHandler will append a reponse handler to client
+func (c *Client) AddHttpRequestHandler(h HttpRequestHandler) error {
+	c.httpRequestHandlers = append([]HttpRequestHandler{h}, c.httpRequestHandlers...)
+	return nil
+}
+
+// AddRequestHandler will append a reponse handler to client
+func (c *Client) AddRequestHandler(h RequestHandler) error {
+	c.requestHandlers = append([]RequestHandler{h}, c.requestHandlers...)
+	return nil
+}
+
+// AddHttpResponseHandler will append a http reponse handler to client
+func (c *Client) AddHttpResponseHandler(h HttpReponseHandler) error {
+	c.httpResponseHandlers = append(c.httpResponseHandlers, h)
+	return nil
+}
+
+// AddResponseHandler will append a reponse handler to client
+func (c *Client) AddResponseHandler(h ReponseHandler) error {
+	c.responseHandlers = append(c.responseHandlers, h)
+	return nil
 }

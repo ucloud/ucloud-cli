@@ -11,6 +11,10 @@ import (
 // TerminateProjectRequest is request schema for TerminateProject action
 type TerminateProjectRequest struct {
 	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 }
 
 // TerminateProjectResponse is response schema for TerminateProject action

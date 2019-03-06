@@ -108,11 +108,7 @@ func NewCmdEIPList() *cobra.Command {
 				row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 

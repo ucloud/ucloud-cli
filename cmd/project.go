@@ -141,7 +141,7 @@ func listProject() error {
 	if resp.RetCode != 0 {
 		return base.HandleBizError(resp)
 	}
-	if global.json {
+	if global.JSON {
 		base.PrintJSON(resp.ProjectSet)
 	} else {
 		base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
