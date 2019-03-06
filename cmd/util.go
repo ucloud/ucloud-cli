@@ -25,11 +25,19 @@ func bindRegionS(region *string, flags *pflag.FlagSet) {
 
 func bindZone(req request.Common, flags *pflag.FlagSet) {
 	var zone string
-	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default available zone, see 'ucloud region'")
+	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
 	flags.SetFlagValuesFunc("zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
 	req.SetZoneRef(&zone)
+}
+
+func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
+	*zone = base.ConfigIns.Zone
+	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(*region)
+	})
 }
 
 func bindProjectID(req request.Common, flags *pflag.FlagSet) {
@@ -60,8 +68,23 @@ func bindLimit(req interface{}, flags *pflag.FlagSet) {
 }
 
 func bindOffset(req interface{}, flags *pflag.FlagSet) {
-	limit := flags.Int("offset", 0, "Optional. The index(a number) of resource which start to list")
+	offset := flags.Int("offset", 0, "Optional. The index(a number) of resource which start to list")
 	v := reflect.ValueOf(req).Elem()
-	f := v.FieldByName("Limit")
-	f.Set(reflect.ValueOf(limit))
+	f := v.FieldByName("Offset")
+	f.Set(reflect.ValueOf(offset))
+}
+
+func bindChargeType(req interface{}, flags *pflag.FlagSet) {
+	chargeType := flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires permission),'Trial', free trial(need permission)")
+	v := reflect.ValueOf(req).Elem()
+	f := v.FieldByName("ChargeType")
+	f.Set(reflect.ValueOf(chargeType))
+	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
+}
+
+func bindQuantity(req interface{}, flags *pflag.FlagSet) {
+	quanitiy := flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
+	v := reflect.ValueOf(req).Elem()
+	f := v.FieldByName("Quantity")
+	f.Set(reflect.ValueOf(quanitiy))
 }

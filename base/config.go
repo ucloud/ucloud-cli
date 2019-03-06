@@ -11,6 +11,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
 //ConfigFile filename
@@ -39,6 +40,19 @@ var ClientConfig *sdk.Config
 
 //AuthCredential 创建sdk client参数
 var AuthCredential *auth.Credential
+
+//Global 全局flag
+var Global GlobalFlag
+
+//GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
+type GlobalFlag struct {
+	Debug      bool
+	JSON       bool
+	Version    bool
+	Completion bool
+	Config     bool
+	Signup     bool
+}
 
 //CLIConfig cli_config element
 type CLIConfig struct {
@@ -75,26 +89,26 @@ type AggConfig struct {
 func (p *AggConfig) ConfigPublicKey() error {
 	Cxt.Print("Your public-key:")
 	_, err := fmt.Scanf("%s\n", &p.PublicKey)
-	p.PublicKey = strings.TrimSpace(p.PublicKey)
-	AuthCredential.PublicKey = p.PublicKey
-	p.Save()
 	if err != nil {
 		Cxt.Println(err)
+		return err
 	}
-	return err
+	p.PublicKey = strings.TrimSpace(p.PublicKey)
+	AuthCredential.PublicKey = p.PublicKey
+	return nil
 }
 
 //ConfigPrivateKey 输入私钥
 func (p *AggConfig) ConfigPrivateKey() error {
 	Cxt.Print("Your private-key:")
 	_, err := fmt.Scanf("%s\n", &p.PrivateKey)
-	p.PrivateKey = strings.TrimSpace(p.PrivateKey)
-	AuthCredential.PrivateKey = p.PrivateKey
-	p.Save()
 	if err != nil {
 		Cxt.Println(err)
+		return err
 	}
-	return err
+	p.PrivateKey = strings.TrimSpace(p.PrivateKey)
+	AuthCredential.PrivateKey = p.PrivateKey
+	return nil
 }
 
 //GetClientConfig 用来生成sdkClient
@@ -491,8 +505,8 @@ func init() {
 	ClientConfig = &sdk.Config{
 		BaseUrl:   ConfigIns.BaseURL,
 		Timeout:   timeout,
-		UserAgent: fmt.Sprintf("UCloud CLI v%s", Version),
-		LogLevel:  1,
+		UserAgent: fmt.Sprintf("UCloud-CLI/%s", Version),
+		LogLevel:  log.FatalLevel,
 	}
 
 	AuthCredential = &auth.Credential{

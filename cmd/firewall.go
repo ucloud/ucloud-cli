@@ -94,11 +94,7 @@ func NewCmdFirewallList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
@@ -493,11 +489,7 @@ func NewCmdFirewallResource() *cobra.Command {
 				row.Remark = rs.Remark
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()

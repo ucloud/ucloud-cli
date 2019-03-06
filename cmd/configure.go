@@ -20,6 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
+
 	"github.com/ucloud/ucloud-cli/base"
 )
 
@@ -52,6 +54,12 @@ func NewCmdInit() *cobra.Command {
 
 			region, zone, err := getDefaultRegion()
 			if err != nil {
+				if uErr, ok := err.(uerr.Error); ok {
+					if uErr.Code() == 172 {
+						fmt.Println("public key or private key is invalid.")
+						return
+					}
+				}
 				base.Cxt.Println(err)
 				return
 			}
@@ -82,11 +90,13 @@ func NewCmdInit() *cobra.Command {
 
 func printHello() {
 	userInfo, err := getUserInfo()
-	base.Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
-	certified := isUserCertified(userInfo)
 	if err != nil {
 		base.Cxt.PrintErr(err)
-	} else if certified == false {
+		return
+	}
+	base.Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
+	certified := isUserCertified(userInfo)
+	if !certified {
 		base.Cxt.Println("\nWarning: Please authenticate the account with your valid documentation at 'https://accountv2.ucloud.cn/authentication'.")
 	}
 	base.Cxt.Println(helloUcloud)
@@ -202,7 +212,7 @@ func NewCmdConfigList() *cobra.Command {
 		Short: "list all settings",
 		Long:  `list all settings`,
 		Run: func(c *cobra.Command, args []string) {
-			base.ListAggConfig(global.json)
+			base.ListAggConfig(global.JSON)
 		},
 	}
 	return cmd

@@ -18,23 +18,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
-type GlobalFlag struct {
-	debug      bool
-	json       bool
-	version    bool
-	completion bool
-	config     bool
-	signup     bool
-}
-
-var global GlobalFlag
+var global = base.Global
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
@@ -45,13 +36,13 @@ func NewCmdRoot() *cobra.Command {
 		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
 		BashCompletionFunction: "__ucloud_init_completion",
 		Run: func(cmd *cobra.Command, args []string) {
-			if global.version {
+			if global.Version {
 				base.Cxt.Printf("ucloud cli %s\n", base.Version)
-			} else if global.completion {
+			} else if global.Completion {
 				NewCmdCompletion().Run(cmd, args)
-			} else if global.config {
-				base.ListAggConfig(global.json)
-			} else if global.signup {
+			} else if global.Config {
+				base.ListAggConfig(global.JSON)
+			} else if global.Signup {
 				NewCmdSignup().Run(cmd, args)
 			} else {
 				cmd.HelpFunc()(cmd, args)
@@ -59,12 +50,12 @@ func NewCmdRoot() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&global.debug, "debug", "d", false, "Running in debug mode")
-	cmd.PersistentFlags().BoolVarP(&global.json, "json", "j", false, "Print result in JSON format whenever possible")
-	cmd.Flags().BoolVarP(&global.version, "version", "v", false, "Display version")
-	cmd.Flags().BoolVar(&global.completion, "completion", false, "Turn on auto completion according to the prompt")
-	cmd.Flags().BoolVar(&global.config, "config", false, "Display configuration")
-	cmd.Flags().BoolVar(&global.signup, "signup", false, "Launch UCloud sign up page in browser")
+	cmd.PersistentFlags().BoolVarP(&global.Debug, "debug", "d", false, "Running in debug mode")
+	cmd.PersistentFlags().BoolVarP(&global.JSON, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.Flags().BoolVarP(&global.Version, "version", "v", false, "Display version")
+	cmd.Flags().BoolVar(&global.Completion, "completion", false, "Turn on auto completion according to the prompt")
+	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
+	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
 	cmd.AddCommand(NewCmdInit())
 	cmd.AddCommand(NewCmdConfig())
@@ -81,6 +72,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdBandwidth())
 	cmd.AddCommand(NewCmdUDPN(out))
 	cmd.AddCommand(NewCmdULB())
+	cmd.AddCommand(NewCmdMysql())
 
 	return cmd
 }
@@ -132,8 +124,6 @@ func Execute() {
 	rootCmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(rootCmd)
 
-	// err := doc.GenReSTTree(rootCmd, "./doc")
-	// fmt.Println(err)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -170,8 +160,8 @@ func initialize(cmd *cobra.Command) {
 		base.ClientConfig.Zone = zone
 	}
 
-	if global.debug {
-		logrus.SetLevel(logrus.DebugLevel)
+	if global.Debug {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	userInfo, err := base.LoadUserInfo()

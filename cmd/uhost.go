@@ -113,7 +113,7 @@ func NewCmdUHostList() *cobra.Command {
 				row.Type = host.UHostType + "/" + host.HostType
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	cmd.Flags().SortFlags = false
@@ -230,8 +230,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	bindProjectID(req, flags)
 	bindRegion(req, flags)
-	// bindZone(req, flags)
-	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Override default available zone, see 'ucloud region'")
+	bindZone(req, flags)
 
 	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2' means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
@@ -272,7 +271,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	})
 
 	cmd.MarkFlagRequired("cpu")
-	cmd.MarkFlagRequired("memory")
+	cmd.MarkFlagRequired("memory-gb")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("image-id")
 
@@ -347,7 +346,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
 	cmd.Flags().SetFlagValues("delete-cloud-disk", "true", "false")
 	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
-		return getUhostList([]string{status.HOST_RUNNING, status.HOST_FAIL, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 
@@ -391,7 +390,7 @@ func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer
 	if err != nil {
 		base.HandleError(err)
 	} else {
-		text := fmt.Sprintf("uhost:[%v] is shutting down", resp.UhostId)
+		text := fmt.Sprintf("uhost[%v] is shutting down", resp.UhostId)
 		if async {
 			fmt.Fprintln(out, text)
 		} else {

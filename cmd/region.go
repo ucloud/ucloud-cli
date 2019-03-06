@@ -44,11 +44,7 @@ func NewCmdRegion() *cobra.Command {
 			for region, zones := range regionMap {
 				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
 			}
-			if global.json {
-				base.PrintJSON(regionList)
-			} else {
-				base.PrintTableS(regionList)
-			}
+			base.PrintList(regionList)
 		},
 	}
 	return cmd
