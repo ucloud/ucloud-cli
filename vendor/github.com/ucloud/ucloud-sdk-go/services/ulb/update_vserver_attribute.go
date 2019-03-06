@@ -12,6 +12,12 @@ import (
 type UpdateVServerAttributeRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"true"`
+
 	// 负载均衡实例ID
 	ULBId *string `required:"true"`
 
@@ -24,7 +30,7 @@ type UpdateVServerAttributeRequest struct {
 	// VServer协议类型，请求代理只支持修改为 HTTP/HTTPS，报文转发VServer只支持修改为 TCP/UDP
 	Protocol *string `required:"false"`
 
-	// VServer负载均衡算法，ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Roundrobin和Source在请求代理和报文转发中使用。
+	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin在请求代理和报文转发中使用。默认为："Roundrobin"
 	Method *string `required:"false"`
 
 	// VServer会话保持模式，若无此字段则不做修改。枚举值：None：关闭；ServerInsert：自动生成KEY；UserDefined：用户自定义KEY。

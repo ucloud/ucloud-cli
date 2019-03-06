@@ -12,13 +12,19 @@ import (
 type DescribeVPCIntercomRequest struct {
 	request.CommonBase
 
+	// [公共参数] 源VPC所在地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 源VPC所在项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// VPC短ID
 	VPCId *string `required:"true"`
 
-	// 目的地域
+	// 目的VPC所在地域，默认为全部地域
 	DstRegion *string `required:"false"`
 
-	// 目的项目ID
+	// 目的项目ID，默认为全部项目
 	DstProjectId *string `required:"false"`
 }
 

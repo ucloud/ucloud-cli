@@ -16,7 +16,7 @@ func MergeMap(args ...map[string]string) map[string]string {
 	return m
 }
 
-// SetMapIfNotExists will set a
+// SetMapIfNotExists will set a key-value of the map if the key is not exists
 func SetMapIfNotExists(m map[string]string, k string, v string) {
 	if _, ok := m[k]; !ok && v != "" {
 		m[k] = v

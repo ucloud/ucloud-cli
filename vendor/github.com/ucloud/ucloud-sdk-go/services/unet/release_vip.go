@@ -12,8 +12,14 @@ import (
 type ReleaseVIPRequest struct {
 	request.CommonBase
 
-	// 可用区
-	Zone *string `required:"false"`
+	// [公共参数] 地域
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区
+	// Zone *string `required:"false"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写
+	// ProjectId *string `required:"false"`
 
 	// 内网VIP的id
 	VIPId *string `required:"true"`

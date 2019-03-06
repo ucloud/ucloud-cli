@@ -12,8 +12,14 @@ import (
 type DescribeUHostInstanceRequest struct {
 	request.CommonBase
 
-	// 可用区。参见 [可用区列表](../summary/regionlist.html)
-	Zone *string `required:"false"`
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// Zone *string `required:"false"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
 
 	// 【数组】UHost主机的资源ID，例如UHostIds.0代表希望获取信息 的主机1，UHostIds.1代表主机2。 如果不传入，则返回当前Region 所有符合条件的UHost实例。
 	UHostIds []string `required:"false"`
@@ -29,6 +35,9 @@ type DescribeUHostInstanceRequest struct {
 
 	// 返回数据长度，默认为20，最大100
 	Limit *int `required:"false"`
+
+	// 硬件隔离组id
+	IsolationGroup *string `required:"false"`
 }
 
 // DescribeUHostInstanceResponse is response schema for DescribeUHostInstance action

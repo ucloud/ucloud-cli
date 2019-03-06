@@ -12,10 +12,16 @@ import (
 type GrantFirewallRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// 防火墙资源ID
 	FWId *string `required:"true"`
 
-	// 所应用资源类型，如UHost
+	// 绑定防火墙组的资源类型，默认为全部资源类型。枚举值为："unatgw"，NAT网关； "uhost"，云主机； "upm"，物理云主机； "hadoophost"，hadoop节点； "fortresshost"，堡垒机； "udhost"，私有专区主机；"udockhost"，容器；"dbaudit"，数据库审计.
 	ResourceType *string `required:"true"`
 
 	// 所应用资源ID

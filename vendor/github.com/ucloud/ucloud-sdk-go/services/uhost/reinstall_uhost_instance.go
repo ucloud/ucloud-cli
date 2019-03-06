@@ -27,6 +27,9 @@ type ReinstallUHostInstanceRequest struct {
 	// 镜像Id，默认使用原镜像 参见 [DescribeImage](describe_image.html)
 	ImageId *string `required:"false"`
 
+	// 系统盘大小。 单位：GB， 范围[20,100]， 步长：10
+	BootDiskSpace *int `required:"false"`
+
 	// 是否保留数据盘，保留：Yes，不报留：No， 默认：Yes；如果是从Windows重装为Linux或反之，则无法保留数据盘
 	ReserveDisk *string `required:"false"`
 

@@ -12,16 +12,22 @@ import (
 type DescribeSubnetResourceRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
 	// 子网id
 	SubnetId *string `required:"true"`
 
-	// 资源类型
+	// 资源类型，默认为全部资源类型。枚举值为：UHOST，云主机；PHOST，物理云主机；ULB，负载均衡；UHADOOP_HOST，hadoop节点；UFORTRESS_HOST，堡垒机；UNATGW，NAT网关；UKAFKA，Kafka消息队列；UMEM，内存存储；DOCKER，容器集群；UDB，数据库；UDW，数据仓库；VIP，内网VIP.
 	ResourceType *string `required:"false"`
 
-	// 分页号
+	// 列表起始位置偏移量，默认为0
 	Offset *int `required:"false"`
 
-	// 单页limit
+	// 单页返回数据长度，默认为20
 	Limit *int `required:"false"`
 }
 

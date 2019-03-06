@@ -11,6 +11,10 @@ import (
 // GetUDPNLineListRequest is request schema for GetUDPNLineList action
 type GetUDPNLineListRequest struct {
 	request.CommonBase
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"false"`
+
 }
 
 // GetUDPNLineListResponse is response schema for GetUDPNLineList action

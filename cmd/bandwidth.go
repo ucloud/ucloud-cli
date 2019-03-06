@@ -132,11 +132,7 @@ func NewCmdSharedBWList() *cobra.Command {
 				row.EIP = strings.Join(eipList, "\n")
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
@@ -361,11 +357,7 @@ func NewCmdBandwidthPkgList() *cobra.Command {
 				row.EIP = eip
 				list = append(list, row)
 			}
-			if global.json {
-				base.PrintJSON(list)
-			} else {
-				base.PrintTableS(list)
-			}
+			base.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()

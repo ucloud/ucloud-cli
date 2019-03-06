@@ -12,6 +12,12 @@ import (
 type DescribeVPCRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"true"`
+
 	// VPCId
 	VPCIds []string `required:"false"`
 
@@ -23,7 +29,7 @@ type DescribeVPCRequest struct {
 type DescribeVPCResponse struct {
 	response.CommonBase
 
-	// vpc信息
+	// vpc信息，具体结构见下方VPCInfo
 	DataSet []VPCInfo
 }
 

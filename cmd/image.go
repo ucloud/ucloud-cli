@@ -84,7 +84,7 @@ func NewCmdUImageList() *cobra.Command {
 					list = append(list, row)
 				}
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")

@@ -12,10 +12,16 @@ import (
 type BindEIPRequest struct {
 	request.CommonBase
 
+	// [公共参数] 地域
+	// Region *string `required:"true"`
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写
+	// ProjectId *string `required:"false"`
+
 	// 弹性IP的资源Id
 	EIPId *string `required:"true"`
 
-	// 弹性IP请求绑定的资源类型, 枚举值为: uhost: 云主机; vrouter: 虚拟路由器; ulb, 负载均衡器 upm: 物理机; hadoophost: 大数据集群;fortresshost：堡垒机；udockhost：容器；udhost：私有专区主机；natgw：natgw；udb：udb；vpngw：ipsec vpn；ucdr：云灾备；dbaudit：数据库审计；
+	// 弹性IP请求绑定的资源类型, 枚举值为: uhost: 云主机; ulb, 负载均衡器 upm: 物理机; hadoophost: 大数据集群;fortresshost：堡垒机；udockhost：容器；udhost：私有专区主机；natgw：natgw；udb：udb；vpngw：ipsec vpn；ucdr：云灾备；dbaudit：数据库审计；
 	ResourceType *string `required:"true"`
 
 	// 弹性IP请求绑定的资源ID
