@@ -1,4 +1,10 @@
 ## Change Log
+v0.1.7
+* Add udpn, firewall, shared bandwidth and bandwidth package; Refactor vpc, subnet and eip
+
+v0.1.6
+* Improve uhost，image and disk-snapshot
+
 v0.1.5
 * support batch operation.
 
