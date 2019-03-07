@@ -95,9 +95,18 @@ type UDBSlaveInstanceSet struct {
 	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例;"HA": 高可用版UDB实例
 	InstanceMode string
 
+	// DB实例所在可用区
+	Zone string
+
+	// 业务组
+	Tag string
+
+	// VPC ID
+	VPCId string
+
+	// Subnet Id
+	SubnetId string
+
+	// DB实例磁盘类型
 	InstanceType string
-	Zone         string
-	Tag          string
-	VPCId        string
-	SubnetId     string
 }

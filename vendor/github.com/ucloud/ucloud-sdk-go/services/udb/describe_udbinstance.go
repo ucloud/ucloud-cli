@@ -21,7 +21,7 @@ type DescribeUDBInstanceRequest struct {
 	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
 	// ProjectId *string `required:"false"`
 
-	// DB种类，分为sql和nosql，如果是列表操作，则需要指定
+	// DB种类，如果是列表操作，则需要指定,不区分大小写，其取值如下：mysql: SQLmongo: NOSQLpostgresql: postgresql
 	ClassType *string `required:"true"`
 
 	// 分页显示起始偏移位置，列表操作则指定
