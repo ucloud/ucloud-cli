@@ -15,20 +15,13 @@
 package cmd
 
 import (
-	_ "encoding/base64"
-	_ "fmt"
-	_ "io"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	_ "github.com/ucloud/ucloud-sdk-go/services/umem"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
-	_ "github.com/ucloud/ucloud-cli/model/cli"
-	_ "github.com/ucloud/ucloud-cli/model/status"
-	_ "github.com/ucloud/ucloud-cli/ux"
 )
 
 //NewCmdUHost ucloud uhost
@@ -70,23 +63,25 @@ func NewCmdRedis() *cobra.Command {
 
 	return cmd
 }
+
 //UMemcacheRow UHost表格行
 type UMemcacheRow struct {
-	Name    string
+	Name         string
 	ResourceID   string
 	Group        string
 	VirtualIP    string
 	Size         int
-	UsedSize 	 int
+	UsedSize     int
 	State        string
 	CreationTime string
 }
+
 func NewCmdMemcacheList() *cobra.Command {
 	req := base.BizClient.NewDescribeUMemcacheGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all UHost Instances",
-		Long:  `List all UHost Instances`,
+		Short: "List all memcache Instances",
+		Long:  `List all memcache Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := base.BizClient.DescribeUMemcacheGroup(req)
 			if err != nil {
@@ -100,7 +95,7 @@ func NewCmdMemcacheList() *cobra.Command {
 				row.ResourceID = host.GroupId
 				row.Group = host.Tag
 				row.VirtualIP = host.VirtualIP
-				
+
 				row.Size = host.Size
 				row.UsedSize = host.UsedSize
 				row.CreationTime = base.FormatDate(host.CreateTime)
@@ -123,12 +118,12 @@ func NewCmdMemcacheList() *cobra.Command {
 
 //UHostRow UHost表格行
 type URedisRow struct {
-	Name    string
+	Name         string
 	ResourceID   string
 	Group        string
 	VirtualIP    string
 	Size         int
-	UsedSize 	 int
+	UsedSize     int
 	State        string
 	CreationTime string
 }
@@ -153,7 +148,7 @@ func NewCmdRedisList() *cobra.Command {
 				row.ResourceID = host.GroupId
 				row.Group = host.Tag
 				row.VirtualIP = host.VirtualIP
-				
+
 				row.Size = host.Size
 				row.UsedSize = host.UsedSize
 				row.CreationTime = base.FormatDate(host.CreateTime)
@@ -169,49 +164,6 @@ func NewCmdRedisList() *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
-	// bindGroup(req, cmd.Flags())
 
 	return cmd
 }
-
-func describeRedisByID(uhostID, projectID, region, zone string) (interface{}, error) {
-	req := base.BizClient.NewDescribeUHostInstanceRequest()
-	req.UHostIds = []string{uhostID}
-	req.ProjectId = &projectID
-	req.Region = &region
-	req.Zone = &zone
-
-	resp, err := base.BizClient.DescribeUHostInstance(req)
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.UHostSet) < 1 {
-		return nil, nil
-	}
-
-	return &resp.UHostSet[0], nil
-}
-
-func getRedisList(states []string, project, region, zone string) []string {
-	req := base.BizClient.NewDescribeUHostInstanceRequest()
-	req.ProjectId = sdk.String(project)
-	req.Region = sdk.String(region)
-	req.Zone = sdk.String(zone)
-	req.Limit = sdk.Int(50)
-	resp, err := base.BizClient.DescribeUHostInstance(req)
-	if err != nil {
-		//todo runtime log
-		return nil
-	}
-	list := []string{}
-	for _, host := range resp.UHostSet {
-		for _, s := range states {
-			if host.State == s {
-				list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
-			}
-		}
-	}
-	return list
-}
-
-
