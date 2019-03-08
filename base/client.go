@@ -9,6 +9,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/udisk"
 	"github.com/ucloud/ucloud-sdk-go/services/udpn"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
+	"github.com/ucloud/ucloud-sdk-go/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/ulb"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	"github.com/ucloud/ucloud-sdk-go/services/vpc"
@@ -27,6 +28,7 @@ type Client struct {
 	uaccount.UAccountClient
 	uhost.UHostClient
 	unet.UNetClient
+	umem.UMemClient
 	vpc.VPCClient
 	udpn.UDPNClient
 	pathx.PathXClient
@@ -43,6 +45,7 @@ func NewClient(config *ucloud.Config, credential *auth.Credential) *Client {
 		*uaccount.NewClient(config, credential),
 		*uhost.NewClient(config, credential),
 		*unet.NewClient(config, credential),
+                *umem.NewClient(config, credential),
 		*vpc.NewClient(config, credential),
 		*udpn.NewClient(config, credential),
 		*pathx.NewClient(config, credential),

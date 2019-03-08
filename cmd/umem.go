@@ -15,12 +15,7 @@
 package cmd
 
 import (
-	"strings"
-
 	"github.com/spf13/cobra"
-
-	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
-
 	"github.com/ucloud/ucloud-cli/base"
 )
 
@@ -102,7 +97,7 @@ func NewCmdMemcacheList() *cobra.Command {
 				row.State = host.State
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	cmd.Flags().SortFlags = false
@@ -155,7 +150,7 @@ func NewCmdRedisList() *cobra.Command {
 				row.State = host.State
 				list = append(list, row)
 			}
-			base.PrintList(list, global.json)
+			base.PrintList(list)
 		},
 	}
 	cmd.Flags().SortFlags = false
