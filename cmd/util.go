@@ -32,6 +32,15 @@ func bindZone(req request.Common, flags *pflag.FlagSet) {
 	req.SetZoneRef(&zone)
 }
 
+func bindZoneEmpty(req request.Common, flags *pflag.FlagSet) {
+	var zone string
+	flags.StringVar(&zone, "zone", "", "Optional. Override default availability zone, see 'ucloud region'")
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(req.GetRegion())
+	})
+	req.SetZoneRef(&zone)
+}
+
 func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
 	*zone = base.ConfigIns.Zone
 	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
@@ -75,7 +84,7 @@ func bindOffset(req interface{}, flags *pflag.FlagSet) {
 }
 
 func bindChargeType(req interface{}, flags *pflag.FlagSet) {
-	chargeType := flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires permission),'Trial', free trial(need permission)")
+	chargeType := flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	v := reflect.ValueOf(req).Elem()
 	f := v.FieldByName("ChargeType")
 	f.Set(reflect.ValueOf(chargeType))
