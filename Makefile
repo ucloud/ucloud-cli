@@ -1,8 +1,8 @@
-export VERSION=0.1.10
+export VERSION=0.1.11
 
 .PHONY : build
 build: 
-	go install && mv ../../../../bin/ucloud-cli /usr/local/bin/ucloud
+	go install && mv ${GOPATH}/bin/ucloud-cli /usr/local/bin/ucloud
 
 .PHONY : build_mac
 build_mac:

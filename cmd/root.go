@@ -161,7 +161,8 @@ func initialize(cmd *cobra.Command) {
 	}
 
 	if global.Debug {
-		log.SetLevel(log.DebugLevel)
+		base.ClientConfig.LogLevel = log.DebugLevel
+		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}
 
 	userInfo, err := base.LoadUserInfo()

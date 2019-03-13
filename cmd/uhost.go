@@ -670,7 +670,7 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "clone",
-		Short: "Create an uhost with the same configuration as another uhost",
+		Short: "Create an uhost with the same configuration as another uhost, excluding bound eip and udisk",
 		Long:  "Create an uhost with the same configuration as another uhost, excluding bound eip and udisk",
 		Run: func(com *cobra.Command, args []string) {
 			*uhostID = base.PickResourceID(*uhostID)
@@ -719,8 +719,7 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 			req.UHostType = &uhostIns.UHostType
 			req.NetCapability = &uhostIns.NetCapability
 
-			for index := 0; index < 2; index++ {
-				disk := uhostIns.DiskSet[index]
+			for _, disk := range uhostIns.DiskSet {
 				item := uhost.UHostDisk{
 					Size:   sdk.Int(disk.Size),
 					Type:   sdk.String(disk.DiskType),
