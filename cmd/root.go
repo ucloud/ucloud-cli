@@ -73,6 +73,8 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdUDPN(out))
 	cmd.AddCommand(NewCmdULB())
 	cmd.AddCommand(NewCmdMysql())
+	cmd.AddCommand(NewCmdRedis())
+	cmd.AddCommand(NewCmdMemcache())
 
 	return cmd
 }

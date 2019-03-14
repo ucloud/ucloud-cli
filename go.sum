@@ -45,8 +45,8 @@ github.com/spf13/viper v1.3.1/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DM
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
-github.com/ucloud/ucloud-sdk-go v0.7.3 h1:gGygQn+wcSJIiB6xRAmfwLP/MI3p5yt2mxD4ruPU+Lk=
-github.com/ucloud/ucloud-sdk-go v0.7.3/go.mod h1:lM6fpI8y6iwACtlbHUav823/uKPdXsNBlnBpRF2fj3c=
+github.com/ucloud/ucloud-sdk-go v0.8.1-alpha h1:nnrkUqp1BWBd2wS8zP+HgMbj52KJtuEcWeEcHLDXIps=
+github.com/ucloud/ucloud-sdk-go v0.8.1-alpha/go.mod h1:lM6fpI8y6iwACtlbHUav823/uKPdXsNBlnBpRF2fj3c=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793 h1:u+LnwYTOOW7Ukr/fppxEb1Nwz0AtPflrblfvUudpo+I=

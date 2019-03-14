@@ -3,6 +3,7 @@ package base
 import (
 	pudb "github.com/ucloud/ucloud-sdk-go/private/services/udb"
 	puhost "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
+	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/pathx"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
@@ -10,6 +11,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/udpn"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/services/ulb"
+	"github.com/ucloud/ucloud-sdk-go/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	"github.com/ucloud/ucloud-sdk-go/services/vpc"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
@@ -22,6 +24,9 @@ type PrivateUHostClient = puhost.UHostClient
 //PrivateUDBClient 私有模块的udb client 即未在官网开放的接口
 type PrivateUDBClient = pudb.UDBClient
 
+//PrivateUMemClient 私有模块的udb client 即未在官网开放的接口
+type PrivateUMemClient = pumem.UMemClient
+
 //Client aggregate client for business
 type Client struct {
 	uaccount.UAccountClient
@@ -33,8 +38,10 @@ type Client struct {
 	udisk.UDiskClient
 	ulb.ULBClient
 	udb.UDBClient
+	umem.UMemClient
 	PrivateUHostClient
 	PrivateUDBClient
+	PrivateUMemClient
 }
 
 // NewClient will return a aggregate client
@@ -49,7 +56,9 @@ func NewClient(config *ucloud.Config, credential *auth.Credential) *Client {
 		*udisk.NewClient(config, credential),
 		*ulb.NewClient(config, credential),
 		*udb.NewClient(config, credential),
+		*umem.NewClient(config, credential),
 		*puhost.NewClient(config, credential),
 		*pudb.NewClient(config, credential),
+		*pumem.NewClient(config, credential),
 	}
 }
