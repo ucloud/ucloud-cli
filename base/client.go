@@ -13,6 +13,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/ulb"
 	"github.com/ucloud/ucloud-sdk-go/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
+	"github.com/ucloud/ucloud-sdk-go/services/uphost"
 	"github.com/ucloud/ucloud-sdk-go/services/vpc"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
@@ -39,6 +40,7 @@ type Client struct {
 	ulb.ULBClient
 	udb.UDBClient
 	umem.UMemClient
+	uphost.UPHostClient
 	PrivateUHostClient
 	PrivateUDBClient
 	PrivateUMemClient
@@ -57,6 +59,7 @@ func NewClient(config *ucloud.Config, credential *auth.Credential) *Client {
 		*ulb.NewClient(config, credential),
 		*udb.NewClient(config, credential),
 		*umem.NewClient(config, credential),
+		*uphost.NewClient(config, credential),
 		*puhost.NewClient(config, credential),
 		*pudb.NewClient(config, credential),
 		*pumem.NewClient(config, credential),

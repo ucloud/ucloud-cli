@@ -320,6 +320,29 @@ func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
 	}
 }
 
+func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) string {
+	ip := net.ParseIP(*eipID)
+	if ip != nil {
+		eipID, err := getEIPIDbyIP(ip, *projectID, *region)
+		if err != nil {
+			base.HandleError(err)
+		} else {
+			*resourceID = eipID
+		}
+	}
+	req := base.BizClient.NewBindEIPRequest()
+	req.ResourceId = resourceID
+	req.ResourceType = resourceType
+	req.EIPId = sdk.String(base.PickResourceID(*eipID))
+	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
+	req.Region = region
+	_, err := base.BizClient.BindEIP(req)
+	if err != nil {
+		return base.ParseError(err)
+	}
+	return fmt.Sprintf("bind EIP[%s] with %s[%s]", *req.EIPId, *req.ResourceType, *req.ResourceId)
+}
+
 //NewCmdEIPUnbind ucloud eip unbind
 func NewCmdEIPUnbind() *cobra.Command {
 	eipIDs := []string{}

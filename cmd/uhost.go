@@ -19,10 +19,12 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
+	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -30,6 +32,8 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/ux"
 )
+
+var uhostSpoller = base.NewSpoller(sdescribeUHostByID, base.Cxt.GetWriter())
 
 //NewCmdUHost ucloud uhost
 func NewCmdUHost() *cobra.Command {
@@ -39,19 +43,19 @@ func NewCmdUHost() *cobra.Command {
 		Long:  `List,create,delete,stop,restart,poweroff or resize UHost instance`,
 		Args:  cobra.NoArgs,
 	}
-	writer := base.Cxt.GetWriter()
+	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdUHostList())
-	cmd.AddCommand(NewCmdUHostCreate(writer))
-	cmd.AddCommand(NewCmdUHostDelete(writer))
-	cmd.AddCommand(NewCmdUHostStop(writer))
-	cmd.AddCommand(NewCmdUHostStart(writer))
-	cmd.AddCommand(NewCmdUHostReboot(writer))
+	cmd.AddCommand(NewCmdUHostCreate(out))
+	cmd.AddCommand(NewCmdUHostDelete(out))
+	cmd.AddCommand(NewCmdUHostStop(out))
+	cmd.AddCommand(NewCmdUHostStart(out))
+	cmd.AddCommand(NewCmdUHostReboot(out))
 	cmd.AddCommand(NewCmdUHostPoweroff())
-	cmd.AddCommand(NewCmdUHostResize(writer))
-	cmd.AddCommand(NewCmdUHostClone(writer))
-	cmd.AddCommand(NewCmdUhostResetPassword(writer))
-	cmd.AddCommand(NewCmdUhostReinstallOS(writer))
-	cmd.AddCommand(NewCmdUhostCreateImage(writer))
+	cmd.AddCommand(NewCmdUHostResize(out))
+	cmd.AddCommand(NewCmdUHostClone(out))
+	cmd.AddCommand(NewCmdUhostResetPassword(out))
+	cmd.AddCommand(NewCmdUhostReinstallOS(out))
+	cmd.AddCommand(NewCmdUhostCreateImage(out))
 
 	return cmd
 }
@@ -64,6 +68,7 @@ type UHostRow struct {
 	PrivateIP    string
 	PublicIP     string
 	Config       string
+	Image        string
 	Type         string
 	State        string
 	CreationTime string
@@ -95,10 +100,9 @@ func NewCmdUHostList() *cobra.Command {
 					if ip.Type == "Private" {
 						row.PrivateIP = ip.IP
 					} else {
-						row.PublicIP += fmt.Sprintf("%s %s", ip.IP, ip.Type)
+						row.PublicIP += fmt.Sprintf("%s", ip.IP)
 					}
 				}
-				osName := strings.SplitN(host.OsName, " ", 2)
 				cupCore := host.CPU
 				memorySize := host.Memory / 1024
 				diskSize := 0
@@ -107,7 +111,8 @@ func NewCmdUHostList() *cobra.Command {
 						diskSize += disk.Size
 					}
 				}
-				row.Config = fmt.Sprintf("%s cpu:%d memory:%dG disk:%dG", osName[0], cupCore, memorySize, diskSize)
+				row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
+				row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
 				row.CreationTime = base.FormatDate(host.CreateTime)
 				row.State = host.State
 				row.Type = host.UHostType + "/" + host.HostType
@@ -120,8 +125,7 @@ func NewCmdUHostList() *cobra.Command {
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
-	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. UHost Instance ID, multiple values separated by comma(without space)")
-	// req.Tag = cmd.Flags().String("group", "", "Optional. Business group")
+	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
 	bindGroup(req, cmd.Flags())
@@ -131,8 +135,10 @@ func NewCmdUHostList() *cobra.Command {
 
 //NewCmdUHostCreate [ucloud uhost create]
 func NewCmdUHostCreate(out io.Writer) *cobra.Command {
-	var bindEipID *string
-	var async *bool
+	var bindEipIDs []string
+	var password string
+	var async bool
+	var count int
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	eipReq := base.BizClient.NewAllocateEIPRequest()
@@ -141,55 +147,62 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 		Short: "Create UHost instance",
 		Long:  "Create UHost instance",
 		Run: func(cmd *cobra.Command, args []string) {
+			if count > 100 || count < 1 {
+				fmt.Fprintln(out, "count should be between 1 and 100")
+				return
+			}
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
-
-			resp, err := base.BizClient.CreateUHostInstance(req)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-
-			if len(resp.UHostIds) == 1 {
-				text := fmt.Sprintf("uhost[%s] is initializing", resp.UHostIds[0])
-				if *async {
-					fmt.Fprintln(out, text)
-				} else {
-					poller := base.NewPoller(describeUHostByID, out)
-					poller.Poll(resp.UHostIds[0], *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
-				}
-			} else {
-				fmt.Fprintf(out, "expect uhost count 1 , accept %d", len(resp.UHostIds))
-				return
-			}
-			bindEipID = sdk.String(base.PickResourceID(*bindEipID))
-			if *bindEipID != "" && len(resp.UHostIds) == 1 {
-				bindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), bindEipID, req.ProjectId, req.Region)
-			} else if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
-				eipReq.ChargeType = req.ChargeType
-				eipReq.Tag = req.Tag
-				eipReq.Quantity = req.Quantity
-				eipReq.Region = req.Region
-				eipReq.ProjectId = req.ProjectId
-				eipResp, err := base.BizClient.AllocateEIP(eipReq)
-
-				if err != nil {
-					base.HandleError(err)
-				} else {
-					for _, eip := range eipResp.EIPSet {
-						base.Cxt.Printf("allocate EIP[%s] ", eip.EIPId)
-						for _, ip := range eip.EIPAddr {
-							base.Cxt.Printf("IP:%s  Line:%s \n", ip.IP, ip.OperatorName)
-						}
-						if len(resp.UHostIds) == 1 {
-							bindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
-						}
+			if count <= 5 {
+				for i := 0; i < count; i++ {
+					bindEipID := ""
+					if len(bindEipIDs) > i {
+						bindEipID = bindEipIDs[i]
 					}
+					go createUhost(req, eipReq, bindEipID, password, async, out, make(chan bool, count), nil, nil)
 				}
+				<-ux.Doc.Done
+			} else {
+				wg := &sync.WaitGroup{}
+				retCh := make(chan bool, count)
+				ux.Doc.Disable()
+
+				result := map[string]int{
+					"total":   count,
+					"success": 0,
+					"fail":    0,
+				}
+
+				refresh := ux.NewRefresh()
+				wg.Add(count)
+
+				go func() {
+					tokens := make(chan struct{}, 10)
+					for i := 0; i < count; i++ {
+						bindEipID := ""
+						if len(bindEipIDs) > i {
+							bindEipID = bindEipIDs[i]
+						}
+						go createUhost(req, eipReq, bindEipID, password, async, out, retCh, wg, tokens)
+					}
+				}()
+
+				go func() {
+					refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
+					for ret := range retCh {
+						if ret {
+							result["success"]++
+						} else {
+							result["fail"]++
+						}
+						refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
+					}
+				}()
+				wg.Wait()
 			}
 		},
 	}
@@ -211,20 +224,22 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
 	req.Memory = flags.Int("memory-gb", 8, "Required. Memory size. Unit: GB. Range: [1, 128], multiple of 2")
-	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&password, "password", "", "Required. Password of the uhost user(root/ubuntu)")
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
+	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create. Range [1,100]")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
 	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
-	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created uhost")
-	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of the created eip to be bound with the new created uhost")
-	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
-	eipReq.PayMode = cmd.Flags().String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
+	flags.StringSliceVar(&bindEipIDs, "bind-eip", nil, "Optional. Resource ID or IP Address of eip that will be bound to the new created uhost")
+	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. BGP for regions in the chinese mainland and International for overseas regions")
+	eipReq.Bandwidth = flags.Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
+	eipReq.PayMode = flags.String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
+	eipReq.ShareBandwidthId = flags.String("shared-bw-id", "", "Optional. Resource ID of shared bandwidth. It takes effect when create-eip-traffic-mode is ShareBandwidth ")
 	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
-	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional.Remark of your EIP.")
+	eipReq.Remark = flags.String("create-eip-remark", "", "Optional.Remark of your EIP.")
 
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
@@ -232,7 +247,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindZone(req, flags)
 
-	req.UHostType = flags.String("type", defaultUhostType, "Optional. Default is 'N2' of which cpu is V4 and sata disk. also support 'N1' means V3 cpu and sata disk;'I2' means V4 cpu and ssd disk;'D1' means big data model;'G1' means GPU type, model for K80;'G2' model for P40; 'G3' model for V100")
+	req.UHostType = flags.String("type", defaultUhostType, "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
 	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
@@ -245,7 +260,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
-	flags.SetFlagValues("type", "N2", "N1", "I2", "D1", "G1", "G2", "G3")
+	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
 	flags.SetFlagValues("net-capability", "Normal", "Super")
 	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
@@ -276,6 +291,91 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("image-id")
 
 	return cmd
+}
+
+func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID, password string, async bool, out io.Writer, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}) {
+	//控制并发数量
+	if tokens != nil {
+		tokens <- struct{}{}
+		defer func() {
+			<-tokens
+		}()
+	}
+	if wg != nil {
+		defer wg.Done()
+	}
+	req.Password = sdk.String(password)
+	resp, err := base.BizClient.CreateUHostInstance(req)
+	block := ux.NewBlock()
+	ux.Doc.Append(block)
+	logs := []string{}
+	defer func() {
+		base.Log(logs)
+	}()
+	logs = append(logs, fmt.Sprintf("request:%v", base.ToQueryMap(req)))
+	if err != nil {
+		logs = append(logs, fmt.Sprintf("err:%v", err))
+		block.Append(base.ParseError(err))
+		block.AppendDone()
+		retCh <- false
+		return
+	}
+	logs = append(logs, fmt.Sprintf("resp:%#v", resp))
+	if len(resp.UHostIds) == 1 {
+		text := fmt.Sprintf("uhost[%s] is initializing", resp.UHostIds[0])
+		if async {
+			block.Append(text)
+		} else {
+			uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block)
+		}
+		retCh <- true
+	} else {
+		block.Append(fmt.Sprintf("expect uhost count 1 , accept %d", len(resp.UHostIds)))
+		block.AppendDone()
+		retCh <- false
+		return
+	}
+	if bindEipID != "" {
+		eip := base.PickResourceID(bindEipID)
+		logs = append(logs, fmt.Sprintf("bind eip: %s", eip))
+		info := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), &eip, req.ProjectId, req.Region)
+		logs = append(logs, fmt.Sprintf("bind eip result: %s", info))
+		block.Append(info)
+	} else if *eipReq.Bandwidth != 0 {
+		eipReq.ChargeType = req.ChargeType
+		eipReq.Tag = req.Tag
+		eipReq.Quantity = req.Quantity
+		eipReq.Region = req.Region
+		eipReq.ProjectId = req.ProjectId
+		logs = append(logs, fmt.Sprintf("create eip request: %v", base.ToQueryMap(eipReq)))
+		if *eipReq.OperatorName == "" {
+			if strings.HasPrefix(*req.Region, "cn") {
+				*eipReq.OperatorName = "BGP"
+			} else {
+				*eipReq.OperatorName = "International"
+			}
+		}
+		eipResp, err := base.BizClient.AllocateEIP(eipReq)
+
+		if err != nil {
+			logs = append(logs, fmt.Sprintf("create eip error: %#v", err))
+			block.Append(base.ParseError(err))
+		} else {
+			logs = append(logs, fmt.Sprintf("create eip resp: %#v", eipResp))
+			for _, eip := range eipResp.EIPSet {
+				block.Append(fmt.Sprintf("allocate EIP[%s] ", eip.EIPId))
+				for _, ip := range eip.EIPAddr {
+					block.Append(fmt.Sprintf("IP:%s  Line:%s", ip.IP, ip.OperatorName))
+				}
+				if len(resp.UHostIds) == 1 {
+					info := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
+					logs = append(logs, fmt.Sprintf("bind eip result: %s", info))
+					block.Append(info)
+				}
+			}
+		}
+	}
+	block.AppendDone()
 }
 
 //NewCmdUHostDelete ucloud uhost delete
@@ -629,6 +729,21 @@ func describeUHostByID(uhostID, projectID, region, zone string) (interface{}, er
 	req.ProjectId = &projectID
 	req.Region = &region
 	req.Zone = &zone
+
+	resp, err := base.BizClient.DescribeUHostInstance(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.UHostSet) < 1 {
+		return nil, nil
+	}
+
+	return &resp.UHostSet[0], nil
+}
+
+func sdescribeUHostByID(uhostID string) (interface{}, error) {
+	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	req.UHostIds = []string{uhostID}
 
 	resp, err := base.BizClient.DescribeUHostInstance(req)
 	if err != nil {
