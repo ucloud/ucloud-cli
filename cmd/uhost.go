@@ -147,10 +147,6 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 		Short: "Create UHost instance",
 		Long:  "Create UHost instance",
 		Run: func(cmd *cobra.Command, args []string) {
-			if count > 100 || count < 1 {
-				fmt.Fprintln(out, "count should be between 1 and 100")
-				return
-			}
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
@@ -229,7 +225,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&password, "password", "", "Required. Password of the uhost user(root/ubuntu)")
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
-	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create. Range [1,100]")
+	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create.")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
 	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
