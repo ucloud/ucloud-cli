@@ -33,8 +33,6 @@ $ brew update
 For windows users, suggest build from the source code which require install Golang first. This also works for Linux and macOS.
 
 ```
-$ mkdir -p $GOPATH/src/github.com/ucloud
-$ cd $GOPATH/src/github.com/ucloud
 $ git clone https://github.com/ucloud/ucloud-cli.git
 $ cd ucloud-cli
 $ make install
