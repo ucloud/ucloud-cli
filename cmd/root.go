@@ -32,10 +32,10 @@ var global = base.Global
 func NewCmdRoot() *cobra.Command {
 	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
-		Use:                    "ucloud",
-		Short:                  "UCloud CLI v" + base.Version,
-		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
-		BashCompletionFunction: "__ucloud_init_completion",
+		Use:               "ucloud",
+		Short:             "UCloud CLI v" + base.Version,
+		Long:              `UCloud CLI - manage UCloud resources and developer workflow`,
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.Version {
 				base.Cxt.Printf("ucloud cli %s\n", base.Version)
