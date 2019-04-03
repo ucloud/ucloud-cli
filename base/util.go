@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -18,6 +19,7 @@ import (
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
@@ -38,6 +40,38 @@ var SdkClient *sdk.Client
 
 //BizClient 用于调用业务接口
 var BizClient *Client
+
+//Logger 日志
+var Logger = log.New()
+var mu sync.Mutex
+
+func init() {
+	file, err := os.Create(GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath))
+	if err != nil {
+		return
+	}
+	Logger.SetOutput(file)
+}
+
+//Log 记录日志
+func Log(logs []string) {
+	mu.Lock()
+	defer mu.Unlock()
+	Logger.Info("=============================================================")
+	for _, line := range logs {
+		Logger.Info(line)
+	}
+}
+
+//ToQueryMap tranform request to map
+func ToQueryMap(req request.Common) map[string]string {
+	reqMap, err := request.ToQueryMap(req)
+	if err != nil {
+		return nil
+	}
+	// delete(reqMap, "Password")
+	return reqMap
+}
 
 //GetHomePath 获取家目录
 func GetHomePath() string {
@@ -127,6 +161,19 @@ func HandleError(err error) {
 	} else {
 		Cxt.PrintErr(err)
 	}
+}
+
+//ParseError 解析错误为字符串
+func ParseError(err error) string {
+	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
+		format := "Something wrong. RetCode:%d. Message:%s"
+		message := uErr.Message()
+		if uErr.Code() == -1 || uErr.Code() == -2 {
+			message = "request timeout, retry later please"
+		}
+		return fmt.Sprintf(format, uErr.Code(), message)
+	}
+	return fmt.Sprintf("Error:%v", err)
 }
 
 //PrintJSON 以JSON格式打印数据集合
@@ -294,6 +341,7 @@ var RegionLabel = map[string]string{
 	"cn-bj2":       "Beijing2",
 	"cn-sh2":       "Shanghai2",
 	"cn-gd":        "Guangzhou",
+	"cn-qz":        "Quanzhou",
 	"hk":           "Hongkong",
 	"us-ca":        "LosAngeles",
 	"us-ws":        "Washington",
@@ -320,6 +368,70 @@ type Poller struct {
 	Out           io.Writer
 	Timeout       time.Duration
 	SdescribeFunc func(string) (interface{}, error)
+}
+
+//Sspoll 简化版, 支持并发
+func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) {
+	w := waiter.StateWaiter{
+		Pending: []string{"pending"},
+		Target:  []string{"avaliable"},
+		Refresh: func() (interface{}, string, error) {
+			inst, err := p.SdescribeFunc(resourceID)
+			if err != nil {
+				return nil, "", err
+			}
+
+			if inst == nil {
+				return nil, "pending", nil
+			}
+			instValue := reflect.ValueOf(inst)
+			instValue = reflect.Indirect(instValue)
+			instType := instValue.Type()
+			if instValue.Kind() != reflect.Struct {
+				return nil, "", fmt.Errorf("Instance is not struct")
+			}
+			state := ""
+			for i := 0; i < instValue.NumField(); i++ {
+				for _, sf := range p.stateFields {
+					if instType.Field(i).Name == sf {
+						state = instValue.Field(i).String()
+					}
+				}
+			}
+			if state != "" {
+				for _, t := range targetStates {
+					if t == state {
+						return inst, "avaliable", nil
+					}
+				}
+			}
+			return nil, "pending", nil
+
+		},
+		Timeout: p.Timeout,
+	}
+
+	done := make(chan bool)
+	go func() {
+		if _, err := w.Wait(); err != nil {
+			log.Error(err)
+			if _, ok := err.(*waiter.TimeoutError); ok {
+				done <- false
+				return
+			}
+		}
+		done <- true
+	}()
+
+	spin := ux.NewDotSpin(p.Out, pollText)
+	block.SetSpin(spin)
+
+	ret := <-done
+	if ret {
+		spin.Stop()
+	} else {
+		spin.Timeout()
+	}
 }
 
 //Spoll 简化版

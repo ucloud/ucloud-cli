@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
@@ -31,10 +32,10 @@ var global = base.Global
 func NewCmdRoot() *cobra.Command {
 	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
-		Use:                    "ucloud",
-		Short:                  "UCloud CLI v" + base.Version,
-		Long:                   `UCloud CLI - manage UCloud resources and developer workflow`,
-		BashCompletionFunction: "__ucloud_init_completion",
+		Use:               "ucloud",
+		Short:             "UCloud CLI v" + base.Version,
+		Long:              `UCloud CLI - manage UCloud resources and developer workflow`,
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.Version {
 				base.Cxt.Printf("ucloud cli %s\n", base.Version)
@@ -58,10 +59,12 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
 	cmd.AddCommand(NewCmdInit())
+	cmd.AddCommand(NewCmdDoc())
 	cmd.AddCommand(NewCmdConfig())
 	cmd.AddCommand(NewCmdRegion())
 	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
+	cmd.AddCommand(NewCmdUPHost())
 	cmd.AddCommand(NewCmdEIP())
 	cmd.AddCommand(NewCmdGssh())
 	cmd.AddCommand(NewCmdUImage())
@@ -73,6 +76,40 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdUDPN(out))
 	cmd.AddCommand(NewCmdULB())
 	cmd.AddCommand(NewCmdMysql())
+	cmd.AddCommand(NewCmdRedis())
+	cmd.AddCommand(NewCmdMemcache())
+
+	cmd.SetHelpTemplate(helpTmpl)
+	cmd.SetUsageTemplate(usageTmpl)
+	resetHelpFunc(cmd)
+
+	return cmd
+}
+
+//NewCmdDoc ucloud doc
+func NewCmdDoc() *cobra.Command {
+	var dir string
+	cmd := &cobra.Command{
+		Use:   "doc",
+		Short: "Generate documents for all commands",
+		Long:  "Generate documents for all commands",
+		Run: func(c *cobra.Command, args []string) {
+			rootCmd := NewCmdRoot()
+			emptyStr := func(s string) string { return "" }
+			linkHandler := func(name, ref string) string {
+				return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+			}
+			err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
+			if err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
+	cmd.Flags().StringVar(&dir, "dir", "", "Required. the directory where documents of commands are stored")
+	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
+		return base.GetFileList("")
+	})
+	cmd.MarkFlagRequired("dir")
 
 	return cmd
 }
@@ -119,12 +156,8 @@ Use "{{.CommandPath}} --help" for details.{{end}}
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	rootCmd := NewCmdRoot()
-	rootCmd.SetHelpTemplate(helpTmpl)
-	rootCmd.SetUsageTemplate(usageTmpl)
-	resetHelpFunc(rootCmd)
-
-	if err := rootCmd.Execute(); err != nil {
+	cmd := NewCmdRoot()
+	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -161,7 +194,8 @@ func initialize(cmd *cobra.Command) {
 	}
 
 	if global.Debug {
-		log.SetLevel(log.DebugLevel)
+		base.ClientConfig.LogLevel = log.DebugLevel
+		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}
 
 	userInfo, err := base.LoadUserInfo()
