@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
 	cmd.AddCommand(NewCmdInit())
-	cmd.AddCommand(NewCmdDoc())
+	cmd.AddCommand(NewCmdDoc(out))
 	cmd.AddCommand(NewCmdConfig())
 	cmd.AddCommand(NewCmdRegion())
 	cmd.AddCommand(NewCmdProject())
@@ -87,28 +88,49 @@ func NewCmdRoot() *cobra.Command {
 }
 
 //NewCmdDoc ucloud doc
-func NewCmdDoc() *cobra.Command {
-	var dir string
+func NewCmdDoc(out io.Writer) *cobra.Command {
+	var dir, format string
 	cmd := &cobra.Command{
-		Use:   "doc",
+		Use:   "gendoc",
 		Short: "Generate documents for all commands",
-		Long:  "Generate documents for all commands",
+		Long:  "Generate documents for all commands. Support markdown, rst and douku",
 		Run: func(c *cobra.Command, args []string) {
 			rootCmd := NewCmdRoot()
-			emptyStr := func(s string) string { return "" }
-			linkHandler := func(name, ref string) string {
-				return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
-			}
-			err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
-			if err != nil {
-				log.Fatal(err)
+			switch format {
+			case "rst":
+				emptyStr := func(s string) string { return "" }
+				linkHandler := func(name, ref string) string {
+					return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+				}
+				err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+			case "markdown":
+				err := doc.GenMarkdownTree(rootCmd, dir)
+				if err != nil {
+					log.Fatal(err)
+				}
+			case "douku":
+				err := doc.GenDoukuTree(rootCmd, dir, "software/cli/cmd/")
+				if err != nil {
+					log.Fatal(err)
+				}
+			default:
+				fmt.Fprintf(out, "format %s is not supported\n", format)
 			}
 		},
 	}
-	cmd.Flags().StringVar(&dir, "dir", "", "Required. the directory where documents of commands are stored")
+
+	cmd.Flags().StringVar(&dir, "dir", "", "Required. The directory where documents of commands are stored")
+	cmd.Flags().StringVar(&format, "format", "douku", "Required. Format of the doucments. Accept values: markdown, rst and douku")
+
+	cmd.Flags().SetFlagValues("format", "douku", "markdown", "rst")
 	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
 		return base.GetFileList("")
 	})
+
 	cmd.MarkFlagRequired("dir")
 
 	return cmd

@@ -422,7 +422,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					base.Cxt.Printf("uhost:[%s] deleted\n", resp.UHostId)
+					base.Cxt.Printf("uhost[%s] deleted\n", resp.UHostId)
 				}
 			}
 		},
