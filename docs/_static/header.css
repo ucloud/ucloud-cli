@@ -1,0 +1,364 @@
+.docs-header {
+    color: #fff;
+    background-color: #4074e1;
+    background-image: url(https://static.ucloud.cn/af1a3fb7f6d2824ae06793c8f57e42d6.png);
+    background-position: center bottom;
+    background-repeat: repeat-x;
+}
+
+.docs-header .main {
+    overflow: visible;
+    box-sizing: border-box;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.docs-header .nav-bar {
+    line-height: 1;
+    padding-top: 15px;
+    padding-bottom: 20px;
+    margin-bottom: 10px;
+}
+.docs-header a {
+    text-decoration: inherit;
+    color: inherit;
+}
+
+.docs-logo {
+    display: inline-block;
+    width: 90px;
+    height: 25px;
+    background: url(https://static.ucloud.cn/46edd4d75119fb842dc9d8f7d71730bd.png) center center no-repeat;
+}
+
+.page-footer-copyright {
+    padding: 5px 10px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 2;
+    color: #fff;
+    background-color: #212930;
+}
+
+.page-footer-copyright a {
+    color: #fff;
+}
+
+.header-link {
+    display: inline-block;
+    line-height: 25px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: 5px;
+    margin-right: 5px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 13px;
+    background-color: transparent;
+    -webkit-transition: all .2s;
+    transition: all .2s;
+}
+
+.header-link:hover {
+    color: #fff;
+    background-color: #658be1;
+}
+
+.header-link [class^="icon-"] {
+    margin-right: 5px;
+    font-size: 16px;
+    vertical-align: text-bottom;
+}
+
+.docs-login-wrapper {
+    display: inline-block;
+}
+
+.docs-login-wrapper.login .signup,.docs-login-wrapper.login .login {
+    display: none;
+}
+
+.docs-login-wrapper.logout .login-user-name,.docs-login-wrapper.logout .logout {
+    display: none;
+}
+
+.docs-login-wrapper .header-link {
+    border: 1px solid #2e63d0;
+}
+
+.docs-login-wrapper .header-link:hover {
+    border-color: transparent;
+}
+
+.docs-login-wrapper .login,.docs-login-wrapper .logout {
+    background-color: #2e63d0;
+}
+
+.docs-login-wrapper .login:hover,.docs-login-wrapper .logout:hover {
+    background-color: #658be1;
+}
+
+.login-user-name {
+    display: inline-block;
+    min-width: 130px;
+    line-height: 25px;
+    margin-left: 5px;
+    margin-right: 5px;
+    color: #fff;
+    font-size: 13px;
+}
+
+.login-user-name:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.header-search-bar{
+    padding-bottom: 35px;
+ }
+ 
+ 
+.header-title {
+    text-align: center;
+    color: #fff;
+}
+
+.header-title .title {
+    color: #fff;
+    font-size: 34px;
+    font-weight: normal;
+    line-height: 1;
+    padding-bottom: 5px;
+    margin-bottom: 0;
+}
+
+.header-title .title-en {
+    display: inline-block;
+    width: 131px;
+    height: 0;
+    padding-top: 13px;
+    font-size: 13px;
+    line-height: 1;
+    color: #fff;
+    overflow: hidden;
+    background: url(https://static.ucloud.cn/df6e35e1f24ead71ea2be121ac390659.png) 0 0 no-repeat;
+}  
+
+.header-search-wrapper {
+    position: relative;
+    width: 1000px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    line-height: 1;
+    text-align: left;
+    background-color: #386dda;
+    border-radius: 4px;
+    -webkit-transition: background-color .2s ease-out;
+    transition: background-color .2s ease-out;
+}
+
+.search-input-wrapper.focus {
+    background-color: #3769d4;
+}
+
+.search-input-wrapper .search-input {
+    position: absolute;
+    box-sizing: border-box;
+    width: 100%;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    border: none;
+    padding-left: 25px;
+    padding-right: 65px;
+    color: #fff;
+    font-size: 15px;
+    background-color: transparent;
+}
+
+.search-input-wrapper .search-input::-webkit-input-placeholder {
+    color: #a4c1ff;
+}
+
+.search-input-wrapper .search-input::-moz-placeholder {
+    color: #a4c1ff;
+}
+
+.search-input-wrapper .search-input:-ms-input-placeholder {
+    color: #a4c1ff;
+}
+
+.search-input-wrapper .search-input:-webkit-autofill,.search-input-wrapper .search-input:-webkit-autofill:hover,.search-input-wrapper .search-input:-webkit-autofill:focus {
+    box-shadow: 0 0 0 60px #3263cc inset;
+    -webkit-text-fill-color: #fff;
+}
+
+.search-input-wrapper .header-search-btn {
+    position: absolute;
+    box-sizing: border-box;
+    width: 65px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    opacity: 0;
+    z-index: 10;
+}
+
+.search-input-wrapper .icon-search {
+    position: absolute;
+    font-size: 22px;
+    color: #fff;
+    right: 20px;
+    top: 50%;
+    margin-top: -11px;
+}
+.pull-right {
+    float: right !important;
+}
+.pull-left {
+    float: left !important;
+}
+.header-title {
+    text-align: center;
+    color: #fff;
+}
+
+.tr {
+    text-align: right;
+}
+.hz-wrapper {
+    font-size: 0;
+}
+.main {
+    margin: 0 auto;
+    width: 1200px;
+    height: auto;
+    clear: both;
+    overflow: hidden;
+}
+
+.clearfix:before,.clearfix:after {
+    content: " ";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}
+@font-face {
+    font-family: 'icomoon';
+    src: url('/_static/icomoon.ttf?uhi4h5');
+    font-weight: normal;
+    font-style: normal;
+}
+
+[class^="icon-"],[class*=" icon-"] {
+    font-family: 'icomoon' !important;
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.icon-sidebar-menu:before {
+    content: "\e903";
+}
+
+.icon-console:before {
+    content: "\e900";
+}
+
+.icon-home:before {
+    content: "\e901";
+}
+
+.icon-UConnect:before {
+    content: "\e902";
+}
+
+.icon-arrow-up:before {
+    content: "\e90e";
+}
+
+.icon-ufile:before {
+    content: "\e912";
+}
+
+.icon-UNet:before {
+    content: "\e91a";
+}
+
+.icon-dashbord-meum:before {
+    content: "\e943";
+}
+
+.icon-down:before {
+    content: "\e94e";
+}
+
+.icon-minus:before {
+    content: "\e97f";
+}
+
+.icon-plus:before {
+    content: "\e990";
+}
+
+.icon-qr-code:before {
+    content: "\e995";
+}
+
+.icon-search:before {
+    content: "\e99f";
+}
+
+.icon-up:before {
+    content: "\e9d1";
+}
+
+.icon-urecord:before {
+    content: "\e9d5";
+}
+
+.icon-wechat:before {
+    content: "\e9e2";
+}
+
+div {
+    margin: 0;
+    padding: 0;
+}
+a {
+    text-decoration: none;
+}
+
+body{
+    position: relative;
+    font: normal 13px "Hiragino Sans GB","\5FAE\8F6F\96C5\9ED1","Microsoft Yahei",tahoma,arial,"\5B8B\4F53",sans-serif;
+    -webkit-text-size-adjust: 100%;
+    min-height: 100%;
+}
+h1 {
+    font-size: 22px;
+    margin: 0 0 8px;
+}
+h1,h2,h3,h4,h5,h6 {
+    font-weight: bold;
+    color: #212930;
+    background-color: inherit;
+    padding: 0;
+    line-height: 2.2;
+    clear: left;
+}
+input:focus,button:focus,select:focus,keygen:focus,textarea:focus {
+    outline: 0;
+}

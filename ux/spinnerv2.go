@@ -11,7 +11,7 @@ import (
 	"github.com/ucloud/ucloud-cli/ansi"
 )
 
-// Spinner type
+// Spin type
 type Spin struct {
 	out             io.Writer
 	frames          []rune

@@ -35,7 +35,7 @@ func NewCmdRedis() *cobra.Command {
 	}
 	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdRedisList())
-	cmd.AddCommand(NewCmdRedisCreate())
+	cmd.AddCommand(NewCmdRedisCreate(out))
 	cmd.AddCommand(NewCmdRedisDelete(out))
 	return cmd
 }
@@ -147,7 +147,7 @@ func NewCmdRedisList() *cobra.Command {
 }
 
 //NewCmdRedisCreate ucloud redis create
-func NewCmdRedisCreate() *cobra.Command {
+func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewCreateURedisGroupRequest()
 	req.HighAvailability = sdk.String("enable")
 	var redisType, password string
@@ -156,6 +156,10 @@ func NewCmdRedisCreate() *cobra.Command {
 		Short: "Create redis instance",
 		Long:  "Create redis instance",
 		Run: func(c *cobra.Command, args []string) {
+			if l := len(*req.Name); l < 6 || l > 63 {
+				fmt.Fprintln(out, "length of name should be between 6 and 63")
+				return
+			}
 			if redisType == "master-replica" {
 				resp, err := base.BizClient.CreateURedisGroup(req)
 				if err != nil {
@@ -192,7 +196,7 @@ func NewCmdRedisCreate() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.Name = flags.String("name", "", "Required. Name of the redis to create")
+	req.Name = flags.String("name", "", "Required. Name of the redis to create. Range of the password length is [6,63] and the password can only contain letters and numbers")
 	flags.StringVar(&redisType, "type", "", "Required. Type of the redis. Accept values:'master-replica','distributed'")
 	req.Size = flags.Int("size-gb", 1, "Optional. Memory size. Default value 1GB(for master-replica redis type) or 16GB(for distributed redis type). Unit GB")
 	req.Version = flags.String("version", "3.2", "Optional. Version of redis")
