@@ -1,6 +1,6 @@
 ##  UCloud CLI 
   
-![](https://ucloud-cli.dl.ufileos.com/ucloud_cli_demo.gif)
+![](./docs/_static/ucloud_cli_demo.gif)
 
 The UCloud CLI provides a unified command line interface to UCloud services. It works on Golang SDK based on UCloud OpenAPI and supports Linux, macOS and Windows. 
 
