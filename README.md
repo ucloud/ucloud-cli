@@ -124,13 +124,13 @@ uhost[uhost-zbuxxxx] is initializing...done
 
 *Note* 
 
-Run command below to get details about the parameters to create new uhost instance.
+Run command below to get details about the parameters of creating new uhost instance.
 
 ```
 $ ucloud uhost create --help
 ```
 
-Secondly, we're going to allocate an EIP and bind to the uhost created above.
+Secondly, we're going to allocate an EIP and then bind it to the uhost created above.
 
 ```
 $ ucloud eip allocate --line International --bandwidth 1
