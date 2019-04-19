@@ -162,18 +162,11 @@ func NewCmdUHostCreate() *cobra.Command {
 					if len(bindEipIDs) > i {
 						bindEipID = bindEipIDs[i]
 					}
-					go createUhostWrapper(req, eipReq, bindEipID, async, make(chan bool, count), wg, tokens)
+					go createUhostWrapper(req, eipReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
 				}
 			} else {
 				retCh := make(chan bool, count)
 				ux.Doc.Disable()
-
-				result := map[string]int{
-					"total":   count,
-					"success": 0,
-					"fail":    0,
-				}
-
 				refresh := ux.NewRefresh()
 
 				go func() {
@@ -182,20 +175,21 @@ func NewCmdUHostCreate() *cobra.Command {
 						if len(bindEipIDs) > i {
 							bindEipID = bindEipIDs[i]
 						}
-						go createUhostWrapper(req, eipReq, bindEipID, async, retCh, wg, tokens)
+						go createUhostWrapper(req, eipReq, bindEipID, async, retCh, wg, tokens, i)
 					}
 				}()
 
 				go func() {
-					refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
+					var success, fail int
+					refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", count, success, fail))
 					for ret := range retCh {
 						if ret {
-							result["success"]++
+							success++
 						} else {
-							result["fail"]++
+							fail++
 						}
-						refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
-						if result["total"] == result["success"]+result["fail"] && result["fail"] > 0 {
+						refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", count, success, fail))
+						if count == success+fail && fail > 0 {
 							fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
 						}
 					}
@@ -292,7 +286,7 @@ func NewCmdUHostCreate() *cobra.Command {
 }
 
 //createUhostWrapper 处理UI和并发控制
-func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}) {
+func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
 	//控制并发数量
 	tokens <- struct{}{}
 	defer func() {
@@ -301,8 +295,9 @@ func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.Allo
 	}()
 
 	success, logs := createUhost(req, eipReq, bindEipID, async)
-	base.Log(logs)
 	retCh <- success
+	logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
+	base.Log(logs)
 }
 
 func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool) (bool, []string) {
