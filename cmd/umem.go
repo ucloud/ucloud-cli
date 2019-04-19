@@ -34,7 +34,7 @@ func NewCmdRedis() *cobra.Command {
 		Long:  "List and manipulate redis instances",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdRedisList())
+	cmd.AddCommand(NewCmdRedisList(out))
 	cmd.AddCommand(NewCmdRedisCreate(out))
 	cmd.AddCommand(NewCmdRedisDelete(out))
 	return cmd
@@ -48,7 +48,7 @@ func NewCmdMemcache() *cobra.Command {
 		Long:  "List and manipulate memcache instances",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdMemcacheList())
+	cmd.AddCommand(NewCmdMemcacheList(out))
 	cmd.AddCommand(NewCmdMemcacheCreate(out))
 	cmd.AddCommand(NewCmdMemcacheDelete(out))
 	return cmd
@@ -75,7 +75,7 @@ var redisTypeMap = map[string]string{
 }
 
 //NewCmdRedisList ucloud redis list
-func NewCmdRedisList() *cobra.Command {
+func NewCmdRedisList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -124,7 +124,7 @@ func NewCmdRedisList() *cobra.Command {
 					list = append(list, srow)
 				}
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -302,7 +302,7 @@ type UMemMemcacheRow struct {
 }
 
 //NewCmdMemcacheList ucloud memcache list
-func NewCmdMemcacheList() *cobra.Command {
+func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemcacheGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -328,7 +328,7 @@ func NewCmdMemcacheList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 

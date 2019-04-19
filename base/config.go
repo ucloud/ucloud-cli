@@ -334,7 +334,7 @@ func ListAggConfig(json bool) {
 		aggConfigs[idx].PublicKey = MosaicString(ac.PublicKey, 8, 5)
 	}
 	if json {
-		PrintJSON(aggConfigs)
+		PrintJSON(aggConfigs, os.Stdout)
 	} else {
 		PrintTableS(aggConfigs)
 	}
@@ -513,9 +513,6 @@ func init() {
 		PublicKey:  ConfigIns.PublicKey,
 		PrivateKey: ConfigIns.PrivateKey,
 	}
-
-	//sdkClient 用于上报数据
-	// SdkClient = sdk.NewClient(ClientConfig, AuthCredential)
 
 	//bizClient 用于调用业务接口
 	BizClient = NewClient(ClientConfig, AuthCredential)

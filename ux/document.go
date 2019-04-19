@@ -11,14 +11,16 @@ import (
 	"github.com/ucloud/ucloud-cli/ansi"
 )
 
+var width, rows, _ = terminalSize()
+
 //Document 当前进程在打印的内容
 type document struct {
 	blocks          []*Block
+	mux             sync.RWMutex
 	framesPerSecond int
 	once            sync.Once
 	out             io.Writer
 	ticker          *time.Ticker
-	mux             sync.Mutex
 	ctx             context.Context
 	cancel          context.CancelFunc
 	allBlockFull    chan bool
@@ -26,13 +28,13 @@ type document struct {
 	disable         bool
 }
 
-var width, rows, _ = terminalSize()
-
 func (d *document) reset() {
 	size := 0
+	d.mux.RLock()
 	for _, block := range d.blocks {
 		size += block.printLineNum
 	}
+	d.mux.RUnlock()
 	if size != 0 {
 		fmt.Printf(ansi.CursorLeft + ansi.CursorPrevLine(size) + ansi.EraseDown)
 	}
@@ -40,6 +42,20 @@ func (d *document) reset() {
 
 func (d *document) Disable() {
 	d.disable = true
+}
+
+func (d *document) SetWriter(out io.Writer) {
+	d.out = out
+}
+
+func (d *document) Content() []string {
+	var lines []string
+	for _, block := range d.blocks {
+		for _, line := range block.lines {
+			lines = append(lines, line)
+		}
+	}
+	return lines
 }
 
 func (d *document) Render() {
@@ -50,6 +66,7 @@ func (d *document) Render() {
 		go func() {
 			for range d.ticker.C {
 				d.reset()
+				d.mux.RLock()
 				for _, block := range d.blocks {
 					block.printLineNum = 0
 					block.mux.Lock()
@@ -66,6 +83,7 @@ func (d *document) Render() {
 					fmt.Fprintf(d.out, "\n")
 					block.printLineNum++
 				}
+				d.mux.RUnlock()
 			}
 		}()
 		go d.checkBlockDone()
@@ -88,7 +106,10 @@ func (d *document) checkBlockFull(ctx context.Context) {
 	allFull := make(chan struct{})
 	go func() {
 		for _, b := range d.blocks {
-			<-b.full
+			select {
+			case <-b.full:
+			case <-ctx.Done():
+			}
 		}
 		close(allFull)
 	}()
@@ -139,7 +160,7 @@ type Block struct {
 	mux          sync.Mutex
 	lines        []string
 	stable       chan struct{} //标识此块已稳定，不再轮询
-	full         chan struct{} //标识此块不再添加新的内容
+	full         chan struct{} //标识此块不再添加新的内容, 一般轮询完成后才标识为Full, 不太合理，fixme
 }
 
 //Update lines in Block

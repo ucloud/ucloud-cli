@@ -38,7 +38,7 @@ func NewCmdULB() *cobra.Command {
 	}
 	out := base.Cxt.GetWriter()
 
-	cmd.AddCommand(NewCmdULBList())
+	cmd.AddCommand(NewCmdULBList(out))
 	cmd.AddCommand(NewCmdULBCreate(out))
 	cmd.AddCommand(NewCmdULBUpdate(out))
 	cmd.AddCommand(NewCmdULBDelete(out))
@@ -60,7 +60,7 @@ type ULBRow struct {
 }
 
 //NewCmdULBList ucloud ulb list
-func NewCmdULBList() *cobra.Command {
+func NewCmdULBList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeULBRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -95,7 +95,7 @@ func NewCmdULBList() *cobra.Command {
 				list = append(list, row)
 			}
 
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -417,7 +417,7 @@ func NewCmdULBVServerList(out io.Writer) *cobra.Command {
 				row.HealthCheckPath = vs.Path
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -721,7 +721,7 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -1036,7 +1036,7 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 					row.Backends = strings.Join(nodes, ",")
 					list = append(list, row)
 				}
-				base.PrintList(list)
+				base.PrintList(list, out)
 			}
 		},
 	}
@@ -1217,7 +1217,7 @@ func NewCmdULBSSL() *cobra.Command {
 		Long:  "List and manipulate SSL Certificates for ULB",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdSSLList())
+	cmd.AddCommand(NewCmdSSLList(out))
 	cmd.AddCommand(NewCmdSSLDescribe(out))
 	cmd.AddCommand(NewCmdSSLAdd(out))
 	cmd.AddCommand(NewCmdSSLDelete(out))
@@ -1236,7 +1236,7 @@ type SSLCertificate struct {
 }
 
 //NewCmdSSLList ucloud ulb-ssl-certificate list
-func NewCmdSSLList() *cobra.Command {
+func NewCmdSSLList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSSLRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -1264,7 +1264,7 @@ func NewCmdSSLList() *cobra.Command {
 				row.BindResource = strings.Join(targets, ",")
 				rows = append(rows, row)
 			}
-			base.PrintList(rows)
+			base.PrintList(rows, out)
 		},
 	}
 	flags := cmd.Flags()

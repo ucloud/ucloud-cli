@@ -39,7 +39,7 @@ func NewCmdDisk() *cobra.Command {
 	}
 	writer := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdDiskCreate(writer))
-	cmd.AddCommand(NewCmdDiskList())
+	cmd.AddCommand(NewCmdDiskList(writer))
 	cmd.AddCommand(NewCmdDiskAttach(writer))
 	cmd.AddCommand(NewCmdDiskDetach(writer))
 	cmd.AddCommand(NewCmdDiskDelete())
@@ -176,7 +176,7 @@ type DiskRow struct {
 }
 
 //NewCmdDiskList ucloud disk list
-func NewCmdDiskList() *cobra.Command {
+func NewCmdDiskList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDiskRequest()
 	typeMap := map[string]string{
 		"DataDisk":    "Oridinary-Data-Disk",
@@ -222,7 +222,7 @@ func NewCmdDiskList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -670,7 +670,7 @@ func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 

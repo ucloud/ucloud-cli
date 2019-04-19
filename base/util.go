@@ -46,11 +46,16 @@ var Logger = log.New()
 var mu sync.Mutex
 
 func init() {
-	file, err := os.Create(GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath))
+	file, err := os.Create(GetLogFilePath())
 	if err != nil {
 		return
 	}
 	Logger.SetOutput(file)
+}
+
+//GetLogFilePath 获取日志文件路径
+func GetLogFilePath() string {
+	return GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
 }
 
 //Log 记录日志
@@ -177,12 +182,12 @@ func ParseError(err error) string {
 }
 
 //PrintJSON 以JSON格式打印数据集合
-func PrintJSON(dataSet interface{}) error {
+func PrintJSON(dataSet interface{}, out io.Writer) error {
 	bytes, err := json.MarshalIndent(dataSet, "", "  ")
 	if err != nil {
 		return err
 	}
-	Cxt.Println(string(bytes))
+	fmt.Fprintln(out, string(bytes))
 	return nil
 }
 
@@ -204,9 +209,9 @@ func PrintTableS(dataSet interface{}) {
 }
 
 //PrintList 打印表格或者JSON
-func PrintList(dataSet interface{}) {
+func PrintList(dataSet interface{}, out io.Writer) {
 	if Global.JSON {
-		PrintJSON(dataSet)
+		PrintJSON(dataSet, out)
 	} else {
 		PrintTableS(dataSet)
 	}
@@ -215,7 +220,7 @@ func PrintList(dataSet interface{}) {
 //PrintDescribe 打印详情
 func PrintDescribe(attrs []DescribeTableRow, json bool) {
 	if json {
-		PrintJSON(attrs)
+		PrintJSON(attrs, os.Stdout)
 	} else {
 		for _, attr := range attrs {
 			fmt.Println(attr.Attribute)
@@ -275,7 +280,9 @@ func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidth
 		tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]+GAP) + "s"
 		fmt.Printf(tmpl, field)
 	}
-	fmt.Printf("\n")
+	if len(fieldList) != 0 {
+		fmt.Printf("\n")
+	}
 
 	//打印数据
 	for _, row := range rowList {

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -38,7 +39,8 @@ func NewCmdEIP() *cobra.Command {
 		Long:  `Manipulate EIP, such as list,allocate and release`,
 		Args:  cobra.NoArgs,
 	}
-	cmd.AddCommand(NewCmdEIPList())
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdEIPList(out))
 	cmd.AddCommand(NewCmdEIPAllocate())
 	cmd.AddCommand(NewCmdEIPRelease())
 	cmd.AddCommand(NewCmdEIPBind())
@@ -64,7 +66,7 @@ type EIPRow struct {
 }
 
 //NewCmdEIPList ucloud eip list
-func NewCmdEIPList() *cobra.Command {
+func NewCmdEIPList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeEIPRequest()
 	fetchAll := sdk.Bool(false)
 	cmd := &cobra.Command{
@@ -108,7 +110,7 @@ func NewCmdEIPList() *cobra.Command {
 				row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 

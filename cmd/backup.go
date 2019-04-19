@@ -36,7 +36,7 @@ func NewCmdUDBBackup() *cobra.Command {
 	}
 	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdUDBBackupCreate(out))
-	cmd.AddCommand(NewCmdUDBBackupList())
+	cmd.AddCommand(NewCmdUDBBackupList(out))
 	cmd.AddCommand(NewCmdUDBBackupDelete(out))
 	cmd.AddCommand(NewCmdUDBBackupGetDownloadURL(out))
 	return cmd
@@ -92,7 +92,7 @@ type udbBackupRow struct {
 }
 
 //NewCmdUDBBackupList ucloud udb backup list
-func NewCmdUDBBackupList() *cobra.Command {
+func NewCmdUDBBackupList(out io.Writer) *cobra.Command {
 	var bpType, dbType, beginTime, endTime, backupID string
 	bpTypeMap := map[string]int{
 		"manual": 1,
@@ -161,7 +161,7 @@ func NewCmdUDBBackupList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -431,7 +431,7 @@ func NewCmdUDBLogArchiveList(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 

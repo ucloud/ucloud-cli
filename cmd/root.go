@@ -27,7 +27,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-var global = base.Global
+var global = &base.Global
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
@@ -62,7 +62,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.AddCommand(NewCmdInit())
 	cmd.AddCommand(NewCmdDoc(out))
 	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdRegion())
+	cmd.AddCommand(NewCmdRegion(out))
 	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
 	cmd.AddCommand(NewCmdUPHost())
@@ -215,7 +215,8 @@ func initialize(cmd *cobra.Command) {
 		base.ClientConfig.Zone = zone
 	}
 
-	if global.Debug {
+	mode := os.Getenv("UCLOUD_CLI_DEBUG")
+	if mode == "on" || global.Debug {
 		base.ClientConfig.LogLevel = log.DebugLevel
 		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}

@@ -37,7 +37,7 @@ func NewCmdUImage() *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 	writer := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdUImageList())
+	cmd.AddCommand(NewCmdUImageList(writer))
 	cmd.AddCommand(NewCmdImageCopy(writer))
 	cmd.AddCommand(NewCmdUImageDelete())
 	createImageCmd := NewCmdUhostCreateImage(writer)
@@ -58,7 +58,7 @@ type ImageRow struct {
 }
 
 //NewCmdUImageList ucloud uimage list
-func NewCmdUImageList() *cobra.Command {
+func NewCmdUImageList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeImageRequest()
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -84,13 +84,13 @@ func NewCmdUImageList() *cobra.Command {
 					list = append(list, row)
 				}
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
-	req.ImageType = cmd.Flags().String("image-type", "", "Optional. 'Base',Standard image; 'Business',image market; 'Custom',custom image; Return all types by default")
+	req.ImageType = cmd.Flags().String("image-type", "Base", "Optional. 'Base',Standard image; 'Business',image market; 'Custom',custom image")
 	req.OsType = cmd.Flags().String("os-type", "", "Optional. Linux or Windows. Return all types by default")
 	req.ImageId = cmd.Flags().String("image-id", "", "Optional. Resource ID of image")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
