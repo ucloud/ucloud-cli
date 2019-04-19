@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"strings"
 
@@ -34,7 +35,8 @@ func NewCmdGssh() *cobra.Command {
 		Short: "Create,list,update and delete globalssh instance",
 		Long:  `Create,list,update and delete globalssh instance`,
 	}
-	cmd.AddCommand(NewCmdGsshList())
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdGsshList(out))
 	cmd.AddCommand(NewCmdGsshCreate())
 	cmd.AddCommand(NewCmdGsshDelete())
 	cmd.AddCommand(NewCmdGsshModify())
@@ -53,7 +55,7 @@ type GSSHRow struct {
 }
 
 //NewCmdGsshList ucloud gssh list
-func NewCmdGsshList() *cobra.Command {
+func NewCmdGsshList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeGlobalSSHInstanceRequest()
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -90,7 +92,7 @@ func NewCmdGsshList() *cobra.Command {
 					}
 					list = append(list, row)
 				}
-				base.PrintList(list)
+				base.PrintList(list, out)
 			}
 		},
 	}

@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
@@ -30,7 +32,8 @@ func NewCmdProject() *cobra.Command {
 		Long:    "List,create,update and delete project",
 		Example: "ucloud project",
 	}
-	cmd.AddCommand(NewCmdProjectList())
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdProjectList(out))
 	cmd.AddCommand(NewCmdProjectCreate())
 	cmd.AddCommand(NewCmdProjectUpdate())
 	cmd.AddCommand(NewCmdProjectDelete())
@@ -38,14 +41,14 @@ func NewCmdProject() *cobra.Command {
 }
 
 //NewCmdProjectList ucloud project list
-func NewCmdProjectList() *cobra.Command {
+func NewCmdProjectList(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List project",
 		Long:    "List project",
 		Example: "ucloud project list",
 		Run: func(cmd *cobra.Command, args []string) {
-			listProject()
+			listProject(out)
 		},
 	}
 	return cmd
@@ -132,7 +135,7 @@ func NewCmdProjectDelete() *cobra.Command {
 	return cmd
 }
 
-func listProject() error {
+func listProject(out io.Writer) error {
 	req := &uaccount.GetProjectListRequest{}
 	resp, err := base.BizClient.GetProjectList(req)
 	if err != nil {
@@ -142,7 +145,7 @@ func listProject() error {
 		return base.HandleBizError(resp)
 	}
 	if global.JSON {
-		base.PrintJSON(resp.ProjectSet)
+		base.PrintJSON(resp.ProjectSet, out)
 	} else {
 		base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
 	}

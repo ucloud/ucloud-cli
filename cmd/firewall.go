@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -39,14 +38,14 @@ func NewCmdFirewall() *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 	writer := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdFirewallList())
+	cmd.AddCommand(NewCmdFirewallList(writer))
 	cmd.AddCommand(NewCmdFirewallCreate(writer))
 	cmd.AddCommand(NewCmdFirewallAddRule(writer))
 	cmd.AddCommand(NewCmdFirewallDeleteRule(writer))
 	cmd.AddCommand(NewCmdFirewallApply())
 	cmd.AddCommand(NewCmdFirewallCopy())
 	cmd.AddCommand(NewCmdFirewallDelete())
-	cmd.AddCommand(NewCmdFirewallResource())
+	cmd.AddCommand(NewCmdFirewallResource(writer))
 	cmd.AddCommand(NewCmdFirewallUpdate(writer))
 
 	return cmd
@@ -64,7 +63,7 @@ type FirewallRow struct {
 }
 
 //NewCmdFirewallList ucloud firewall list
-func NewCmdFirewallList() *cobra.Command {
+func NewCmdFirewallList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeFirewallRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -94,7 +93,7 @@ func NewCmdFirewallList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -104,8 +103,8 @@ func NewCmdFirewallList() *cobra.Command {
 	req.FWId = flags.String("firewall-id", "", "Optional. The Rsource ID of firewall. Return all firewalls by default.")
 	req.ResourceType = flags.String("bound-resource-type", "", "Optional. The type of resource bound on the firewall")
 	req.ResourceId = flags.String("bound-resource-id", "", "Optional. The resource ID of resource bound on the firewall")
-	req.Offset = flags.String("offset", "0", "Optional. Offset")
-	req.Limit = flags.String("limit", "50", "Optional. Limit")
+	req.Offset = flags.Int("offset", 0, "Optional. Offset")
+	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 	return cmd
 }
 
@@ -464,7 +463,7 @@ type FirewallResourceRow struct {
 }
 
 //NewCmdFirewallResource ucloud firewall resource
-func NewCmdFirewallResource() *cobra.Command {
+func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	fwID := ""
 	req := base.BizClient.NewDescribeFirewallResourceRequest()
 	cmd := &cobra.Command{
@@ -489,7 +488,7 @@ func NewCmdFirewallResource() *cobra.Command {
 				row.Remark = rs.Remark
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -597,8 +596,8 @@ func getAllFirewallIns(project, region string) ([]unet.FirewallDataSet, error) {
 	req.Region = sdk.String(region)
 	list := []unet.FirewallDataSet{}
 	for offset, limit := 0, 100; ; offset += limit {
-		req.Offset = sdk.String(strconv.Itoa(offset))
-		req.Limit = sdk.String(strconv.Itoa(limit))
+		req.Offset = sdk.Int(offset)
+		req.Limit = sdk.Int(limit)
 		resp, err := base.BizClient.DescribeFirewall(req)
 		if err != nil {
 			return nil, err

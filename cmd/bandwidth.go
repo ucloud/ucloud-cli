@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -47,8 +48,9 @@ func NewCmdSharedBW() *cobra.Command {
 		Short: "Create and manipulate shared bandwidth instances",
 		Long:  "Create and manipulate shared bandwidth instances",
 	}
+	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdSharedBWCreate())
-	cmd.AddCommand(NewCmdSharedBWList())
+	cmd.AddCommand(NewCmdSharedBWList(out))
 	cmd.AddCommand(NewCmdSharedBWResize())
 	cmd.AddCommand(NewCmdSharedBWDelete())
 	return cmd
@@ -100,7 +102,7 @@ type SharedBWRow struct {
 }
 
 //NewCmdSharedBWList ucloud shared-bw list
-func NewCmdSharedBWList() *cobra.Command {
+func NewCmdSharedBWList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeShareBandwidthRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -132,7 +134,7 @@ func NewCmdSharedBWList() *cobra.Command {
 				row.EIP = strings.Join(eipList, "\n")
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -247,8 +249,9 @@ func NewCmdBandwidthPkg() *cobra.Command {
 		Short: "List, create and delete bandwidth package instances",
 		Long:  "List, create and delete bandwidth package instances",
 	}
+	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdBandwidthPkgCreate())
-	cmd.AddCommand(NewCmdBandwidthPkgList())
+	cmd.AddCommand(NewCmdBandwidthPkgList(out))
 	cmd.AddCommand(NewCmdBandwidthPkgDelete())
 	return cmd
 }
@@ -330,7 +333,7 @@ type BandwidthPkgRow struct {
 }
 
 //NewCmdBandwidthPkgList ucloud bw-pkg list
-func NewCmdBandwidthPkgList() *cobra.Command {
+func NewCmdBandwidthPkgList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeBandwidthPackageRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -357,7 +360,7 @@ func NewCmdBandwidthPkgList() *cobra.Command {
 				row.EIP = eip
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()

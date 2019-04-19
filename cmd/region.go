@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"strings"
 
@@ -28,8 +29,8 @@ import (
 )
 
 //NewCmdRegion ucloud region
-func NewCmdRegion() *cobra.Command {
-	var cmd = &cobra.Command{
+func NewCmdRegion(out io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "region",
 		Short:   "List all region and zone",
 		Long:    "List all region and zone",
@@ -44,7 +45,7 @@ func NewCmdRegion() *cobra.Command {
 			for region, zones := range regionMap {
 				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
 			}
-			base.PrintList(regionList)
+			base.PrintList(regionList, out)
 		},
 	}
 	return cmd

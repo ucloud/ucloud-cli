@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
@@ -29,7 +30,8 @@ func NewCmdUPHost() *cobra.Command {
 		Long:  `List UPHost instances`,
 		Args:  cobra.NoArgs,
 	}
-	cmd.AddCommand(NewCmdUPHostList())
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdUPHostList(out))
 
 	return cmd
 }
@@ -47,7 +49,7 @@ type uphostRow struct {
 }
 
 //NewCmdUPHostList ucloud uphost list
-func NewCmdUPHostList() *cobra.Command {
+func NewCmdUPHostList(out io.Writer) *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewDescribePHostRequest()
 	cmd := &cobra.Command{
@@ -85,7 +87,7 @@ func NewCmdUPHostList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
