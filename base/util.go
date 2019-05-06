@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -19,7 +18,6 @@ import (
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
@@ -40,43 +38,6 @@ var SdkClient *sdk.Client
 
 //BizClient 用于调用业务接口
 var BizClient *Client
-
-//Logger 日志
-var Logger = log.New()
-var mu sync.Mutex
-
-func init() {
-	file, err := os.Create(GetLogFilePath())
-	if err != nil {
-		return
-	}
-	Logger.SetOutput(file)
-}
-
-//GetLogFilePath 获取日志文件路径
-func GetLogFilePath() string {
-	return GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
-}
-
-//Log 记录日志
-func Log(logs []string) {
-	mu.Lock()
-	defer mu.Unlock()
-	Logger.Info("=============================================================")
-	for _, line := range logs {
-		Logger.Info(line)
-	}
-}
-
-//ToQueryMap tranform request to map
-func ToQueryMap(req request.Common) map[string]string {
-	reqMap, err := request.ToQueryMap(req)
-	if err != nil {
-		return nil
-	}
-	// delete(reqMap, "Password")
-	return reqMap
-}
 
 //GetHomePath 获取家目录
 func GetHomePath() string {
