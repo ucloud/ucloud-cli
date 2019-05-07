@@ -20,6 +20,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -291,6 +292,8 @@ func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.Allo
 	tokens <- struct{}{}
 	defer func() {
 		<-tokens
+		//设置延时，使报错能渲染出来
+		time.Sleep(time.Second / 5)
 		wg.Done()
 	}()
 
@@ -309,14 +312,12 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("err:%v", err))
 		block.Append(base.ParseError(err))
-		block.AppendDone()
 		return false, logs
 	}
 
 	logs = append(logs, fmt.Sprintf("resp:%#v", resp))
 	if len(resp.UHostIds) != 1 {
 		block.Append(fmt.Sprintf("expect uhost count 1 , accept %d", len(resp.UHostIds)))
-		block.AppendDone()
 		return false, logs
 	}
 
@@ -367,7 +368,6 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 			}
 		}
 	}
-	block.AppendDone()
 	return true, logs
 }
 
