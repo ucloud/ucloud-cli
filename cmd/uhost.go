@@ -75,51 +75,88 @@ type UHostRow struct {
 	CreationTime string
 }
 
+func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer) {
+	list := make([]UHostRow, 0)
+	for _, host := range uhosts {
+		row := UHostRow{}
+		row.UHostName = host.Name
+		row.ResourceID = host.UHostId
+		row.Group = host.Tag
+		for _, ip := range host.IPSet {
+			if row.PublicIP != "" {
+				row.PublicIP += " | "
+			}
+			if ip.Type == "Private" {
+				row.PrivateIP = ip.IP
+			} else {
+				row.PublicIP += fmt.Sprintf("%s", ip.IP)
+			}
+		}
+		cupCore := host.CPU
+		memorySize := host.Memory / 1024
+		diskSize := 0
+		for _, disk := range host.DiskSet {
+			if disk.Type == "Data" || disk.Type == "Udisk" {
+				diskSize += disk.Size
+			}
+		}
+		row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
+		row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
+		row.CreationTime = base.FormatDate(host.CreateTime)
+		row.State = host.State
+		row.Type = host.UHostType + "/" + host.HostType
+		list = append(list, row)
+	}
+	base.PrintList(list, out)
+}
+
+func listUhostID(uhosts []uhost.UHostInstanceSet, out io.Writer) {
+	for _, u := range uhosts {
+		fmt.Fprintln(out, u.UHostId)
+	}
+}
+
 //NewCmdUHostList [ucloud uhost list]
 func NewCmdUHostList(out io.Writer) *cobra.Command {
+	var pageoff, idOnly bool
 	req := base.BizClient.NewDescribeUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all UHost Instances",
 		Long:  `List all UHost Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DescribeUHostInstance(req)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-			list := make([]UHostRow, 0)
-			for _, host := range resp.UHostSet {
-				row := UHostRow{}
-				row.UHostName = host.Name
-				row.ResourceID = host.UHostId
-				row.Group = host.Tag
-				for _, ip := range host.IPSet {
-					if row.PublicIP != "" {
-						row.PublicIP += " | "
+			if pageoff {
+				uhostList := make([]uhost.UHostInstanceSet, 0)
+				for limit, offset := 50, *req.Offset; ; offset += limit {
+					req.Offset = sdk.Int(offset)
+					req.Limit = sdk.Int(limit)
+					resp, err := base.BizClient.DescribeUHostInstance(req)
+					if err != nil {
+						base.HandleError(err)
+						return
 					}
-					if ip.Type == "Private" {
-						row.PrivateIP = ip.IP
-					} else {
-						row.PublicIP += fmt.Sprintf("%s", ip.IP)
+					uhostList = append(uhostList, resp.UHostSet...)
+					if resp.TotalCount <= offset+limit {
+						break
 					}
 				}
-				cupCore := host.CPU
-				memorySize := host.Memory / 1024
-				diskSize := 0
-				for _, disk := range host.DiskSet {
-					if disk.Type == "Data" || disk.Type == "Udisk" {
-						diskSize += disk.Size
-					}
+				if idOnly {
+					listUhostID(uhostList, out)
+				} else {
+					listUhost(uhostList, out)
 				}
-				row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
-				row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
-				row.CreationTime = base.FormatDate(host.CreateTime)
-				row.State = host.State
-				row.Type = host.UHostType + "/" + host.HostType
-				list = append(list, row)
+			} else {
+				resp, err := base.BizClient.DescribeUHostInstance(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				if idOnly {
+					listUhostID(resp.UHostSet, out)
+				} else {
+					listUhost(resp.UHostSet, out)
+				}
 			}
-			base.PrintList(list, out)
 		},
 	}
 	cmd.Flags().SortFlags = false
@@ -129,7 +166,12 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
+	cmd.Flags().BoolVar(&pageoff, "page-off", false, "Optional. Paging or not. If assigned, the limit flag will be disabled and list all uhost instances")
+	cmd.Flags().BoolVar(&idOnly, "uhost-id-only", false, "Optional. Just display resource id of uhost")
 	bindGroup(req, cmd.Flags())
+
+	cmd.Flags().SetFlagValues("page-off", "true", "false")
+	cmd.Flags().SetFlagValues("uhost-id-only", "true", "false")
 
 	return cmd
 }
