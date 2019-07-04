@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"strings"
 
@@ -28,23 +29,23 @@ import (
 )
 
 //NewCmdRegion ucloud region
-func NewCmdRegion() *cobra.Command {
-	var cmd = &cobra.Command{
+func NewCmdRegion(out io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "region",
 		Short:   "List all region and zone",
 		Long:    "List all region and zone",
 		Example: "ucloud region",
 		Run: func(cmd *cobra.Command, args []string) {
-			regionMap, err := fetchRegion()
+			regionIns, err := fetchRegion()
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
 			regionList := make([]RegionTable, 0)
-			for region, zones := range regionMap {
+			for region, zones := range regionIns.Labels {
 				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
 			}
-			base.PrintList(regionList)
+			base.PrintList(regionList, out)
 		},
 	}
 	return cmd
@@ -73,50 +74,83 @@ func getDefaultRegion() (string, string, error) {
 	return "", "", fmt.Errorf("No default region")
 }
 
-func fetchRegion() (map[string][]string, error) {
-	req := &uaccount.GetRegionRequest{}
+//Region region, zone, isDefault
+type Region struct {
+	Labels        map[string][]string
+	DefaultRegion string
+	DefaultZone   string
+}
+
+func fetchRegion() (*Region, error) {
+	req := base.BizClient.NewGetRegionRequest()
 	resp, err := base.BizClient.GetRegion(req)
 	if err != nil {
 		return nil, err
 	}
-	regionMap := make(map[string][]string)
-	for _, region := range resp.Regions {
-		regionMap[region.Region] = append(regionMap[region.Region], region.Zone)
+	region := &Region{
+		Labels: make(map[string][]string),
 	}
-	return regionMap, nil
+	for _, r := range resp.Regions {
+		region.Labels[r.Region] = append(region.Labels[r.Region], r.Zone)
+		if r.IsDefault {
+			region.DefaultRegion = r.Region
+			region.DefaultZone = r.Zone
+		}
+	}
+	return region, nil
+}
+
+func fetchRegionWithConfig(cfg *base.AggConfig) (*Region, error) {
+	bc, err := base.GetBizClient(cfg)
+	req := bc.NewGetRegionRequest()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := bc.GetRegion(req)
+	if err != nil {
+		return nil, err
+	}
+	region := &Region{
+		Labels: make(map[string][]string),
+	}
+	for _, r := range resp.Regions {
+		region.Labels[r.Region] = append(region.Labels[r.Region], r.Zone)
+		if r.IsDefault {
+			region.DefaultRegion = r.Region
+			region.DefaultZone = r.Zone
+		}
+	}
+	return region, nil
 }
 
 func getRegionList() []string {
-	regionMap, err := fetchRegion()
+	regionIns, err := fetchRegion()
 	if err != nil {
 		return nil
 	}
 	list := []string{}
-	for region := range regionMap {
+	for region := range regionIns.Labels {
 		list = append(list, region)
 	}
 	return list
 }
 
 func getZoneList(region string) []string {
-	regionMap, err := fetchRegion()
+	regionIns, err := fetchRegion()
 	if err != nil {
 		return nil
 	}
 	list := []string{}
 	if region == "" {
-		for _, zones := range regionMap {
+		for _, zones := range regionIns.Labels {
 			list = append(list, zones...)
 		}
 	} else {
-		list = regionMap[region]
+		list = regionIns.Labels[region]
 	}
 	return list
 }
 
-// func setupRequest(req request.Common) {
-// req.SetZone()
-// }
 func getDefaultProject() (string, string, error) {
 	req := base.BizClient.NewGetProjectListRequest()
 
@@ -124,8 +158,23 @@ func getDefaultProject() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if resp.RetCode != 0 {
-		return "", "", fmt.Errorf("Something wrong. RetCode:%d, Message:%s", resp.RetCode, resp.Message)
+	for _, project := range resp.ProjectSet {
+		if project.IsDefault == true {
+			return project.ProjectId, project.ProjectName, nil
+		}
+	}
+	return "", "", fmt.Errorf("No default project")
+}
+func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
+	bc, err := base.GetBizClient(cfg)
+	if err != nil {
+		return "", "", err
+	}
+
+	req := bc.NewGetProjectListRequest()
+	resp, err := bc.GetProjectList(req)
+	if err != nil {
+		return "", "", err
 	}
 	for _, project := range resp.ProjectSet {
 		if project.IsDefault == true {
@@ -133,6 +182,45 @@ func getDefaultProject() (string, string, error) {
 		}
 	}
 	return "", "", fmt.Errorf("No default project")
+}
+
+func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
+	bc, err := base.GetBizClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	req := bc.NewGetProjectListRequest()
+	resp, err := bc.GetProjectList(req)
+	if err != nil {
+		return nil, err
+	}
+
+	projects := map[string]bool{}
+	for _, project := range resp.ProjectSet {
+		projects[project.ProjectId] = true
+	}
+	return projects, nil
+}
+
+func getReasonableProject(cfg *base.AggConfig) (string, error) {
+	if cfg.ProjectID == "" {
+		id, _, err := getDefaultProjectWithConfig(cfg)
+		if err != nil {
+			return "", fmt.Errorf("fetch project failed: %v", err)
+		}
+		return id, nil
+	}
+
+	projects, err := fetchProjectWithConfig(cfg)
+	if err != nil {
+		return "", fmt.Errorf("fetch project failed: %v", err)
+	}
+	if _, ok := projects[cfg.ProjectID]; !ok {
+		return "", fmt.Errorf("project[%s] does not exist", cfg.ProjectID)
+	}
+
+	return cfg.ProjectID, nil
 }
 
 func isUserCertified(userInfo *uaccount.UserInfo) bool {
@@ -159,7 +247,7 @@ func getUserInfo() (*uaccount.UserInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		fileFullPath := base.GetConfigPath() + "/user.json"
+		fileFullPath := base.GetConfigDir() + "/user.json"
 		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
 		if err != nil {
 			return nil, err

@@ -16,10 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
+	"strconv"
 
 	"github.com/spf13/cobra"
-
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -34,6 +33,8 @@ const helloUcloud = `
   |  _  |/ _ \ | |/ _ \  | | | | |   | |/ _ \| | | |/ _\ |
   | | | |  __/ | | (_) | | |_| | \__/\ | (_) | |_| | (_| |
   \_| |_/\___|_|_|\___/   \___/ \____/_|\___/ \__,_|\__,_|
+
+  If you want add or modify your configurations, run 'ucloud config add/update'
   `
 
 //NewCmdInit ucloud init
@@ -81,7 +82,7 @@ func NewCmdInit() *cobra.Command {
 			base.Cxt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
 			base.Cxt.Printf("default name of CLI profile:%s\n", base.ConfigIns.Profile)
 			base.Cxt.Println("You can change the default settings by running 'ucloud config'")
-			base.ConfigIns.Save()
+			base.AggConfigListIns.Append(base.ConfigIns)
 			printHello()
 		},
 	}
@@ -102,80 +103,164 @@ func printHello() {
 	base.Cxt.Println(helloUcloud)
 }
 
+//根据用户设置的region和zone,检查其合法性，补上缺失的部分，给出一个合理的符合用户本意设置的region和zone
+func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
+	userRegion := cfg.Region
+	userZone := cfg.Zone
+	//如果zone设置了，region不能为空，因为这种情况较难判断给出一个合理的region
+	if userRegion == "" && userZone != "" {
+		return "", "", fmt.Errorf("region is needed if zone is assigned")
+	}
+
+	regionIns, err := fetchRegionWithConfig(cfg)
+	if err != nil {
+		return "", "", err
+	}
+
+	if userRegion == "" && userZone == "" {
+		userRegion = regionIns.DefaultRegion
+		userZone = regionIns.DefaultZone
+	}
+
+	zones, ok := regionIns.Labels[userRegion]
+	if !ok {
+		return "", "", fmt.Errorf("region[%s] is not exist! See 'ucloud region'", userRegion)
+	}
+
+	if userZone != "" {
+		zoneExist := false
+		for _, zone := range zones {
+			if zone == userZone {
+				zoneExist = true
+			}
+		}
+		if !zoneExist {
+			return "", "", fmt.Errorf("zone[%s] not exist in region[%s]! See 'ucloud config list' and 'ucloud region'", userZone, userRegion)
+		}
+	} else if len(zones) > 0 {
+		userZone = zones[0]
+	}
+
+	return userRegion, userZone, nil
+}
+
 //NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
+	var active string
 	cfg := base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:     "config",
-		Short:   "Configure UCloud CLI options",
-		Long:    `Configure UCloud CLI options such as private-key,public-key,default region and default project-id.`,
-		Example: "ucloud config --profile=test --region=cn-bj2 --active",
+		Short:   "add or update configurations",
+		Long:    `add or update configurations, such as private-key, public-key, default region and zone, base-url, timeout-sec, and default project-id`,
+		Example: "ucloud config --profile=test --region cn-bj2 --active true",
 		Run: func(c *cobra.Command, args []string) {
-			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
-			cacheConfig, err := base.GetAggConfigByProfile(cfg.Profile)
-			if err != nil {
-				base.HandleError(err)
+			if cfg.Profile == "" {
+				c.HelpFunc()(c, args)
 				return
 			}
-			//如有设置Region和Zone，确保设置的Region和Zone真实存在
-			if cfg.Region != "" || cfg.Zone != "" {
-				regionMap, err := fetchRegion()
-				if err != nil {
-					base.HandleError(err)
-					return
-				}
 
-				region := cfg.Region
-				if region == "" {
-					region = cacheConfig.Region
-				}
-
-				zones, ok := regionMap[region]
-				if !ok {
-					base.Cxt.Printf("Error, region[%s] is not exist! See 'ucloud region'\n", region)
-					return
-				}
-
-				zone := cfg.Zone
-				if zone == "" {
-					zone = cacheConfig.Zone
-				}
-
-				if zone != "" {
-					zoneExist := false
-					for _, zone := range zones {
-						if zone == cfg.Zone {
-							zoneExist = true
-						}
-					}
-					if !zoneExist {
-						base.Cxt.Printf("Error, zone[%s] not exist in region[%s]! See 'ucloud config list' and 'ucloud region'\n", zone, region)
-						return
-					}
-				}
-			}
-			if cfg.Timeout <= 0 {
+			if cfg.Timeout < 0 {
 				base.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
 				return
 			}
 
-			changed := false
-			cfg.ProjectID = base.PickResourceID(cfg.ProjectID)
-			tmpCfgVal := reflect.ValueOf(cfg)
-			configVal := reflect.ValueOf(cacheConfig).Elem()
-			for i := 0; i < tmpCfgVal.NumField(); i++ {
-				if fieldVal := tmpCfgVal.Field(i); fieldVal.Interface() != reflect.Zero(fieldVal.Type()).Interface() {
-					configVal.Field(i).Set(fieldVal)
-					changed = true
+			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
+			cacheConfig, ok := base.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
+			//如果配置文件中找不到该profile 则添加配置
+			if !ok {
+				cacheConfig = &base.AggConfig{
+					PrivateKey: cfg.PrivateKey,
+					PublicKey:  cfg.PublicKey,
+					Profile:    cfg.Profile,
+					BaseURL:    cfg.BaseURL,
+					Timeout:    cfg.Timeout,
+					Active:     cfg.Active,
+					Region:     cfg.Region,
+					Zone:       cfg.Zone,
+					ProjectID:  cfg.ProjectID,
 				}
 			}
-			if changed {
-				err := cacheConfig.Save()
-				if err != nil {
-					base.HandleError(err)
+
+			if cfg.PrivateKey != "" {
+				cacheConfig.PrivateKey = cfg.PrivateKey
+			}
+			if cfg.PublicKey != "" {
+				cacheConfig.PublicKey = cfg.PublicKey
+			}
+
+			if cfg.BaseURL == "" {
+				if cacheConfig.BaseURL == "" {
+					cacheConfig.BaseURL = base.DefaultBaseURL
 				}
 			} else {
-				c.HelpFunc()(c, args)
+				cacheConfig.BaseURL = cfg.BaseURL
+			}
+
+			if cfg.Timeout == 0 {
+				if cacheConfig.Timeout == 0 {
+					cacheConfig.Timeout = base.DefaultTimeoutSec
+				}
+			} else {
+				cacheConfig.Timeout = cfg.Timeout
+			}
+
+			if cfg.Region != "" {
+				cacheConfig.Region = cfg.Region
+			}
+			if cfg.Zone != "" {
+				cacheConfig.Zone = cfg.Zone
+			}
+
+			//确保设置的Region和Zone真实存在
+			region, zone, err := getReasonableRegionZone(cacheConfig)
+			if err != nil {
+				base.HandleError(fmt.Errorf("verify region failed: %v", err))
+			} else {
+				cacheConfig.Region = region
+				cacheConfig.Zone = zone
+			}
+
+			//如果用户填写的project和配置文件中该配置的project均为空，则调接口拉取默认project
+			//如果用户填写的project不为空，则校验其是否真实存在;
+			if cfg.ProjectID == "" {
+				if cacheConfig.ProjectID == "" {
+					id, _, err := getDefaultProjectWithConfig(cacheConfig)
+					if err != nil {
+						base.HandleError(fmt.Errorf("fetch default project failed: %v", err))
+					} else {
+						cacheConfig.ProjectID = id
+					}
+				}
+			} else {
+				cfg.ProjectID = base.PickResourceID(cfg.ProjectID)
+				projects, err := fetchProjectWithConfig(cacheConfig)
+				if err != nil {
+					cacheConfig.ProjectID = cfg.ProjectID
+				} else {
+					if ok := projects[cfg.ProjectID]; ok {
+						cacheConfig.ProjectID = cfg.ProjectID
+					} else {
+						base.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
+						if ok := projects[cacheConfig.ProjectID]; !ok {
+							base.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
+						}
+					}
+				}
+			}
+
+			if active != "" {
+				if active == "true" {
+					cacheConfig.Active = true
+				} else if active == "false" {
+					cacheConfig.Active = false
+				} else {
+					base.HandleError(fmt.Errorf("flag active should be true or false. received %s", active))
+				}
+			}
+
+			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
 			}
 		},
 	}
@@ -187,11 +272,82 @@ func NewCmdConfig() *cobra.Command {
 	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
+	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.IntVar(&cfg.Timeout, "timeout-sec", 0, "Optional. Set default timeout for requesting API. Unit: seconds")
+	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
+
+	flags.SetFlagValues("active", "true", "false")
+	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("project-id", getProjectList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(cfg.Region)
+	})
+
+	cmd.AddCommand(NewCmdConfigAdd())
+	cmd.AddCommand(NewCmdConfigUpdate())
+	cmd.AddCommand(NewCmdConfigList())
+	cmd.AddCommand(NewCmdConfigDelete())
+	return cmd
+}
+
+//NewCmdConfigAdd ucloud config add
+func NewCmdConfigAdd() *cobra.Command {
+	var active string
+	cfg := &base.AggConfig{}
+	cmd := &cobra.Command{
+		Use:   "add",
+		Short: "add configuration",
+		Long:  "add configuration",
+		Run: func(c *cobra.Command, args []string) {
+			region, zone, err := getReasonableRegionZone(cfg)
+			if err != nil {
+				base.HandleError(err)
+			}
+			cfg.Region = region
+			cfg.Zone = zone
+
+			project, err := getReasonableProject(cfg)
+			if err != nil {
+				base.HandleError(err)
+			}
+			cfg.ProjectID = project
+
+			if cfg.Timeout <= 0 {
+				base.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
+				return
+			}
+
+			if active == "true" {
+				cfg.Active = true
+			} else if active == "false" {
+				cfg.Active = false
+			} else {
+				fmt.Printf("active should be true or false, received %s\n", active)
+			}
+
+			err = base.AggConfigListIns.Append(cfg)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringVar(&cfg.Profile, "profile", "", "Required. Set name of CLI profile")
+	flags.StringVar(&cfg.PublicKey, "public-key", "", "Required. Set public key")
+	flags.StringVar(&cfg.PrivateKey, "private-key", "", "Required. Set private key")
+	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
+	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
+	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", base.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
-	flags.BoolVar(&cfg.Active, "active", false, "Optional. Mark the profile to be effective")
+	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 
-	flags.SetFlagValuesFunc("profile", base.GetProfileNameList)
+	flags.SetFlagValues("active", "true", "false")
+	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	flags.SetFlagValuesFunc("region", getRegionList)
 	flags.SetFlagValuesFunc("project-id", getProjectList)
 	flags.SetFlagValuesFunc("zone", func() []string {
@@ -199,9 +355,116 @@ func NewCmdConfig() *cobra.Command {
 	})
 
 	cmd.MarkFlagRequired("profile")
+	cmd.MarkFlagRequired("public-key")
+	cmd.MarkFlagRequired("private-key")
 
-	cmd.AddCommand(NewCmdConfigList())
-	cmd.AddCommand(NewCmdConfigDelete())
+	return cmd
+}
+
+//NewCmdConfigUpdate ucloud config update
+func NewCmdConfigUpdate() *cobra.Command {
+	var timeout, active string
+	cfg := &base.AggConfig{}
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "update configurations",
+		Long:  "update configurations",
+		Run: func(c *cobra.Command, args []string) {
+			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
+			cacheConfig, ok := base.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
+			if !ok {
+				base.HandleError(fmt.Errorf("profile %s not exist", cfg.Profile))
+				return
+			}
+
+			if cfg.PrivateKey != "" {
+				cacheConfig.PrivateKey = cfg.PrivateKey
+			}
+			if cfg.PublicKey != "" {
+				cacheConfig.PublicKey = cfg.PublicKey
+			}
+
+			//如果配置了公私钥，则先更新让其生效, 为接下来拉取Region,Zone做准备
+			if cfg.PrivateKey != "" || cfg.PublicKey != "" {
+				base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			}
+
+			//如有设置Region和Zone，确保设置的Region和Zone真实存在
+			if cfg.Region != "" {
+				cacheConfig.Region = cfg.Region
+			}
+			if cfg.Zone != "" {
+				cacheConfig.Zone = cfg.Zone
+			}
+
+			region, zone, err := getReasonableRegionZone(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+
+			cacheConfig.Region = region
+			cacheConfig.Zone = zone
+
+			project, err := getReasonableProject(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
+			}
+			cacheConfig.ProjectID = project
+
+			if timeout != "" {
+				seconds, err := strconv.Atoi(timeout)
+				if err != nil {
+					base.HandleError(fmt.Errorf("parse timeout-sec failed: %v", err))
+					return
+				}
+				cacheConfig.Timeout = seconds
+			}
+
+			if cacheConfig.Timeout <= 0 {
+				base.HandleError(fmt.Errorf("timeout-sec must be larger than 0, accept %d", cfg.Timeout))
+				return
+			}
+
+			if cfg.BaseURL != "" {
+				cacheConfig.BaseURL = cfg.BaseURL
+			}
+
+			if active == "true" {
+				cacheConfig.Active = true
+			} else if active == "false" {
+				cacheConfig.Active = false
+			}
+
+			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringVar(&cfg.Profile, "profile", "", "Required. Set name of CLI profile")
+	flags.StringVar(&cfg.PublicKey, "public-key", "", "Required. Set public key")
+	flags.StringVar(&cfg.PrivateKey, "private-key", "", "Required. Set private key")
+	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
+	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
+	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
+	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&timeout, "timeout-sec", "", "Optional. Set default timeout for requesting API. Unit: seconds")
+	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
+
+	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("project-id", getProjectList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(cfg.Region)
+	})
+	flags.SetFlagValues("active", "true", "false")
+
+	cmd.MarkFlagRequired("profile")
+
 	return cmd
 }
 
@@ -209,8 +472,8 @@ func NewCmdConfig() *cobra.Command {
 func NewCmdConfigList() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "list all settings",
-		Long:  `list all settings`,
+		Short: "list all configurations",
+		Long:  `list all configurations`,
 		Run: func(c *cobra.Command, args []string) {
 			base.ListAggConfig(global.JSON)
 		},
@@ -220,43 +483,33 @@ func NewCmdConfigList() *cobra.Command {
 
 //NewCmdConfigDelete ucloud config Delete
 func NewCmdConfigDelete() *cobra.Command {
-	var profile string
+	var profileList []string
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Short:   "delete settings by profile name",
-		Long:    "delete settings by profile name",
+		Short:   "delete configurations by profile name",
+		Long:    "delete configurations by profile name",
 		Example: "ucloud config delete --profile test",
 		Run: func(c *cobra.Command, args []string) {
-			profiles := base.GetProfileNameList()
-			if profiles != nil {
-				exist := false
-				for _, p := range profiles {
-					if p == profile {
-						exist = true
-						break
+			profiles := base.AggConfigListIns.GetProfileNameList()
+			allProfileMap := make(map[string]bool)
+			for _, p := range profiles {
+				allProfileMap[p] = true
+			}
+
+			for _, p := range profileList {
+				if allProfileMap[p] {
+					err := base.AggConfigListIns.DeleteByProfile(p)
+					if err != nil {
+						base.HandleError(err)
 					}
+				} else {
+					base.HandleError(fmt.Errorf("profile %s does not exist", p))
 				}
-				if !exist {
-					base.HandleError(fmt.Errorf("profile:%s is not exists", profile))
-					return
-				}
-			}
-			aggc, err := base.GetAggConfigByProfile(profile)
-			if err != nil {
-				base.HandleError(err)
-			}
-			if aggc.Active {
-				base.HandleError(fmt.Errorf("the active config can not be deleted,please switch it to another one by 'ucloud config --profile xxx --active' and try again"))
-				return
-			}
-			err = base.DeleteAggConfigByProfile(profile)
-			if err != nil {
-				base.HandleError(err)
 			}
 		},
 	}
-	cmd.Flags().StringVar(&profile, "profile", "", "Required. Name of settings item")
+	cmd.Flags().StringSliceVar(&profileList, "profile", nil, "Required. Name of settings item")
 	cmd.MarkFlagRequired("profile")
-	cmd.Flags().SetFlagValuesFunc("profile", base.GetProfileNameList)
+	cmd.Flags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	return cmd
 }

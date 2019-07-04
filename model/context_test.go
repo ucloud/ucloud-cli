@@ -7,7 +7,7 @@ import (
 )
 
 var ctx = Context{
-	os.Stdout,
+	writer: os.Stdout,
 }
 
 func TestPrintln(t *testing.T) {

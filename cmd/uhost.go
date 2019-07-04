@@ -20,12 +20,14 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/cli"
@@ -44,13 +46,13 @@ func NewCmdUHost() *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdUHostList())
-	cmd.AddCommand(NewCmdUHostCreate(out))
+	cmd.AddCommand(NewCmdUHostList(out))
+	cmd.AddCommand(NewCmdUHostCreate())
 	cmd.AddCommand(NewCmdUHostDelete(out))
 	cmd.AddCommand(NewCmdUHostStop(out))
 	cmd.AddCommand(NewCmdUHostStart(out))
 	cmd.AddCommand(NewCmdUHostReboot(out))
-	cmd.AddCommand(NewCmdUHostPoweroff())
+	cmd.AddCommand(NewCmdUHostPoweroff(out))
 	cmd.AddCommand(NewCmdUHostResize(out))
 	cmd.AddCommand(NewCmdUHostClone(out))
 	cmd.AddCommand(NewCmdUhostResetPassword(out))
@@ -74,51 +76,90 @@ type UHostRow struct {
 	CreationTime string
 }
 
+func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer) {
+	list := make([]UHostRow, 0)
+	for _, host := range uhosts {
+		row := UHostRow{}
+		row.UHostName = host.Name
+		row.ResourceID = host.UHostId
+		row.Group = host.Tag
+		for _, ip := range host.IPSet {
+			if row.PublicIP != "" {
+				row.PublicIP += " | "
+			}
+			if ip.Type == "Private" {
+				row.PrivateIP = ip.IP
+			} else {
+				row.PublicIP += fmt.Sprintf("%s", ip.IP)
+			}
+		}
+		cupCore := host.CPU
+		memorySize := host.Memory / 1024
+		diskSize := 0
+		for _, disk := range host.DiskSet {
+			if disk.Type == "Data" || disk.Type == "Udisk" {
+				diskSize += disk.Size
+			}
+		}
+		row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
+		row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
+		row.CreationTime = base.FormatDate(host.CreateTime)
+		row.State = host.State
+		row.Type = host.UHostType + "/" + host.HostType
+		list = append(list, row)
+	}
+	base.PrintList(list, out)
+}
+
+func listUhostID(uhosts []uhost.UHostInstanceSet, out io.Writer) {
+	ids := make([]string, 0)
+	for _, u := range uhosts {
+		ids = append(ids, u.UHostId)
+	}
+	fmt.Fprintln(out, strings.Join(ids, ","))
+}
+
 //NewCmdUHostList [ucloud uhost list]
-func NewCmdUHostList() *cobra.Command {
+func NewCmdUHostList(out io.Writer) *cobra.Command {
+	var pageoff, idOnly bool
 	req := base.BizClient.NewDescribeUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all UHost Instances",
 		Long:  `List all UHost Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DescribeUHostInstance(req)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-			list := make([]UHostRow, 0)
-			for _, host := range resp.UHostSet {
-				row := UHostRow{}
-				row.UHostName = host.Name
-				row.ResourceID = host.UHostId
-				row.Group = host.Tag
-				for _, ip := range host.IPSet {
-					if row.PublicIP != "" {
-						row.PublicIP += " | "
+			if pageoff {
+				uhostList := make([]uhost.UHostInstanceSet, 0)
+				for limit, offset := 50, *req.Offset; ; offset += limit {
+					req.Offset = sdk.Int(offset)
+					req.Limit = sdk.Int(limit)
+					resp, err := base.BizClient.DescribeUHostInstance(req)
+					if err != nil {
+						base.HandleError(err)
+						return
 					}
-					if ip.Type == "Private" {
-						row.PrivateIP = ip.IP
-					} else {
-						row.PublicIP += fmt.Sprintf("%s", ip.IP)
+					uhostList = append(uhostList, resp.UHostSet...)
+					if resp.TotalCount <= offset+limit {
+						break
 					}
 				}
-				cupCore := host.CPU
-				memorySize := host.Memory / 1024
-				diskSize := 0
-				for _, disk := range host.DiskSet {
-					if disk.Type == "Data" || disk.Type == "Udisk" {
-						diskSize += disk.Size
-					}
+				if idOnly {
+					listUhostID(uhostList, out)
+				} else {
+					listUhost(uhostList, out)
 				}
-				row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
-				row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
-				row.CreationTime = base.FormatDate(host.CreateTime)
-				row.State = host.State
-				row.Type = host.UHostType + "/" + host.HostType
-				list = append(list, row)
+			} else {
+				resp, err := base.BizClient.DescribeUHostInstance(req)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				if idOnly {
+					listUhostID(resp.UHostSet, out)
+				} else {
+					listUhost(resp.UHostSet, out)
+				}
 			}
-			base.PrintList(list)
 		},
 	}
 	cmd.Flags().SortFlags = false
@@ -128,15 +169,19 @@ func NewCmdUHostList() *cobra.Command {
 	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
+	cmd.Flags().BoolVar(&pageoff, "page-off", false, "Optional. Paging or not. If assigned, the limit flag will be disabled and list all uhost instances")
+	cmd.Flags().BoolVar(&idOnly, "uhost-id-only", false, "Optional. Just display resource id of uhost")
 	bindGroup(req, cmd.Flags())
+
+	cmd.Flags().SetFlagValues("page-off", "true", "false")
+	cmd.Flags().SetFlagValues("uhost-id-only", "true", "false")
 
 	return cmd
 }
 
 //NewCmdUHostCreate [ucloud uhost create]
-func NewCmdUHostCreate(out io.Writer) *cobra.Command {
+func NewCmdUHostCreate() *cobra.Command {
 	var bindEipIDs []string
-	var password string
 	var async bool
 	var count int
 
@@ -153,53 +198,50 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
+
+			wg := &sync.WaitGroup{}
+			tokens := make(chan struct{}, 10)
+			wg.Add(count)
 			if count <= 5 {
 				for i := 0; i < count; i++ {
 					bindEipID := ""
 					if len(bindEipIDs) > i {
 						bindEipID = bindEipIDs[i]
 					}
-					go createUhost(req, eipReq, bindEipID, password, async, out, make(chan bool, count), nil, nil)
+					go createUhostWrapper(req, eipReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
 				}
-				<-ux.Doc.Done
 			} else {
-				wg := &sync.WaitGroup{}
 				retCh := make(chan bool, count)
 				ux.Doc.Disable()
-
-				result := map[string]int{
-					"total":   count,
-					"success": 0,
-					"fail":    0,
-				}
-
 				refresh := ux.NewRefresh()
-				wg.Add(count)
 
 				go func() {
-					tokens := make(chan struct{}, 10)
 					for i := 0; i < count; i++ {
 						bindEipID := ""
 						if len(bindEipIDs) > i {
 							bindEipID = bindEipIDs[i]
 						}
-						go createUhost(req, eipReq, bindEipID, password, async, out, retCh, wg, tokens)
+						go createUhostWrapper(req, eipReq, bindEipID, async, retCh, wg, tokens, i)
 					}
 				}()
 
 				go func() {
-					refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
+					var success, fail int
+					refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", count, success, fail))
 					for ret := range retCh {
 						if ret {
-							result["success"]++
+							success++
 						} else {
-							result["fail"]++
+							fail++
 						}
-						refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", result["total"], result["success"], result["fail"]))
+						refresh.Do(fmt.Sprintf("uhost creating, total:%d, success:%d, fail:%d", count, success, fail))
+						if count == success+fail && fail > 0 {
+							fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
+						}
 					}
 				}()
-				wg.Wait()
 			}
+			wg.Wait()
 		},
 	}
 
@@ -222,7 +264,7 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
 	req.Memory = flags.Int("memory-gb", 8, "Required. Memory size. Unit: GB. Range: [1, 128], multiple of 2")
-	flags.StringVar(&password, "password", "", "Required. Password of the uhost user(root/ubuntu)")
+	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
 	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create.")
@@ -289,54 +331,58 @@ func NewCmdUHostCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID, password string, async bool, out io.Writer, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}) {
+//createUhostWrapper 处理UI和并发控制
+func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
 	//控制并发数量
-	if tokens != nil {
-		tokens <- struct{}{}
-		defer func() {
-			<-tokens
-		}()
-	}
-	if wg != nil {
-		defer wg.Done()
-	}
-	req.Password = sdk.String(password)
+	tokens <- struct{}{}
+	defer func() {
+		<-tokens
+		//设置延时，使报错能渲染出来
+		time.Sleep(time.Second / 5)
+		wg.Done()
+	}()
+
+	success, logs := createUhost(req, eipReq, bindEipID, async)
+	retCh <- success
+	logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
+	base.LogInfo(logs...)
+}
+
+func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool) (bool, []string) {
 	resp, err := base.BizClient.CreateUHostInstance(req)
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
-	logs := []string{}
-	defer func() {
-		base.Log(logs)
-	}()
-	logs = append(logs, fmt.Sprintf("request:%v", base.ToQueryMap(req)))
+	logs := []string{"=================================================="}
+	logs = append(logs, fmt.Sprintf("api:CreateUHostInstance, request:%v", base.ToQueryMap(req)))
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("err:%v", err))
 		block.Append(base.ParseError(err))
-		block.AppendDone()
-		retCh <- false
-		return
+		return false, logs
 	}
+
 	logs = append(logs, fmt.Sprintf("resp:%#v", resp))
-	if len(resp.UHostIds) == 1 {
-		text := fmt.Sprintf("uhost[%s] is initializing", resp.UHostIds[0])
-		if async {
-			block.Append(text)
-		} else {
-			uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block)
-		}
-		retCh <- true
-	} else {
+	if len(resp.UHostIds) != 1 {
 		block.Append(fmt.Sprintf("expect uhost count 1 , accept %d", len(resp.UHostIds)))
-		block.AppendDone()
-		retCh <- false
-		return
+		return false, logs
 	}
+
+	text := fmt.Sprintf("uhost[%s] is initializing", resp.UHostIds[0])
+	if async {
+		block.Append(text)
+	} else {
+		uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block)
+	}
+
 	if bindEipID != "" {
 		eip := base.PickResourceID(bindEipID)
 		logs = append(logs, fmt.Sprintf("bind eip: %s", eip))
-		info := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), &eip, req.ProjectId, req.Region)
-		logs = append(logs, fmt.Sprintf("bind eip result: %s", info))
-		block.Append(info)
+		eipLogs, err := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), &eip, req.ProjectId, req.Region)
+		logs = append(logs, eipLogs...)
+		if err != nil {
+			block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] failed: %v", eip, resp.UHostIds[0], err))
+			return false, logs
+		}
+		block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
 	} else if *eipReq.Bandwidth != 0 {
 		eipReq.ChargeType = req.ChargeType
 		eipReq.Tag = req.Tag
@@ -364,14 +410,18 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 					block.Append(fmt.Sprintf("IP:%s  Line:%s", ip.IP, ip.OperatorName))
 				}
 				if len(resp.UHostIds) == 1 {
-					info := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
-					logs = append(logs, fmt.Sprintf("bind eip result: %s", info))
-					block.Append(info)
+					eipLogs, err := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
+					logs = append(logs, eipLogs...)
+					if err != nil {
+						block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] failed: %v", eip, resp.UHostIds[0], err))
+						return false, logs
+					}
+					block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
 				}
 			}
 		}
 	}
-	block.AppendDone()
+	return true, logs
 }
 
 //NewCmdUHostDelete ucloud uhost delete
@@ -401,30 +451,16 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 			} else {
 				req.Destroy = sdk.Int(0)
 			}
-			for _, id := range *uhostIDs {
+
+			reqs := make([]request.Common, len(*uhostIDs))
+			for idx, id := range *uhostIDs {
+				_req := *req
 				id = base.PickResourceID(id)
-				req.UHostId = &id
-				hostIns, err := describeUHostByID(*req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
-				if err != nil {
-					base.HandleError(err)
-				} else if hostIns != nil {
-					ins := hostIns.(*uhost.UHostInstanceSet)
-					if ins.State == "Running" {
-						_req := base.BizClient.NewStopUHostInstanceRequest()
-						_req.ProjectId = req.ProjectId
-						_req.Region = req.Region
-						_req.Zone = req.Zone
-						_req.UHostId = req.UHostId
-						stopUhostIns(_req, false, out)
-					}
-				}
-				resp, err := base.BizClient.TerminateUHostInstance(req)
-				if err != nil {
-					base.HandleError(err)
-				} else {
-					base.Cxt.Printf("uhost:[%s] deleted\n", resp.UHostId)
-				}
+				_req.UHostId = sdk.String(id)
+				reqs[idx] = &_req
 			}
+			coAction := newConcurrentAction(reqs, deleteUHost)
+			coAction.Do()
 		},
 	}
 	flags := cmd.Flags()
@@ -435,8 +471,8 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	bindProjectID(req, flags)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
-	req.ReleaseEIP = cmd.Flags().Bool("release-eip", false, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
-	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false,Detach cloud disk only; true, Detach cloud disk and delete it")
+	req.ReleaseEIP = cmd.Flags().Bool("release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
+	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.Flags().SetFlagValues("destory", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
@@ -447,6 +483,45 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uhost-id")
 
 	return cmd
+}
+
+func deleteUHost(creq request.Common) (bool, []string) {
+	req := creq.(*uhost.TerminateUHostInstanceRequest)
+	block := ux.NewBlock()
+	ux.Doc.Append(block)
+	logs := []string{}
+	hostIns, err := sdescribeUHostByID(*req.UHostId)
+	if err != nil {
+		logs = append(logs, fmt.Sprintf("describe uhost[%s] failed: %s", *req.UHostId, base.ParseError(err)))
+		return false, logs
+	}
+
+	if hostIns == nil {
+		logs = append(logs, fmt.Sprintf("uhost[%s] does not exist", *req.UHostId))
+		return false, logs
+	}
+
+	ins := hostIns.(*uhost.UHostInstanceSet)
+	if ins.State == "Running" {
+		_req := base.BizClient.NewStopUHostInstanceRequest()
+		_req.ProjectId = req.ProjectId
+		_req.Region = req.Region
+		_req.Zone = req.Zone
+		_req.UHostId = req.UHostId
+		stopUhostInsV2(_req, false, block)
+	}
+
+	logs = append(logs, fmt.Sprintf("api:TerminateUHostInstance, request:%v", base.ToQueryMap(req)))
+	resp, err := base.BizClient.TerminateUHostInstance(req)
+	if err != nil {
+		block.Append(base.ParseError(err))
+		logs = append(logs, fmt.Sprintf("delete uhost[%s] failed: %s", *req.UHostId, base.ParseError(err)))
+		return false, logs
+	}
+	text := fmt.Sprintf("uhost[%s] deleted", resp.UHostId)
+	logs = append(logs, text)
+	block.Append(text)
+	return true, logs
 }
 
 //NewCmdUHostStop ucloud uhost stop
@@ -496,6 +571,22 @@ func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer
 	}
 }
 
+//可并发调用版本
+func stopUhostInsV2(req *uhost.StopUHostInstanceRequest, async bool, block *ux.Block) {
+	resp, err := base.BizClient.StopUHostInstance(req)
+	if err != nil {
+		block.Append(base.ParseError(err))
+		return
+	}
+
+	text := fmt.Sprintf("uhost[%v] is shutting down", resp.UhostId)
+	if async {
+		block.Append(text)
+	} else {
+		uhostSpoller.Sspoll(resp.UhostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block)
+	}
+}
+
 //NewCmdUHostStart ucloud uhost start
 func NewCmdUHostStart(out io.Writer) *cobra.Command {
 	var async *bool
@@ -514,7 +605,7 @@ func NewCmdUHostStart(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					text := fmt.Sprintf("uhost:[%v] is starting", resp.UhostId)
+					text := fmt.Sprintf("uhost[%v] is starting", resp.UhostId)
 					if *async {
 						fmt.Fprintln(out, text)
 					} else {
@@ -556,7 +647,7 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					text := fmt.Sprintf("UHost:[%v] is restarting", resp.UhostId)
+					text := fmt.Sprintf("uhost[%v] is restarting", resp.UhostId)
 					if *async {
 						fmt.Fprintln(out, text)
 					} else {
@@ -582,7 +673,7 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 }
 
 //NewCmdUHostPoweroff ucloud uhost poweroff
-func NewCmdUHostPoweroff() *cobra.Command {
+func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	var yes *bool
 	var uhostIDs *[]string
 	req := base.BizClient.NewPoweroffUHostInstanceRequest()
@@ -599,7 +690,7 @@ func NewCmdUHostPoweroff() *cobra.Command {
 				}
 				sure, err := ux.Prompt(confirmText)
 				if err != nil {
-					base.Cxt.Println(err)
+					fmt.Fprintln(out, err)
 					return
 				}
 				if !sure {
@@ -613,7 +704,7 @@ func NewCmdUHostPoweroff() *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					base.Cxt.Printf("UHost:[%v] is power off\n", resp.UhostId)
+					fmt.Fprintf(out, "uhost[%v] is power off\n", resp.UhostId)
 				}
 			}
 		},
@@ -624,7 +715,12 @@ func NewCmdUHostPoweroff() *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
+
+	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+		return getUhostList([]string{status.HOST_FAIL, status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+	})
 	cmd.MarkFlagRequired("uhost-id")
+
 	return cmd
 }
 

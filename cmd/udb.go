@@ -40,7 +40,7 @@ func NewCmdUDBConf() *cobra.Command {
 		Long:  "List and manipulate configuration files of MySQL instances",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdUDBConfList())
+	cmd.AddCommand(NewCmdUDBConfList(out))
 	cmd.AddCommand(NewCmdUDBConfDescribe(out))
 	cmd.AddCommand(NewCmdUDBConfClone(out))
 	cmd.AddCommand(NewCmdUDBConfUpload(out))
@@ -71,7 +71,7 @@ var dbTypeMap = map[string]string{
 var dbTypeList = []string{"mysql", "mongodb", "postgresql", "sqlserver"}
 
 //NewCmdUDBConfList ucloud mysql conf list
-func NewCmdUDBConfList() *cobra.Command {
+func NewCmdUDBConfList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBParamGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -98,7 +98,7 @@ func NewCmdUDBConfList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -161,7 +161,7 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 				base.DescribeTableRow{Attribute: "Zone", Content: conf.Zone},
 			}
 			fmt.Fprintln(out, "Attributes:")
-			base.PrintList(attrs)
+			base.PrintList(attrs, out)
 
 			params := []UDBConfParamRow{}
 			for _, p := range conf.ParamMember {
@@ -175,8 +175,7 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 				params = append(params, row)
 			}
 			fmt.Fprintln(out, "\nParameters:")
-			base.PrintList(params)
-
+			base.PrintList(params, out)
 		},
 	}
 	flags := cmd.Flags()

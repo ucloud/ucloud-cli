@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-var global = base.Global
+var global = &base.Global
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
@@ -59,9 +60,9 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
 	cmd.AddCommand(NewCmdInit())
-	cmd.AddCommand(NewCmdDoc())
+	cmd.AddCommand(NewCmdDoc(out))
 	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdRegion())
+	cmd.AddCommand(NewCmdRegion(out))
 	cmd.AddCommand(NewCmdProject())
 	cmd.AddCommand(NewCmdUHost())
 	cmd.AddCommand(NewCmdUPHost())
@@ -87,28 +88,49 @@ func NewCmdRoot() *cobra.Command {
 }
 
 //NewCmdDoc ucloud doc
-func NewCmdDoc() *cobra.Command {
-	var dir string
+func NewCmdDoc(out io.Writer) *cobra.Command {
+	var dir, format string
 	cmd := &cobra.Command{
-		Use:   "doc",
+		Use:   "gendoc",
 		Short: "Generate documents for all commands",
-		Long:  "Generate documents for all commands",
+		Long:  "Generate documents for all commands. Support markdown, rst and douku",
 		Run: func(c *cobra.Command, args []string) {
 			rootCmd := NewCmdRoot()
-			emptyStr := func(s string) string { return "" }
-			linkHandler := func(name, ref string) string {
-				return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
-			}
-			err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
-			if err != nil {
-				log.Fatal(err)
+			switch format {
+			case "rst":
+				emptyStr := func(s string) string { return "" }
+				linkHandler := func(name, ref string) string {
+					return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
+				}
+				err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+			case "markdown":
+				err := doc.GenMarkdownTree(rootCmd, dir)
+				if err != nil {
+					log.Fatal(err)
+				}
+			case "douku":
+				err := doc.GenDoukuTree(rootCmd, dir, "software/cli/cmd/")
+				if err != nil {
+					log.Fatal(err)
+				}
+			default:
+				fmt.Fprintf(out, "format %s is not supported\n", format)
 			}
 		},
 	}
-	cmd.Flags().StringVar(&dir, "dir", "", "Required. the directory where documents of commands are stored")
+
+	cmd.Flags().StringVar(&dir, "dir", "", "Required. The directory where documents of commands are stored")
+	cmd.Flags().StringVar(&format, "format", "douku", "Required. Format of the doucments. Accept values: markdown, rst and douku")
+
+	cmd.Flags().SetFlagValues("format", "douku", "markdown", "rst")
 	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
 		return base.GetFileList("")
 	})
+
 	cmd.MarkFlagRequired("dir")
 
 	return cmd
@@ -193,7 +215,8 @@ func initialize(cmd *cobra.Command) {
 		base.ClientConfig.Zone = zone
 	}
 
-	if global.Debug {
+	mode := os.Getenv("UCLOUD_CLI_DEBUG")
+	if mode == "on" || global.Debug {
 		base.ClientConfig.LogLevel = log.DebugLevel
 		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}
@@ -203,14 +226,13 @@ func initialize(cmd *cobra.Command) {
 		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
 		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
 	}
-
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if base.ConfigIns.PrivateKey == "" {
-			base.Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
+			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)
 		}
 		if base.ConfigIns.PublicKey == "" {
-			base.Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
+			base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)
 		}
 	}

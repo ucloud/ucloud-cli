@@ -23,12 +23,12 @@ func NewCmdVpc() *cobra.Command {
 		Long:  "List and manipulate VPC instances",
 		Args:  cobra.NoArgs,
 	}
-
+	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdVpcCreate())
-	cmd.AddCommand(NewCmdVPCList())
+	cmd.AddCommand(NewCmdVPCList(out))
 	cmd.AddCommand(NewCmdVpcDelete())
 	cmd.AddCommand(NewCmdVpcCreatePeer())
-	cmd.AddCommand(NewCmdVpcListPeer())
+	cmd.AddCommand(NewCmdVpcListPeer(out))
 	cmd.AddCommand(NewCmdVpcDeletePeer())
 	return cmd
 }
@@ -44,7 +44,7 @@ type VPCRow struct {
 }
 
 //NewCmdVPCList ucloud vpc list
-func NewCmdVPCList() *cobra.Command {
+func NewCmdVPCList(out io.Writer) *cobra.Command {
 	vpcIDs := []string{}
 	req := base.BizClient.NewDescribeVPCRequest()
 	cmd := &cobra.Command{
@@ -72,7 +72,7 @@ func NewCmdVPCList() *cobra.Command {
 				row.CreationTime = base.FormatDate(vpc.CreateTime)
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()
@@ -225,7 +225,7 @@ type VPCIntercomRow struct {
 }
 
 //NewCmdVpcListPeer ucloud vpc list-intercome
-func NewCmdVpcListPeer() *cobra.Command {
+func NewCmdVpcListPeer(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeVPCIntercomRequest()
 	cmd := &cobra.Command{
 		Use:     "list-intercome",
@@ -250,7 +250,7 @@ func NewCmdVpcListPeer() *cobra.Command {
 				row.Group = VPCIntercom.Tag
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	req.VPCId = cmd.Flags().String("vpc-id", "", "Required. The vpc id which you wnat to describe the information")
@@ -340,7 +340,7 @@ func NewCmdSubnet() *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdSubnetList())
+	cmd.AddCommand(NewCmdSubnetList(out))
 	cmd.AddCommand(NewCmdSubnetCreate())
 	cmd.AddCommand(NewCmdSubnetDelete(out))
 	cmd.AddCommand(NewCmdSubnetListResource(out))
@@ -359,7 +359,7 @@ type SubnetRow struct {
 }
 
 //NewCmdSubnetList ucloud subnet list
-func NewCmdSubnetList() *cobra.Command {
+func NewCmdSubnetList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSubnetRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -383,7 +383,7 @@ func NewCmdSubnetList() *cobra.Command {
 				row.CreationTime = base.FormatDate(sn.CreateTime)
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -516,7 +516,7 @@ func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -38,7 +39,8 @@ func NewCmdEIP() *cobra.Command {
 		Long:  `Manipulate EIP, such as list,allocate and release`,
 		Args:  cobra.NoArgs,
 	}
-	cmd.AddCommand(NewCmdEIPList())
+	out := base.Cxt.GetWriter()
+	cmd.AddCommand(NewCmdEIPList(out))
 	cmd.AddCommand(NewCmdEIPAllocate())
 	cmd.AddCommand(NewCmdEIPRelease())
 	cmd.AddCommand(NewCmdEIPBind())
@@ -64,7 +66,7 @@ type EIPRow struct {
 }
 
 //NewCmdEIPList ucloud eip list
-func NewCmdEIPList() *cobra.Command {
+func NewCmdEIPList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeEIPRequest()
 	fetchAll := sdk.Bool(false)
 	cmd := &cobra.Command{
@@ -108,7 +110,7 @@ func NewCmdEIPList() *cobra.Command {
 				row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -320,7 +322,8 @@ func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
 	}
 }
 
-func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) string {
+func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) ([]string, error) {
+	logs := make([]string, 0)
 	ip := net.ParseIP(*eipID)
 	if ip != nil {
 		eipID, err := getEIPIDbyIP(ip, *projectID, *region)
@@ -336,11 +339,14 @@ func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) string
 	req.EIPId = sdk.String(base.PickResourceID(*eipID))
 	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
 	req.Region = region
+	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", base.ToQueryMap(req)))
 	_, err := base.BizClient.BindEIP(req)
 	if err != nil {
-		return base.ParseError(err)
+		logs = append(logs, fmt.Sprintf("bind eip failed: %v", err))
+		return logs, err
 	}
-	return fmt.Sprintf("bind EIP[%s] with %s[%s]", *req.EIPId, *req.ResourceType, *req.ResourceId)
+	logs = append(logs, fmt.Sprintf("bind eip[%s] with %s[%s] successfully", *req.EIPId, *req.ResourceType, *req.ResourceId))
+	return logs, nil
 }
 
 //NewCmdEIPUnbind ucloud eip unbind

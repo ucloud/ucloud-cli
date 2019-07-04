@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -19,7 +18,6 @@ import (
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
@@ -37,41 +35,6 @@ var Cxt = model.GetContext(os.Stdout)
 
 //SdkClient 用于上报数据
 var SdkClient *sdk.Client
-
-//BizClient 用于调用业务接口
-var BizClient *Client
-
-//Logger 日志
-var Logger = log.New()
-var mu sync.Mutex
-
-func init() {
-	file, err := os.Create(GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath))
-	if err != nil {
-		return
-	}
-	Logger.SetOutput(file)
-}
-
-//Log 记录日志
-func Log(logs []string) {
-	mu.Lock()
-	defer mu.Unlock()
-	Logger.Info("=============================================================")
-	for _, line := range logs {
-		Logger.Info(line)
-	}
-}
-
-//ToQueryMap tranform request to map
-func ToQueryMap(req request.Common) map[string]string {
-	reqMap, err := request.ToQueryMap(req)
-	if err != nil {
-		return nil
-	}
-	// delete(reqMap, "Password")
-	return reqMap
-}
 
 //GetHomePath 获取家目录
 func GetHomePath() string {
@@ -134,8 +97,8 @@ func LineInFile(fileName string, lookFor string) bool {
 	}
 }
 
-//GetConfigPath 获取配置文件的绝对路径
-func GetConfigPath() string {
+//GetConfigDir 获取配置文件所在目录
+func GetConfigDir() string {
 	path := GetHomePath() + "/" + ConfigPath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)
@@ -157,9 +120,9 @@ func HandleBizError(resp response.Common) error {
 func HandleError(err error) {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s\n"
-		Cxt.Printf(format, uErr.Code(), uErr.Message())
+		LogError(fmt.Sprintf(format, uErr.Code(), uErr.Message()))
 	} else {
-		Cxt.PrintErr(err)
+		LogError(fmt.Sprintf("%v", err))
 	}
 }
 
@@ -177,12 +140,12 @@ func ParseError(err error) string {
 }
 
 //PrintJSON 以JSON格式打印数据集合
-func PrintJSON(dataSet interface{}) error {
+func PrintJSON(dataSet interface{}, out io.Writer) error {
 	bytes, err := json.MarshalIndent(dataSet, "", "  ")
 	if err != nil {
 		return err
 	}
-	Cxt.Println(string(bytes))
+	fmt.Fprintln(out, string(bytes))
 	return nil
 }
 
@@ -204,9 +167,9 @@ func PrintTableS(dataSet interface{}) {
 }
 
 //PrintList 打印表格或者JSON
-func PrintList(dataSet interface{}) {
+func PrintList(dataSet interface{}, out io.Writer) {
 	if Global.JSON {
-		PrintJSON(dataSet)
+		PrintJSON(dataSet, out)
 	} else {
 		PrintTableS(dataSet)
 	}
@@ -215,7 +178,7 @@ func PrintList(dataSet interface{}) {
 //PrintDescribe 打印详情
 func PrintDescribe(attrs []DescribeTableRow, json bool) {
 	if json {
-		PrintJSON(attrs)
+		PrintJSON(attrs, os.Stdout)
 	} else {
 		for _, attr := range attrs {
 			fmt.Println(attr.Attribute)
@@ -275,7 +238,9 @@ func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidth
 		tmpl := "%-" + strconv.Itoa(fieldWidthMap[field]+GAP) + "s"
 		fmt.Printf(tmpl, field)
 	}
-	fmt.Printf("\n")
+	if len(fieldList) != 0 {
+		fmt.Printf("\n")
+	}
 
 	//打印数据
 	for _, row := range rowList {
@@ -370,8 +335,14 @@ type Poller struct {
 	SdescribeFunc func(string) (interface{}, error)
 }
 
+type pollResult struct {
+	Done    bool
+	Timeout bool
+	Err     error
+}
+
 //Sspoll 简化版, 支持并发
-func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) {
+func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) *pollResult {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
@@ -411,27 +382,32 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 		Timeout: p.Timeout,
 	}
 
-	done := make(chan bool)
+	pollRetChan := make(chan pollResult)
 	go func() {
+		ret := pollResult{
+			Done: true,
+		}
 		if _, err := w.Wait(); err != nil {
-			log.Error(err)
+			ret.Done = false
+			ret.Err = err
 			if _, ok := err.(*waiter.TimeoutError); ok {
-				done <- false
-				return
+				ret.Timeout = true
 			}
 		}
-		done <- true
+		pollRetChan <- ret
 	}()
 
 	spin := ux.NewDotSpin(p.Out, pollText)
 	block.SetSpin(spin)
 
-	ret := <-done
-	if ret {
-		spin.Stop()
-	} else {
+	ret := <-pollRetChan
+
+	if ret.Timeout {
 		spin.Timeout()
+	} else {
+		spin.Stop()
 	}
+	return &ret
 }
 
 //Spoll 简化版
@@ -589,12 +565,11 @@ func PickResourceID(str string) string {
 }
 
 //WriteJSONFile 写json文件
-func WriteJSONFile(list interface{}, fileName string) error {
+func WriteJSONFile(list interface{}, filePath string) error {
 	byts, err := json.Marshal(list)
 	if err != nil {
 		return err
 	}
-	filePath := GetConfigPath() + "/" + fileName
 	err = ioutil.WriteFile(filePath, byts, 0600)
 	if err != nil {
 		return err

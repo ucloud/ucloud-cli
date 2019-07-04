@@ -133,7 +133,7 @@ func NewCmdUDPNList(out io.Writer) *cobra.Command {
 				row.CreationTime = base.FormatDate(udpn.CreateTime)
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 

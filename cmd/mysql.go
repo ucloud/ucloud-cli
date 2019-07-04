@@ -58,7 +58,7 @@ func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 		Long:  "Manange MySQL instances",
 	}
 
-	cmd.AddCommand(NewCmdUDBList())
+	cmd.AddCommand(NewCmdUDBList(out))
 	cmd.AddCommand(NewCmdMysqlCreate(out))
 	cmd.AddCommand(NewCmdUDBDelete(out))
 	cmd.AddCommand(NewCmdUDBStart(out))
@@ -196,7 +196,7 @@ type UDBMysqlRow struct {
 }
 
 //NewCmdUDBList ucloud udb list
-func NewCmdUDBList() *cobra.Command {
+func NewCmdUDBList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -244,7 +244,7 @@ func NewCmdUDBList() *cobra.Command {
 					list = append(list, row)
 				}
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 	flags := cmd.Flags()

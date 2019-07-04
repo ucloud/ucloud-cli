@@ -81,10 +81,10 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
-    'logo': 'logo.png',
     'github_user': 'ucloud',
     'github_repo': 'ucloud-cli',
     'github_type': 'star',
+    'show_powered_by':False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -100,8 +100,6 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-# html_sidebars = {}
-
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -176,3 +174,7 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
+
+
+def setup(app):
+    app.add_stylesheet("header.css")

@@ -1,0 +1,45 @@
+{% extends "!layout.html" %}
+{% block header %}
+  <div class="docs-header">
+    <div class="main">
+        <div class="nav-bar clearfix">
+            <a href="https://www.ucloud.cn" title="返回官网首页"><span class="docs-logo"></span></a> 
+                <div class="hz-wrapper pull-right tr">
+                    <a href="https://www.ucloud.cn" title="" class="header-link" target="_blank"><span class="icon-home"></span>官网</a>
+                    <a href="https://console.ucloud.cn" title="" class="header-link" target="_blank"><span class="icon-console"></span>控制台</a>
+                <div class="docs-login-wrapper logout">
+                    <a href="https://accountv2.ucloud.cn/userinfo" class="login-user-name" title="前往用户中心"></a>
+                    <!-- <a href="https://passport.ucloud.cn/" class="header-link login">登录</a>
+                    <a href="https://account.ucloud.cn/cas/register" class="header-link signup">注册</a>
+                    <a href="https://account.ucloud.cn/cas/logout" class="header-link logout" title="退出登录">退出</a>                         -->
+                </div>
+            </div>
+        </div>
+        <div class="header-search-bar clearfix">
+            <div class="header-title pull-left">
+                <a href="/index" title="文档中心首页"><h1 class="title">文档中心</h1></a> 
+            </div>
+            <div class="header-search-wrapper pull-right">
+                <form action="{{ pathto('search') }}" accept-charset="utf-8" class="search" id="dw__search" method="get" role="search">
+                    <div class="search-input-wrapper">
+                        <input type="hidden" name="q">
+                        <input type="text" value="{{ _('') }}" growing-track="true" placeholder="请输入搜索内容" autocomplete="off" disableautocomplete="" id="qsearch__in" accesskey="f" name="id" class="edit search-input">
+                        <span class="icon-search"></span>
+                        <button type="submit" class="header-search-btn" title="搜索">搜索</button>
+                        <div id="qsearch__out" class="ajax_qsearch JSpopup" style="display: none;"></div>
+                    </div>
+                </form>                    
+            </div>
+        </div>
+    </div>
+  </div>
+  {{ super() }}
+{% endblock %}
+{# Add some extra stuff before and use existing with 'super()' call. #}
+{% block footer %}
+  <div class="page-footer-copyright">
+        Copyright © 2012-<span id="J_copyright-year">2019</span> UCloud 优刻得科技股份有限公司 ｜
+        <a href="http://www.miitbeian.gov.cn/publish/query/indexFirst.action" target="_blank">沪ICP备 12020087</a>
+  </div>
+{% endblock %}
+

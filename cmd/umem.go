@@ -21,9 +21,14 @@ import (
 
 	"github.com/spf13/cobra"
 
+	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
+	"github.com/ucloud/ucloud-sdk-go/services/umem"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 //NewCmdRedis ucloud redis
@@ -34,9 +39,10 @@ func NewCmdRedis() *cobra.Command {
 		Long:  "List and manipulate redis instances",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdRedisList())
+	cmd.AddCommand(NewCmdRedisList(out))
 	cmd.AddCommand(NewCmdRedisCreate(out))
 	cmd.AddCommand(NewCmdRedisDelete(out))
+	cmd.AddCommand(NewCmdRedisRestart(out))
 	return cmd
 }
 
@@ -48,9 +54,10 @@ func NewCmdMemcache() *cobra.Command {
 		Long:  "List and manipulate memcache instances",
 	}
 	out := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdMemcacheList())
+	cmd.AddCommand(NewCmdMemcacheList(out))
 	cmd.AddCommand(NewCmdMemcacheCreate(out))
 	cmd.AddCommand(NewCmdMemcacheDelete(out))
+	cmd.AddCommand(NewCmdMemcacheRestart(out))
 	return cmd
 }
 
@@ -75,7 +82,7 @@ var redisTypeMap = map[string]string{
 }
 
 //NewCmdRedisList ucloud redis list
-func NewCmdRedisList() *cobra.Command {
+func NewCmdRedisList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -124,7 +131,7 @@ func NewCmdRedisList() *cobra.Command {
 					list = append(list, srow)
 				}
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -238,11 +245,24 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
-				req.GroupId = &id
-				_, err := base.BizClient.DeleteURedisGroup(req)
-				if err != nil {
-					base.HandleError(err)
-					continue
+				if strings.HasPrefix(id, "uredis") {
+					req.GroupId = &id
+					_, err := base.BizClient.DeleteURedisGroup(req)
+					if err != nil {
+						base.HandleError(err)
+						continue
+					}
+				} else if strings.HasPrefix(id, "umem") {
+					_req := base.BizClient.NewDeleteUMemSpaceRequest()
+					_req.Region = req.Region
+					_req.Zone = req.Zone
+					_req.ProjectId = req.ProjectId
+					_req.SpaceId = &id
+					_, err := base.BizClient.DeleteUMemSpace(_req)
+					if err != nil {
+						base.HandleError(err)
+						continue
+					}
 				}
 				fmt.Fprintf(out, "redis[%s] deleted\n", idname)
 			}
@@ -264,6 +284,68 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	})
 
 	return cmd
+}
+
+//NewCmdRedisRestart ucloud redis restart
+func NewCmdRedisRestart(out io.Writer) *cobra.Command {
+	idNames := make([]string, 0)
+	req := base.BizClient.NewRestartURedisGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart redis instances of master-replica type",
+		Long:  "Restart redis instances of master-replica type",
+		Run: func(c *cobra.Command, args []string) {
+			reqs := make([]request.Common, len(idNames))
+			for idx, idname := range idNames {
+				id := base.PickResourceID(idname)
+				_req := *req
+				_req.GroupId = &id
+				reqs[idx] = &_req
+			}
+			coAction := newConcurrentAction(reqs, restartRedis)
+			coAction.Do()
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to restart")
+	bindProjectID(req, flags)
+	bindRegion(req, flags)
+	bindZone(req, flags)
+
+	cmd.MarkFlagRequired("umem-id")
+	flags.SetFlagValuesFunc("umem-id", func() []string {
+		return getRedisIDList(*req.ProjectId, *req.Region)
+	})
+
+	return cmd
+}
+
+func restartRedis(creq request.Common) (bool, []string) {
+	req := creq.(*pumem.RestartURedisGroupRequest)
+	block := ux.NewBlock()
+	ux.Doc.Append(block)
+	logs := make([]string, 0)
+	logs = append(logs, fmt.Sprintf("api:RestartURedisGroup, request:%v", base.ToQueryMap(req)))
+	_, err := base.BizClient.RestartURedisGroup(req)
+	if err != nil {
+		block.Append(base.ParseError(err))
+		logs = append(logs, fmt.Sprintf("restart redis[%s] failed: %s", *req.GroupId, base.ParseError(err)))
+		return false, logs
+	}
+	poller := base.NewSpoller(describeRedisByID, base.Cxt.GetWriter())
+	text := fmt.Sprintf("redis[%s] is restarting", *req.GroupId)
+	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block)
+	if ret.Err != nil {
+		block.Append(base.ParseError(err))
+		logs = append(logs, ret.Err.Error())
+	}
+	if ret.Timeout {
+		logs = append(logs, "poll redis[%s] timeout", *req.GroupId)
+	}
+	return ret.Done, logs
 }
 
 func getRedisIDList(project, region string) []string {
@@ -302,7 +384,7 @@ type UMemMemcacheRow struct {
 }
 
 //NewCmdMemcacheList ucloud memcache list
-func NewCmdMemcacheList() *cobra.Command {
+func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemcacheGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -328,7 +410,7 @@ func NewCmdMemcacheList() *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list)
+			base.PrintList(list, out)
 		},
 	}
 
@@ -431,6 +513,97 @@ func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 	})
 
 	return cmd
+}
+
+//NewCmdMemcacheRestart ucloud memcache restart
+func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
+	idNames := make([]string, 0)
+	req := base.BizClient.NewRestartUMemcacheGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart memcache instances",
+		Long:  "Restart memcache instances",
+		Run: func(c *cobra.Command, args []string) {
+			reqs := make([]request.Common, len(idNames))
+			for idx, idname := range idNames {
+				id := base.PickResourceID(idname)
+				_req := *req
+				_req.GroupId = &id
+				reqs[idx] = &_req
+			}
+			coAction := newConcurrentAction(reqs, restartMemcache)
+			coAction.Do()
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of memcache to restart")
+	bindRegion(req, flags)
+	bindZone(req, flags)
+	bindProjectID(req, flags)
+
+	flags.SetFlagValuesFunc("umem-id", func() []string {
+		return getMemcacheIDList(*req.ProjectId, *req.Region)
+	})
+
+	cmd.MarkFlagRequired("umem-id")
+	return cmd
+}
+
+func restartMemcache(creq request.Common) (bool, []string) {
+	req := creq.(*umem.RestartUMemcacheGroupRequest)
+	block := ux.NewBlock()
+	ux.Doc.Append(block)
+	logs := make([]string, 0)
+	logs = append(logs, fmt.Sprintf("api:RestartUMemcacheGroup, request:%v", base.ToQueryMap(req)))
+	_, err := base.BizClient.RestartUMemcacheGroup(req)
+	if err != nil {
+		block.Append(base.ParseError(err))
+		logs = append(logs, fmt.Sprintf("restart memcache[%s] failed: %s", *req.GroupId, base.ParseError(err)))
+		return false, logs
+	}
+	poller := base.NewSpoller(describeMemcacheByID, base.Cxt.GetWriter())
+	text := fmt.Sprintf("memcache[%s] is restarting", *req.GroupId)
+	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block)
+	if ret.Err != nil {
+		block.Append(base.ParseError(err))
+		logs = append(logs, ret.Err.Error())
+	}
+	if ret.Timeout {
+		logs = append(logs, "poll memcache[%s] timeout", *req.GroupId)
+	}
+	return ret.Done, logs
+}
+
+func describeMemcacheByID(memcacheID string) (interface{}, error) {
+	req := base.BizClient.NewDescribeUMemRequest()
+	req.Protocol = sdk.String("memcache")
+	req.ResourceId = &memcacheID
+
+	resp, err := base.BizClient.DescribeUMem(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.DataSet) < 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", memcacheID))
+	}
+	return &resp.DataSet[0], nil
+}
+func describeRedisByID(redisID string) (interface{}, error) {
+	req := base.BizClient.NewDescribeUMemRequest()
+	req.Protocol = sdk.String("redis")
+	req.ResourceId = &redisID
+
+	resp, err := base.BizClient.DescribeUMem(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.DataSet) < 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", redisID))
+	}
+	return &resp.DataSet[0], nil
 }
 
 func getMemcacheIDList(project, region string) []string {
