@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"fmt"
 	"reflect"
+	"sync"
+	"time"
 
 	"github.com/spf13/pflag"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 func bindRegion(req request.Common, flags *pflag.FlagSet) {
@@ -96,4 +100,71 @@ func bindQuantity(req interface{}, flags *pflag.FlagSet) {
 	v := reflect.ValueOf(req).Elem()
 	f := v.FieldByName("Quantity")
 	f.Set(reflect.ValueOf(quanitiy))
+}
+
+type concurrentAction struct {
+	reqs       []request.Common
+	actionFunc func(request.Common) (bool, []string)
+	wg         *sync.WaitGroup
+	result     chan bool
+	tokens     chan bool
+}
+
+func newConcurrentAction(reqs []request.Common, actionFunc func(request.Common) (bool, []string)) *concurrentAction {
+	return &concurrentAction{
+		reqs:       reqs,
+		actionFunc: actionFunc,
+		wg:         &sync.WaitGroup{},
+		result:     make(chan bool),
+		tokens:     make(chan bool, 10), //控制并发量，最多是个并发
+	}
+}
+
+func (c *concurrentAction) actionFuncWrapper(req request.Common) {
+	c.tokens <- true
+	success, logs := c.actionFunc(req)
+	c.result <- success
+	logs = append([]string{"========================================"}, logs...)
+	base.LogInfo(logs...)
+	<-c.tokens
+	time.Sleep(time.Second / 5)
+	c.wg.Done()
+}
+
+func (c *concurrentAction) Do() {
+	count := len(c.reqs)
+	success, fail := 0, 0
+	refresh := ux.NewRefresh()
+	//同时执行任务数量大于5时，不再单独显示每一个任务的进行情况，而是聚合显示
+	if count > 5 {
+		ux.Doc.Disable()
+		refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
+	}
+	go func() {
+		for {
+			select {
+			case ret := <-c.result:
+				if ret {
+					success++
+				} else {
+					fail++
+				}
+
+			case <-time.Tick(time.Second / 30):
+				if count > 5 {
+					refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
+				}
+				if count == (success+fail) && fail > 0 {
+					fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
+				}
+			}
+		}
+	}()
+
+	for _, req := range c.reqs {
+		c.wg.Add(1)
+		go c.actionFuncWrapper(req)
+	}
+
+	c.wg.Wait()
 }

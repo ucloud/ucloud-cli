@@ -1,4 +1,4 @@
-export VERSION=0.1.17
+export VERSION=0.1.18
 
 .PHONY : build
 build: 

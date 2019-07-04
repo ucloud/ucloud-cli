@@ -1,10 +1,10 @@
-
 package base
 
 import (
-	"os"
-	"sync"
 	"fmt"
+	"os"
+	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
@@ -13,21 +13,32 @@ import (
 //Logger 日志
 var logger *log.Logger
 var mu sync.Mutex
+var out = Cxt.GetWriter()
 
-func init() {
-	initLog()
+func initConfigDir() {
+	if _, err := os.Stat(GetLogFileDir()); os.IsNotExist(err) {
+		err := os.MkdirAll(GetLogFileDir(), 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
-
-func initLog(){
+func initLog() error {
 	file, err := os.OpenFile(GetLogFilePath(), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		fmt.Println("open log file failed: ", err)
-		return
+		return fmt.Errorf("open log file failed: %v", err)
 	}
 	logger = log.New()
 	logger.SetNoLock()
 	logger.AddHook(NewLogRotateHook(file))
 	logger.SetOutput(file)
+	LogInfo(fmt.Sprintf("command: %s", strings.Join(os.Args, " ")))
+	return nil
+}
+
+//GetLogFileDir 获取日志文件路径
+func GetLogFileDir() string {
+	return GetHomePath() + fmt.Sprintf("/%s", ConfigPath)
 }
 
 //GetLogFilePath 获取日志文件路径
@@ -35,13 +46,20 @@ func GetLogFilePath() string {
 	return GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
 }
 
-//Log 记录日志
-func Log(logs []string) {
+//LogInfo 记录日志
+func LogInfo(logs ...string) {
 	mu.Lock()
 	defer mu.Unlock()
-	logger.Info("=============================================================")
 	for _, line := range logs {
 		logger.Info(line)
+	}
+}
+
+//LogError 记录日志
+func LogError(logs ...string) {
+	for _, line := range logs {
+		logger.Error(line)
+		fmt.Fprintln(out, line)
 	}
 }
 
@@ -103,7 +121,7 @@ func (hook *LogRotateHook) Fire(entry *log.Entry) error {
 //NewLogRotateHook create a LogRotateHook
 func NewLogRotateHook(file *os.File) *LogRotateHook {
 	return &LogRotateHook{
-		MaxSize: 1024*1024, //1MB
+		MaxSize: 1024 * 1024, //1MB
 		Cut:     0.2,
 		LogFile: file,
 	}

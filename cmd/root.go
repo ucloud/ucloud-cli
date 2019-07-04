@@ -226,14 +226,13 @@ func initialize(cmd *cobra.Command) {
 		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
 		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
 	}
-
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if base.ConfigIns.PrivateKey == "" {
-			base.Cxt.Println("private-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your private-key")
+			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)
 		}
 		if base.ConfigIns.PublicKey == "" {
-			base.Cxt.Println("public-key is empty. Execute command 'ucloud init' or 'ucloud config' to configure your public-key")
+			base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)
 		}
 	}

@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -14,11 +15,11 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
-//ConfigFile filename
-const ConfigFile = "config.json"
+//ConfigFilePath path of config.json
+var ConfigFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "config.json")
 
-//CredentialFile filename
-const CredentialFile = "credential.json"
+//CredentialFilePath path of credential.json
+var CredentialFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "credential.json")
 
 //DefaultTimeoutSec default timeout for requesting api, 15s
 const DefaultTimeoutSec = 15
@@ -30,16 +31,22 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.17"
+const Version = "0.1.18"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{}
+
+//AggConfigListIns 配置列表, 进程启动时从本地文件加载
+var AggConfigListIns = &AggConfigManager{}
 
 //ClientConfig 创建sdk client参数
 var ClientConfig *sdk.Config
 
 //AuthCredential 创建sdk client参数
 var AuthCredential *auth.Credential
+
+//BizClient 用于调用业务接口
+var BizClient *Client
 
 //Global 全局flag
 var Global GlobalFlag
@@ -113,7 +120,6 @@ func (p *AggConfig) ConfigPrivateKey() error {
 
 //GetClientConfig 用来生成sdkClient
 func (p *AggConfig) GetClientConfig(isDebug bool) *sdk.Config {
-	p.LoadActiveAggConfig()
 	clientConfig := &sdk.Config{
 		Region:    p.Region,
 		ProjectId: p.ProjectID,
@@ -123,14 +129,13 @@ func (p *AggConfig) GetClientConfig(isDebug bool) *sdk.Config {
 		LogLevel:  ClientConfig.LogLevel,
 	}
 	if isDebug == true {
-		clientConfig.LogLevel = 5
+		clientConfig.LogLevel = log.DebugLevel
 	}
 	return clientConfig
 }
 
 //GetCredential 用来生成SDkClient
 func (p *AggConfig) GetCredential() *auth.Credential {
-	p.LoadActiveAggConfig()
 	return &auth.Credential{
 		PublicKey:  p.PublicKey,
 		PrivateKey: p.PrivateKey,
@@ -138,13 +143,13 @@ func (p *AggConfig) GetCredential() *auth.Credential {
 }
 
 func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
+	target.Profile = p.Profile
 	target.BaseURL = p.BaseURL
 	target.Timeout = p.Timeout
 	target.ProjectID = p.ProjectID
 	target.Region = p.Region
 	target.Zone = p.Zone
 	target.Active = p.Active
-	target.Profile = p.Profile
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -153,182 +158,243 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 	target.PublicKey = p.PublicKey
 }
 
-//Save 保存配置到本地文件，如果本地已有此配置，则更新，否则添加
-func (p *AggConfig) Save() error {
-	configs, err := readCLIConfigs()
-	if err != nil {
-		return fmt.Errorf("read config fail | %v", err)
-	}
-	configMap := make(map[string]*CLIConfig, 0)
-	for idx := range configs {
-		configMap[configs[idx].Profile] = &configs[idx]
-		//确保只有一个配置有效(Active:true)
-		if p.Active && p.Profile != configs[idx].Profile {
-			configs[idx].Active = false
-		}
-	}
-	if target, ok := configMap[p.Profile]; ok {
-		p.copyToCLIConfig(target)
-	} else {
-		if p.PrivateKey == "" || p.PublicKey == "" {
-			return fmt.Errorf("private-key and public_key are required for new profile")
-		}
-		_target := &CLIConfig{}
-		p.copyToCLIConfig(_target)
-		configs = append(configs, *_target)
-	}
-
-	err = WriteJSONFile(configs, ConfigFile)
-	if err != nil {
-		return err
-	}
-
-	credentials, err := readCredentials()
-	if err != nil {
-		return fmt.Errorf("read credentials fail | %v", err)
-	}
-
-	credentialMap := make(map[string]*CredentialConfig)
-	for idx := range credentials {
-		credentialMap[credentials[idx].Profile] = &credentials[idx]
-	}
-	if target, ok := credentialMap[p.Profile]; ok {
-		p.copyToCredentialConfig(target)
-	} else {
-		_target := &CredentialConfig{}
-		p.copyToCredentialConfig(_target)
-		credentials = append(credentials, *_target)
-	}
-
-	return WriteJSONFile(credentials, CredentialFile)
+//AggConfigManager 配置管理
+type AggConfigManager struct {
+	activeProfile string
+	configs       map[string]*AggConfig
+	cfgFile       io.Reader
+	credFile      io.Reader
 }
 
-//LoadActiveAggConfig 从本地文件加载有效配置
-func (p *AggConfig) LoadActiveAggConfig() error {
-	configs, err := readCLIConfigs()
-	if err != nil {
-		return fmt.Errorf("read config failed | %v", err)
-	}
-	credentials, err := readCredentials()
-	if err != nil {
-		return fmt.Errorf("read credential failed | %v", err)
-	}
-	var currConfig *CLIConfig
-	for _, config := range configs {
-		if config.Active {
-			currConfig = &config
-			break
-		}
-	}
-	if currConfig == nil {
-		return fmt.Errorf("no active config found, run 'ucloud config list' to check")
-	}
-	var currCredential *CredentialConfig
-	for _, credential := range credentials {
-		if credential.Profile == currConfig.Profile {
-			currCredential = &credential
-			break
-		}
-	}
-	if currCredential == nil {
-		return fmt.Errorf("no availavle credential")
+//NewAggConfigManager create instance
+func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error) {
+
+	manager := &AggConfigManager{
+		configs:  make(map[string]*AggConfig),
+		cfgFile:  cfgFile,
+		credFile: credFile,
 	}
 
-	p.Profile = currConfig.Profile
-	p.PrivateKey = currCredential.PrivateKey
-	p.PublicKey = currCredential.PublicKey
-	p.ProjectID = currConfig.ProjectID
-	p.Region = currConfig.Region
-	p.Zone = currConfig.Zone
-	p.BaseURL = currConfig.BaseURL
-	p.Timeout = currConfig.Timeout
-	p.Active = currConfig.Active
+	err := manager.Load()
+	if err != nil {
+		if !os.IsNotExist(err) {
+			HandleError(fmt.Errorf("load cli config failed: %v", err))
+			return nil, err
+		}
+
+		aerr := adaptOldConfig()
+		if aerr != nil {
+			HandleError(aerr)
+			return nil, aerr
+		}
+
+		err := manager.Load()
+		if err != nil {
+			HandleError(fmt.Errorf("retry to load cli config failed: %v", err))
+			return nil, err
+		}
+	}
+	return manager, nil
+}
+
+//Append config to list, override if already exist the same profile
+func (p *AggConfigManager) Append(config *AggConfig) error {
+	if _, ok := p.configs[config.Profile]; ok {
+		return fmt.Errorf("profile %s exists already", config.Profile)
+	}
+
+	if config.Active && config.Profile != p.activeProfile {
+		if ac, ok := p.configs[p.activeProfile]; ok {
+			ac.Active = false
+		}
+		p.activeProfile = config.Profile
+	}
+	p.configs[config.Profile] = config
+	return p.Save()
+}
+
+//UpdateAggConfig  update AggConfig append if not exist
+func (p *AggConfigManager) UpdateAggConfig(config *AggConfig) error {
+	if _, ok := p.configs[config.Profile]; !ok {
+		return p.Append(config)
+	}
+
+	if config.Active && config.Profile != p.activeProfile {
+		if ac, ok := p.configs[p.activeProfile]; ok {
+			ac.Active = false
+		}
+		p.activeProfile = config.Profile
+	}
+	return p.Save()
+}
+
+//Load AggConfigList from local file  $HOME/.ucloud/config.json+credential.json
+func (p *AggConfigManager) Load() error {
+	configs, err := p.parseCLIConfigs()
+	if err != nil {
+		return fmt.Errorf("read config failed: %v", err)
+	}
+	credentials, err := p.parseCredentials()
+	if err != nil {
+		return fmt.Errorf("read credential failed: %v", err)
+	}
+
+	//key: profile , value: CLIConfig
+	configMap := make(map[string]*CLIConfig)
+	for _, config := range configs {
+		c := config
+		configMap[config.Profile] = &c
+		if config.Active {
+			p.activeProfile = config.Profile
+		}
+	}
+	credMap := make(map[string]*CredentialConfig)
+	for _, cred := range credentials {
+		c := cred
+		credMap[cred.Profile] = &c
+	}
+
+	for profile, config := range configMap {
+		cred, ok := credMap[profile]
+		if !ok {
+			LogError("profile: %s don't exist in credential")
+			continue
+		}
+
+		p.configs[profile] = &AggConfig{
+			PrivateKey: cred.PrivateKey,
+			PublicKey:  cred.PublicKey,
+			Profile:    config.Profile,
+			ProjectID:  config.ProjectID,
+			Region:     config.Region,
+			Zone:       config.Zone,
+			BaseURL:    config.BaseURL,
+			Timeout:    config.Timeout,
+			Active:     config.Active,
+		}
+	}
+
+	if p.activeProfile == "" && len(configMap) > 0 {
+		return fmt.Errorf("no active config found, run 'ucloud config list' to check")
+	}
+	if _, ok := credMap[p.activeProfile]; p.activeProfile != "" && !ok {
+		return fmt.Errorf("profile %s's credential don't exist, run 'ucloud config list' to check", p.activeProfile)
+	}
 
 	return nil
 }
 
-//DeleteAggConfigByProfile 从本地文件中删除此配置
-func DeleteAggConfigByProfile(profile string) error {
-	configs, err := readCLIConfigs()
-	if err != nil {
-		return fmt.Errorf("read config fail | %v", err)
+//Save configs to local file
+func (p *AggConfigManager) Save() error {
+	clics := []*CLIConfig{}
+	credcs := []*CredentialConfig{}
+	for _, aggConfig := range p.configs {
+		cliConfig := &CLIConfig{}
+		aggConfig.copyToCLIConfig(cliConfig)
+		clics = append(clics, cliConfig)
+
+		credConfig := &CredentialConfig{}
+		aggConfig.copyToCredentialConfig(credConfig)
+		credcs = append(credcs, credConfig)
 	}
-	for idx, c := range configs {
-		if c.Profile == profile {
-			configs = append(configs[:idx], configs[idx+1:]...)
-		}
+	aerr := WriteJSONFile(clics, ConfigFilePath)
+	berr := WriteJSONFile(credcs, CredentialFilePath)
+
+	if aerr != nil && berr != nil {
+		return fmt.Errorf("save cli config failed: %v | save credentail failed: %v", aerr, berr)
 	}
-	err = WriteJSONFile(configs, ConfigFile)
-	if err != nil {
-		return err
+	if aerr != nil {
+		return fmt.Errorf("save cli config failed: %v", aerr)
+	}
+	if berr != nil {
+		return fmt.Errorf("save cerdentail failed: %v", berr)
+	}
+	return nil
+}
+
+//DeleteByProfile 从AggConfigList和本地文件中删除此配置
+func (p *AggConfigManager) DeleteByProfile(profile string) error {
+	if _, ok := p.configs[profile]; !ok {
+		return fmt.Errorf("profile: %s is not exist", profile)
 	}
 
-	credentials, err := readCredentials()
+	ac := p.configs[profile]
+	if ac.Active {
+		return fmt.Errorf("can't delete active profile")
+	}
+
+	delete(p.configs, profile)
+
+	err := p.Save()
 	if err != nil {
-		return fmt.Errorf("read credential fail | %v", err)
+		return fmt.Errorf("delete profile %s failed: %v", profile, err)
 	}
-	for idx, c := range credentials {
-		if c.Profile == profile {
-			credentials = append(credentials[:idx], credentials[idx+1:]...)
-		}
-	}
-	return WriteJSONFile(credentials, CredentialFile)
+	return nil
 }
 
 //GetProfileNameList 获取所有profiles 用于ucloud config --profile 补全
-func GetProfileNameList() []string {
-	list, err := readCredentials()
-	if err != nil {
-		return nil
-	}
+func (p *AggConfigManager) GetProfileNameList() []string {
 	profiles := []string{}
-	for _, item := range list {
+	for _, item := range p.configs {
 		profiles = append(profiles, item.Profile)
 	}
 	return profiles
 }
 
 //GetAggConfigList get all profile config
-func GetAggConfigList() ([]AggConfig, error) {
-	configs, err := readCLIConfigs()
+func (p *AggConfigManager) GetAggConfigList() []AggConfig {
+	configs := []AggConfig{}
+	for _, cfg := range p.configs {
+		configs = append(configs, *cfg)
+	}
+	return configs
+}
+
+//GetAggConfigByProfile get config of specify profile
+func (p *AggConfigManager) GetAggConfigByProfile(profile string) (*AggConfig, bool) {
+	if ac, ok := p.configs[profile]; ok {
+		return ac, true
+	}
+	return nil, false
+}
+
+//GetActiveAggConfig get active agg config
+func (p *AggConfigManager) GetActiveAggConfig() (*AggConfig, error) {
+	if ac, ok := p.configs[p.activeProfile]; ok {
+		return ac, nil
+	}
+	return nil, fmt.Errorf("active profile not found. see 'ucloud config list'")
+}
+
+func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
+	byts, err := ioutil.ReadAll(p.cfgFile)
 	if err != nil {
-		return nil, fmt.Errorf("read cli config failed | %v", err)
+		return nil, err
 	}
-	credentials, err := readCredentials()
+	configs := []CLIConfig{}
+	err = json.Unmarshal(byts, &configs)
 	if err != nil {
-		return nil, fmt.Errorf("read credential failed | %v", err)
+		return nil, fmt.Errorf("parse cli config faild: %v", err)
 	}
-	credentialMap := map[string]*CredentialConfig{}
-	for idx, c := range credentials {
-		credentialMap[c.Profile] = &credentials[idx]
+	return configs, nil
+}
+
+func (p *AggConfigManager) parseCredentials() ([]CredentialConfig, error) {
+	byts, err := ioutil.ReadAll(p.credFile)
+	if err != nil {
+		return nil, err
 	}
-	list := []AggConfig{}
-	for _, c := range configs {
-		if credentail, ok := credentialMap[c.Profile]; ok {
-			aggc := AggConfig{
-				Profile:    c.Profile,
-				ProjectID:  c.ProjectID,
-				Region:     c.Region,
-				Zone:       c.Zone,
-				BaseURL:    c.BaseURL,
-				Timeout:    c.Timeout,
-				Active:     c.Active,
-				PrivateKey: credentail.PrivateKey,
-				PublicKey:  credentail.PublicKey,
-			}
-			list = append(list, aggc)
-		}
+	credentials := make([]CredentialConfig, 0)
+	err = json.Unmarshal(byts, &credentials)
+	if err != nil {
+		return nil, fmt.Errorf("parse credential failed: %v", err)
 	}
-	return list, nil
+	return credentials, nil
 }
 
 //ListAggConfig ucloud --config + ucloud config list
 func ListAggConfig(json bool) {
-	aggConfigs, err := GetAggConfigList()
-	if err != nil {
-		HandleError(err)
-		return
-	}
+	aggConfigs := AggConfigListIns.GetAggConfigList()
 	for idx, ac := range aggConfigs {
 		aggConfigs[idx].PrivateKey = MosaicString(ac.PrivateKey, 8, 5)
 		aggConfigs[idx].PublicKey = MosaicString(ac.PublicKey, 8, 5)
@@ -340,51 +406,9 @@ func ListAggConfig(json bool) {
 	}
 }
 
-//GetAggConfigByProfile get config of specify profile
-func GetAggConfigByProfile(profile string) (*AggConfig, error) {
-	configs, err := readCLIConfigs()
-	if err != nil {
-		return nil, fmt.Errorf("read cli config failed | %v", err)
-	}
-	credentials, err := readCredentials()
-	if err != nil {
-		return nil, fmt.Errorf("read credential failed | %v", err)
-	}
-	var targetConfig *CLIConfig
-	for _, config := range configs {
-		if config.Profile == profile {
-			targetConfig = &config
-			break
-		}
-	}
-	var targetCredential *CredentialConfig
-	for _, c := range credentials {
-		if c.Profile == profile {
-			targetCredential = &c
-			break
-		}
-	}
-	retConfig := &AggConfig{
-		Profile: profile,
-	}
-	if targetConfig != nil {
-		retConfig.ProjectID = targetConfig.ProjectID
-		retConfig.Region = targetConfig.Region
-		retConfig.Zone = targetConfig.Zone
-		retConfig.BaseURL = targetConfig.BaseURL
-		retConfig.Timeout = targetConfig.Timeout
-		retConfig.Active = targetConfig.Active
-	}
-	if targetCredential != nil {
-		retConfig.PrivateKey = targetCredential.PrivateKey
-		retConfig.PublicKey = targetCredential.PublicKey
-	}
-	return retConfig, nil
-}
-
 //LoadUserInfo 从~/.ucloud/user.json加载用户信息
 func LoadUserInfo() (*uaccount.UserInfo, error) {
-	filePath := GetConfigPath() + "/user.json"
+	filePath := GetConfigDir() + "/user.json"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("user.json is not exist")
 	}
@@ -400,40 +424,6 @@ func LoadUserInfo() (*uaccount.UserInfo, error) {
 	return &user, nil
 }
 
-func readCLIConfigs() ([]CLIConfig, error) {
-	filePath := GetConfigPath() + "/" + ConfigFile
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return []CLIConfig{CLIConfig{Profile: DefaultProfile, Timeout: DefaultTimeoutSec, BaseURL: DefaultBaseURL, Active: true}}, nil
-	}
-	byts, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	configs := make([]CLIConfig, 0)
-	err = json.Unmarshal(byts, &configs)
-	if err != nil {
-		return nil, fmt.Errorf("file path:%s | %v", filePath, err)
-	}
-	return configs, nil
-}
-
-func readCredentials() ([]CredentialConfig, error) {
-	filePath := GetConfigPath() + "/" + CredentialFile
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return []CredentialConfig{CredentialConfig{Profile: DefaultProfile}}, nil
-	}
-	byts, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	credentials := make([]CredentialConfig, 0)
-	err = json.Unmarshal(byts, &credentials)
-	if err != nil {
-		return nil, fmt.Errorf("file path:%s | %v", filePath, err)
-	}
-	return credentials, nil
-}
-
 //OldConfig 0.1.7以及之前版本的配置struct
 type OldConfig struct {
 	PublicKey  string `json:"public_key"`
@@ -445,11 +435,10 @@ type OldConfig struct {
 
 //Load 从本地文件加载配置
 func (p *OldConfig) Load() error {
-	fileFullPath := GetConfigPath() + "/" + ConfigFile
-	if _, err := os.Stat(fileFullPath); os.IsNotExist(err) {
+	if _, err := os.Stat(ConfigFilePath); os.IsNotExist(err) {
 		p = new(OldConfig)
 	} else {
-		content, err := ioutil.ReadFile(fileFullPath)
+		content, err := ioutil.ReadFile(ConfigFilePath)
 		if err != nil {
 			return err
 		}
@@ -475,45 +464,81 @@ func adaptOldConfig() error {
 		PrivateKey: oc.PrivateKey,
 		PublicKey:  oc.PublicKey,
 	}
-	filePath := GetConfigPath() + "/" + ConfigFile
-	err = os.Rename(filePath, filePath+".old")
+	err = os.Rename(ConfigFilePath, ConfigFilePath+".old")
 	if err != nil {
 		return err
 	}
-	return ac.Save()
+	return AggConfigListIns.Append(ac)
 }
 
-func init() {
-	err := ConfigIns.LoadActiveAggConfig()
+//GetBizClient 初始化BizClient
+func GetBizClient(ac *AggConfig) (*Client, error) {
+	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
 	if err != nil {
-		aerr := adaptOldConfig()
-		if aerr != nil {
-			HandleError(aerr)
-		} else {
-			err := ConfigIns.LoadActiveAggConfig()
-			if err != nil {
-				HandleError(fmt.Errorf("LoadConfig failed | %v", err))
-			}
-		}
+		return nil, fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
-
-	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ConfigIns.Timeout))
-	if err != nil {
-		HandleError(fmt.Errorf("parse timeout:%ds failed | %v", ConfigIns.Timeout, err))
-	}
-
 	ClientConfig = &sdk.Config{
-		BaseUrl:   ConfigIns.BaseURL,
-		Timeout:   timeout,
-		UserAgent: fmt.Sprintf("UCloud-CLI/%s", Version),
-		LogLevel:  log.FatalLevel,
+		BaseUrl:    ac.BaseURL,
+		Timeout:    timeout,
+		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
+		LogLevel:   log.FatalLevel,
+		Region:     ac.Region,
+		Zone:       ac.Zone,
+		ProjectId:  ac.ProjectID,
+		MaxRetries: 3,
 	}
 
 	AuthCredential = &auth.Credential{
-		PublicKey:  ConfigIns.PublicKey,
-		PrivateKey: ConfigIns.PrivateKey,
+		PublicKey:  ac.PublicKey,
+		PrivateKey: ac.PrivateKey,
 	}
 
-	//bizClient 用于调用业务接口
-	BizClient = NewClient(ClientConfig, AuthCredential)
+	return NewClient(ClientConfig, AuthCredential), nil
+}
+
+func init() {
+	initConfigDir()
+	//配置日志
+	err := initLog()
+	if err != nil {
+		fmt.Println(err)
+	}
+	cfgFile, err := os.Open(ConfigFilePath)
+	if err != nil {
+		HandleError(err)
+	}
+	defer cfgFile.Close()
+
+	credFile, err := os.Open(CredentialFilePath)
+	if err != nil {
+		HandleError(err)
+	}
+	defer credFile.Close()
+
+	AggConfigListIns, err = NewAggConfigManager(cfgFile, credFile)
+	if err != nil {
+		HandleError(err)
+	}
+
+	ins, err := AggConfigListIns.GetActiveAggConfig()
+	if err != nil {
+		LogInfo(fmt.Sprintf("load active config failed: %v", err))
+		ins = &AggConfig{
+			BaseURL: DefaultBaseURL,
+			Timeout: DefaultTimeoutSec,
+		}
+	} else {
+		ConfigIns = ins
+		tmpIns := *ins
+		tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
+		tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
+		LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
+	}
+
+	bc, err := GetBizClient(ins)
+	if err != nil {
+		HandleError(err)
+	} else {
+		BizClient = bc
+	}
 }

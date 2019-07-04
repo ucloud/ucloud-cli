@@ -31,3 +31,6 @@ const EIP_USED = "used"
 const EIP_CHARGE_BANDWIDTH = "Bandwidth"
 const EIP_CHARGE_TRAFFIC = "Traffic"
 const EIP_CHARGE_SHARE = "ShareBandwidth"
+
+const UMEM_FAIL = "Fail"
+const UMEM_RUNNING = "Running"

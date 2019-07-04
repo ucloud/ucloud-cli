@@ -36,9 +36,6 @@ var Cxt = model.GetContext(os.Stdout)
 //SdkClient 用于上报数据
 var SdkClient *sdk.Client
 
-//BizClient 用于调用业务接口
-var BizClient *Client
-
 //GetHomePath 获取家目录
 func GetHomePath() string {
 	if runtime.GOOS == "windows" {
@@ -100,8 +97,8 @@ func LineInFile(fileName string, lookFor string) bool {
 	}
 }
 
-//GetConfigPath 获取配置文件的绝对路径
-func GetConfigPath() string {
+//GetConfigDir 获取配置文件所在目录
+func GetConfigDir() string {
 	path := GetHomePath() + "/" + ConfigPath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)
@@ -123,9 +120,9 @@ func HandleBizError(resp response.Common) error {
 func HandleError(err error) {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s\n"
-		Cxt.Printf(format, uErr.Code(), uErr.Message())
+		LogError(fmt.Sprintf(format, uErr.Code(), uErr.Message()))
 	} else {
-		Cxt.PrintErr(err)
+		LogError(fmt.Sprintf("%v", err))
 	}
 }
 
@@ -338,8 +335,14 @@ type Poller struct {
 	SdescribeFunc func(string) (interface{}, error)
 }
 
+type pollResult struct {
+	Done    bool
+	Timeout bool
+	Err     error
+}
+
 //Sspoll 简化版, 支持并发
-func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) {
+func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) *pollResult {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
@@ -379,27 +382,32 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 		Timeout: p.Timeout,
 	}
 
-	done := make(chan bool)
+	pollRetChan := make(chan pollResult)
 	go func() {
+		ret := pollResult{
+			Done: true,
+		}
 		if _, err := w.Wait(); err != nil {
-			log.Error(err)
+			ret.Done = false
+			ret.Err = err
 			if _, ok := err.(*waiter.TimeoutError); ok {
-				done <- false
-				return
+				ret.Timeout = true
 			}
 		}
-		done <- true
+		pollRetChan <- ret
 	}()
 
 	spin := ux.NewDotSpin(p.Out, pollText)
 	block.SetSpin(spin)
 
-	ret := <-done
-	if ret {
-		spin.Stop()
-	} else {
+	ret := <-pollRetChan
+
+	if ret.Timeout {
 		spin.Timeout()
+	} else {
+		spin.Stop()
 	}
+	return &ret
 }
 
 //Spoll 简化版
@@ -557,12 +565,11 @@ func PickResourceID(str string) string {
 }
 
 //WriteJSONFile 写json文件
-func WriteJSONFile(list interface{}, fileName string) error {
+func WriteJSONFile(list interface{}, filePath string) error {
 	byts, err := json.Marshal(list)
 	if err != nil {
 		return err
 	}
-	filePath := GetConfigPath() + "/" + fileName
 	err = ioutil.WriteFile(filePath, byts, 0600)
 	if err != nil {
 		return err
