@@ -322,7 +322,8 @@ func bindEIP(resourceID, resourceType, eipID, projectID, region *string) {
 	}
 }
 
-func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) string {
+func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) ([]string, error) {
+	logs := make([]string, 0)
 	ip := net.ParseIP(*eipID)
 	if ip != nil {
 		eipID, err := getEIPIDbyIP(ip, *projectID, *region)
@@ -338,11 +339,14 @@ func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) string
 	req.EIPId = sdk.String(base.PickResourceID(*eipID))
 	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
 	req.Region = region
+	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", base.ToQueryMap(req)))
 	_, err := base.BizClient.BindEIP(req)
 	if err != nil {
-		return base.ParseError(err)
+		logs = append(logs, fmt.Sprintf("bind eip failed: %v", err))
+		return logs, err
 	}
-	return fmt.Sprintf("bind EIP[%s] with %s[%s]", *req.EIPId, *req.ResourceType, *req.ResourceId)
+	logs = append(logs, fmt.Sprintf("bind eip[%s] with %s[%s] successfully", *req.EIPId, *req.ResourceType, *req.ResourceId))
+	return logs, nil
 }
 
 //NewCmdEIPUnbind ucloud eip unbind
