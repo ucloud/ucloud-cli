@@ -178,20 +178,19 @@ func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error)
 	err := manager.Load()
 	if err != nil {
 		if !os.IsNotExist(err) {
-			HandleError(fmt.Errorf("load cli config failed: %v", err))
-			return nil, err
+			return manager, err
 		}
 
 		aerr := adaptOldConfig()
 		if aerr != nil {
 			HandleError(aerr)
-			return nil, aerr
+			return manager, aerr
 		}
 
 		err := manager.Load()
 		if err != nil {
 			HandleError(fmt.Errorf("retry to load cli config failed: %v", err))
-			return nil, err
+			return manager, err
 		}
 	}
 	return manager, nil
@@ -506,39 +505,51 @@ func init() {
 	cfgFile, err := os.Open(ConfigFilePath)
 	if err != nil {
 		HandleError(err)
+	} else {
+		defer cfgFile.Close()
 	}
-	defer cfgFile.Close()
 
 	credFile, err := os.Open(CredentialFilePath)
 	if err != nil {
 		HandleError(err)
+	} else {
+		defer credFile.Close()
 	}
-	defer credFile.Close()
 
 	AggConfigListIns, err = NewAggConfigManager(cfgFile, credFile)
 	if err != nil {
 		HandleError(err)
-	}
-
-	ins, err := AggConfigListIns.GetActiveAggConfig()
-	if err != nil {
-		LogInfo(fmt.Sprintf("load active config failed: %v", err))
-		ins = &AggConfig{
-			BaseURL: DefaultBaseURL,
-			Timeout: DefaultTimeoutSec,
+		ins := &AggConfig{
+			BaseURL: "https://api.ucloud.cn",
+			Timeout: 15,
+			Profile: "default",
+		}
+		bc, err := GetBizClient(ins)
+		if err != nil {
+			HandleError(err)
+		} else {
+			BizClient = bc
 		}
 	} else {
-		ConfigIns = ins
-		tmpIns := *ins
-		tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
-		tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
-		LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
-	}
-
-	bc, err := GetBizClient(ins)
-	if err != nil {
-		HandleError(err)
-	} else {
-		BizClient = bc
+		ins, err := AggConfigListIns.GetActiveAggConfig()
+		if err != nil {
+			LogInfo(fmt.Sprintf("load active config failed: %v", err))
+			ins = &AggConfig{
+				BaseURL: DefaultBaseURL,
+				Timeout: DefaultTimeoutSec,
+			}
+		} else {
+			ConfigIns = ins
+			tmpIns := *ins
+			tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
+			tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
+			LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
+		}
+		bc, err := GetBizClient(ins)
+		if err != nil {
+			HandleError(err)
+		} else {
+			BizClient = bc
+		}
 	}
 }
