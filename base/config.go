@@ -34,7 +34,7 @@ const DefaultProfile = "default"
 const Version = "0.1.18"
 
 //ConfigIns 配置实例, 程序加载时生成
-var ConfigIns = &AggConfig{}
+var ConfigIns = &AggConfig{Profile: "default"}
 
 //AggConfigListIns 配置列表, 进程启动时从本地文件加载
 var AggConfigListIns = &AggConfigManager{}
