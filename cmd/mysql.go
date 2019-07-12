@@ -872,7 +872,7 @@ func getUDBList(states []string, dbType, project, region, zone string) ([]udb.UD
 					}
 				}
 			} else {
-				list = append(list, resp.DataSet...)
+				list = append(list, ins)
 			}
 		}
 		if offset+limit >= resp.TotalCount {
