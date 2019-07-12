@@ -406,6 +406,10 @@ func NewCmdConfigUpdate() *cobra.Command {
 			cacheConfig.Region = region
 			cacheConfig.Zone = zone
 
+			if cfg.ProjectID != "" {
+				cacheConfig.ProjectID = base.PickResourceID(cfg.ProjectID)
+			}
+
 			project, err := getReasonableProject(cacheConfig)
 			if err != nil {
 				base.HandleError(err)

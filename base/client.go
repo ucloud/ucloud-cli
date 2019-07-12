@@ -1,6 +1,7 @@
 package base
 
 import (
+	ppathx "github.com/ucloud/ucloud-sdk-go/private/services/pathx"
 	pudb "github.com/ucloud/ucloud-sdk-go/private/services/udb"
 	puhost "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
 	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
@@ -25,8 +26,11 @@ type PrivateUHostClient = puhost.UHostClient
 //PrivateUDBClient 私有模块的udb client 即未在官网开放的接口
 type PrivateUDBClient = pudb.UDBClient
 
-//PrivateUMemClient 私有模块的udb client 即未在官网开放的接口
+//PrivateUMemClient 私有模块的umem client 即未在官网开放的接口
 type PrivateUMemClient = pumem.UMemClient
+
+//PrivatePathxClient 私有模块的pathx client 即未在官网开放的接口
+type PrivatePathxClient = ppathx.PathXClient
 
 //Client aggregate client for business
 type Client struct {
@@ -44,6 +48,7 @@ type Client struct {
 	PrivateUHostClient
 	PrivateUDBClient
 	PrivateUMemClient
+	PrivatePathxClient
 }
 
 // NewClient will return a aggregate client
@@ -63,5 +68,6 @@ func NewClient(config *ucloud.Config, credential *auth.Credential) *Client {
 		*puhost.NewClient(config, credential),
 		*pudb.NewClient(config, credential),
 		*pumem.NewClient(config, credential),
+		*ppathx.NewClient(config, credential),
 	}
 }
