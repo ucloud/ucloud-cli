@@ -17,13 +17,14 @@ var out = Cxt.GetWriter()
 
 func initConfigDir() {
 	if _, err := os.Stat(GetLogFileDir()); os.IsNotExist(err) {
-		err := os.MkdirAll(GetLogFileDir(), 0755)
+		err := os.MkdirAll(GetLogFileDir(), LocalFileMode)
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 func initLog() error {
+	initConfigDir()
 	file, err := os.OpenFile(GetLogFilePath(), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return fmt.Errorf("open log file failed: %v", err)
@@ -34,6 +35,11 @@ func initLog() error {
 	logger.SetOutput(file)
 	LogInfo(fmt.Sprintf("command: %s", strings.Join(os.Args, " ")))
 	return nil
+}
+
+//GetLogger return point of logger
+func GetLogger() *log.Logger {
+	return logger
 }
 
 //GetLogFileDir 获取日志文件路径

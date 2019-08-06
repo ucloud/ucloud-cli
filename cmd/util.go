@@ -45,6 +45,13 @@ func bindZoneEmpty(req request.Common, flags *pflag.FlagSet) {
 	req.SetZoneRef(&zone)
 }
 
+func bindZoneEmptyS(zone, region *string, flags *pflag.FlagSet) {
+	flags.StringVar(zone, "zone", "", "Optional. Override default availability zone, see 'ucloud region'")
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(*region)
+	})
+}
+
 func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
 	*zone = base.ConfigIns.Zone
 	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
