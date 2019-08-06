@@ -3,7 +3,6 @@ package base
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -21,6 +20,9 @@ var ConfigFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "config.json")
 //CredentialFilePath path of credential.json
 var CredentialFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "credential.json")
 
+//LocalFileMode file mode of $HOME/ucloud/*
+const LocalFileMode os.FileMode = 0600
+
 //DefaultTimeoutSec default timeout for requesting api, 15s
 const DefaultTimeoutSec = 15
 
@@ -34,7 +36,11 @@ const DefaultProfile = "default"
 const Version = "0.1.20"
 
 //ConfigIns 配置实例, 程序加载时生成
-var ConfigIns = &AggConfig{Profile: "default"}
+var ConfigIns = &AggConfig{
+	Profile: DefaultProfile,
+	BaseURL: DefaultBaseURL,
+	Timeout: DefaultTimeoutSec,
+}
 
 //AggConfigListIns 配置列表, 进程启动时从本地文件加载
 var AggConfigListIns = &AggConfigManager{}
@@ -59,6 +65,7 @@ type GlobalFlag struct {
 	Completion bool
 	Config     bool
 	Signup     bool
+	Profile    string
 }
 
 //CLIConfig cli_config element
@@ -162,17 +169,16 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 type AggConfigManager struct {
 	activeProfile string
 	configs       map[string]*AggConfig
-	cfgFile       io.Reader
-	credFile      io.Reader
+	configFile    *os.File
+	credFile      *os.File
 }
 
 //NewAggConfigManager create instance
-func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error) {
-
+func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) {
 	manager := &AggConfigManager{
-		configs:  make(map[string]*AggConfig),
-		cfgFile:  cfgFile,
-		credFile: credFile,
+		configs:    make(map[string]*AggConfig),
+		configFile: cfgFile,
+		credFile:   credFile,
 	}
 
 	err := manager.Load()
@@ -183,7 +189,7 @@ func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error)
 
 		aerr := adaptOldConfig()
 		if aerr != nil {
-			HandleError(aerr)
+			HandleError(fmt.Errorf("adapt to old config failed: %v", aerr))
 			return manager, aerr
 		}
 
@@ -296,8 +302,8 @@ func (p *AggConfigManager) Save() error {
 		aggConfig.copyToCredentialConfig(credConfig)
 		credcs = append(credcs, credConfig)
 	}
-	aerr := WriteJSONFile(clics, ConfigFilePath)
-	berr := WriteJSONFile(credcs, CredentialFilePath)
+	aerr := WriteJSONFile(clics, p.configFile.Name())
+	berr := WriteJSONFile(credcs, p.credFile.Name())
 
 	if aerr != nil && berr != nil {
 		return fmt.Errorf("save cli config failed: %v | save credentail failed: %v", aerr, berr)
@@ -365,13 +371,25 @@ func (p *AggConfigManager) GetActiveAggConfig() (*AggConfig, error) {
 	return nil, fmt.Errorf("active profile not found. see 'ucloud config list'")
 }
 
+//GetActiveAggConfigName get active config name
+func (p *AggConfigManager) GetActiveAggConfigName() string {
+	if ac, ok := p.configs[p.activeProfile]; ok {
+		return ac.Profile
+	}
+	return ""
+}
+
 func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
-	byts, err := ioutil.ReadAll(p.cfgFile)
+	var configs []CLIConfig
+	rawConfig, err := ioutil.ReadAll(p.configFile)
 	if err != nil {
 		return nil, err
 	}
-	configs := []CLIConfig{}
-	err = json.Unmarshal(byts, &configs)
+	if len(rawConfig) == 0 {
+		return nil, nil
+	}
+
+	err = json.Unmarshal(rawConfig, &configs)
 	if err != nil {
 		return nil, fmt.Errorf("parse cli config faild: %v", err)
 	}
@@ -379,12 +397,17 @@ func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
 }
 
 func (p *AggConfigManager) parseCredentials() ([]CredentialConfig, error) {
-	byts, err := ioutil.ReadAll(p.credFile)
+	var credentials []CredentialConfig
+	rawCred, err := ioutil.ReadAll(p.credFile)
 	if err != nil {
 		return nil, err
 	}
-	credentials := make([]CredentialConfig, 0)
-	err = json.Unmarshal(byts, &credentials)
+
+	if len(rawCred) == 0 {
+		return nil, nil
+	}
+
+	err = json.Unmarshal(rawCred, &credentials)
 	if err != nil {
 		return nil, fmt.Errorf("parse credential failed: %v", err)
 	}
@@ -470,11 +493,19 @@ func adaptOldConfig() error {
 	return AggConfigListIns.Append(ac)
 }
 
+func init() {
+	bc, err := GetBizClient(ConfigIns)
+	if err != nil {
+		HandleError(err)
+	}
+	BizClient = bc
+}
+
 //GetBizClient 初始化BizClient
 func GetBizClient(ac *AggConfig) (*Client, error) {
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
 	if err != nil {
-		return nil, fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
+		err = fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
 	ClientConfig = &sdk.Config{
 		BaseUrl:    ac.BaseURL,
@@ -492,64 +523,61 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		PrivateKey: ac.PrivateKey,
 	}
 
-	return NewClient(ClientConfig, AuthCredential), nil
+	return NewClient(ClientConfig, AuthCredential), err
+}
+
+//InitConfig 初始化配置
+func InitConfig() {
+	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil && !os.IsNotExist(err) {
+		HandleError(err)
+	}
+	credFile, err := os.OpenFile(CredentialFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil && !os.IsNotExist(err) {
+		HandleError(err)
+	}
+
+	AggConfigListIns, err = NewAggConfigManager(configFile, credFile)
+	if err != nil {
+		LogError(err.Error())
+	} else {
+		var ins *AggConfig
+		if Global.Profile == "" {
+			ins, err = AggConfigListIns.GetActiveAggConfig()
+			if err != nil && len(AggConfigListIns.GetAggConfigList()) != 0 {
+				HandleError(err)
+			}
+		} else {
+			var ok bool
+			ins, ok = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
+			if !ok {
+				HandleError(fmt.Errorf("Profile %s does not exist", Global.Profile))
+			}
+		}
+
+		if ins != nil {
+			ConfigIns = ins
+		} else {
+			ins = ConfigIns
+		}
+
+		tmpIns := *ins
+		tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
+		tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
+		LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
+		bc, err := GetBizClient(ConfigIns)
+		if err != nil {
+			HandleError(err)
+		} else {
+			BizClient = bc
+		}
+	}
 }
 
 func init() {
-	initConfigDir()
 	//配置日志
 	err := initLog()
 	if err != nil {
 		fmt.Println(err)
-	}
-	cfgFile, err := os.Open(ConfigFilePath)
-	if err != nil {
-		HandleError(err)
-	} else {
-		defer cfgFile.Close()
-	}
-
-	credFile, err := os.Open(CredentialFilePath)
-	if err != nil {
-		HandleError(err)
-	} else {
-		defer credFile.Close()
-	}
-
-	AggConfigListIns, err = NewAggConfigManager(cfgFile, credFile)
-	if err != nil {
-		HandleError(err)
-		ins := &AggConfig{
-			BaseURL: "https://api.ucloud.cn",
-			Timeout: 15,
-			Profile: "default",
-		}
-		bc, err := GetBizClient(ins)
-		if err != nil {
-			HandleError(err)
-		} else {
-			BizClient = bc
-		}
-	} else {
-		ins, err := AggConfigListIns.GetActiveAggConfig()
-		if err != nil {
-			LogInfo(fmt.Sprintf("load active config failed: %v", err))
-			ins = &AggConfig{
-				BaseURL: DefaultBaseURL,
-				Timeout: DefaultTimeoutSec,
-			}
-		} else {
-			ConfigIns = ins
-			tmpIns := *ins
-			tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
-			tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
-			LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
-		}
-		bc, err := GetBizClient(ins)
-		if err != nil {
-			HandleError(err)
-		} else {
-			BizClient = bc
-		}
 	}
 }

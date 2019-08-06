@@ -1,8 +1,9 @@
 export VERSION=0.1.20
 
-.PHONY : build
-build: 
-	go install && mv ${GOPATH}/bin/ucloud-cli /usr/local/bin/ucloud
+.PHONY : install
+install:
+	go build -i -v -mod=vendor -o out/ucloud main.go
+	cp out/ucloud /usr/local/bin
 
 .PHONY : build_mac
 build_mac:
@@ -25,7 +26,3 @@ build_windows:
 .PHONY : build_all
 build_all: build_mac build_linux build_windows
 
-.PHONY : install
-install:
-	go build -o out/ucloud main.go
-	cp out/ucloud /usr/local/bin

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/base"
 )
 
 type listUhostTest struct {
@@ -46,7 +47,9 @@ func (test *listImageTest) run(t *testing.T) string {
 	if len(images) == 0 {
 		t.Fatalf("image list is empty")
 	}
-
+	// for _, image := range images {
+	// 	// image.ImageName
+	// }
 	return images[0].ImageID
 }
 
@@ -174,6 +177,7 @@ func (test *poweroffUHostTest) run(t *testing.T) {
 }
 
 func TestUhost(t *testing.T) {
+	base.InitConfig()
 	listImageT := listImageTest{
 		flags: []string{"--json"},
 	}
@@ -212,7 +216,7 @@ func TestUhost(t *testing.T) {
 		flags:             []string{fmt.Sprintf("--uhost-id=%s", strings.Join(createT.uhostIDs, ","))},
 		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`),
 	}
-	stopT.run(t)
+
 	stopT.run(t)
 
 	deleteT := deleteUHostTest{

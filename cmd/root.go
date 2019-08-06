@@ -31,7 +31,6 @@ var global = &base.Global
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
-	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
 		Use:               "ucloud",
 		Short:             "UCloud CLI v" + base.Version,
@@ -54,33 +53,13 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&global.Debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.JSON, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.PersistentFlags().StringVarP(&global.Profile, "profile", "p", global.Profile, "Specifies the configuration for the operation")
 	cmd.Flags().BoolVarP(&global.Version, "version", "v", false, "Display version")
 	cmd.Flags().BoolVar(&global.Completion, "completion", false, "Turn on auto completion according to the prompt")
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.AddCommand(NewCmdInit())
-	cmd.AddCommand(NewCmdDoc(out))
-	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdRegion(out))
-	cmd.AddCommand(NewCmdProject())
-	cmd.AddCommand(NewCmdUHost())
-	cmd.AddCommand(NewCmdUPHost())
-	cmd.AddCommand(NewCmdUImage())
-	cmd.AddCommand(NewCmdSubnet())
-	cmd.AddCommand(NewCmdVpc())
-	cmd.AddCommand(NewCmdFirewall())
-	cmd.AddCommand(NewCmdDisk())
-	cmd.AddCommand(NewCmdEIP())
-	cmd.AddCommand(NewCmdBandwidth())
-	cmd.AddCommand(NewCmdUDPN(out))
-	cmd.AddCommand(NewCmdULB())
-	cmd.AddCommand(NewCmdGssh())
-	cmd.AddCommand(NewCmdPathx())
-	cmd.AddCommand(NewCmdMysql())
-	cmd.AddCommand(NewCmdRedis())
-	cmd.AddCommand(NewCmdMemcache())
-
+	cmd.PersistentFlags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
@@ -180,12 +159,41 @@ Use "{{.CommandPath}} --help" for details.{{end}}
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	cmd := NewCmdRoot()
+	out := base.Cxt.GetWriter()
+	base.InitConfig()
+	cmd.AddCommand(NewCmdInit())
+	cmd.AddCommand(NewCmdDoc(out))
+	cmd.AddCommand(NewCmdConfig())
+	cmd.AddCommand(NewCmdRegion(out))
+	cmd.AddCommand(NewCmdProject())
+	cmd.AddCommand(NewCmdUHost())
+	cmd.AddCommand(NewCmdUPHost())
+	cmd.AddCommand(NewCmdUImage())
+	cmd.AddCommand(NewCmdSubnet())
+	cmd.AddCommand(NewCmdVpc())
+	cmd.AddCommand(NewCmdFirewall())
+	cmd.AddCommand(NewCmdDisk())
+	cmd.AddCommand(NewCmdEIP())
+	cmd.AddCommand(NewCmdBandwidth())
+	cmd.AddCommand(NewCmdUDPN(out))
+	cmd.AddCommand(NewCmdULB())
+	cmd.AddCommand(NewCmdGssh())
+	cmd.AddCommand(NewCmdPathx())
+	cmd.AddCommand(NewCmdMysql())
+	cmd.AddCommand(NewCmdRedis())
+	cmd.AddCommand(NewCmdMemcache())
+	cmd.AddCommand(NewCmdExt())
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
+	for idx, arg := range os.Args {
+		if arg == "--profile" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.Profile = os.Args[idx+1]
+		}
+	}
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(initialize)
 	base.Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
@@ -222,11 +230,6 @@ func initialize(cmd *cobra.Command) {
 		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}
 
-	userInfo, err := base.LoadUserInfo()
-	if err == nil {
-		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
-		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
-	}
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if base.ConfigIns.PrivateKey == "" {
 			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")

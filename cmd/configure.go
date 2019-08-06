@@ -80,8 +80,8 @@ func NewCmdInit() *cobra.Command {
 			base.ConfigIns.Active = true
 			base.Cxt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
 			base.Cxt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
-			base.Cxt.Printf("default name of CLI profile:%s\n", base.ConfigIns.Profile)
-			base.Cxt.Println("You can change the default settings by running 'ucloud config'")
+			base.Cxt.Printf("Active profile name:%s\n", base.ConfigIns.Profile)
+			base.Cxt.Println("You can change the default settings by running 'ucloud config update'")
 			base.AggConfigListIns.Append(base.ConfigIns)
 			printHello()
 		},

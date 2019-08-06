@@ -51,6 +51,7 @@ func NewCmdUImage() *cobra.Command {
 type ImageRow struct {
 	ImageName         string
 	ImageID           string
+	ImageType         string
 	BasicImage        string
 	ExtensibleFeature string
 	CreationTime      string
@@ -76,6 +77,7 @@ func NewCmdUImageList(out io.Writer) *cobra.Command {
 				row := ImageRow{}
 				row.ImageName = image.ImageName
 				row.ImageID = image.ImageId
+				row.ImageType = image.ImageType
 				row.BasicImage = image.OsName
 				row.ExtensibleFeature = strings.Join(image.Features, ",")
 				row.CreationTime = base.FormatDate(image.CreateTime)
