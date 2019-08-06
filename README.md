@@ -61,7 +61,7 @@ tar zxf ucloud-cli-macosx-0.1.20-amd64.tgz -C /usr/local/bin/
 **Building from source**
 
 Download the source code of ucloud cli from [releases page](https://github.com/ucloud/ucloud-cli/releases). You can also download it by running ```git clone https://github.com/ucloud/ucloud-cli.git```
-Ensure you have git installed, because go will download packages using git. Go to the directory of the source code, and then compile the source code by running "go build -o ucloud.exe"
+Ensure you have git installed, because go will download packages using git. Go to the directory of the source code, and then compile the source code by running "go build -mod=vendor -o ucloud.exe"
 After that add ucloud.exe to your environment variable PATH. You could follow [this document](https://www.java.com/en/download/help/path.xml) if you don't know how to do. 
 Open CMD Terminal and run ```ucloud --version ``` to test installation. 
 

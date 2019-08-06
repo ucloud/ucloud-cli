@@ -56,9 +56,10 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	var unbind, release bool
 
 	cmd := &cobra.Command{
-		Use:   "switch-eip",
-		Short: "Switch EIP for UHost instances",
-		Long:  "Switch EIP for UHost instances",
+		Use:     "switch-eip",
+		Short:   "Switch EIP for UHost instances",
+		Long:    "Switch EIP for UHost instances",
+		Example: "ucloud ext uhost switch-eip --uhost-id uhost-1n1sxx2,uhost-li4jxx1 --create-eip-bandwidth-mb 2",
 		Run: func(c *cobra.Command, args []string) {
 			project = base.PickResourceID(project)
 			eipAddrMap := make(map[string]bool)
