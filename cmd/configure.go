@@ -170,15 +170,16 @@ func NewCmdConfig() *cobra.Command {
 			//如果配置文件中找不到该profile 则添加配置
 			if !ok {
 				cacheConfig = &base.AggConfig{
-					PrivateKey: cfg.PrivateKey,
-					PublicKey:  cfg.PublicKey,
-					Profile:    cfg.Profile,
-					BaseURL:    cfg.BaseURL,
-					Timeout:    cfg.Timeout,
-					Active:     cfg.Active,
-					Region:     cfg.Region,
-					Zone:       cfg.Zone,
-					ProjectID:  cfg.ProjectID,
+					PrivateKey:    cfg.PrivateKey,
+					PublicKey:     cfg.PublicKey,
+					Profile:       cfg.Profile,
+					BaseURL:       cfg.BaseURL,
+					Timeout:       cfg.Timeout,
+					Active:        cfg.Active,
+					Region:        cfg.Region,
+					Zone:          cfg.Zone,
+					ProjectID:     cfg.ProjectID,
+					MaxRetryTimes: cfg.MaxRetryTimes,
 				}
 			}
 
