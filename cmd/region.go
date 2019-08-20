@@ -123,6 +123,19 @@ func fetchRegionWithConfig(cfg *base.AggConfig) (*Region, error) {
 	return region, nil
 }
 
+func getAllRegions() ([]string, error) {
+	regionIns, err := fetchRegion()
+	if err != nil {
+		return nil, err
+	}
+	list := []string{}
+	for region := range regionIns.Labels {
+		list = append(list, region)
+	}
+	return list, nil
+}
+
+//仅在命令补全中使用，忽略错误
 func getRegionList() []string {
 	regionIns, err := fetchRegion()
 	if err != nil {

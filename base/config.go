@@ -26,6 +26,9 @@ const LocalFileMode os.FileMode = 0600
 //DefaultTimeoutSec default timeout for requesting api, 15s
 const DefaultTimeoutSec = 15
 
+//DefaultMaxRetryTimes default timeout for requesting api, 15s
+const DefaultMaxRetryTimes = 3
+
 //DefaultBaseURL location of api server
 const DefaultBaseURL = "https://api.ucloud.cn/"
 
@@ -33,13 +36,14 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.21"
+const Version = "0.1.22"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
-	Profile: DefaultProfile,
-	BaseURL: DefaultBaseURL,
-	Timeout: DefaultTimeoutSec,
+	Profile:       DefaultProfile,
+	BaseURL:       DefaultBaseURL,
+	Timeout:       DefaultTimeoutSec,
+	MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 }
 
 //AggConfigListIns 配置列表, 进程启动时从本地文件加载
@@ -66,17 +70,20 @@ type GlobalFlag struct {
 	Config     bool
 	Signup     bool
 	Profile    string
+	PublicKey  string
+	PrivateKey string
 }
 
 //CLIConfig cli_config element
 type CLIConfig struct {
-	ProjectID string `json:"project_id"`
-	Region    string `json:"region"`
-	Zone      string `json:"zone"`
-	BaseURL   string `json:"base_url"`
-	Timeout   int    `json:"timeout_sec"`
-	Profile   string `json:"profile"`
-	Active    bool   `json:"active"` //是否生效
+	ProjectID     string `json:"project_id"`
+	Region        string `json:"region"`
+	Zone          string `json:"zone"`
+	BaseURL       string `json:"base_url"`
+	Timeout       int    `json:"timeout_sec"`
+	Profile       string `json:"profile"`
+	Active        bool   `json:"active"` //是否生效
+	MaxRetryTimes *int   `json:"max_retry_times"`
 }
 
 //CredentialConfig credential element
@@ -88,15 +95,16 @@ type CredentialConfig struct {
 
 //AggConfig 聚合配置 config+credential
 type AggConfig struct {
-	Profile    string `json:"profile"`
-	Active     bool   `json:"active"`
-	ProjectID  string `json:"project_id"`
-	Region     string `json:"region"`
-	Zone       string `json:"zone"`
-	BaseURL    string `json:"base_url"`
-	Timeout    int    `json:"timeout_sec"`
-	PublicKey  string `json:"public_key"`
-	PrivateKey string `json:"private_key"`
+	Profile       string `json:"profile"`
+	Active        bool   `json:"active"`
+	ProjectID     string `json:"project_id"`
+	Region        string `json:"region"`
+	Zone          string `json:"zone"`
+	BaseURL       string `json:"base_url"`
+	Timeout       int    `json:"timeout_sec"`
+	PublicKey     string `json:"public_key"`
+	PrivateKey    string `json:"private_key"`
+	MaxRetryTimes *int   `json:"max_retry_times"`
 }
 
 //ConfigPublicKey 输入公钥
@@ -157,6 +165,7 @@ func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
 	target.Region = p.Region
 	target.Zone = p.Zone
 	target.Active = p.Active
+	target.MaxRetryTimes = p.MaxRetryTimes
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -267,15 +276,16 @@ func (p *AggConfigManager) Load() error {
 		}
 
 		p.configs[profile] = &AggConfig{
-			PrivateKey: cred.PrivateKey,
-			PublicKey:  cred.PublicKey,
-			Profile:    config.Profile,
-			ProjectID:  config.ProjectID,
-			Region:     config.Region,
-			Zone:       config.Zone,
-			BaseURL:    config.BaseURL,
-			Timeout:    config.Timeout,
-			Active:     config.Active,
+			PrivateKey:    cred.PrivateKey,
+			PublicKey:     cred.PublicKey,
+			Profile:       config.Profile,
+			ProjectID:     config.ProjectID,
+			Region:        config.Region,
+			Zone:          config.Zone,
+			BaseURL:       config.BaseURL,
+			Timeout:       config.Timeout,
+			Active:        config.Active,
+			MaxRetryTimes: config.MaxRetryTimes,
 		}
 	}
 
@@ -393,6 +403,12 @@ func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse cli config faild: %v", err)
 	}
+	//特殊处理未配置max_retry_times的情况，v0.1.21之前硬编码重试次数为3
+	for idx := range configs {
+		if configs[idx].MaxRetryTimes == nil {
+			configs[idx].MaxRetryTimes = sdk.Int(DefaultMaxRetryTimes)
+		}
+	}
 	return configs, nil
 }
 
@@ -476,15 +492,16 @@ func adaptOldConfig() error {
 		return err
 	}
 	ac := &AggConfig{
-		Profile:    DefaultProfile,
-		ProjectID:  oc.ProjectID,
-		Region:     oc.Region,
-		Zone:       oc.Zone,
-		BaseURL:    DefaultBaseURL,
-		Timeout:    DefaultTimeoutSec,
-		Active:     true,
-		PrivateKey: oc.PrivateKey,
-		PublicKey:  oc.PublicKey,
+		Profile:       DefaultProfile,
+		ProjectID:     oc.ProjectID,
+		Region:        oc.Region,
+		Zone:          oc.Zone,
+		BaseURL:       DefaultBaseURL,
+		Timeout:       DefaultTimeoutSec,
+		Active:        true,
+		PrivateKey:    oc.PrivateKey,
+		PublicKey:     oc.PublicKey,
+		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 	}
 	err = os.Rename(ConfigFilePath, ConfigFilePath+".old")
 	if err != nil {
@@ -515,12 +532,19 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		Region:     ac.Region,
 		Zone:       ac.Zone,
 		ProjectId:  ac.ProjectID,
-		MaxRetries: 3,
+		MaxRetries: *ac.MaxRetryTimes,
 	}
 
-	AuthCredential = &auth.Credential{
-		PublicKey:  ac.PublicKey,
-		PrivateKey: ac.PrivateKey,
+	if Global.PublicKey != "" && Global.PrivateKey != "" {
+		AuthCredential = &auth.Credential{
+			PublicKey:  Global.PublicKey,
+			PrivateKey: Global.PrivateKey,
+		}
+	} else {
+		AuthCredential = &auth.Credential{
+			PublicKey:  ac.PublicKey,
+			PrivateKey: ac.PrivateKey,
+		}
 	}
 
 	return NewClient(ClientConfig, AuthCredential), err
@@ -551,7 +575,7 @@ func InitConfig() {
 			var ok bool
 			ins, ok = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
 			if !ok {
-				HandleError(fmt.Errorf("Profile %s does not exist", Global.Profile))
+				LogError("Profile %s does not exist", Global.Profile)
 			}
 		}
 

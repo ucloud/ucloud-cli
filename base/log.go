@@ -56,15 +56,17 @@ func GetLogFilePath() string {
 func LogInfo(logs ...string) {
 	mu.Lock()
 	defer mu.Unlock()
+	goID := curGoroutineID()
 	for _, line := range logs {
-		logger.Info(line)
+		logger.WithField("GoroutineID", goID).Info(line)
 	}
 }
 
 //LogError 记录日志
 func LogError(logs ...string) {
+	goID := curGoroutineID()
 	for _, line := range logs {
-		logger.Error(line)
+		logger.WithField("GoroutineID", goID).Error(line)
 		fmt.Fprintln(out, line)
 	}
 }

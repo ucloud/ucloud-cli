@@ -70,13 +70,15 @@ type UHostRow struct {
 	PrivateIP    string
 	PublicIP     string
 	Config       string
+	DiskSet      string
+	Zone         string
 	Image        string
 	Type         string
 	State        string
 	CreationTime string
 }
 
-func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer) {
+func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 	list := make([]UHostRow, 0)
 	for _, host := range uhosts {
 		row := UHostRow{}
@@ -96,19 +98,33 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer) {
 		cupCore := host.CPU
 		memorySize := host.Memory / 1024
 		diskSize := 0
+		var disks []string
 		for _, disk := range host.DiskSet {
 			if disk.Type == "Data" || disk.Type == "Udisk" {
 				diskSize += disk.Size
 			}
+			disks = append(disks, fmt.Sprintf("%s:%s:%dG", disk.Type, disk.DiskType, disk.Size))
 		}
+		row.Zone = host.Zone
+		row.DiskSet = strings.Join(disks, "|")
 		row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
 		row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
 		row.CreationTime = base.FormatDate(host.CreateTime)
 		row.State = host.State
-		row.Type = host.UHostType + "/" + host.HostType
+		row.Type = host.MachineType + "/" + host.HostType
 		list = append(list, row)
 	}
-	base.PrintList(list, out)
+	if global.JSON {
+		base.PrintJSON(list, out)
+	} else {
+		var cols []string
+		if output == "wide" {
+			cols = []string{"UHostName", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "DiskSet", "Zone", "Image", "Type", "State", "CreationTime"}
+		} else {
+			cols = []string{"UHostName", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "Image", "Type", "State", "CreationTime"}
+		}
+		base.PrintTable(list, cols)
+	}
 }
 
 func listUhostID(uhosts []uhost.UHostInstanceSet, out io.Writer) {
@@ -119,62 +135,98 @@ func listUhostID(uhosts []uhost.UHostInstanceSet, out io.Writer) {
 	fmt.Fprintln(out, strings.Join(ids, ","))
 }
 
+func fetchUHosts(req *uhost.DescribeUHostInstanceRequest) ([]uhost.UHostInstanceSet, int, error) {
+	resp, err := base.BizClient.DescribeUHostInstance(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	return resp.UHostSet, resp.TotalCount, nil
+}
+
+func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegion bool) ([]uhost.UHostInstanceSet, error) {
+	result := make([]uhost.UHostInstanceSet, 0)
+	if allRegion {
+		regions, err := getAllRegions()
+		if err != nil {
+			return nil, err
+		}
+		for _, region := range regions {
+			_req := *req
+			_req.Region = sdk.String(region)
+			if pageOff {
+				for limit, offset := 50, 0; ; offset += limit {
+					_req.Offset = sdk.Int(offset)
+					_req.Limit = sdk.Int(limit)
+					uhosts, total, err := fetchUHosts(&_req)
+					if err != nil {
+						return nil, err
+					}
+					result = append(result, uhosts...)
+					if offset+limit >= total {
+						break
+					}
+				}
+			} else {
+				uhosts, _, err := fetchUHosts(&_req)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, uhosts...)
+			}
+		}
+	} else {
+		uhosts, _, err := fetchUHosts(req)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, uhosts...)
+	}
+	return result, nil
+}
+
 //NewCmdUHostList [ucloud uhost list]
 func NewCmdUHostList(out io.Writer) *cobra.Command {
-	var pageoff, idOnly bool
+	var allRegion, pageOff, idOnly bool
+	var output string
 	req := base.BizClient.NewDescribeUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all UHost Instances",
 		Long:  `List all UHost Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if pageoff {
-				uhostList := make([]uhost.UHostInstanceSet, 0)
-				for limit, offset := 50, *req.Offset; ; offset += limit {
-					req.Offset = sdk.Int(offset)
-					req.Limit = sdk.Int(limit)
-					resp, err := base.BizClient.DescribeUHostInstance(req)
-					if err != nil {
-						base.HandleError(err)
-						return
-					}
-					uhostList = append(uhostList, resp.UHostSet...)
-					if resp.TotalCount <= offset+limit {
-						break
-					}
-				}
-				if idOnly {
-					listUhostID(uhostList, out)
-				} else {
-					listUhost(uhostList, out)
-				}
+			uhosts, err := getAllUHosts(req, pageOff, allRegion)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			if idOnly {
+				listUhostID(uhosts, out)
 			} else {
-				resp, err := base.BizClient.DescribeUHostInstance(req)
-				if err != nil {
-					base.HandleError(err)
-					return
-				}
-				if idOnly {
-					listUhostID(resp.UHostSet, out)
-				} else {
-					listUhost(resp.UHostSet, out)
-				}
+				listUhost(uhosts, out, output)
 			}
 		},
 	}
 	cmd.Flags().SortFlags = false
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
+	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region.")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
-	cmd.Flags().BoolVar(&pageoff, "page-off", false, "Optional. Paging or not. If assigned, the limit flag will be disabled and list all uhost instances")
+	cmd.Flags().BoolVar(&allRegion, "all-region", false, "Optional. Accpet values: true or false. List uhost instances of all regions when assigned true")
+	cmd.Flags().BoolVar(&pageOff, "page-off", false, "Optional. Paging or not. Accept values: true or false. If assigned, the limit flag will be disabled and list all uhost instances")
 	cmd.Flags().BoolVar(&idOnly, "uhost-id-only", false, "Optional. Just display resource id of uhost")
+	cmd.Flags().StringVarP(&output, "output", "o", "", "Optional. Accept values: wide. Display more information about uhost such as DiskSet and Zone")
 	bindGroup(req, cmd.Flags())
 
 	cmd.Flags().SetFlagValues("page-off", "true", "false")
 	cmd.Flags().SetFlagValues("uhost-id-only", "true", "false")
+	cmd.Flags().SetFlagValues("output", "wide")
+	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
+	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
+	cmd.Flags().SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(req.GetRegion())
+	})
 
 	return cmd
 }
@@ -285,6 +337,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	bindRegion(req, flags)
 	bindZone(req, flags)
 
+	req.MachineType = flags.String("machine-type", "", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", defaultUhostType, "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
 	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
@@ -296,9 +350,12 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 
+	flags.MarkDeprecated("type", "please use --machine-type instead")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
 	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
+	flags.SetFlagValues("machine-type", "N", "C", "G", "O")
+	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
 	flags.SetFlagValues("net-capability", "Normal", "Super")
 	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")

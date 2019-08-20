@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -204,6 +205,14 @@ func NewCmdConfig() *cobra.Command {
 				cacheConfig.Timeout = cfg.Timeout
 			}
 
+			if *cfg.MaxRetryTimes == 0 {
+				if *cacheConfig.MaxRetryTimes == 0 {
+					cacheConfig.MaxRetryTimes = sdk.Int(base.DefaultMaxRetryTimes)
+				}
+			} else {
+				cacheConfig.MaxRetryTimes = cfg.MaxRetryTimes
+			}
+
 			if cfg.Region != "" {
 				cacheConfig.Region = cfg.Region
 			}
@@ -274,6 +283,7 @@ func NewCmdConfig() *cobra.Command {
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", 0, "Optional. Set default timeout for requesting API. Unit: seconds")
+	cfg.MaxRetryTimes = flags.Int("max-retry-times", 0, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 
 	flags.SetFlagValues("active", "true", "false")
@@ -344,6 +354,7 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", base.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
+	cfg.MaxRetryTimes = flags.Int("max-retry-times", base.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 
 	flags.SetFlagValues("active", "true", "false")
@@ -363,7 +374,7 @@ func NewCmdConfigAdd() *cobra.Command {
 
 //NewCmdConfigUpdate ucloud config update
 func NewCmdConfigUpdate() *cobra.Command {
-	var timeout, active string
+	var timeout, active, maxRetries string
 	cfg := &base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -426,7 +437,21 @@ func NewCmdConfigUpdate() *cobra.Command {
 			}
 
 			if cacheConfig.Timeout <= 0 {
-				base.HandleError(fmt.Errorf("timeout-sec must be larger than 0, accept %d", cfg.Timeout))
+				base.HandleError(fmt.Errorf("timeout-sec must be greater than 0, accept %d", cfg.Timeout))
+				return
+			}
+
+			if maxRetries != "" {
+				times, err := strconv.Atoi(maxRetries)
+				if err != nil {
+					base.HandleError(fmt.Errorf("parse max-retry-times failed: %v", err))
+					return
+				}
+				cacheConfig.MaxRetryTimes = &times
+			}
+
+			if *cacheConfig.MaxRetryTimes < 0 {
+				base.HandleError(fmt.Errorf("max-retry-timesc must be greater than or equal to 0, accept %d", cfg.MaxRetryTimes))
 				return
 			}
 
@@ -457,6 +482,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
 	flags.StringVar(&timeout, "timeout-sec", "", "Optional. Set default timeout for requesting API. Unit: seconds")
+	flags.StringVar(&maxRetries, "max-retry-times", "", "Optional. Set default max retry times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
 
 	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
