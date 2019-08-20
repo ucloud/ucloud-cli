@@ -183,6 +183,12 @@ func Execute() {
 	cmd.AddCommand(NewCmdRedis())
 	cmd.AddCommand(NewCmdMemcache())
 	cmd.AddCommand(NewCmdExt())
+	for _, c := range cmd.Commands() {
+		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
+			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public key to override the public key in local config file")
+			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private key to override the private key in local config file")
+		}
+	}
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -192,6 +198,12 @@ func init() {
 	for idx, arg := range os.Args {
 		if arg == "--profile" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			global.Profile = os.Args[idx+1]
+		}
+		if arg == "--public-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.PublicKey = os.Args[idx+1]
+		}
+		if arg == "--private-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.PrivateKey = os.Args[idx+1]
 		}
 	}
 	cobra.EnableCommandSorting = false

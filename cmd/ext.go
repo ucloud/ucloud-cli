@@ -66,16 +66,22 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 			for _, addr := range eipAddrs {
 				eipAddrMap[addr] = true
 			}
+			logs := make([]string, 0)
 			for _, idname := range uhostIDs {
 				uhostID := base.PickResourceID(idname)
+				logs = append(logs, fmt.Sprintf("describe uhost instance by uhostID %s", uhostID))
 				ins, err := describeUHostByID(uhostID, project, region, zone)
 				if err != nil {
-					base.LogError(fmt.Sprintf("get uhost %s failed: %v", uhostID, err))
+					errStr := fmt.Sprintf("describe uhost %s failed: %v", uhostID, err)
+					base.HandleError(fmt.Errorf(errStr))
+					logs = append(logs, errStr)
 					continue
 				}
 				uhostIns, ok := ins.(*uhost.UHostInstanceSet)
 				if !ok {
-					base.HandleError(fmt.Errorf("get uhost %s failed", uhostID))
+					errStr := fmt.Sprintf("uhost %s does not exist", uhostID)
+					base.HandleError(fmt.Errorf(errStr))
+					logs = append(logs, errStr)
 					continue
 				}
 				for _, ip := range uhostIns.IPSet {
@@ -102,39 +108,48 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						if shareBandwidthID != "" {
 							req.ShareBandwidthId = &shareBandwidthID
 						} else {
-							base.HandleError(fmt.Errorf("create-eip-share-bandwidth-id should not be empty when create-eip-traffic-mode is assigned 'ShareBandwidth'"))
+							errStr := "create-eip-share-bandwidth-id should not be empty when create-eip-traffic-mode is assigned 'ShareBandwidth'"
+							logs = append(logs, errStr)
+							base.HandleError(fmt.Errorf(errStr))
 							return
 						}
 					}
+					logs = append(logs, fmt.Sprintf("api AllocateEIP, request:%v", base.ToQueryMap(req)))
 					resp, err := base.BizClient.AllocateEIP(req)
 					if err != nil {
-						base.HandleError(err)
+						errStr := fmt.Sprintf("allocate EIP failed: %v", err)
+						logs = append(logs, errStr)
+						base.HandleError(fmt.Errorf(errStr))
 						continue
 					}
 					if len(resp.EIPSet) != 1 {
-						base.HandleError(fmt.Errorf("allocate EIP failed, length of eip set is not 1"))
+						errStr := fmt.Sprintf("allocate EIP failed, length of eip set is not 1")
+						base.HandleError(fmt.Errorf(errStr))
+						logs = append(logs, errStr)
 						continue
 					}
 					eipID := resp.EIPSet[0].EIPId
-					fmt.Printf("allocated new eip %s|%s\n", eipID, resp.EIPSet[0].EIPAddr[0].IP)
+					eipRet := fmt.Sprintf("allocated new eip %s|%s", eipID, resp.EIPSet[0].EIPAddr[0].IP)
+					logs = append(logs, eipRet)
+					fmt.Println(eipRet)
 
 					//绑定新EIP
-					logs, err2 := sbindEIP(&uhostID, sdk.String("uhost"), &eipID, &project, &region)
+					slogs, err2 := sbindEIP(&uhostID, sdk.String("uhost"), &eipID, &project, &region)
+					logs = append(logs, slogs...)
 					if err2 != nil {
 						base.HandleError(fmt.Errorf("bind new eip %s failed: %v", eipID, err2))
 						continue
 					}
-					fmt.Printf("bound eip %s witch uhost %s\n", eipID, uhostID)
-					base.LogInfo(logs...)
+					fmt.Printf("bound eip %s with uhost %s\n", eipID, uhostID)
 
 					if unbind {
-						logs, err := unbindEIP(uhostID, "uhost", ip.IPId, project, region)
-						base.LogInfo(logs...)
+						slogs, err := unbindEIP(uhostID, "uhost", ip.IPId, project, region)
+						logs = append(logs, slogs...)
 						if err != nil {
 							base.HandleError(fmt.Errorf("unbind eip %s failed: %v", ip.IPId, err))
 							continue
 						}
-						fmt.Printf("unbound eip %s|%s witch uhost %s\n", ip.IPId, ip.IP, uhostID)
+						fmt.Printf("unbound eip %s|%s with uhost %s\n", ip.IPId, ip.IP, uhostID)
 					}
 
 					if release {
@@ -142,13 +157,19 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						req.ProjectId = &project
 						req.Region = &region
 						req.EIPId = sdk.String(ip.IPId)
+						logs = append(logs, fmt.Sprintf("api ReleaseEIP, request:%v", base.ToQueryMap(req)))
 						_, err := base.BizClient.ReleaseEIP(req)
 						if err != nil {
-							base.HandleError(fmt.Errorf("release eip %s failed: %v", ip.IPId, err))
+							errStr := fmt.Sprintf("release eip %s failed: %v", ip.IPId, err)
+							logs = append(logs, errStr)
+							base.HandleError(fmt.Errorf(errStr))
 							continue
 						}
-						fmt.Printf("released eip %s|%s \n", ip.IPId, ip.IP)
+						releaseRet := fmt.Sprintf("released eip %s|%s", ip.IPId, ip.IP)
+						logs = append(logs, releaseRet)
+						fmt.Println(releaseRet)
 					}
+					base.LogInfo(logs...)
 				}
 			}
 		},
