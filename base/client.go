@@ -16,8 +16,9 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	"github.com/ucloud/ucloud-sdk-go/services/uphost"
 	"github.com/ucloud/ucloud-sdk-go/services/vpc"
-	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
 
 //PrivateUHostClient 私有模块的uhost client 即未在官网开放的接口
@@ -52,22 +53,60 @@ type Client struct {
 }
 
 // NewClient will return a aggregate client
-func NewClient(config *ucloud.Config, credential *auth.Credential) *Client {
+func NewClient(config *sdk.Config, credential *auth.Credential) *Client {
+	var handler sdk.RequestHandler = func(c *sdk.Client, req request.Common) (request.Common, error) {
+		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
+		return req, err
+	}
+	var (
+		uaccountClient = *uaccount.NewClient(config, credential)
+		uhostClient    = *uhost.NewClient(config, credential)
+		unetClient     = *unet.NewClient(config, credential)
+		vpcClient      = *vpc.NewClient(config, credential)
+		udpnClient     = *udpn.NewClient(config, credential)
+		pathxClient    = *pathx.NewClient(config, credential)
+		udiskClient    = *udisk.NewClient(config, credential)
+		ulbClient      = *ulb.NewClient(config, credential)
+		udbClient      = *udb.NewClient(config, credential)
+		umemClient     = *umem.NewClient(config, credential)
+		uphostClient   = *uphost.NewClient(config, credential)
+		puhostClient   = *puhost.NewClient(config, credential)
+		pudbClient     = *pudb.NewClient(config, credential)
+		pumemClient    = *pumem.NewClient(config, credential)
+		ppathxClient   = *ppathx.NewClient(config, credential)
+	)
+
+	uaccountClient.Client.AddRequestHandler(handler)
+	uhostClient.Client.AddRequestHandler(handler)
+	unetClient.Client.AddRequestHandler(handler)
+	vpcClient.Client.AddRequestHandler(handler)
+	udpnClient.Client.AddRequestHandler(handler)
+	pathxClient.Client.AddRequestHandler(handler)
+	udiskClient.Client.AddRequestHandler(handler)
+	ulbClient.Client.AddRequestHandler(handler)
+	udbClient.Client.AddRequestHandler(handler)
+	umemClient.Client.AddRequestHandler(handler)
+	uphostClient.Client.AddRequestHandler(handler)
+	puhostClient.Client.AddRequestHandler(handler)
+	pudbClient.Client.AddRequestHandler(handler)
+	pumemClient.Client.AddRequestHandler(handler)
+	ppathxClient.Client.AddRequestHandler(handler)
+
 	return &Client{
-		*uaccount.NewClient(config, credential),
-		*uhost.NewClient(config, credential),
-		*unet.NewClient(config, credential),
-		*vpc.NewClient(config, credential),
-		*udpn.NewClient(config, credential),
-		*pathx.NewClient(config, credential),
-		*udisk.NewClient(config, credential),
-		*ulb.NewClient(config, credential),
-		*udb.NewClient(config, credential),
-		*umem.NewClient(config, credential),
-		*uphost.NewClient(config, credential),
-		*puhost.NewClient(config, credential),
-		*pudb.NewClient(config, credential),
-		*pumem.NewClient(config, credential),
-		*ppathx.NewClient(config, credential),
+		uaccountClient,
+		uhostClient,
+		unetClient,
+		vpcClient,
+		udpnClient,
+		pathxClient,
+		udiskClient,
+		ulbClient,
+		udbClient,
+		umemClient,
+		uphostClient,
+		puhostClient,
+		pudbClient,
+		pumemClient,
+		ppathxClient,
 	}
 }

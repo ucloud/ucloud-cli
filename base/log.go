@@ -122,7 +122,6 @@ func (hook *LogRotateHook) Fire(entry *log.Entry) error {
 		return err
 	}
 	entry.Logger.SetOutput(mfile)
-	initLog()
 	return nil
 }
 
