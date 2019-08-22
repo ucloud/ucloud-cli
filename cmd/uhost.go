@@ -143,9 +143,27 @@ func fetchUHosts(req *uhost.DescribeUHostInstanceRequest) ([]uhost.UHostInstance
 	return resp.UHostSet, resp.TotalCount, nil
 }
 
-func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegion bool) ([]uhost.UHostInstanceSet, error) {
+func fetchUHostsPageOff(req *uhost.DescribeUHostInstanceRequest) ([]uhost.UHostInstanceSet, error) {
+	_req := *req
 	result := make([]uhost.UHostInstanceSet, 0)
+	for limit, offset := 50, 0; ; offset += limit {
+		_req.Offset = sdk.Int(offset)
+		_req.Limit = sdk.Int(limit)
+		uhosts, total, err := fetchUHosts(&_req)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, uhosts...)
+		if offset+limit >= total {
+			break
+		}
+	}
+	return result, nil
+}
+
+func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegion bool) ([]uhost.UHostInstanceSet, error) {
 	if allRegion {
+		result := make([]uhost.UHostInstanceSet, 0)
 		regions, err := getAllRegions()
 		if err != nil {
 			return nil, err
@@ -153,35 +171,30 @@ func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegi
 		for _, region := range regions {
 			_req := *req
 			_req.Region = sdk.String(region)
-			if pageOff {
-				for limit, offset := 50, 0; ; offset += limit {
-					_req.Offset = sdk.Int(offset)
-					_req.Limit = sdk.Int(limit)
-					uhosts, total, err := fetchUHosts(&_req)
-					if err != nil {
-						return nil, err
-					}
-					result = append(result, uhosts...)
-					if offset+limit >= total {
-						break
-					}
-				}
-			} else {
-				uhosts, _, err := fetchUHosts(&_req)
-				if err != nil {
-					return nil, err
-				}
-				result = append(result, uhosts...)
+			//如果要获取所有region的主机，则不分页
+			uhosts, err := fetchUHostsPageOff(&_req)
+			if err != nil {
+				return nil, err
 			}
+			result = append(result, uhosts...)
 		}
-	} else {
-		uhosts, _, err := fetchUHosts(req)
+		return result, nil
+	}
+
+	if pageOff {
+		_req := *req
+		uhosts, err := fetchUHostsPageOff(&_req)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, uhosts...)
+		return uhosts, nil
 	}
-	return result, nil
+
+	uhosts, _, err := fetchUHosts(req)
+	if err != nil {
+		return nil, err
+	}
+	return uhosts, nil
 }
 
 //NewCmdUHostList [ucloud uhost list]
@@ -214,7 +227,7 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
 	cmd.Flags().BoolVar(&allRegion, "all-region", false, "Optional. Accpet values: true or false. List uhost instances of all regions when assigned true")
-	cmd.Flags().BoolVar(&pageOff, "page-off", false, "Optional. Paging or not. Accept values: true or false. If assigned, the limit flag will be disabled and list all uhost instances")
+	cmd.Flags().BoolVar(&pageOff, "page-off", false, "Optional. Paging or not. If all-region is specified this flag will be true. Accept values: true or false. If assigned, the limit flag will be disabled and list all uhost instances")
 	cmd.Flags().BoolVar(&idOnly, "uhost-id-only", false, "Optional. Just display resource id of uhost")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Optional. Accept values: wide. Display more information about uhost such as DiskSet and Zone")
 	bindGroup(req, cmd.Flags())
@@ -297,17 +310,6 @@ func NewCmdUHostCreate() *cobra.Command {
 		},
 	}
 
-	n1Zone := map[string]bool{
-		"cn-bj2-01": true,
-		"cn-bj2-03": true,
-		"cn-sh2-01": true,
-		"hk-01":     true,
-	}
-	defaultUhostType := "N2"
-	if _, ok := n1Zone[base.ConfigIns.Zone]; ok {
-		defaultUhostType = "N1"
-	}
-
 	req.Disks = make([]uhost.UHostDisk, 2)
 	req.Disks[0].IsBoot = sdk.String("True")
 	req.Disks[1].IsBoot = sdk.String("False")
@@ -339,7 +341,7 @@ func NewCmdUHostCreate() *cobra.Command {
 
 	req.MachineType = flags.String("machine-type", "", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
-	req.UHostType = flags.String("type", defaultUhostType, "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
 	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
@@ -448,11 +450,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 		eipReq.ProjectId = req.ProjectId
 		logs = append(logs, fmt.Sprintf("create eip request: %v", base.ToQueryMap(eipReq)))
 		if *eipReq.OperatorName == "" {
-			if strings.HasPrefix(*req.Region, "cn") {
-				*eipReq.OperatorName = "BGP"
-			} else {
-				*eipReq.OperatorName = "International"
-			}
+			*eipReq.OperatorName = getEIPLine(*req.Region)
 		}
 		eipResp, err := base.BizClient.AllocateEIP(eipReq)
 

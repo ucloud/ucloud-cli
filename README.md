@@ -7,7 +7,7 @@ https://docs.ucloud.cn/software/cli/index
 
 ## Installing ucloud-cli on macOS or Linux
 
-**Using Homebrew(Preferred)**
+**Using Homebrew(Recommended on macOS)**
 
 The [Homebrew](https://docs.brew.sh/Installation) package manager may be used on macOS and Linux.
 It could install ucloud-cli and its dependencies automatically by running command below.
@@ -34,7 +34,7 @@ If the error is still unresolved, try the following command for help.
 brew doctor
 ```
 
-**Building from source**
+**Building from source(Recommended if you have golang installed)**
 
 If you have installed git and golang on your platform, you can fetch the source code of ucloud cli from github and complie it by yourself.
 
@@ -44,16 +44,24 @@ cd ucloud-cli
 make install
 ```
 
-**Downloading binary release**
+Upgrade to latest version
+
+```
+cd ucloud-cli
+git pull
+make install
+```
+
+**Downloading binary release(Recommended on Linux)**
 
 Vist the [releases page](https://github.com/ucloud/ucloud-cli/releases) of ucloud cli, and find the appropriate archive for your operating system and architecture.
 Download the archive , check the shasum256 hashcode and extract it to your $PATH
 
 For example
 ```
-curl -OL https://github.com/ucloud/ucloud-cli/releases/download/0.1.20/ucloud-cli-macosx-0.1.20-amd64.tgz
-echo "6953232b20f3474973cf234218097006a2e0d1d049c115da6c0e09c103762d4d *ucloud-cli-macosx-0.1.20-amd64.tgz" | shasum -c
-tar zxf ucloud-cli-macosx-0.1.20-amd64.tgz -C /usr/local/bin/
+curl -OL https://github.com/ucloud/ucloud-cli/releases/download/0.1.22/ucloud-cli-linux-0.1.22-amd64.tgz
+echo "efbfb6d36d99f692b1f9cc7c9e3858047bb7b4fca6205c454098267e660b41d9 *ucloud-cli-linux-0.1.22-amd64.tgz" | shasum -c //check shasum to verify whether the downloaded tarball was hijacked. get the shasum from release page
+tar zxf ucloud-cli-linux-0.1.22-amd64.tgz -C /usr/local/bin/
 ```
 
 ## Installing ucloud cli on Windows
@@ -74,22 +82,22 @@ Download the archive , and extract it. Add binary file ucloud.exe to your enviro
 ## Using ucloud cli in a Docker container
 If you have installed docker on your platform, pull the docker image embeded ucloud cli by follow command.
 ```
-docker pull uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.20
+docker pull uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.22
 ```
 
 The docker image was built by the Dockerfile as follow.
 ```
 FROM ubuntu:18.04
 RUN apt-get update && apt-get install wget -y
-RUN wget https://github.com/ucloud/ucloud-cli/releases/download/0.1.20/ucloud-cli-linux-0.1.20-amd64.tgz
-RUN tar -zxf ucloud-cli-linux-0.1.20-amd64.tgz -C /usr/local/bin/
+RUN wget https://github.com/ucloud/ucloud-cli/releases/download/0.1.22/ucloud-cli-linux-0.1.22-amd64.tgz
+RUN tar -zxf ucloud-cli-linux-0.1.22-amd64.tgz -C /usr/local/bin/
 RUN echo "complete -C $(which ucloud) ucloud" >> ~/.bashrc #enable auto completion
 ```
 
 Create a docker container named ucloud-cli using the docker image your have pulled by following command.
 
 ```
-docker run --name ucloud-cli -it -d uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.20
+docker run --name ucloud-cli -it -d uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.22
 ```
 Run bash command in ucloud-cli container, and then you could play with ucloud cli.
 
@@ -175,7 +183,7 @@ $ ucloud uhost create --help
 Secondly, we're going to allocate an EIP and then bind it to the uhost created above.
 
 ```
-$ ucloud eip allocate --line International --bandwidth 1
+$ ucloud eip allocate --line International --bandwidth-mb 1
 allocate EIP[eip-xxx] IP:106.75.xx.xx  Line:BGP
 
 $ ucloud eip bind --eip-id eip-xxx --resource-id uhost-xxx

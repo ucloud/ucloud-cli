@@ -132,9 +132,12 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
 			if mode == "outer" {
-				if *bindEipID == "" && (*eipReq.Bandwidth == 0 || *eipReq.OperatorName == "") {
-					fmt.Fprintln(out, "Outer mode ULB need a eip to bind, please assign eip by flag 'bind-eip' or create eip by flag 'create-eip-line' and 'create-eip-bandwidth-mb'")
+				if *bindEipID == "" && *eipReq.Bandwidth == 0 {
+					fmt.Fprintln(out, "Outer mode ULB need a eip to bind, please assign eip by flag 'bind-eip' or create eip by 'create-eip-bandwidth-mb'")
 					return
+				}
+				if *eipReq.OperatorName == "" {
+					*eipReq.OperatorName = getEIPLine(*req.Region)
 				}
 				req.OuterMode = sdk.String("Yes")
 			} else if mode == "inner" {
@@ -155,12 +158,11 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 				return
 			}
 			bindEipID = sdk.String(base.PickResourceID(*bindEipID))
-			if mode == "outer" {
-				return
-			}
 			if *bindEipID != "" {
 				bindEIP(sdk.String(resp.ULBId), sdk.String("ulb"), bindEipID, req.ProjectId, req.Region)
-			} else if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
+				return
+			}
+			if *eipReq.OperatorName != "" && *eipReq.Bandwidth != 0 {
 				eipReq.ChargeType = req.ChargeType
 				eipReq.Tag = req.Tag
 				eipReq.Region = req.Region
@@ -169,14 +171,15 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 
 				if err != nil {
 					base.HandleError(err)
-				} else {
-					for _, eip := range eipResp.EIPSet {
-						base.Cxt.Printf("allocate EIP[%s] ", eip.EIPId)
-						for _, ip := range eip.EIPAddr {
-							base.Cxt.Printf("IP:%s  Line:%s \n", ip.IP, ip.OperatorName)
-						}
-						bindEIP(sdk.String(resp.ULBId), sdk.String("ulb"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
+					return
+				}
+
+				for _, eip := range eipResp.EIPSet {
+					base.Cxt.Printf("allocate EIP[%s] ", eip.EIPId)
+					for _, ip := range eip.EIPAddr {
+						base.Cxt.Printf("IP:%s  Line:%s \n", ip.IP, ip.OperatorName)
 					}
+					bindEIP(sdk.String(resp.ULBId), sdk.String("ulb"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
 				}
 			}
 		},
@@ -195,8 +198,8 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.Remark = flags.String("remark", "", "Optional. Remark of instance to create.")
 	bindEipID = flags.String("bind-eip", "", "Optional. Resource ID or IP Address of eip that will be bound to the new created outer mode ulb")
-	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Required if you want to create new EIP. Line of created eip to bind with the new created outer mode ulb")
 	eipReq.Bandwidth = cmd.Flags().Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
+	eipReq.OperatorName = flags.String("create-eip-line", "", "Optional. Line of created eip to bind with the new created outer mode ulb")
 	eipReq.PayMode = cmd.Flags().String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the new created outer mode ulb")
 	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional. Remark of your EIP.")
@@ -499,7 +502,7 @@ func NewCmdULBVServerCreate(out io.Writer) *cobra.Command {
 	req.PersistenceType = flags.String("session-maintain-mode", "None", "Optional. The method of maintaining user's session. Accept values: 'None','ServerInsert' and 'UserDefined'. 'None' meaning don't maintain user's session'; 'ServerInsert' meaning auto create session key; 'UserDefined' meaning specify session key which accpeted by flag seesion-maintain-key by yourself")
 	req.PersistenceInfo = flags.String("session-maintain-key", "", "Optional. Specify a key for maintaining session")
 	req.ClientTimeout = flags.Int("client-timeout-seconds", 60, "Optional.Unit seconds. For 'RequestProxy', it's lifetime for idle connections, range (0，86400]. For 'PacketsTransmit', it's the duration of the connection is maintained, range [60，900]")
-	req.MonitorType = flags.String("health-check-mode", "", "Optional. Method of checking real server's status of health. Accept values:'Port','Path'")
+	req.MonitorType = flags.String("health-check-mode", "Port", "Optional. Method of checking real server's status of health. Accept values:'Port','Path'")
 	req.Domain = flags.String("health-check-domain", "", "Optional. Skip this flag if health-check-mode is assigned Port")
 	req.Path = flags.String("health-check-path", "", "Optional. Skip this flags if health-check-mode is assigned Port")
 
@@ -750,6 +753,7 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	var enable *string
 	var weight *int
+	var ids []string
 	req := base.BizClient.NewAllocateBackendRequest()
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -771,12 +775,15 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 			req.ProjectId = sdk.String(base.PickResourceID(*req.ProjectId))
 			req.ULBId = sdk.String(base.PickResourceID(*req.ULBId))
 			req.VServerId = sdk.String(base.PickResourceID(*req.VServerId))
-			resp, err := base.BizClient.AllocateBackend(req)
-			if err != nil {
-				base.HandleError(err)
-				return
+			for _, id := range ids {
+				req.ResourceId = sdk.String(id)
+				resp, err := base.BizClient.AllocateBackend(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				fmt.Fprintf(out, "backend node[%s] added, backend-id:%s\n", *req.ResourceId, resp.BackendId)
 			}
-			fmt.Fprintf(out, "backend node[%s] added, backend-id:%s\n", *req.ResourceId, resp.BackendId)
 		},
 	}
 
@@ -784,7 +791,7 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB which the backend nodes belong to")
 	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer which the backend nodes belong to")
-	req.ResourceId = flags.String("resource-id", "", "Required. Resource ID of the backend node to add")
+	flags.StringSliceVar(&ids, "resource-id", nil, "Required. Resource ID of the backend nodes to add")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 	req.ResourceType = flags.String("resource-type", "UHost", "Optional. Resource type of the backend node to add. Accept values: UHost,UPM,UDHost,UDocker")

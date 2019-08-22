@@ -530,7 +530,6 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
-		Zone:       ac.Zone,
 		ProjectId:  ac.ProjectID,
 		MaxRetries: *ac.MaxRetryTimes,
 	}
