@@ -80,29 +80,20 @@ Vist the [releases page](https://github.com/ucloud/ucloud-cli/releases) of uclou
 Download the archive , and extract it. Add binary file ucloud.exe to your environment variable PATH following [this document](https://www.java.com/en/download/help/path.xml)
 
 ## Using ucloud cli in a Docker container
-If you have installed docker on your platform, pull the docker image embeded ucloud cli by follow command.
+If you have installed docker on your platform, pull the docker image embeded ucloud cli by follow command. Lookup Dockerfile from [here](./Dockerfile)
 ```
-docker pull uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.22
-```
-
-The docker image was built by the Dockerfile as follow.
-```
-FROM ubuntu:18.04
-RUN apt-get update && apt-get install wget -y
-RUN wget https://github.com/ucloud/ucloud-cli/releases/download/0.1.22/ucloud-cli-linux-0.1.22-amd64.tgz
-RUN tar -zxf ucloud-cli-linux-0.1.22-amd64.tgz -C /usr/local/bin/
-RUN echo "complete -C $(which ucloud) ucloud" >> ~/.bashrc #enable auto completion
+docker pull uhub.service.ucloud.cn/ucloudcli/ucloud-cli:source-code
 ```
 
 Create a docker container named ucloud-cli using the docker image your have pulled by following command.
 
 ```
-docker run --name ucloud-cli -it -d uhub.service.ucloud.cn/ucloudcli/ucloud-cli:0.1.22
+docker run --name ucloud-cli -it -d uhub.service.ucloud.cn/ucloudcli/ucloud-cli:source-code
 ```
 Run bash command in ucloud-cli container, and then you could play with ucloud cli.
 
 ```
-docker exec -it ucloud-cli bash
+docker exec -it ucloud-cli zsh
 ```
 
 ## Enabling Shell Auto-Completion for bash or zsh shell user.
