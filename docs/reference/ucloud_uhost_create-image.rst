@@ -1,0 +1,54 @@
+.. _ucloud_uhost_create-image:
+
+ucloud uhost create-image
+-------------------------
+
+Create image from an uhost instance
+
+Synopsis
+~~~~~~~~
+
+
+Create image from an uhost instance
+
+::
+
+  ucloud uhost create-image [flags]
+
+Options
+~~~~~~~
+
+::
+
+  --uhost-id     string     Resource ID of uhost to create image from 
+
+  --image-name     string   Required. Name of the image to create 
+
+  --image-desc     string   Optional. Description of the image to create 
+
+  --project-id     string   Optional. Assign project-id (default "org-ryrmms") 
+
+  --region     string       Optional. Assign region (default "cn-bj2") 
+
+  --zone     string         Optional. Assign availability zone (default "cn-bj2-02") 
+
+  --async, -a               Optional. Do not wait for the long-running operation to finish. 
+
+  --help, -h                help for create-image 
+
+
+Options inherited from parent commands
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+  --debug, -d   Running in debug mode 
+
+  --json, -j    Print result in JSON format whenever possible 
+
+
+Available Commands
+~~~~~~~~
+
+* :ref:`ucloud uhost <ucloud_uhost>` 	 - List,create,delete,stop,restart,poweroff or resize UHost instance
+
