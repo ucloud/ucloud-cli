@@ -35,8 +35,8 @@ const helloUcloud = `
   | | | |  __/ | | (_) | | |_| | \__/\ | (_) | |_| | (_| |
   \_| |_/\___|_|_|\___/   \___/ \____/_|\___/ \__,_|\__,_|
 
-  If you want add or modify your configurations, run 'ucloud config add/update'
-  `
+If you want add or modify your configurations, run 'ucloud config add/update'
+`
 
 //NewCmdInit ucloud init
 func NewCmdInit() *cobra.Command {

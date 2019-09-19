@@ -1,4 +1,4 @@
-export VERSION=0.1.23
+export VERSION=0.1.24
 
 .PHONY : install
 install:

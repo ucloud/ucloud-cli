@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -185,8 +186,11 @@ func Execute() {
 	cmd.AddCommand(NewCmdExt())
 	for _, c := range cmd.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
-			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public key to override the public key in local config file")
-			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private key to override the private key in local config file")
+			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
+			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
+			c.PersistentFlags().StringVar(&global.BaseURL, "base-url", "", "Set base-url to override the base-url in local config file")
+			c.PersistentFlags().IntVar(&global.Timeout, "timeout-sec", 0, "Set timeout-sec to override the timeout-sec in local config file")
+			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
 		}
 	}
 	if err := cmd.Execute(); err != nil {
@@ -204,6 +208,26 @@ func init() {
 		}
 		if arg == "--private-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			global.PrivateKey = os.Args[idx+1]
+		}
+		if arg == "--base-url" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.BaseURL = os.Args[idx+1]
+		}
+		if arg == "--timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			sec, err := strconv.Atoi(os.Args[idx+1])
+			if err != nil {
+				fmt.Printf("parse timeout-sec failed: %v\n", err)
+			} else {
+				global.Timeout = sec
+			}
+		}
+		if arg == "--max-retry-times" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			times, err := strconv.Atoi(os.Args[idx+1])
+			if err != nil {
+				fmt.Printf("parse max-retry-times failed: %v\n", err)
+			} else {
+				global.MaxRetryTimes = times
+			}
+			global.MaxRetryTimes = times
 		}
 	}
 	cobra.EnableCommandSorting = false

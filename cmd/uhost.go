@@ -58,6 +58,7 @@ func NewCmdUHost() *cobra.Command {
 	cmd.AddCommand(NewCmdUhostResetPassword(out))
 	cmd.AddCommand(NewCmdUhostReinstallOS(out))
 	cmd.AddCommand(NewCmdUhostCreateImage(out))
+	cmd.AddCommand(NewCmdIsolation(out))
 
 	return cmd
 }
@@ -65,6 +66,7 @@ func NewCmdUHost() *cobra.Command {
 //UHostRow UHost表格行
 type UHostRow struct {
 	UHostName    string
+	Remark       string
 	ResourceID   string
 	Group        string
 	PrivateIP    string
@@ -73,6 +75,8 @@ type UHostRow struct {
 	DiskSet      string
 	Zone         string
 	Image        string
+	VPC          string
+	Subnet       string
 	Type         string
 	State        string
 	CreationTime string
@@ -83,6 +87,7 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 	for _, host := range uhosts {
 		row := UHostRow{}
 		row.UHostName = host.Name
+		row.Remark = host.Remark
 		row.ResourceID = host.UHostId
 		row.Group = host.Tag
 		for _, ip := range host.IPSet {
@@ -91,6 +96,8 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 			}
 			if ip.Type == "Private" {
 				row.PrivateIP = ip.IP
+				row.VPC = ip.VPCId
+				row.Subnet = ip.SubnetId
 			} else {
 				row.PublicIP += fmt.Sprintf("%s", ip.IP)
 			}
@@ -112,6 +119,9 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 		row.CreationTime = base.FormatDate(host.CreateTime)
 		row.State = host.State
 		row.Type = host.MachineType + "/" + host.HostType
+		if host.HotplugFeature {
+			row.Type += "/HotPlug"
+		}
 		list = append(list, row)
 	}
 	if global.JSON {
@@ -119,7 +129,7 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 	} else {
 		var cols []string
 		if output == "wide" {
-			cols = []string{"UHostName", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "DiskSet", "Zone", "Image", "Type", "State", "CreationTime"}
+			cols = []string{"UHostName", "Remark", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "DiskSet", "Zone", "Image", "VPC", "Subnet", "Type", "State", "CreationTime"}
 		} else {
 			cols = []string{"UHostName", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "Image", "Type", "State", "CreationTime"}
 		}
@@ -247,6 +257,7 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 //NewCmdUHostCreate [ucloud uhost create]
 func NewCmdUHostCreate() *cobra.Command {
 	var bindEipIDs []string
+	var hotPlug string
 	var async bool
 	var count int
 
@@ -263,6 +274,10 @@ func NewCmdUHostCreate() *cobra.Command {
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
+			req.IsolationGroup = sdk.String(base.PickResourceID(*req.IsolationGroup))
+			if hotPlug == "true" {
+				req.HotplugFeature = sdk.Bool(true)
+			}
 
 			wg := &sync.WaitGroup{}
 			tokens := make(chan struct{}, 10)
@@ -342,24 +357,28 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.MachineType = flags.String("machine-type", "", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
-	req.Disks[0].Type = flags.String("os-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	flags.StringVar(&hotPlug, "hot-plug", "false", "Optional. Enable hot plug feature or not. Accept values: true or false")
+	req.Disks[0].Type = flags.String("os-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
 	req.Disks[0].BackupType = flags.String("os-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.Disks[1].Type = flags.String("data-disk-type", "LOCAL_NORMAL", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[1].Size = flags.Int("data-disk-size-gb", 20, "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
+	req.IsolationGroup = flags.String("isolation-group", "", "Optional. Resource ID of isolation group. see 'ucloud uhost isolation-group list")
 
 	flags.MarkDeprecated("type", "please use --machine-type instead")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
+	flags.SetFlagValues("hot-plug", "true", "false")
 	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
 	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
 	flags.SetFlagValues("machine-type", "N", "C", "G", "O")
 	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
 	flags.SetFlagValues("net-capability", "Normal", "Super")
-	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
+	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
 	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
@@ -380,6 +399,9 @@ func NewCmdUHostCreate() *cobra.Command {
 	})
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("isolation-group", func() []string {
+		return getIsolationGroupList(*req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("cpu")
@@ -482,7 +504,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 //NewCmdUHostDelete ucloud uhost delete
 func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	var uhostIDs *[]string
-	var isDestory = sdk.Bool(false)
+	var isDestroy = sdk.Bool(false)
 	var yes *bool
 
 	req := base.BizClient.NewTerminateUHostInstanceRequest()
@@ -501,7 +523,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 					return
 				}
 			}
-			if *isDestory {
+			if *isDestroy {
 				req.Destroy = sdk.Int(1)
 			} else {
 				req.Destroy = sdk.Int(0)
@@ -525,11 +547,11 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
-	isDestory = cmd.Flags().Bool("destory", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
+	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
 	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
-	cmd.Flags().SetFlagValues("destory", "true", "false")
+	cmd.Flags().SetFlagValues("destroy", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
 	cmd.Flags().SetFlagValues("delete-cloud-disk", "true", "false")
 	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
@@ -1247,4 +1269,80 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uhost-id")
 	cmd.MarkFlagRequired("password")
 	return cmd
+}
+
+//NewCmdIsolation ucloud uhost isolation-gorup
+func NewCmdIsolation(out io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "isolation-group",
+		Short: "List and manipulate isolation group of uhost",
+		Long:  "List and manipulate isolation group of uhost",
+	}
+	cmd.AddCommand(NewCmdIsolationList(out))
+	return cmd
+}
+
+type isolationGroupRow struct {
+	ResourceID string
+	Name       string
+	Remark     string
+	UHostCount string
+}
+
+//NewCmdIsolationList ucloud uhost isolation-group list
+func NewCmdIsolationList(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewDescribeIsolationGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List isolation group of uhost",
+		Run: func(c *cobra.Command, args []string) {
+			resp, err := base.BizClient.DescribeIsolationGroup(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			var list []isolationGroupRow
+			for _, group := range resp.IsolationGroupSet {
+				row := isolationGroupRow{
+					ResourceID: group.GroupId,
+					Name:       group.GroupName,
+					Remark:     group.Remark,
+				}
+				var zones []string
+				for _, item := range group.SpreadInfoSet {
+					zones = append(zones, fmt.Sprintf("%s:%d", item.Zone, item.UHostCount))
+				}
+				row.UHostCount = strings.Join(zones, " ")
+				list = append(list, row)
+			}
+			base.PrintList(list, out)
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.String("group-id", "", "Optional. Resource ID of isolation group to describe")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+	bindLimit(req, flags)
+	bindOffset(req, flags)
+
+	return cmd
+}
+
+func getIsolationGroupList(project, region string) []string {
+	req := base.BizClient.NewDescribeIsolationGroupRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	req.Limit = sdk.Int(50)
+	resp, err := base.BizClient.DescribeIsolationGroup(req)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	list := []string{}
+	for _, group := range resp.IsolationGroupSet {
+		list = append(list, group.GroupId+"/"+strings.Replace(group.GroupName, " ", "-", -1))
+	}
+	return list
 }

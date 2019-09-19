@@ -36,7 +36,7 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.23"
+const Version = "0.1.24"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
@@ -63,15 +63,18 @@ var Global GlobalFlag
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
-	Debug      bool
-	JSON       bool
-	Version    bool
-	Completion bool
-	Config     bool
-	Signup     bool
-	Profile    string
-	PublicKey  string
-	PrivateKey string
+	Debug         bool
+	JSON          bool
+	Version       bool
+	Completion    bool
+	Config        bool
+	Signup        bool
+	Profile       string
+	PublicKey     string
+	PrivateKey    string
+	BaseURL       string
+	Timeout       int
+	MaxRetryTimes int
 }
 
 //CLIConfig cli_config element
@@ -524,14 +527,25 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 	if err != nil {
 		err = fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
+	baseURL := ac.BaseURL
+	if Global.BaseURL != "" {
+		baseURL = Global.BaseURL
+	}
+	if Global.Timeout != 0 {
+		timeout = time.Duration(Global.Timeout) * time.Second
+	}
+	maxRetryTimes := *ac.MaxRetryTimes
+	if Global.MaxRetryTimes != -1 {
+		maxRetryTimes = Global.MaxRetryTimes
+	}
 	ClientConfig = &sdk.Config{
-		BaseUrl:    ac.BaseURL,
+		BaseUrl:    baseURL,
 		Timeout:    timeout,
 		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
 		ProjectId:  ac.ProjectID,
-		MaxRetries: *ac.MaxRetryTimes,
+		MaxRetries: maxRetryTimes,
 	}
 
 	if Global.PublicKey != "" && Global.PrivateKey != "" {
@@ -584,10 +598,6 @@ func InitConfig() {
 			ins = ConfigIns
 		}
 
-		tmpIns := *ins
-		tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
-		tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
-		LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
 		bc, err := GetBizClient(ConfigIns)
 		if err != nil {
 			HandleError(err)
