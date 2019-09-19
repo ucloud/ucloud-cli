@@ -1,8 +1,10 @@
+English | [简体中文](./README-CN.md)
+
 ##  UCloud CLI 
 
 ![](./docs/_static/ucloud_cli_demo.gif)
 
-The UCloud CLI provides a unified command line interface to UCloud services. It works on Golang SDK based on UCloud OpenAPI and supports Linux, macOS and Windows. 
+The UCloud CLI provides a unified command line interface to UCloud services. It works on [ucloud-sdk-go](https://github.com/ucloud/ucloud-sdk-go) based on UCloud OpenAPI and supports Linux, macOS and Windows. 
 https://docs.ucloud.cn/software/cli/index
 
 ## Installing ucloud-cli on macOS or Linux
@@ -54,7 +56,7 @@ make install
 
 **Downloading binary release(Recommended on Linux)**
 
-Vist the [releases page](https://github.com/ucloud/ucloud-cli/releases) of ucloud cli, and find the appropriate archive for your operating system and architecture.
+Visit the [releases page](https://github.com/ucloud/ucloud-cli/releases) of ucloud cli, and find the appropriate archive for your operating system and architecture.
 Download the archive , check the shasum256 hashcode and extract it to your $PATH
 
 For example
@@ -68,8 +70,8 @@ tar zxf ucloud-cli-linux-0.1.22-amd64.tgz -C /usr/local/bin/
 
 **Building from source**
 
-Download the source code of ucloud cli from [releases page](https://github.com/ucloud/ucloud-cli/releases). You can also download it by running ```git clone https://github.com/ucloud/ucloud-cli.git```
-Ensure you have git installed, because go will download packages using git. Go to the directory of the source code, and then compile the source code by running "go build -mod=vendor -o ucloud.exe"
+Download the source code of ucloud cli from [releases page](https://github.com/ucloud/ucloud-cli/releases) and extract it. You can also download it by running ```git clone https://github.com/ucloud/ucloud-cli.git```
+Go to the directory of the source code, and then compile the source code by running ```go build -mod=vendor -o ucloud.exe```
 After that add ucloud.exe to your environment variable PATH. You could follow [this document](https://www.java.com/en/download/help/path.xml) if you don't know how to do. 
 Open CMD Terminal and run ```ucloud --version ``` to test installation. 
 
@@ -80,7 +82,7 @@ Vist the [releases page](https://github.com/ucloud/ucloud-cli/releases) of uclou
 Download the archive , and extract it. Add binary file ucloud.exe to your environment variable PATH following [this document](https://www.java.com/en/download/help/path.xml)
 
 ## Using ucloud cli in a Docker container
-If you have installed docker on your platform, pull the docker image embeded ucloud cli by follow command. Lookup Dockerfile from [here](./Dockerfile)
+If you have installed docker on your platform, pull the docker image embedded ucloud cli by follow command. Lookup Dockerfile from [here](./Dockerfile)
 ```
 docker pull uhub.service.ucloud.cn/ucloudcli/ucloud-cli:source-code
 ```
@@ -102,7 +104,7 @@ UCloud CLI also has auto-completion support. It can be set up so that if you par
 
 **Bash shell** 
 
-Add following scripts to  ~/.bash_profile or ~/.bashrc 
+Add following scripts to  ~/.bash_profile or ~/.bashrc and then restart your terminal or run ```source <~/.bash_profile|~/.bashrc>```
 
 ```
 complete -C $(which ucloud) ucloud
@@ -110,7 +112,7 @@ complete -C $(which ucloud) ucloud
 
 **Zsh shell** 
 
-Add following scripts to ~/.zshrc 
+Add following scripts to ~/.zshrc and then restart your terminal or run ```source ~/.zshrc```
 
 ```
 autoload -U +X bashcompinit && bashcompinit
@@ -132,17 +134,45 @@ compctl -K _ucloud ucloud
 
 ## Setup configuration
 
-Run the command below to get started and configure ucloud-cli. The private key and public key will be saved automatically and locally to directory ~/.ucloud.
-You can delete the directory whenever you want.
+The UCloud CLI supports using any of multiple named profiles that are stored in config.json and credential.json files which located in ~/.ucloud. 
+You can configure additional profiles by using ```ucloud config add``` with the --profile flag, or by adding entries to the config.json and credential.json files.
+ucloud init will add profile named default if you do not have an active profile, and it does its best to reduce configuration items for first-time use of ucloud-cli.
 
+There are 10 configuration items
+
+- Profile: name of the profile, duplicated names are not allowed. It can be override by --profile flag
+- Active: Whether to take effect, Only one profile is active
+- ProjectID: ID of default project, and it can be override by --project-id flag
+- Region: default region, it can be override by --region flag
+- Zone: default zone, it can be override by --zone flag
+- BaseURL: default url of UCloud Open API, it can be override by --base-url flag
+- Timeout: default timeout value of querying UCloud Open API, unit second. It can be override by --timeout flag
+- PublicKey: public key of your account. It can be override by --public-key flag
+- PrivateKey: private key of your account. It can be override by --private-key flag
+- MaxRetryTimes: default max retry times for failed API request. It only works for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP', and it can be override by --max-retry-times flag
+
+Run the command below to get started and configure ucloud-cli.
 ```
 $ ucloud init
 ```
+List all profiles (for example)
+```
+$ ucloud config list
 
-To reset the configurations, run:
+Profile  Active  ProjectID   Region  Zone       BaseURL                 Timeout  PublicKey           PrivateKey          MaxRetryTimes
+default  true    org-oxjwoi  cn-bj2  cn-bj2-05  https://api.ucloud.cn/  15       YSQGIZrL*****nCRQ=  jtma2eqQ*****+Avms  3
+uweb     false   org-bdks4e  cn-bj2  cn-bj2-05  https://api.ucloud.cn/  15       4E9UU0Vh*****PWQ==  694581ea*****a0d45  3
+```
+
+Add additional profiles
+```
+$ ucloud config add --profile <new-profie-name>  --public-key xxx --private-key xxx
+```
+
+To change configuration items of specified profile, run:
 
 ```
-$ ucloud config
+$ ucloud config update --profile xxx --region cn-sh2
 ```
 
 For more information, run:
@@ -158,7 +188,7 @@ I want to create a uhost in Nigeria (region: air-nigeria) and bind a public IP, 
 Firstly, create an uhost instance:
 
 ```
-$ ucloud uhost create --cpu 1 --memory 1 --password **** --image-id uimage-fya3qr
+$ ucloud uhost create --cpu 1 --memory-gb 1 --password **** --image-id uimage-fya3qr
 
 uhost[uhost-zbuxxxx] is initializing...done
 ```
@@ -174,11 +204,16 @@ $ ucloud uhost create --help
 Secondly, we're going to allocate an EIP and then bind it to the uhost created above.
 
 ```
-$ ucloud eip allocate --line International --bandwidth-mb 1
+$ ucloud eip allocate --bandwidth-mb 1
 allocate EIP[eip-xxx] IP:106.75.xx.xx  Line:BGP
 
 $ ucloud eip bind --eip-id eip-xxx --resource-id uhost-xxx
 bind EIP[eip-xxx] with uhost[uhost-xxx]
+```
+
+The operations above also can be done by one command
+```
+$ ucloud uhost create --cpu 1 --memory-gb 1 --password **** --image-id uimage-fya3qr --create-eip-bandwidth-mb 1
 ```
 
 Configure the GlobalSSH to the uhost instance and login the instance via GlobalSSH
