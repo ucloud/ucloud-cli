@@ -112,7 +112,7 @@ func GetConfigDir() string {
 //HandleBizError 处理RetCode != 0 的业务异常
 func HandleBizError(resp response.Common) error {
 	format := "Something wrong. RetCode:%d. Message:%s\n"
-	Cxt.Printf(format, resp.GetRetCode(), resp.GetMessage())
+	LogError(fmt.Sprintf(format, resp.GetRetCode(), resp.GetMessage()))
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
@@ -625,7 +625,7 @@ func Confirm(yes bool, text string) bool {
 	}
 	sure, err := ux.Prompt(text)
 	if err != nil {
-		Cxt.Println(err)
+		LogError(err.Error())
 		return false
 	}
 	return sure

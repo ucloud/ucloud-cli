@@ -43,11 +43,6 @@ func (c *Context) PrintErr(uerr error) (n int, err error) {
 	return
 }
 
-//AppendInfo 添加记录
-func (c *Context) AppendInfo(key string, content interface{}) {
-	c.data[key] = content
-}
-
 //GetWriter 获取Writer
 func (c *Context) GetWriter() io.Writer {
 	return c.writer

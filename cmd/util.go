@@ -17,20 +17,20 @@ import (
 
 func bindRegion(req request.Common, flags *pflag.FlagSet) {
 	var region string
-	flags.StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region, see 'ucloud region'")
+	flags.StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("region", getRegionList)
 	req.SetRegionRef(&region)
 }
 
 func bindRegionS(region *string, flags *pflag.FlagSet) {
 	*region = base.ConfigIns.Region
-	flags.StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region, see 'ucloud region'")
+	flags.StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("region", getRegionList)
 }
 
 func bindZone(req request.Common, flags *pflag.FlagSet) {
 	var zone string
-	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
+	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
@@ -39,7 +39,7 @@ func bindZone(req request.Common, flags *pflag.FlagSet) {
 
 func bindZoneEmpty(req request.Common, flags *pflag.FlagSet) {
 	var zone string
-	flags.StringVar(&zone, "zone", "", "Optional. Override default availability zone, see 'ucloud region'")
+	flags.StringVar(&zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
@@ -47,7 +47,7 @@ func bindZoneEmpty(req request.Common, flags *pflag.FlagSet) {
 }
 
 func bindZoneEmptyS(zone, region *string, flags *pflag.FlagSet) {
-	flags.StringVar(zone, "zone", "", "Optional. Override default availability zone, see 'ucloud region'")
+	flags.StringVar(zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("zone", func() []string {
 		return getZoneList(*region)
 	})
@@ -55,7 +55,7 @@ func bindZoneEmptyS(zone, region *string, flags *pflag.FlagSet) {
 
 func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
 	*zone = base.ConfigIns.Zone
-	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone, see 'ucloud region'")
+	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.SetFlagValuesFunc("zone", func() []string {
 		return getZoneList(*region)
 	})
@@ -63,14 +63,14 @@ func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
 
 func bindProjectID(req request.Common, flags *pflag.FlagSet) {
 	var project string
-	flags.StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id, see 'ucloud project list'")
+	flags.StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	flags.SetFlagValuesFunc("project-id", getProjectList)
 	req.SetProjectIdRef(&project)
 }
 
 func bindProjectIDS(project *string, flags *pflag.FlagSet) {
 	*project = base.ConfigIns.ProjectID
-	flags.StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id, see 'ucloud project list'")
+	flags.StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	flags.SetFlagValuesFunc("project-id", getProjectList)
 }
 
