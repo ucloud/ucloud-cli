@@ -2,7 +2,7 @@ English | [简体中文](./README-CN.md)
 
 ##  UCloud CLI 
 
-[![asciicast](https://asciinema.org/a/CIm32OoqRxO22lGUd5N3On435.svg?autoplay=1&speed=3)](https://asciinema.org/a/CIm32OoqRxO22lGUd5N3On435)
+![](./docs/_static/ucloud_cli_demo.gif)
 
 The UCloud CLI provides a unified command line interface to UCloud services. It works on [ucloud-sdk-go](https://github.com/ucloud/ucloud-sdk-go) based on UCloud OpenAPI and supports Linux, macOS and Windows. 
 https://docs.ucloud.cn/software/cli/index
