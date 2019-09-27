@@ -8,6 +8,8 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/pkg/errors
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/satori/go.uuid v1.2.0
+github.com/satori/go.uuid
 # github.com/sirupsen/logrus v1.3.0
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v0.0.3 => github.com/lixiaojun629/cobra v0.0.9
@@ -16,10 +18,12 @@ github.com/spf13/cobra/doc
 # github.com/spf13/pflag v1.0.3 => github.com/lixiaojun629/pflag v1.0.5
 github.com/spf13/pflag
 # github.com/ucloud/ucloud-sdk-go v0.8.10
+github.com/ucloud/ucloud-sdk-go/private/protocol/http
 github.com/ucloud/ucloud-sdk-go/private/services/pathx
 github.com/ucloud/ucloud-sdk-go/private/services/udb
 github.com/ucloud/ucloud-sdk-go/private/services/uhost
 github.com/ucloud/ucloud-sdk-go/private/services/umem
+github.com/ucloud/ucloud-sdk-go/private/utils
 github.com/ucloud/ucloud-sdk-go/services/pathx
 github.com/ucloud/ucloud-sdk-go/services/uaccount
 github.com/ucloud/ucloud-sdk-go/services/udb
@@ -38,8 +42,6 @@ github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter
 github.com/ucloud/ucloud-sdk-go/ucloud/log
 github.com/ucloud/ucloud-sdk-go/ucloud/request
 github.com/ucloud/ucloud-sdk-go/ucloud/response
-github.com/ucloud/ucloud-sdk-go/private/utils
-github.com/ucloud/ucloud-sdk-go/private/protocol/http
 github.com/ucloud/ucloud-sdk-go/ucloud/version
 # golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
 golang.org/x/crypto/ssh/terminal

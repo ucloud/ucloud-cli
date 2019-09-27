@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
@@ -50,7 +51,7 @@ func NewCmdInit() *cobra.Command {
 				return
 			}
 
-			base.Cxt.Println(configDesc)
+			fmt.Println(configDesc)
 			base.ConfigIns.ConfigPublicKey()
 			base.ConfigIns.ConfigPrivateKey()
 
@@ -62,29 +63,34 @@ func NewCmdInit() *cobra.Command {
 						return
 					}
 				}
-				base.Cxt.Println(err)
+				fmt.Println(err)
 				return
 			}
 			base.ConfigIns.Region = region
 			base.ConfigIns.Zone = zone
-			base.Cxt.Printf("Configured default region:%s zone:%s\n", region, zone)
+			fmt.Printf("Configured default region:%s zone:%s\n", region, zone)
 
 			projectID, projectName, err := getDefaultProject()
 			if err != nil {
-				base.Cxt.Println(err)
+				base.HandleError(err)
 				return
 			}
 			base.ConfigIns.ProjectID = projectID
-			base.Cxt.Printf("Configured default project:%s %s\n", projectID, projectName)
+			fmt.Printf("Configured default project:%s %s\n", projectID, projectName)
 			base.ConfigIns.Timeout = base.DefaultTimeoutSec
 			base.ConfigIns.BaseURL = base.DefaultBaseURL
 			base.ConfigIns.Active = true
-			base.Cxt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
-			base.Cxt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
-			base.Cxt.Printf("Active profile name:%s\n", base.ConfigIns.Profile)
-			base.Cxt.Println("You can change the default settings by running 'ucloud config update'")
-			base.AggConfigListIns.Append(base.ConfigIns)
-			printHello()
+			fmt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
+			fmt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
+			fmt.Printf("Active profile name:%s\n", base.ConfigIns.Profile)
+			fmt.Println("You can change the default settings by running 'ucloud config update'")
+			base.ConfigIns.ConfigUploadLog()
+			err = base.AggConfigListIns.Append(base.ConfigIns)
+			if err != nil {
+				base.HandleError(fmt.Errorf("Error: %v", err))
+			} else {
+				printHello()
+			}
 		},
 	}
 	return cmd
@@ -147,7 +153,7 @@ func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
 
 //NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
-	var active string
+	var active, upload string
 	cfg := base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:     "config",
@@ -268,6 +274,16 @@ func NewCmdConfig() *cobra.Command {
 				}
 			}
 
+			if upload != "" {
+				if upload == "true" {
+					cacheConfig.AgreeUploadLog = true
+				} else if upload == "false" {
+					cacheConfig.AgreeUploadLog = false
+				} else {
+					base.HandleError(fmt.Errorf("flag agree-upload-log should be true or false. received %s", active))
+				}
+			}
+
 			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			if err != nil {
 				base.HandleError(err)
@@ -286,8 +302,10 @@ func NewCmdConfig() *cobra.Command {
 	flags.IntVar(&cfg.Timeout, "timeout-sec", 0, "Optional. Set default timeout for requesting API. Unit: seconds")
 	cfg.MaxRetryTimes = flags.Int("max-retry-times", 0, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
+	flags.StringVar(&upload, "agree-upload-log", "false", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
 	flags.SetFlagValues("active", "true", "false")
+	flags.SetFlagValues("agree-upload-log", "true", "false")
 	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	flags.SetFlagValuesFunc("region", getRegionList)
 	flags.SetFlagValuesFunc("project-id", getProjectList)
@@ -304,7 +322,7 @@ func NewCmdConfig() *cobra.Command {
 
 //NewCmdConfigAdd ucloud config add
 func NewCmdConfigAdd() *cobra.Command {
-	var active string
+	var active, upload string
 	cfg := &base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -337,6 +355,14 @@ func NewCmdConfigAdd() *cobra.Command {
 				fmt.Printf("active should be true or false, received %s\n", active)
 			}
 
+			if upload == "true" {
+				cfg.AgreeUploadLog = true
+			} else if upload == "false" {
+				cfg.AgreeUploadLog = false
+			} else {
+				fmt.Printf("agree-upload-log should be true or false, received %s\n", active)
+			}
+
 			err = base.AggConfigListIns.Append(cfg)
 			if err != nil {
 				base.HandleError(err)
@@ -357,8 +383,10 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
 	cfg.MaxRetryTimes = flags.Int("max-retry-times", base.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
+	flags.StringVar(&upload, "agree-upload-log", "false", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
 	flags.SetFlagValues("active", "true", "false")
+	flags.SetFlagValues("agree-upload-log", "true", "false")
 	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	flags.SetFlagValuesFunc("region", getRegionList)
 	flags.SetFlagValuesFunc("project-id", getProjectList)
@@ -375,7 +403,7 @@ func NewCmdConfigAdd() *cobra.Command {
 
 //NewCmdConfigUpdate ucloud config update
 func NewCmdConfigUpdate() *cobra.Command {
-	var timeout, active, maxRetries string
+	var timeout, active, maxRetries, upload string
 	cfg := &base.AggConfig{}
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -466,6 +494,12 @@ func NewCmdConfigUpdate() *cobra.Command {
 				cacheConfig.Active = false
 			}
 
+			if upload == "true" {
+				cacheConfig.AgreeUploadLog = true
+			} else if upload == "false" {
+				cacheConfig.AgreeUploadLog = false
+			}
+
 			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			if err != nil {
 				base.HandleError(err)
@@ -485,6 +519,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&timeout, "timeout-sec", "", "Optional. Set default timeout for requesting API. Unit: seconds")
 	flags.StringVar(&maxRetries, "max-retry-times", "", "Optional. Set default max retry times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
+	flags.StringVar(&upload, "agree-upload-log", "", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
 	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	flags.SetFlagValuesFunc("region", getRegionList)
@@ -493,6 +528,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 		return getZoneList(cfg.Region)
 	})
 	flags.SetFlagValues("active", "true", "false")
+	flags.SetFlagValues("agree-upload-log", "true", "false")
 
 	cmd.MarkFlagRequired("profile")
 

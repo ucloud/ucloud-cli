@@ -76,7 +76,11 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 		Short: "Generate documents for all commands",
 		Long:  "Generate documents for all commands. Support markdown, rst and douku",
 		Run: func(c *cobra.Command, args []string) {
+			base.ConfigIns.Region = ""
+			base.ConfigIns.ProjectID = ""
+			base.ConfigIns.Zone = ""
 			rootCmd := NewCmdRoot()
+			addChildren(rootCmd)
 			switch format {
 			case "rst":
 				emptyStr := func(s string) string { return "" }
@@ -156,35 +160,31 @@ const usageTmpl = `Usage:{{if .Runnable}}
 Use "{{.CommandPath}} --help" for details.{{end}}
 `
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	cmd := NewCmdRoot()
+func addChildren(root *cobra.Command) {
 	out := base.Cxt.GetWriter()
-	base.InitConfig()
-	cmd.AddCommand(NewCmdInit())
-	cmd.AddCommand(NewCmdDoc(out))
-	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdRegion(out))
-	cmd.AddCommand(NewCmdProject())
-	cmd.AddCommand(NewCmdUHost())
-	cmd.AddCommand(NewCmdUPHost())
-	cmd.AddCommand(NewCmdUImage())
-	cmd.AddCommand(NewCmdSubnet())
-	cmd.AddCommand(NewCmdVpc())
-	cmd.AddCommand(NewCmdFirewall())
-	cmd.AddCommand(NewCmdDisk())
-	cmd.AddCommand(NewCmdEIP())
-	cmd.AddCommand(NewCmdBandwidth())
-	cmd.AddCommand(NewCmdUDPN(out))
-	cmd.AddCommand(NewCmdULB())
-	cmd.AddCommand(NewCmdGssh())
-	cmd.AddCommand(NewCmdPathx())
-	cmd.AddCommand(NewCmdMysql())
-	cmd.AddCommand(NewCmdRedis())
-	cmd.AddCommand(NewCmdMemcache())
-	cmd.AddCommand(NewCmdExt())
-	for _, c := range cmd.Commands() {
+	root.AddCommand(NewCmdInit())
+	root.AddCommand(NewCmdDoc(out))
+	root.AddCommand(NewCmdConfig())
+	root.AddCommand(NewCmdRegion(out))
+	root.AddCommand(NewCmdProject())
+	root.AddCommand(NewCmdUHost())
+	root.AddCommand(NewCmdUPHost())
+	root.AddCommand(NewCmdUImage())
+	root.AddCommand(NewCmdSubnet())
+	root.AddCommand(NewCmdVpc())
+	root.AddCommand(NewCmdFirewall())
+	root.AddCommand(NewCmdDisk())
+	root.AddCommand(NewCmdEIP())
+	root.AddCommand(NewCmdBandwidth())
+	root.AddCommand(NewCmdUDPN(out))
+	root.AddCommand(NewCmdULB())
+	root.AddCommand(NewCmdGssh())
+	root.AddCommand(NewCmdPathx())
+	root.AddCommand(NewCmdMysql())
+	root.AddCommand(NewCmdRedis())
+	root.AddCommand(NewCmdMemcache())
+	root.AddCommand(NewCmdExt())
+	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
 			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
@@ -193,6 +193,14 @@ func Execute() {
 			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
 		}
 	}
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	cmd := NewCmdRoot()
+	base.InitConfig()
+	addChildren(cmd)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -232,7 +240,6 @@ func init() {
 	}
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(initialize)
-	base.Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
 func resetHelpFunc(cmd *cobra.Command) {

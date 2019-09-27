@@ -254,8 +254,6 @@ func getUserInfo() (*uaccount.UserInfo, error) {
 	}
 	if len(resp.DataSet) == 1 {
 		userInfo = resp.DataSet[0]
-		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
-		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
 		bytes, err := json.Marshal(userInfo)
 		if err != nil {
 			return nil, err

@@ -36,7 +36,7 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.24"
+const Version = "0.1.25"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
@@ -79,14 +79,15 @@ type GlobalFlag struct {
 
 //CLIConfig cli_config element
 type CLIConfig struct {
-	ProjectID     string `json:"project_id"`
-	Region        string `json:"region"`
-	Zone          string `json:"zone"`
-	BaseURL       string `json:"base_url"`
-	Timeout       int    `json:"timeout_sec"`
-	Profile       string `json:"profile"`
-	Active        bool   `json:"active"` //是否生效
-	MaxRetryTimes *int   `json:"max_retry_times"`
+	ProjectID      string `json:"project_id"`
+	Region         string `json:"region"`
+	Zone           string `json:"zone"`
+	BaseURL        string `json:"base_url"`
+	Timeout        int    `json:"timeout_sec"`
+	Profile        string `json:"profile"`
+	Active         bool   `json:"active"` //是否生效
+	MaxRetryTimes  *int   `json:"max_retry_times"`
+	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
 //CredentialConfig credential element
@@ -98,16 +99,17 @@ type CredentialConfig struct {
 
 //AggConfig 聚合配置 config+credential
 type AggConfig struct {
-	Profile       string `json:"profile"`
-	Active        bool   `json:"active"`
-	ProjectID     string `json:"project_id"`
-	Region        string `json:"region"`
-	Zone          string `json:"zone"`
-	BaseURL       string `json:"base_url"`
-	Timeout       int    `json:"timeout_sec"`
-	PublicKey     string `json:"public_key"`
-	PrivateKey    string `json:"private_key"`
-	MaxRetryTimes *int   `json:"max_retry_times"`
+	Profile        string `json:"profile"`
+	Active         bool   `json:"active"`
+	ProjectID      string `json:"project_id"`
+	Region         string `json:"region"`
+	Zone           string `json:"zone"`
+	BaseURL        string `json:"base_url"`
+	Timeout        int    `json:"timeout_sec"`
+	PublicKey      string `json:"public_key"`
+	PrivateKey     string `json:"private_key"`
+	MaxRetryTimes  *int   `json:"max_retry_times"`
+	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
 //ConfigPublicKey 输入公钥
@@ -133,6 +135,22 @@ func (p *AggConfig) ConfigPrivateKey() error {
 	}
 	p.PrivateKey = strings.TrimSpace(p.PrivateKey)
 	AuthCredential.PrivateKey = p.PrivateKey
+	return nil
+}
+
+//ConfigUploadLog agree upload log or not
+func (p *AggConfig) ConfigUploadLog() error {
+	var input string
+	fmt.Print("Do you agree to upload log in local file ~/.ucloud/cli.log to help ucloud-cli get better(yes/no):")
+	_, err := fmt.Scanf("%s\n", &input)
+	if err != nil {
+		HandleError(err)
+		return err
+	}
+
+	if str := strings.ToLower(input); str == "y" || str == "ye" || str == "yes" {
+		p.AgreeUploadLog = true
+	}
 	return nil
 }
 
@@ -169,6 +187,7 @@ func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
 	target.Zone = p.Zone
 	target.Active = p.Active
 	target.MaxRetryTimes = p.MaxRetryTimes
+	target.AgreeUploadLog = p.AgreeUploadLog
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -217,7 +236,7 @@ func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) 
 //Append config to list, override if already exist the same profile
 func (p *AggConfigManager) Append(config *AggConfig) error {
 	if _, ok := p.configs[config.Profile]; ok {
-		return fmt.Errorf("profile %s exists already", config.Profile)
+		return fmt.Errorf("profile [%s] exists already", config.Profile)
 	}
 
 	if config.Active && config.Profile != p.activeProfile {
@@ -279,16 +298,17 @@ func (p *AggConfigManager) Load() error {
 		}
 
 		p.configs[profile] = &AggConfig{
-			PrivateKey:    cred.PrivateKey,
-			PublicKey:     cred.PublicKey,
-			Profile:       config.Profile,
-			ProjectID:     config.ProjectID,
-			Region:        config.Region,
-			Zone:          config.Zone,
-			BaseURL:       config.BaseURL,
-			Timeout:       config.Timeout,
-			Active:        config.Active,
-			MaxRetryTimes: config.MaxRetryTimes,
+			PrivateKey:     cred.PrivateKey,
+			PublicKey:      cred.PublicKey,
+			Profile:        config.Profile,
+			ProjectID:      config.ProjectID,
+			Region:         config.Region,
+			Zone:           config.Zone,
+			BaseURL:        config.BaseURL,
+			Timeout:        config.Timeout,
+			Active:         config.Active,
+			MaxRetryTimes:  config.MaxRetryTimes,
+			AgreeUploadLog: config.AgreeUploadLog,
 		}
 	}
 
@@ -465,6 +485,37 @@ func LoadUserInfo() (*uaccount.UserInfo, error) {
 	return &user, nil
 }
 
+//GetUserInfo from local file and remote api
+func GetUserInfo() (*uaccount.UserInfo, error) {
+	user, err := LoadUserInfo()
+	if err == nil {
+		return user, nil
+	}
+
+	req := BizClient.NewGetUserInfoRequest()
+	resp, err := BizClient.GetUserInfo(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.DataSet) == 1 {
+		user = &resp.DataSet[0]
+		bytes, err := json.Marshal(user)
+		if err != nil {
+			return nil, err
+		}
+		fileFullPath := GetConfigDir() + "/user.json"
+		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("GetUserInfo DataSet length: %d", len(resp.DataSet))
+	}
+	return user, nil
+}
+
 //OldConfig 0.1.7以及之前版本的配置struct
 type OldConfig struct {
 	PublicKey  string `json:"public_key"`
@@ -585,11 +636,7 @@ func InitConfig() {
 				HandleError(err)
 			}
 		} else {
-			var ok bool
-			ins, ok = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
-			if !ok {
-				LogError("Profile %s does not exist", Global.Profile)
-			}
+			ins, _ = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
 		}
 
 		if ins != nil {
@@ -597,6 +644,7 @@ func InitConfig() {
 		} else {
 			ins = ConfigIns
 		}
+		logCmd()
 
 		bc, err := GetBizClient(ConfigIns)
 		if err != nil {
