@@ -54,8 +54,9 @@ func NewCmdInit() *cobra.Command {
 			fmt.Println(configDesc)
 			base.ConfigIns.ConfigPublicKey()
 			base.ConfigIns.ConfigPrivateKey()
+			base.ConfigIns.ConfigBaseURL()
 
-			region, zone, err := getDefaultRegion()
+			region, err := fetchRegionWithConfig(base.ConfigIns)
 			if err != nil {
 				if uErr, ok := err.(uerr.Error); ok {
 					if uErr.Code() == 172 {
@@ -66,9 +67,9 @@ func NewCmdInit() *cobra.Command {
 				fmt.Println(err)
 				return
 			}
-			base.ConfigIns.Region = region
-			base.ConfigIns.Zone = zone
-			fmt.Printf("Configured default region:%s zone:%s\n", region, zone)
+			base.ConfigIns.Region = region.DefaultRegion
+			base.ConfigIns.Zone = region.DefaultZone
+			fmt.Printf("Configured default region:%s zone:%s\n", region.DefaultRegion, region.DefaultZone)
 
 			projectID, projectName, err := getDefaultProject()
 			if err != nil {
@@ -79,6 +80,7 @@ func NewCmdInit() *cobra.Command {
 			fmt.Printf("Configured default project:%s %s\n", projectID, projectName)
 			base.ConfigIns.Timeout = base.DefaultTimeoutSec
 			base.ConfigIns.BaseURL = base.DefaultBaseURL
+			base.ConfigIns.MaxRetryTimes = sdk.Int(base.DefaultMaxRetryTimes)
 			base.ConfigIns.Active = true
 			fmt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
 			fmt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)

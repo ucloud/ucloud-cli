@@ -3,7 +3,7 @@
 
 ![](./docs/_static/ucloud_cli_demo.gif)
 
-UCloud CLI为管理UCloud平台上的资源和服务提供了一致性的操作接口，它使用[ucloud-sdk-go](https://github.com/ucloud/ucloud-sdk-go)调用[UCloud OpenAPI](https://docs.ucloud.cn/api/summary/overview)，从而实现对资源和服务的操作，兼容Linux, macOS和Windows平台 https://docs.ucloud.cn/software/cli/index
+UCloud CLI为管理UCloud平台上的资源和服务提供了一致性的操作接口，它使用[ucloud-sdk-go](https://github.com/ucloud/ucloud-sdk-go)调用[UCloud OpenAPI](https://docs.ucloud.cn/api/summary/overview)，从而实现对资源和服务的操作，兼容Linux, macOS和Windows平台 https://docs.ucloud.cn/developer/cli/index
 
 ## 在macOS或Linux平台安装UCloud-CLI
 
