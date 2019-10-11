@@ -36,7 +36,7 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.25"
+const Version = "0.1.26"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
@@ -138,10 +138,24 @@ func (p *AggConfig) ConfigPrivateKey() error {
 	return nil
 }
 
+//ConfigBaseURL 输入BaseURL
+func (p *AggConfig) ConfigBaseURL() error {
+	fmt.Printf("Default base-url(%s):", DefaultBaseURL)
+	_, err := fmt.Scanf("%s\n", &p.BaseURL)
+	if err != nil {
+		return err
+	}
+	p.BaseURL = strings.TrimSpace(p.BaseURL)
+	if len(p.BaseURL) == 0 {
+		p.BaseURL = DefaultBaseURL
+	}
+	return nil
+}
+
 //ConfigUploadLog agree upload log or not
 func (p *AggConfig) ConfigUploadLog() error {
 	var input string
-	fmt.Print("Do you agree to upload log in local file ~/.ucloud/cli.log to help ucloud-cli get better(yes/no):")
+	fmt.Print("Do you agree to upload log in local file ~/.ucloud/cli.log to help ucloud-cli get better(yes|no):")
 	_, err := fmt.Scanf("%s\n", &input)
 	if err != nil {
 		HandleError(err)
@@ -578,39 +592,19 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 	if err != nil {
 		err = fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
-	baseURL := ac.BaseURL
-	if Global.BaseURL != "" {
-		baseURL = Global.BaseURL
-	}
-	if Global.Timeout != 0 {
-		timeout = time.Duration(Global.Timeout) * time.Second
-	}
-	maxRetryTimes := *ac.MaxRetryTimes
-	if Global.MaxRetryTimes != -1 {
-		maxRetryTimes = Global.MaxRetryTimes
-	}
 	ClientConfig = &sdk.Config{
-		BaseUrl:    baseURL,
+		BaseUrl:    ac.BaseURL,
 		Timeout:    timeout,
 		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
 		ProjectId:  ac.ProjectID,
-		MaxRetries: maxRetryTimes,
+		MaxRetries: *ac.MaxRetryTimes,
 	}
-
-	if Global.PublicKey != "" && Global.PrivateKey != "" {
-		AuthCredential = &auth.Credential{
-			PublicKey:  Global.PublicKey,
-			PrivateKey: Global.PrivateKey,
-		}
-	} else {
-		AuthCredential = &auth.Credential{
-			PublicKey:  ac.PublicKey,
-			PrivateKey: ac.PrivateKey,
-		}
+	AuthCredential = &auth.Credential{
+		PublicKey:  ac.PublicKey,
+		PrivateKey: ac.PrivateKey,
 	}
-
 	return NewClient(ClientConfig, AuthCredential), err
 }
 
@@ -641,9 +635,9 @@ func InitConfig() {
 
 		if ins != nil {
 			ConfigIns = ins
-		} else {
-			ins = ConfigIns
 		}
+
+		mergeConfigIns(ConfigIns)
 		logCmd()
 
 		bc, err := GetBizClient(ConfigIns)
@@ -652,6 +646,23 @@ func InitConfig() {
 		} else {
 			BizClient = bc
 		}
+	}
+}
+
+func mergeConfigIns(ins *AggConfig) {
+	if Global.BaseURL != "" {
+		ins.BaseURL = Global.BaseURL
+	}
+	if Global.Timeout != 0 {
+		ins.Timeout = Global.Timeout
+	}
+	if Global.MaxRetryTimes != -1 {
+		ins.MaxRetryTimes = sdk.Int(Global.MaxRetryTimes)
+	}
+
+	if Global.PublicKey != "" && Global.PrivateKey != "" {
+		ins.PrivateKey = Global.PrivateKey
+		ins.PublicKey = Global.PublicKey
 	}
 }
 

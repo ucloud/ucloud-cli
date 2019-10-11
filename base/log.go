@@ -53,8 +53,10 @@ func logCmd() {
 	args := make([]string, len(os.Args))
 	copy(args, os.Args)
 	for idx, arg := range args {
-		if strings.Contains(arg, "password") && idx <= len(args)-2 {
-			args[idx+1] = strings.Repeat("*", 8)
+		for _, word := range []string{"password", "private-key", "public-key"} {
+			if strings.Contains(arg, word) && idx <= len(args)-2 {
+				args[idx+1] = strings.Repeat("*", 8)
+			}
 		}
 	}
 	LogInfo(fmt.Sprintf("command: %s", strings.Join(args, " ")))

@@ -98,7 +98,7 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 					log.Fatal(err)
 				}
 			case "douku":
-				err := doc.GenDoukuTree(rootCmd, dir, "software/cli/cmd/")
+				err := doc.GenDoukuTree(rootCmd, dir, "developer/cli/cmd/")
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -207,6 +207,8 @@ func Execute() {
 }
 
 func init() {
+	//-1表示不覆盖配置文件中的MaxRetryTimes参数
+	global.MaxRetryTimes = -1
 	for idx, arg := range os.Args {
 		if arg == "--profile" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			global.Profile = os.Args[idx+1]
@@ -235,7 +237,6 @@ func init() {
 			} else {
 				global.MaxRetryTimes = times
 			}
-			global.MaxRetryTimes = times
 		}
 	}
 	cobra.EnableCommandSorting = false
