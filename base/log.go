@@ -94,6 +94,42 @@ func LogInfo(logs ...string) {
 	}
 }
 
+//LogPrint 记录日志
+func LogPrint(logs ...string) {
+	_, ok := os.LookupEnv("COMP_LINE")
+	if ok {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	goID := curGoroutineID()
+	for _, line := range logs {
+		logger.WithField("goroutine_id", goID).Print(line)
+		fmt.Fprintln(out, line)
+	}
+	if ConfigIns.AgreeUploadLog {
+		UploadLogs(logs, "print", goID)
+	}
+}
+
+//LogWarn 记录日志
+func LogWarn(logs ...string) {
+	_, ok := os.LookupEnv("COMP_LINE")
+	if ok {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	goID := curGoroutineID()
+	for _, line := range logs {
+		logger.WithField("goroutine_id", goID).Warn(line)
+		fmt.Fprintln(out, line)
+	}
+	if ConfigIns.AgreeUploadLog {
+		UploadLogs(logs, "warn", goID)
+	}
+}
+
 //LogError 记录日志
 func LogError(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
