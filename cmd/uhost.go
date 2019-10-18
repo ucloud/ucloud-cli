@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -59,6 +60,7 @@ func NewCmdUHost() *cobra.Command {
 	cmd.AddCommand(NewCmdUhostReinstallOS(out))
 	cmd.AddCommand(NewCmdUhostCreateImage(out))
 	cmd.AddCommand(NewCmdIsolation(out))
+	cmd.AddCommand(NewCmdUhostLeaveIsolationGroup(out))
 
 	return cmd
 }
@@ -211,12 +213,20 @@ func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegi
 func NewCmdUHostList(out io.Writer) *cobra.Command {
 	var allRegion, pageOff, idOnly bool
 	var output string
+	var uhostIds []string
 	req := base.BizClient.NewDescribeUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all UHost Instances",
 		Long:  `List all UHost Instances`,
 		Run: func(cmd *cobra.Command, args []string) {
+			*req.VPCId = base.PickResourceID(*req.VPCId)
+			*req.SubnetId = base.PickResourceID(*req.SubnetId)
+			*req.IsolationGroup = base.PickResourceID(*req.IsolationGroup)
+			for _, uhost := range uhostIds {
+				req.UHostIds = append(req.UHostIds, base.PickResourceID(uhost))
+			}
+
 			uhosts, err := getAllUHosts(req, pageOff, allRegion)
 			if err != nil {
 				base.HandleError(err)
@@ -233,9 +243,12 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region.")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
-	cmd.Flags().StringSliceVar(&req.UHostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit default 50, max value 100")
+	req.VPCId = cmd.Flags().String("vpc-id", "", "Optional. Resource ID of VPC. List uhost instances of the specified VPC")
+	req.SubnetId = cmd.Flags().String("subnet-id", "", "Optional. Resource ID of Subnet. List uhost instances of the specified Subnet")
+	req.IsolationGroup = cmd.Flags().String("isolation-group", "", "Optional. Resource ID of isolation group. List uhost instances of the specified isolation group")
+	cmd.Flags().StringSliceVar(&uhostIds, "uhost-id", make([]string, 0), "Optional. Resource ID of uhost instances, multiple values separated by comma(without space)")
 	cmd.Flags().BoolVar(&allRegion, "all-region", false, "Optional. Accpet values: true or false. List uhost instances of all regions when assigned true")
 	cmd.Flags().BoolVar(&pageOff, "page-off", false, "Optional. Paging or not. If all-region is specified this flag will be true. Accept values: true or false. If assigned, the limit flag will be disabled and list all uhost instances")
 	cmd.Flags().BoolVar(&idOnly, "uhost-id-only", false, "Optional. Just display resource id of uhost")
@@ -251,6 +264,20 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 		return getZoneList(req.GetRegion())
 	})
 
+	flags := cmd.Flags()
+	flags.SetFlagValuesFunc("vpc-id", func() []string {
+		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("subnet-id", func() []string {
+		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("isolation-group", func() []string {
+		return getIsolationGroupList(*req.ProjectId, *req.Region)
+	})
+	flags.SetFlagValuesFunc("uhost-id", func() []string {
+		return getUhostList(nil, *req.ProjectId, *req.Region, *req.Zone)
+	})
+
 	return cmd
 }
 
@@ -260,6 +287,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	var hotPlug string
 	var async bool
 	var count int
+	var hotPlugImageFlag bool
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	eipReq := base.BizClient.NewAllocateEIPRequest()
@@ -277,6 +305,24 @@ func NewCmdUHostCreate() *cobra.Command {
 			req.IsolationGroup = sdk.String(base.PickResourceID(*req.IsolationGroup))
 			if hotPlug == "true" {
 				req.HotplugFeature = sdk.Bool(true)
+				any, err := describeImageByID(*req.ImageId, *req.ProjectId, *req.Region, *req.Zone)
+				if err != nil {
+					base.LogError(fmt.Sprintf("check image support hot-plug failed: %v", err))
+				} else {
+					image, ok := any.(*uhost.UHostImageSet)
+					if !ok {
+						base.LogError(fmt.Sprintf("check image support hot-plug failed, image %s may not exist", *req.ImageId))
+					}
+					for _, feature := range image.Features {
+						if feature == "HotPlug" {
+							hotPlugImageFlag = true
+						}
+					}
+				}
+				if !hotPlugImageFlag {
+					base.LogWarn(fmt.Sprintf("warning. image %s does not support hot-plug", *req.ImageId))
+					req.HotplugFeature = sdk.Bool(false)
+				}
 			}
 
 			wg := &sync.WaitGroup{}
@@ -359,7 +405,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
-	flags.StringVar(&hotPlug, "hot-plug", "false", "Optional. Enable hot plug feature or not. Accept values: true or false")
+	flags.StringVar(&hotPlug, "hot-plug", "true", "Optional. Enable hot plug feature or not. Accept values: true or false")
 	req.Disks[0].Type = flags.String("os-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
 	req.Disks[0].BackupType = flags.String("os-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
@@ -938,10 +984,14 @@ func getUhostList(states []string, project, region, zone string) []string {
 	}
 	list := []string{}
 	for _, host := range resp.UHostSet {
-		for _, s := range states {
-			if host.State == s {
-				list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+		if states != nil {
+			for _, s := range states {
+				if host.State == s {
+					list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+				}
 			}
+		} else {
+			list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
 		}
 	}
 	return list
@@ -1271,6 +1321,54 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+//NewCmdUhostLeaveIsolationGroup ucloud uhost leave-isolation-group
+func NewCmdUhostLeaveIsolationGroup(out io.Writer) *cobra.Command {
+	var uhostIds []string
+	req := base.BizClient.NewLeaveIsolationGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "leave-isolation-group",
+		Short: "Detach uhost from its isolation group",
+		Run: func(c *cobra.Command, args []string) {
+			for _, idname := range uhostIds {
+				id := base.PickResourceID(idname)
+				any, err := describeUHostByID(id, *req.ProjectId, *req.Region, *req.Zone)
+				if err != nil {
+					base.LogError(fmt.Sprintf("fetch uhost %s failed: %v", idname, err))
+					continue
+				}
+				ins, ok := any.(*uhost.UHostInstanceSet)
+				if !ok {
+					base.LogError(fmt.Sprintf("uhost %s may not exist", idname))
+					continue
+				}
+				if ins.IsolationGroup == "" {
+					base.LogPrint(fmt.Sprintf("uhost %s doesn't attached any isolation group", idname))
+					continue
+				}
+				req.GroupId = sdk.String(ins.IsolationGroup)
+				req.UHostId = &id
+				_, err = base.BizClient.LeaveIsolationGroup(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				base.LogPrint(fmt.Sprintf("uhost %s detached from isolation group %s", idname, ins.IsolationGroup))
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVar(&uhostIds, "uhost-id", nil, "Required. Resource ID of uhosts to be detech from its isolation group")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+	bindZone(req, flags)
+	cmd.MarkFlagRequired("uhost-id")
+	flags.SetFlagValuesFunc("uhost-id", func() []string {
+		return getUhostList(nil, *req.ProjectId, *req.Region, *req.Zone)
+	})
+	return cmd
+}
+
 //NewCmdIsolation ucloud uhost isolation-gorup
 func NewCmdIsolation(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -1279,6 +1377,76 @@ func NewCmdIsolation(out io.Writer) *cobra.Command {
 		Long:  "List and manipulate isolation group of uhost",
 	}
 	cmd.AddCommand(NewCmdIsolationList(out))
+	cmd.AddCommand(NewCmdIsolationCreate(out))
+	cmd.AddCommand(NewCmdIsolationDelete(out))
+	return cmd
+}
+
+//NewCmdIsolationCreate ucloud uhost isolation-group create
+func NewCmdIsolationCreate(out io.Writer) *cobra.Command {
+	req := base.BizClient.NewCreateIsolationGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create isolation group instance",
+		Long:  "Create isolation group instance",
+		Run: func(c *cobra.Command, args []string) {
+			re := regexp.MustCompile(cli.REGEXP_NAME)
+			if !re.Match([]byte(*req.GroupName)) {
+				base.LogError(fmt.Sprintf("group-name %s is invalid! Length 1~63, only English,Chinese,number and '-_.' are allowed", *req.GroupName))
+				return
+			}
+			resp, err := base.BizClient.CreateIsolationGroup(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			base.LogPrint(fmt.Sprintf("isolation group %s created", resp.GroupId))
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.GroupName = flags.String("group-name", "", "Required. Name of isolation group. Length 1~63, only English,Chinese,number and '-_.' are allowed")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+	req.Remark = flags.String("remark", "", "Optional. Remark ok isolation group")
+
+	cmd.MarkFlagRequired("group-name")
+	return cmd
+}
+
+//NewCmdIsolationDelete ucloud uhost
+func NewCmdIsolationDelete(out io.Writer) *cobra.Command {
+	var ids []string
+	req := base.BizClient.NewDeleteIsolationGroupRequest()
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete isolation group instances",
+		Run: func(c *cobra.Command, args []string) {
+			for _, idname := range ids {
+				id := base.PickResourceID(idname)
+				req.GroupId = &id
+				_, err := base.BizClient.DeleteIsolationGroup(req)
+				if err != nil {
+					base.HandleError(err)
+					continue
+				}
+				base.LogPrint(fmt.Sprintf("isolation group %s deleted", idname))
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.StringSliceVar(&ids, "group-id", nil, "Required. Resource ID of isolation groups to be deleted")
+	bindRegion(req, flags)
+	bindProjectID(req, flags)
+
+	cmd.MarkFlagRequired("group-id")
+	flags.SetFlagValuesFunc("group-id", func() []string {
+		return getIsolationGroupList(*req.ProjectId, *req.Region)
+	})
+
 	return cmd
 }
 
@@ -1321,11 +1489,15 @@ func NewCmdIsolationList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.String("group-id", "", "Optional. Resource ID of isolation group to describe")
+	req.GroupId = flags.String("group-id", "", "Optional. Resource ID of isolation group to describe")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
+
+	flags.SetFlagValuesFunc("group-id", func() []string {
+		return getIsolationGroupList(*req.ProjectId, *req.Region)
+	})
 
 	return cmd
 }

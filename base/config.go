@@ -36,7 +36,7 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.26"
+const Version = "0.1.27"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
