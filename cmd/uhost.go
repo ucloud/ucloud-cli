@@ -847,9 +847,15 @@ func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+func resizeUhost(req *uhost.ResizeUHostInstanceRequest) {
+
+}
+
 //NewCmdUHostResize ucloud uhost resize
 func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	var yes, async *bool
+	var bootDiskSize, dataDiskSize int
+	var dataDiskID string
 	var uhostIDs *[]string
 	req := base.BizClient.NewResizeUHostInstanceRequest()
 	cmd := &cobra.Command{
@@ -866,12 +872,6 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 			} else {
 				*req.Memory *= 1024
 			}
-			if *req.DiskSpace == 0 {
-				req.DiskSpace = nil
-			}
-			if *req.BootDiskSpace == 0 {
-				req.BootDiskSpace = nil
-			}
 			for _, id := range *uhostIDs {
 				id = base.PickResourceID(id)
 				req.UHostId = &id
@@ -883,9 +883,9 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 				inst := host.(*uhost.UHostInstanceSet)
 				if inst.State == "Running" {
 					if !*yes {
-						confirmText := "Resize uhost must be after stop it. Do you want to stop this uhost?"
+						confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
 						if len(*uhostIDs) > 1 {
-							confirmText = "Resize uhost must be after stop it. Do you want to stop those uhosts?"
+							confirmText = "Resize uhost must be done after the uhost is stopped. Do you want to stop those uhosts?"
 						}
 						agreeClose, err := ux.Prompt(confirmText)
 						if err != nil {
@@ -893,7 +893,7 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 							return
 						}
 						if !agreeClose {
-							continue
+							return
 						}
 					}
 					_req := base.BizClient.NewStopUHostInstanceRequest()
@@ -903,31 +903,99 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 					_req.UHostId = &id
 					stopUhostIns(_req, false, out)
 				}
-
-				resp, err := base.BizClient.ResizeUHostInstance(req)
-				if err != nil {
-					base.HandleError(err)
-				} else {
-					text := fmt.Sprintf("UHost:[%v] resized", resp.UhostId)
-					if *async {
-						fmt.Fprintln(out, text)
+				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
+					resp, err := base.BizClient.ResizeUHostInstance(req)
+					if err != nil {
+						base.HandleError(err)
 					} else {
-						poller := base.NewPoller(describeUHostByID, out)
-						poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+						text := fmt.Sprintf("uhost [%v] cpu, memory resized", resp.UhostId)
+						if *async {
+							fmt.Fprintln(out, text)
+						} else {
+							poller := base.NewPoller(describeUHostByID, out)
+							poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+						}
+					}
+				}
+
+				if dataDiskSize != 0 || bootDiskSize != 0 {
+					_req := base.BizClient.NewResizeAttachedDiskRequest()
+					var bootDisk uhost.UHostDiskSet
+					var dataDisks = map[string]uhost.UHostDiskSet{}
+					for _, disk := range inst.DiskSet {
+						if disk.IsBoot == "True" {
+							bootDisk = disk
+						} else if disk.IsBoot == "False" {
+							dataDisks[disk.DiskId] = disk
+						}
+					}
+					if bootDiskSize != 0 {
+						if bootDiskSize <= bootDisk.Size {
+							base.LogError(fmt.Sprintf("Error, disk does not support shrinkage. current system-disk-size %dg", bootDisk.Size))
+							continue
+						} else {
+							_req.DiskSpace = &bootDiskSize
+							_req.DiskId = &bootDisk.DiskId
+						}
+					} else if dataDiskSize != 0 {
+						var dataDisk uhost.UHostDiskSet
+						if len(dataDisks) > 1 {
+							if dataDiskID == "" {
+								base.LogError(fmt.Sprintf("Error, the uhost %s have %d data disks. data-disk-id should be assigned", id, len(dataDisks)))
+								continue
+							}
+							var ok bool
+							dataDisk, ok = dataDisks[dataDiskID]
+							if !ok {
+								base.LogError(fmt.Sprintf("Error, the disk %s does not exist", dataDiskID))
+								continue
+							}
+						} else if len(dataDisks) == 1 {
+							for _, disk := range dataDisks {
+								dataDisk = disk
+							}
+						} else if len(dataDisks) == 0 {
+							base.LogError(fmt.Sprintf("Error, the uhost %s have no data disk. data-disk-id should be assigned", id))
+							continue
+						}
+						if dataDiskSize <= dataDisk.Size {
+							base.LogError(fmt.Sprintf("Error, disk does not support shrinkage. current data-disk-size %dg", dataDisk.Size))
+							continue
+						}
+						_req.DiskSpace = &dataDiskSize
+						_req.DiskId = &dataDisk.DiskId
+					}
+					_req.ProjectId = req.ProjectId
+					_req.Region = req.Region
+					_req.Zone = req.Zone
+					_req.UHostId = &id
+					_, err := base.BizClient.ResizeAttachedDisk(_req)
+					if err != nil {
+						base.HandleError(err)
+					} else {
+						text := fmt.Sprintf("uhost [%v] disk resized", id)
+						if *async {
+							fmt.Fprintln(out, text)
+						} else {
+							poller := base.NewPoller(describeUHostByID, out)
+							poller.Poll(id, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+						}
 					}
 				}
 			}
 		},
 	}
-	cmd.Flags().SortFlags = false
+	flags := cmd.Flags()
+	flags.SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(or UhostIDs) of the uhost instances")
-	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
-	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
-	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
+	bindProjectID(req, flags)
+	bindRegion(req, flags)
+	bindZone(req, flags)
 	req.CPU = cmd.Flags().Int("cpu", 0, "Optional. The number of virtual CPU cores. Series1 {1, 2, 4, 8, 12, 16, 24, 32}. Series2 {1,2,4,8,16}")
 	req.Memory = cmd.Flags().Int("memory-gb", 0, "Optional. memory size. Unit: GB. Range: [1, 128], multiple of 2")
-	req.DiskSpace = cmd.Flags().Int("data-disk-size-gb", 0, "Optional. Data disk size,unit GB. Range[10,1000], SSD disk range[100,500]. Step 10")
-	req.BootDiskSpace = cmd.Flags().Int("system-disk-size-gb", 0, "Optional. System disk size, unit GB. Range[20,100]. Step 10. System disk does not support shrinkage")
+	cmd.Flags().IntVar(&bootDiskSize, "system-disk-size-gb", 0, "Optional. System disk size, unit GB. Range[20,100]. Step 10. System disk does not support shrinkage")
+	cmd.Flags().IntVar(&dataDiskSize, "data-disk-size-gb", 0, "Optional. Data disk size,unit GB. Step 10. disk does not support shrinkage")
+	cmd.Flags().StringVar(&dataDiskID, "data-disk-id", "", "Optional. If the uhost specified has two or more data disks, this parameter should be assigned")
 	req.NetCapValue = cmd.Flags().Int("net-cap", 0, "Optional. NIC scale. 1,upgrade; 2,downgrade; 0,unchanged")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = cmd.Flags().BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
