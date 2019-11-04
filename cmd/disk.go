@@ -489,10 +489,6 @@ func NewCmdDiskExpand() *cobra.Command {
 		Short: "Expand udisk size",
 		Long:  "Expand udisk size",
 		Run: func(cmd *cobra.Command, args []string) {
-			if *req.Size > 8000 || *req.Size < 1 {
-				base.Cxt.Println("size-gb should be between 1 and 8000")
-				return
-			}
 			for _, id := range *udiskIDs {
 				id = base.PickResourceID(id)
 				req.UDiskId = &id

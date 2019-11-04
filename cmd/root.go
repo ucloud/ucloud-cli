@@ -16,12 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
@@ -64,59 +62,6 @@ func NewCmdRoot() *cobra.Command {
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
-
-	return cmd
-}
-
-//NewCmdDoc ucloud doc
-func NewCmdDoc(out io.Writer) *cobra.Command {
-	var dir, format string
-	cmd := &cobra.Command{
-		Use:   "gendoc",
-		Short: "Generate documents for all commands",
-		Long:  "Generate documents for all commands. Support markdown, rst and douku",
-		Run: func(c *cobra.Command, args []string) {
-			base.ConfigIns.Region = ""
-			base.ConfigIns.ProjectID = ""
-			base.ConfigIns.Zone = ""
-			rootCmd := NewCmdRoot()
-			addChildren(rootCmd)
-			switch format {
-			case "rst":
-				emptyStr := func(s string) string { return "" }
-				linkHandler := func(name, ref string) string {
-					return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
-				}
-				err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-			case "markdown":
-				err := doc.GenMarkdownTree(rootCmd, dir)
-				if err != nil {
-					log.Fatal(err)
-				}
-			case "douku":
-				err := doc.GenDoukuTree(rootCmd, dir, "developer/cli/cmd/")
-				if err != nil {
-					log.Fatal(err)
-				}
-			default:
-				fmt.Fprintf(out, "format %s is not supported\n", format)
-			}
-		},
-	}
-
-	cmd.Flags().StringVar(&dir, "dir", "", "Required. The directory where documents of commands are stored")
-	cmd.Flags().StringVar(&format, "format", "douku", "Required. Format of the doucments. Accept values: markdown, rst and douku")
-
-	cmd.Flags().SetFlagValues("format", "douku", "markdown", "rst")
-	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
-		return base.GetFileList("")
-	})
-
-	cmd.MarkFlagRequired("dir")
 
 	return cmd
 }
