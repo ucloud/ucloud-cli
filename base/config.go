@@ -3,7 +3,6 @@ package base
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -21,8 +20,14 @@ var ConfigFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "config.json")
 //CredentialFilePath path of credential.json
 var CredentialFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "credential.json")
 
+//LocalFileMode file mode of $HOME/ucloud/*
+const LocalFileMode os.FileMode = 0600
+
 //DefaultTimeoutSec default timeout for requesting api, 15s
 const DefaultTimeoutSec = 15
+
+//DefaultMaxRetryTimes default timeout for requesting api, 15s
+const DefaultMaxRetryTimes = 3
 
 //DefaultBaseURL location of api server
 const DefaultBaseURL = "https://api.ucloud.cn/"
@@ -31,10 +36,15 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.20"
+const Version = "0.1.28"
 
 //ConfigIns 配置实例, 程序加载时生成
-var ConfigIns = &AggConfig{Profile: "default"}
+var ConfigIns = &AggConfig{
+	Profile:       DefaultProfile,
+	BaseURL:       DefaultBaseURL,
+	Timeout:       DefaultTimeoutSec,
+	MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
+}
 
 //AggConfigListIns 配置列表, 进程启动时从本地文件加载
 var AggConfigListIns = &AggConfigManager{}
@@ -53,23 +63,31 @@ var Global GlobalFlag
 
 //GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
-	Debug      bool
-	JSON       bool
-	Version    bool
-	Completion bool
-	Config     bool
-	Signup     bool
+	Debug         bool
+	JSON          bool
+	Version       bool
+	Completion    bool
+	Config        bool
+	Signup        bool
+	Profile       string
+	PublicKey     string
+	PrivateKey    string
+	BaseURL       string
+	Timeout       int
+	MaxRetryTimes int
 }
 
 //CLIConfig cli_config element
 type CLIConfig struct {
-	ProjectID string `json:"project_id"`
-	Region    string `json:"region"`
-	Zone      string `json:"zone"`
-	BaseURL   string `json:"base_url"`
-	Timeout   int    `json:"timeout_sec"`
-	Profile   string `json:"profile"`
-	Active    bool   `json:"active"` //是否生效
+	ProjectID      string `json:"project_id"`
+	Region         string `json:"region"`
+	Zone           string `json:"zone"`
+	BaseURL        string `json:"base_url"`
+	Timeout        int    `json:"timeout_sec"`
+	Profile        string `json:"profile"`
+	Active         bool   `json:"active"` //是否生效
+	MaxRetryTimes  *int   `json:"max_retry_times"`
+	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
 //CredentialConfig credential element
@@ -81,15 +99,17 @@ type CredentialConfig struct {
 
 //AggConfig 聚合配置 config+credential
 type AggConfig struct {
-	Profile    string `json:"profile"`
-	Active     bool   `json:"active"`
-	ProjectID  string `json:"project_id"`
-	Region     string `json:"region"`
-	Zone       string `json:"zone"`
-	BaseURL    string `json:"base_url"`
-	Timeout    int    `json:"timeout_sec"`
-	PublicKey  string `json:"public_key"`
-	PrivateKey string `json:"private_key"`
+	Profile        string `json:"profile"`
+	Active         bool   `json:"active"`
+	ProjectID      string `json:"project_id"`
+	Region         string `json:"region"`
+	Zone           string `json:"zone"`
+	BaseURL        string `json:"base_url"`
+	Timeout        int    `json:"timeout_sec"`
+	PublicKey      string `json:"public_key"`
+	PrivateKey     string `json:"private_key"`
+	MaxRetryTimes  *int   `json:"max_retry_times"`
+	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
 //ConfigPublicKey 输入公钥
@@ -115,6 +135,36 @@ func (p *AggConfig) ConfigPrivateKey() error {
 	}
 	p.PrivateKey = strings.TrimSpace(p.PrivateKey)
 	AuthCredential.PrivateKey = p.PrivateKey
+	return nil
+}
+
+//ConfigBaseURL 输入BaseURL
+func (p *AggConfig) ConfigBaseURL() error {
+	fmt.Printf("Default base-url(%s):", DefaultBaseURL)
+	_, err := fmt.Scanf("%s\n", &p.BaseURL)
+	if err != nil {
+		return err
+	}
+	p.BaseURL = strings.TrimSpace(p.BaseURL)
+	if len(p.BaseURL) == 0 {
+		p.BaseURL = DefaultBaseURL
+	}
+	return nil
+}
+
+//ConfigUploadLog agree upload log or not
+func (p *AggConfig) ConfigUploadLog() error {
+	var input string
+	fmt.Print("Do you agree to upload log in local file ~/.ucloud/cli.log to help ucloud-cli get better(yes|no):")
+	_, err := fmt.Scanf("%s\n", &input)
+	if err != nil {
+		HandleError(err)
+		return err
+	}
+
+	if str := strings.ToLower(input); str == "y" || str == "ye" || str == "yes" {
+		p.AgreeUploadLog = true
+	}
 	return nil
 }
 
@@ -150,6 +200,8 @@ func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
 	target.Region = p.Region
 	target.Zone = p.Zone
 	target.Active = p.Active
+	target.MaxRetryTimes = p.MaxRetryTimes
+	target.AgreeUploadLog = p.AgreeUploadLog
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -162,17 +214,16 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 type AggConfigManager struct {
 	activeProfile string
 	configs       map[string]*AggConfig
-	cfgFile       io.Reader
-	credFile      io.Reader
+	configFile    *os.File
+	credFile      *os.File
 }
 
 //NewAggConfigManager create instance
-func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error) {
-
+func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) {
 	manager := &AggConfigManager{
-		configs:  make(map[string]*AggConfig),
-		cfgFile:  cfgFile,
-		credFile: credFile,
+		configs:    make(map[string]*AggConfig),
+		configFile: cfgFile,
+		credFile:   credFile,
 	}
 
 	err := manager.Load()
@@ -183,7 +234,7 @@ func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error)
 
 		aerr := adaptOldConfig()
 		if aerr != nil {
-			HandleError(aerr)
+			HandleError(fmt.Errorf("adapt to old config failed: %v", aerr))
 			return manager, aerr
 		}
 
@@ -199,7 +250,7 @@ func NewAggConfigManager(cfgFile, credFile io.Reader) (*AggConfigManager, error)
 //Append config to list, override if already exist the same profile
 func (p *AggConfigManager) Append(config *AggConfig) error {
 	if _, ok := p.configs[config.Profile]; ok {
-		return fmt.Errorf("profile %s exists already", config.Profile)
+		return fmt.Errorf("profile [%s] exists already", config.Profile)
 	}
 
 	if config.Active && config.Profile != p.activeProfile {
@@ -261,15 +312,17 @@ func (p *AggConfigManager) Load() error {
 		}
 
 		p.configs[profile] = &AggConfig{
-			PrivateKey: cred.PrivateKey,
-			PublicKey:  cred.PublicKey,
-			Profile:    config.Profile,
-			ProjectID:  config.ProjectID,
-			Region:     config.Region,
-			Zone:       config.Zone,
-			BaseURL:    config.BaseURL,
-			Timeout:    config.Timeout,
-			Active:     config.Active,
+			PrivateKey:     cred.PrivateKey,
+			PublicKey:      cred.PublicKey,
+			Profile:        config.Profile,
+			ProjectID:      config.ProjectID,
+			Region:         config.Region,
+			Zone:           config.Zone,
+			BaseURL:        config.BaseURL,
+			Timeout:        config.Timeout,
+			Active:         config.Active,
+			MaxRetryTimes:  config.MaxRetryTimes,
+			AgreeUploadLog: config.AgreeUploadLog,
 		}
 	}
 
@@ -296,8 +349,8 @@ func (p *AggConfigManager) Save() error {
 		aggConfig.copyToCredentialConfig(credConfig)
 		credcs = append(credcs, credConfig)
 	}
-	aerr := WriteJSONFile(clics, ConfigFilePath)
-	berr := WriteJSONFile(credcs, CredentialFilePath)
+	aerr := WriteJSONFile(clics, p.configFile.Name())
+	berr := WriteJSONFile(credcs, p.credFile.Name())
 
 	if aerr != nil && berr != nil {
 		return fmt.Errorf("save cli config failed: %v | save credentail failed: %v", aerr, berr)
@@ -365,26 +418,49 @@ func (p *AggConfigManager) GetActiveAggConfig() (*AggConfig, error) {
 	return nil, fmt.Errorf("active profile not found. see 'ucloud config list'")
 }
 
+//GetActiveAggConfigName get active config name
+func (p *AggConfigManager) GetActiveAggConfigName() string {
+	if ac, ok := p.configs[p.activeProfile]; ok {
+		return ac.Profile
+	}
+	return ""
+}
+
 func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
-	byts, err := ioutil.ReadAll(p.cfgFile)
+	var configs []CLIConfig
+	rawConfig, err := ioutil.ReadAll(p.configFile)
 	if err != nil {
 		return nil, err
 	}
-	configs := []CLIConfig{}
-	err = json.Unmarshal(byts, &configs)
+	if len(rawConfig) == 0 {
+		return nil, nil
+	}
+
+	err = json.Unmarshal(rawConfig, &configs)
 	if err != nil {
 		return nil, fmt.Errorf("parse cli config faild: %v", err)
+	}
+	//特殊处理未配置max_retry_times的情况，v0.1.21之前硬编码重试次数为3
+	for idx := range configs {
+		if configs[idx].MaxRetryTimes == nil {
+			configs[idx].MaxRetryTimes = sdk.Int(DefaultMaxRetryTimes)
+		}
 	}
 	return configs, nil
 }
 
 func (p *AggConfigManager) parseCredentials() ([]CredentialConfig, error) {
-	byts, err := ioutil.ReadAll(p.credFile)
+	var credentials []CredentialConfig
+	rawCred, err := ioutil.ReadAll(p.credFile)
 	if err != nil {
 		return nil, err
 	}
-	credentials := make([]CredentialConfig, 0)
-	err = json.Unmarshal(byts, &credentials)
+
+	if len(rawCred) == 0 {
+		return nil, nil
+	}
+
+	err = json.Unmarshal(rawCred, &credentials)
 	if err != nil {
 		return nil, fmt.Errorf("parse credential failed: %v", err)
 	}
@@ -423,6 +499,37 @@ func LoadUserInfo() (*uaccount.UserInfo, error) {
 	return &user, nil
 }
 
+//GetUserInfo from local file and remote api
+func GetUserInfo() (*uaccount.UserInfo, error) {
+	user, err := LoadUserInfo()
+	if err == nil {
+		return user, nil
+	}
+
+	req := BizClient.NewGetUserInfoRequest()
+	resp, err := BizClient.GetUserInfo(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.DataSet) == 1 {
+		user = &resp.DataSet[0]
+		bytes, err := json.Marshal(user)
+		if err != nil {
+			return nil, err
+		}
+		fileFullPath := GetConfigDir() + "/user.json"
+		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("GetUserInfo DataSet length: %d", len(resp.DataSet))
+	}
+	return user, nil
+}
+
 //OldConfig 0.1.7以及之前版本的配置struct
 type OldConfig struct {
 	PublicKey  string `json:"public_key"`
@@ -453,15 +560,16 @@ func adaptOldConfig() error {
 		return err
 	}
 	ac := &AggConfig{
-		Profile:    DefaultProfile,
-		ProjectID:  oc.ProjectID,
-		Region:     oc.Region,
-		Zone:       oc.Zone,
-		BaseURL:    DefaultBaseURL,
-		Timeout:    DefaultTimeoutSec,
-		Active:     true,
-		PrivateKey: oc.PrivateKey,
-		PublicKey:  oc.PublicKey,
+		Profile:       DefaultProfile,
+		ProjectID:     oc.ProjectID,
+		Region:        oc.Region,
+		Zone:          oc.Zone,
+		BaseURL:       DefaultBaseURL,
+		Timeout:       DefaultTimeoutSec,
+		Active:        true,
+		PrivateKey:    oc.PrivateKey,
+		PublicKey:     oc.PublicKey,
+		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 	}
 	err = os.Rename(ConfigFilePath, ConfigFilePath+".old")
 	if err != nil {
@@ -470,11 +578,19 @@ func adaptOldConfig() error {
 	return AggConfigListIns.Append(ac)
 }
 
+func init() {
+	bc, err := GetBizClient(ConfigIns)
+	if err != nil {
+		HandleError(err)
+	}
+	BizClient = bc
+}
+
 //GetBizClient 初始化BizClient
 func GetBizClient(ac *AggConfig) (*Client, error) {
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
 	if err != nil {
-		return nil, fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
+		err = fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
 	ClientConfig = &sdk.Config{
 		BaseUrl:    ac.BaseURL,
@@ -482,74 +598,78 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
-		Zone:       ac.Zone,
 		ProjectId:  ac.ProjectID,
-		MaxRetries: 3,
+		MaxRetries: *ac.MaxRetryTimes,
 	}
-
 	AuthCredential = &auth.Credential{
 		PublicKey:  ac.PublicKey,
 		PrivateKey: ac.PrivateKey,
 	}
+	return NewClient(ClientConfig, AuthCredential), err
+}
 
-	return NewClient(ClientConfig, AuthCredential), nil
+//InitConfig 初始化配置
+func InitConfig() {
+	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil && !os.IsNotExist(err) {
+		HandleError(err)
+	}
+	credFile, err := os.OpenFile(CredentialFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil && !os.IsNotExist(err) {
+		HandleError(err)
+	}
+
+	AggConfigListIns, err = NewAggConfigManager(configFile, credFile)
+	if err != nil {
+		LogError(err.Error())
+	} else {
+		var ins *AggConfig
+		if Global.Profile == "" {
+			ins, err = AggConfigListIns.GetActiveAggConfig()
+			if err != nil && len(AggConfigListIns.GetAggConfigList()) != 0 {
+				HandleError(err)
+			}
+		} else {
+			ins, _ = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
+		}
+
+		if ins != nil {
+			ConfigIns = ins
+		}
+
+		mergeConfigIns(ConfigIns)
+		logCmd()
+
+		bc, err := GetBizClient(ConfigIns)
+		if err != nil {
+			HandleError(err)
+		} else {
+			BizClient = bc
+		}
+	}
+}
+
+func mergeConfigIns(ins *AggConfig) {
+	if Global.BaseURL != "" {
+		ins.BaseURL = Global.BaseURL
+	}
+	if Global.Timeout != 0 {
+		ins.Timeout = Global.Timeout
+	}
+	if Global.MaxRetryTimes != -1 {
+		ins.MaxRetryTimes = sdk.Int(Global.MaxRetryTimes)
+	}
+
+	if Global.PublicKey != "" && Global.PrivateKey != "" {
+		ins.PrivateKey = Global.PrivateKey
+		ins.PublicKey = Global.PublicKey
+	}
 }
 
 func init() {
-	initConfigDir()
 	//配置日志
 	err := initLog()
 	if err != nil {
 		fmt.Println(err)
-	}
-	cfgFile, err := os.Open(ConfigFilePath)
-	if err != nil {
-		HandleError(err)
-	} else {
-		defer cfgFile.Close()
-	}
-
-	credFile, err := os.Open(CredentialFilePath)
-	if err != nil {
-		HandleError(err)
-	} else {
-		defer credFile.Close()
-	}
-
-	AggConfigListIns, err = NewAggConfigManager(cfgFile, credFile)
-	if err != nil {
-		HandleError(err)
-		ins := &AggConfig{
-			BaseURL: "https://api.ucloud.cn",
-			Timeout: 15,
-			Profile: "default",
-		}
-		bc, err := GetBizClient(ins)
-		if err != nil {
-			HandleError(err)
-		} else {
-			BizClient = bc
-		}
-	} else {
-		ins, err := AggConfigListIns.GetActiveAggConfig()
-		if err != nil {
-			LogInfo(fmt.Sprintf("load active config failed: %v", err))
-			ins = &AggConfig{
-				BaseURL: DefaultBaseURL,
-				Timeout: DefaultTimeoutSec,
-			}
-		} else {
-			ConfigIns = ins
-			tmpIns := *ins
-			tmpIns.PublicKey = MosaicString(tmpIns.PublicKey, 5, 5)
-			tmpIns.PrivateKey = MosaicString(tmpIns.PrivateKey, 5, 5)
-			LogInfo(fmt.Sprintf("load active config : %#v", tmpIns))
-		}
-		bc, err := GetBizClient(ins)
-		if err != nil {
-			HandleError(err)
-		} else {
-			BizClient = bc
-		}
 	}
 }

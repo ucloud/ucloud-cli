@@ -5,6 +5,7 @@ package ux
 import (
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
@@ -58,7 +59,15 @@ func (s *Spin) reset() {
 func (s *Spin) renderToString() chan string {
 	nextFrame := s.newFrameFactory()
 	go func() {
+		send := false
 		for range s.ticker.C {
+			if runtime.GOOS == windows {
+				if !send {
+					s.textChan <- fmt.Sprintf("%s...", s.DoingText)
+					send = true
+				}
+				continue
+			}
 			frame := nextFrame()
 			s.textChan <- fmt.Sprintf("%s...%c", s.DoingText, frame)
 		}
@@ -69,7 +78,15 @@ func (s *Spin) renderToString() chan string {
 func (s *Spin) renderToScreen() {
 	nextFrame := s.newFrameFactory()
 	go func() {
+		send := false
 		for range s.ticker.C {
+			if runtime.GOOS == windows {
+				if !send {
+					fmt.Printf("%s...\n", s.DoingText)
+					send = true
+				}
+				continue
+			}
 			frame := nextFrame()
 			s.reset()
 			s.output = fmt.Sprintf("%s...%c\n", s.DoingText, frame)

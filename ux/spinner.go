@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/ucloud/ucloud-cli/ansi"
 )
+
+const windows = "windows"
 
 // Spinner type
 type Spinner struct {
@@ -59,7 +62,15 @@ func (s *Spinner) reset() {
 func (s *Spinner) render() {
 	nextFrame := s.newFrameFactory()
 	go func() {
+		send := false
 		for range s.ticker.C {
+			if runtime.GOOS == windows {
+				if !send {
+					fmt.Printf("%s...\n", s.DoingText)
+					send = true
+				}
+				continue
+			}
 			frame := nextFrame()
 			s.reset()
 			s.output = fmt.Sprintf("%s...%c\n", s.DoingText, frame)

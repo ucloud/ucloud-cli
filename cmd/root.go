@@ -16,11 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
@@ -31,7 +30,6 @@ var global = &base.Global
 
 //NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
-	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
 		Use:               "ucloud",
 		Short:             "UCloud CLI v" + base.Version,
@@ -54,85 +52,16 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&global.Debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.JSON, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.PersistentFlags().StringVarP(&global.Profile, "profile", "p", global.Profile, "Specifies the configuration for the operation")
 	cmd.Flags().BoolVarP(&global.Version, "version", "v", false, "Display version")
 	cmd.Flags().BoolVar(&global.Completion, "completion", false, "Turn on auto completion according to the prompt")
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.AddCommand(NewCmdInit())
-	cmd.AddCommand(NewCmdDoc(out))
-	cmd.AddCommand(NewCmdConfig())
-	cmd.AddCommand(NewCmdRegion(out))
-	cmd.AddCommand(NewCmdProject())
-	cmd.AddCommand(NewCmdUHost())
-	cmd.AddCommand(NewCmdUPHost())
-	cmd.AddCommand(NewCmdUImage())
-	cmd.AddCommand(NewCmdSubnet())
-	cmd.AddCommand(NewCmdVpc())
-	cmd.AddCommand(NewCmdFirewall())
-	cmd.AddCommand(NewCmdDisk())
-	cmd.AddCommand(NewCmdEIP())
-	cmd.AddCommand(NewCmdBandwidth())
-	cmd.AddCommand(NewCmdUDPN(out))
-	cmd.AddCommand(NewCmdULB())
-	cmd.AddCommand(NewCmdGssh())
-	cmd.AddCommand(NewCmdPathx())
-	cmd.AddCommand(NewCmdMysql())
-	cmd.AddCommand(NewCmdRedis())
-	cmd.AddCommand(NewCmdMemcache())
-
+	cmd.PersistentFlags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
-
-	return cmd
-}
-
-//NewCmdDoc ucloud doc
-func NewCmdDoc(out io.Writer) *cobra.Command {
-	var dir, format string
-	cmd := &cobra.Command{
-		Use:   "gendoc",
-		Short: "Generate documents for all commands",
-		Long:  "Generate documents for all commands. Support markdown, rst and douku",
-		Run: func(c *cobra.Command, args []string) {
-			rootCmd := NewCmdRoot()
-			switch format {
-			case "rst":
-				emptyStr := func(s string) string { return "" }
-				linkHandler := func(name, ref string) string {
-					return fmt.Sprintf(":ref:`%s <%s>`", name, ref)
-				}
-				err := doc.GenReSTTreeCustom(rootCmd, dir, emptyStr, linkHandler)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-			case "markdown":
-				err := doc.GenMarkdownTree(rootCmd, dir)
-				if err != nil {
-					log.Fatal(err)
-				}
-			case "douku":
-				err := doc.GenDoukuTree(rootCmd, dir, "software/cli/cmd/")
-				if err != nil {
-					log.Fatal(err)
-				}
-			default:
-				fmt.Fprintf(out, "format %s is not supported\n", format)
-			}
-		},
-	}
-
-	cmd.Flags().StringVar(&dir, "dir", "", "Required. The directory where documents of commands are stored")
-	cmd.Flags().StringVar(&format, "format", "douku", "Required. Format of the doucments. Accept values: markdown, rst and douku")
-
-	cmd.Flags().SetFlagValues("format", "douku", "markdown", "rst")
-	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
-		return base.GetFileList("")
-	})
-
-	cmd.MarkFlagRequired("dir")
 
 	return cmd
 }
@@ -176,19 +105,87 @@ const usageTmpl = `Usage:{{if .Runnable}}
 Use "{{.CommandPath}} --help" for details.{{end}}
 `
 
+func addChildren(root *cobra.Command) {
+	out := base.Cxt.GetWriter()
+	root.AddCommand(NewCmdInit())
+	root.AddCommand(NewCmdDoc(out))
+	root.AddCommand(NewCmdConfig())
+	root.AddCommand(NewCmdRegion(out))
+	root.AddCommand(NewCmdProject())
+	root.AddCommand(NewCmdUHost())
+	root.AddCommand(NewCmdUPHost())
+	root.AddCommand(NewCmdUImage())
+	root.AddCommand(NewCmdSubnet())
+	root.AddCommand(NewCmdVpc())
+	root.AddCommand(NewCmdFirewall())
+	root.AddCommand(NewCmdDisk())
+	root.AddCommand(NewCmdEIP())
+	root.AddCommand(NewCmdBandwidth())
+	root.AddCommand(NewCmdUDPN(out))
+	root.AddCommand(NewCmdULB())
+	root.AddCommand(NewCmdGssh())
+	root.AddCommand(NewCmdPathx())
+	root.AddCommand(NewCmdMysql())
+	root.AddCommand(NewCmdRedis())
+	root.AddCommand(NewCmdMemcache())
+	root.AddCommand(NewCmdExt())
+	for _, c := range root.Commands() {
+		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
+			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
+			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
+			c.PersistentFlags().StringVar(&global.BaseURL, "base-url", "", "Set base-url to override the base-url in local config file")
+			c.PersistentFlags().IntVar(&global.Timeout, "timeout-sec", 0, "Set timeout-sec to override the timeout-sec in local config file")
+			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
+		}
+	}
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	cmd := NewCmdRoot()
+	base.InitConfig()
+	addChildren(cmd)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
+	//-1表示不覆盖配置文件中的MaxRetryTimes参数
+	global.MaxRetryTimes = -1
+	for idx, arg := range os.Args {
+		if arg == "--profile" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.Profile = os.Args[idx+1]
+		}
+		if arg == "--public-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.PublicKey = os.Args[idx+1]
+		}
+		if arg == "--private-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.PrivateKey = os.Args[idx+1]
+		}
+		if arg == "--base-url" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.BaseURL = os.Args[idx+1]
+		}
+		if arg == "--timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			sec, err := strconv.Atoi(os.Args[idx+1])
+			if err != nil {
+				fmt.Printf("parse timeout-sec failed: %v\n", err)
+			} else {
+				global.Timeout = sec
+			}
+		}
+		if arg == "--max-retry-times" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			times, err := strconv.Atoi(os.Args[idx+1])
+			if err != nil {
+				fmt.Printf("parse max-retry-times failed: %v\n", err)
+			} else {
+				global.MaxRetryTimes = times
+			}
+		}
+	}
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(initialize)
-	base.Cxt.AppendInfo("command", fmt.Sprintf("%v", os.Args))
 }
 
 func resetHelpFunc(cmd *cobra.Command) {
@@ -222,11 +219,6 @@ func initialize(cmd *cobra.Command) {
 		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
 	}
 
-	userInfo, err := base.LoadUserInfo()
-	if err == nil {
-		base.Cxt.AppendInfo("userName", userInfo.UserEmail)
-		base.Cxt.AppendInfo("companyName", userInfo.CompanyName)
-	}
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
 		if base.ConfigIns.PrivateKey == "" {
 			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")

@@ -112,7 +112,7 @@ func GetConfigDir() string {
 //HandleBizError 处理RetCode != 0 的业务异常
 func HandleBizError(resp response.Common) error {
 	format := "Something wrong. RetCode:%d. Message:%s\n"
-	Cxt.Printf(format, resp.GetRetCode(), resp.GetMessage())
+	LogError(fmt.Sprintf(format, resp.GetRetCode(), resp.GetMessage()))
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
@@ -213,6 +213,9 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 			field := elemVal.Field(j)
 			fieldName := elemType.Field(j).Name
 			if _, ok := showFieldMap[fieldName]; ok {
+				if field.Kind() == reflect.Ptr {
+					field = field.Elem()
+				}
 				text := fmt.Sprintf("%v", field.Interface())
 				cells := strings.Split(text, "\n")
 				for i, cell := range cells {
@@ -622,8 +625,24 @@ func Confirm(yes bool, text string) bool {
 	}
 	sure, err := ux.Prompt(text)
 	if err != nil {
-		Cxt.Println(err)
+		LogError(err.Error())
 		return false
 	}
 	return sure
+}
+
+func curGoroutineID() int64 {
+	var (
+		buf [64]byte
+		n   = runtime.Stack(buf[:], false)
+		stk = strings.TrimPrefix(string(buf[:n]), "goroutine ")
+	)
+
+	idField := strings.Fields(stk)[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Errorf("can not get goroutine id: %v", err))
+	}
+
+	return int64(id)
 }
