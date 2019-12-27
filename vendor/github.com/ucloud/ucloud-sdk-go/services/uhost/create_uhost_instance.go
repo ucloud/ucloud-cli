@@ -114,6 +114,12 @@ type CreateUHostInstanceRequest struct {
 	// 最低cpu平台，枚举值["Intel/Auto", "Intel/LvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake"(只有O型云主机可选)]
 	MinimalCpuPlatform *string `required:"false"`
 
+	// 【批量创建主机时必填】最大创建主机数量，取值范围是[1,100];
+	MaxCount *int `required:"false"`
+
+	// GPU类型，枚举值["K80", "P40", "V100"]，MachineType为G时必填
+	GpuType *string `required:"false"`
+
 	// NetworkInterface
 	NetworkInterface []CreateUHostInstanceParamNetworkInterface
 }

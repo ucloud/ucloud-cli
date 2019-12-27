@@ -29,6 +29,7 @@ type ResizeAttachedDiskRequest struct {
 
 	// 磁盘ID。参见 [DescribeUHostInstance](describe_uhost_instance.html)返回值中的DiskSet。
 	DiskId *string `required:"true"`
+	DryRun *bool
 }
 
 // ResizeAttachedDiskResponse is response schema for ResizeAttachedDisk action
@@ -36,7 +37,8 @@ type ResizeAttachedDiskResponse struct {
 	response.CommonBase
 
 	// 改配成功的磁盘id
-	DiskId string
+	DiskId      string
+	NeedRestart bool
 }
 
 // NewResizeAttachedDiskRequest will create request of ResizeAttachedDisk action.
