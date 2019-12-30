@@ -127,13 +127,16 @@ type concurrentAction struct {
 	tokens     chan bool
 }
 
-func newConcurrentAction(reqs []request.Common, actionFunc func(request.Common) (bool, []string)) *concurrentAction {
+func newConcurrentAction(reqs []request.Common, limit int, actionFunc func(request.Common) (bool, []string)) *concurrentAction {
+	if limit <= 0 {
+		limit = 10
+	}
 	return &concurrentAction{
 		reqs:       reqs,
 		actionFunc: actionFunc,
 		wg:         &sync.WaitGroup{},
 		result:     make(chan bool),
-		tokens:     make(chan bool, 10), //控制并发量，最多是个并发
+		tokens:     make(chan bool, limit), //控制并发量，最多是个并发
 	}
 }
 
@@ -168,11 +171,12 @@ func (c *concurrentAction) Do() {
 				}
 
 			case <-time.Tick(time.Second / 30):
-				if count > 5 {
-					refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
-				}
 				if count == (success+fail) && fail > 0 {
 					fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
+					return
+				}
+				if count > 5 {
+					refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
 				}
 			}
 		}

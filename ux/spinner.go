@@ -43,11 +43,19 @@ func (s *Spinner) Stop() {
 	fmt.Fprintf(s.out, output)
 }
 
-// Timeout  stop render
+// Timeout stop render
 func (s *Spinner) Timeout() {
 	s.ticker.Stop()
 	s.reset()
 	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.TimeoutText)
+	fmt.Fprintf(s.out, output)
+}
+
+// Fail stop render
+func (s *Spinner) Fail(err error) {
+	s.ticker.Stop()
+	s.reset()
+	output := fmt.Sprintf("%s...fail: %v\n", s.DoingText, err)
 	fmt.Fprintf(s.out, output)
 }
 

@@ -326,7 +326,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			wg := &sync.WaitGroup{}
-			tokens := make(chan struct{}, 10)
+			tokens := make(chan struct{}, 20)
 			wg.Add(count)
 			if count <= 5 {
 				for i := 0; i < count; i++ {
@@ -582,7 +582,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 				_req.UHostId = sdk.String(id)
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, deleteUHost)
+			coAction := newConcurrentAction(reqs, 50, deleteUHost)
 			coAction.Do()
 		},
 	}
@@ -595,7 +595,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
-	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
+	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", true, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.Flags().SetFlagValues("destroy", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
@@ -679,19 +679,34 @@ func NewCmdUHostStop(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer) {
+func promptStopUhostIns(req *uhost.StopUHostInstanceRequest, yes, async bool, promptText string, out io.Writer) bool {
+	if !yes {
+		agreeClose, err := ux.Prompt(promptText)
+		if err != nil {
+			base.LogError(err.Error())
+			return false
+		}
+		if !agreeClose {
+			return false
+		}
+	}
+	return stopUhostIns(req, false, out)
+}
+
+func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer) bool {
 	resp, err := base.BizClient.StopUHostInstance(req)
 	if err != nil {
 		base.HandleError(err)
-	} else {
-		text := fmt.Sprintf("uhost[%v] is shutting down", resp.UhostId)
-		if async {
-			fmt.Fprintln(out, text)
-		} else {
-			poller := base.NewPoller(describeUHostByID, out)
-			poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
-		}
+		return false
 	}
+
+	text := fmt.Sprintf("uhost [%v] is shutting down", resp.UhostId)
+	if async {
+		fmt.Fprintln(out, text)
+		return false
+	}
+	poller := base.NewPoller(describeUHostByID, out)
+	return poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
 }
 
 //可并发调用版本
@@ -847,8 +862,41 @@ func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func resizeUhost(req *uhost.ResizeUHostInstanceRequest) {
+func resizeAttachedDisk(out io.Writer, req *uhost.ResizeAttachedDiskRequest, host *uhost.UHostInstanceSet, yes, async bool, promptText string) error {
+	req.UHostId = &host.UHostId
+	if host.State == status.HOST_RUNNING {
+		err := tryStopUhost(req, host.UHostId, promptText, yes, async, out)
+		if err != nil {
+			return fmt.Errorf("try to stop uhost error :%w", err)
+		}
+	}
+	req.DryRun = sdk.Bool(false)
+	_, err := base.BizClient.ResizeAttachedDisk(req)
+	if err != nil {
+		return err
+	}
+	text := fmt.Sprintf("uhost [%s] disk [%s] resize", host.UHostId, *req.DiskId)
+	if async {
+		fmt.Fprintln(out, text)
+	} else {
+		poller := base.NewPoller(describeUHostByID, out)
+		poller.Poll(host.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+	}
+	return nil
+}
 
+func tryStopUhost(req *uhost.ResizeAttachedDiskRequest, uhostID, promptText string, yes, async bool, out io.Writer) error {
+	req.DryRun = sdk.Bool(true)
+	resp, err := base.BizClient.ResizeAttachedDisk(req)
+	if err != nil {
+		return err
+	}
+	if resp.NeedRestart {
+		stopReq := base.BizClient.NewStopUHostInstanceRequest()
+		stopReq.UHostId = &uhostID
+		promptStopUhostIns(stopReq, yes, async, promptText, out)
+	}
+	return nil
 }
 
 //NewCmdUHostResize ucloud uhost resize
@@ -881,34 +929,24 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 					return
 				}
 				inst := host.(*uhost.UHostInstanceSet)
-				if inst.State == "Running" {
-					if !*yes {
-						confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
-						if len(*uhostIDs) > 1 {
-							confirmText = "Resize uhost must be done after the uhost is stopped. Do you want to stop those uhosts?"
-						}
-						agreeClose, err := ux.Prompt(confirmText)
-						if err != nil {
-							base.Cxt.Println(err)
-							return
-						}
-						if !agreeClose {
-							return
+				stopReq := base.BizClient.NewStopUHostInstanceRequest()
+				stopReq.ProjectId = req.ProjectId
+				stopReq.Region = req.Region
+				stopReq.Zone = req.Zone
+				stopReq.UHostId = &id
+				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
+				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
+					if inst.State == status.HOST_RUNNING {
+						ret := promptStopUhostIns(stopReq, *yes, *async, confirmText, out)
+						if ret {
+							inst.State = status.HOST_STOPPED
 						}
 					}
-					_req := base.BizClient.NewStopUHostInstanceRequest()
-					_req.ProjectId = req.ProjectId
-					_req.Region = req.Region
-					_req.Zone = req.Zone
-					_req.UHostId = &id
-					stopUhostIns(_req, false, out)
-				}
-				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
 					resp, err := base.BizClient.ResizeUHostInstance(req)
 					if err != nil {
 						base.HandleError(err)
 					} else {
-						text := fmt.Sprintf("uhost [%v] cpu, memory resized", resp.UhostId)
+						text := fmt.Sprintf("uhost [%v] cpu, memory resize", resp.UhostId)
 						if *async {
 							fmt.Fprintln(out, text)
 						} else {
@@ -937,7 +975,13 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 							_req.DiskSpace = &bootDiskSize
 							_req.DiskId = &bootDisk.DiskId
 						}
-					} else if dataDiskSize != 0 {
+						err := resizeAttachedDisk(out, _req, inst, *yes, *async, confirmText)
+						if err != nil {
+							base.HandleError(err)
+						}
+					}
+
+					if dataDiskSize != 0 {
 						var dataDisk uhost.UHostDiskSet
 						if len(dataDisks) > 1 {
 							if dataDiskID == "" {
@@ -964,21 +1008,9 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 						}
 						_req.DiskSpace = &dataDiskSize
 						_req.DiskId = &dataDisk.DiskId
-					}
-					_req.ProjectId = req.ProjectId
-					_req.Region = req.Region
-					_req.Zone = req.Zone
-					_req.UHostId = &id
-					_, err := base.BizClient.ResizeAttachedDisk(_req)
-					if err != nil {
-						base.HandleError(err)
-					} else {
-						text := fmt.Sprintf("uhost [%v] disk resized", id)
-						if *async {
-							fmt.Fprintln(out, text)
-						} else {
-							poller := base.NewPoller(describeUHostByID, out)
-							poller.Poll(id, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+						err := resizeAttachedDisk(out, _req, inst, *yes, *async, confirmText)
+						if err != nil {
+							base.HandleError(err)
 						}
 					}
 				}
@@ -1018,7 +1050,7 @@ func describeUHostByID(uhostID, projectID, region, zone string) (interface{}, er
 		return nil, err
 	}
 	if len(resp.UHostSet) < 1 {
-		return nil, nil
+		return nil, fmt.Errorf("uhost [%s] does not exist", uhostID)
 	}
 
 	return &resp.UHostSet[0], nil

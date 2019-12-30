@@ -302,7 +302,7 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 				_req.GroupId = &id
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, restartRedis)
+			coAction := newConcurrentAction(reqs, 10, restartRedis)
 			coAction.Do()
 		},
 	}
@@ -531,7 +531,7 @@ func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 				_req.GroupId = &id
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, restartMemcache)
+			coAction := newConcurrentAction(reqs, 10, restartMemcache)
 			coAction.Do()
 		},
 	}
