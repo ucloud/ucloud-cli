@@ -21,23 +21,23 @@ type TimeoutError struct {
 }
 
 func (e *TimeoutError) Error() string {
-	errors := []string{"cannot waiting for resource is completed"}
+	errs := []string{"cannot waiting for resource is completed"}
 
 	if e.Timeout > 0 {
-		errors = append(errors, fmt.Sprintf("timeout: %s", e.Timeout))
+		errs = append(errs, fmt.Sprintf("timeout: %s", e.Timeout))
 	}
 
 	if e.LastState != "" {
-		errors = append(errors, fmt.Sprintf("last state: %q", e.LastState))
+		errs = append(errs, fmt.Sprintf("last state: %q", e.LastState))
 	}
 
 	if len(e.ExpectedStates) > 0 {
-		errors = append(errors, fmt.Sprintf("want: %q", strings.Join(e.ExpectedStates, ",")))
+		errs = append(errs, fmt.Sprintf("want: %q", strings.Join(e.ExpectedStates, ",")))
 	}
 
 	if e.LastError != nil {
-		errors = append(errors, fmt.Sprintf("err: %s", e.LastError))
+		errs = append(errs, fmt.Sprintf("err: %s", e.LastError))
 	}
 
-	return strings.Join(errors, ", ")
+	return strings.Join(errs, ", ")
 }
