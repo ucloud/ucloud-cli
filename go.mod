@@ -14,6 +14,6 @@ require (
 )
 
 replace (
-	github.com/spf13/cobra v0.0.3 => github.com/lixiaojun629/cobra v0.0.9
+	github.com/spf13/cobra v0.0.3 => github.com/lixiaojun629/cobra v0.0.10
 	github.com/spf13/pflag v1.0.3 => github.com/lixiaojun629/pflag v1.0.5
 )
