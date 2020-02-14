@@ -303,6 +303,9 @@ func NewCmdUHostCreate() *cobra.Command {
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
 			req.IsolationGroup = sdk.String(base.PickResourceID(*req.IsolationGroup))
+			if *req.Disks[1].Type == "NONE" || *req.Disks[1].Type == "" {
+				req.Disks = req.Disks[:1]
+			}
 			if hotPlug == "true" {
 				req.HotplugFeature = sdk.Bool(true)
 				any, err := describeImageByID(*req.ImageId, *req.ProjectId, *req.Region, *req.Zone)
@@ -400,16 +403,16 @@ func NewCmdUHostCreate() *cobra.Command {
 	bindRegion(req, flags)
 	bindZone(req, flags)
 
-	req.MachineType = flags.String("machine-type", "", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
-	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
+	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Accept values: Normal, Super and Ultra. 'Normal' will disable network enhancement. 'Super' will enable network enhancement 1.0. 'Ultra' will enable network enhancement 2.0")
 	flags.StringVar(&hotPlug, "hot-plug", "true", "Optional. Enable hot plug feature or not. Accept values: true or false")
 	req.Disks[0].Type = flags.String("os-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
 	req.Disks[0].BackupType = flags.String("os-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Accept values: 'LOCAL_NORMAL','LOCAL_SSD','CLOUD_NORMAL',CLOUD_SSD','CLOUD_RSSD','EXCLUSIVE_LOCAL_DISK' and 'NONE'. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'CLOUD_RSSD', coud rssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination. 'NONE', create uhost without data disk. More details https://docs.ucloud.cn/api/uhost-api/disk_type")
 	req.Disks[1].Size = flags.Int("data-disk-size-gb", 20, "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
@@ -423,10 +426,10 @@ func NewCmdUHostCreate() *cobra.Command {
 	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
 	flags.SetFlagValues("machine-type", "N", "C", "G", "O")
 	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
-	flags.SetFlagValues("net-capability", "Normal", "Super")
+	flags.SetFlagValues("net-capability", "Normal", "Super", "Ultra")
 	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
-	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
+	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK", "NONE")
 	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
 	flags.SetFlagValues("create-eip-line", "BGP", "International")
 	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
