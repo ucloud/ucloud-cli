@@ -167,6 +167,9 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 				fmt.Fprintln(out, "length of name should be between 6 and 63")
 				return
 			}
+			if password != "" {
+				req.Password = &password
+			}
 			if redisType == "master-replica" {
 				resp, err := base.BizClient.CreateURedisGroup(req)
 				if err != nil {

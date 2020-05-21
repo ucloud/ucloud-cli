@@ -470,7 +470,7 @@ func NewCmdEIPModifyBandwidth() *cobra.Command {
 		Use:     "modify-bw",
 		Short:   "Modify bandwith of EIP instances",
 		Long:    "Modify bandwith of EIP instances",
-		Example: "ucloud eip modify-bw --eip-id eip-xxx --bandwidth-mb 20",
+		Example: "ucloud eip modify-bw --eip-id eip-xx1,eip-xx2 --bandwidth-mb 20",
 		// Deprecated: "use 'ucloud eip modiy'",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, id := range ids {
