@@ -513,7 +513,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 			return false, logs
 		}
 		block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
-	} else if *eipReq.Bandwidth != 0 {
+	} else if *eipReq.Bandwidth != 0 || *eipReq.PayMode=="ShareBandwidth"{
 		eipReq.ChargeType = req.ChargeType
 		eipReq.Tag = req.Tag
 		eipReq.Quantity = req.Quantity
