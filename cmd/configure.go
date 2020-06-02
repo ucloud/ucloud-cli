@@ -71,7 +71,7 @@ func NewCmdInit() *cobra.Command {
 			base.ConfigIns.Zone = region.DefaultZone
 			fmt.Printf("Configured default region:%s zone:%s\n", region.DefaultRegion, region.DefaultZone)
 
-			projectID, projectName, err := getDefaultProject()
+			projectID, projectName, err := getDefaultProjectWithConfig(base.ConfigIns)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -91,6 +91,7 @@ func NewCmdInit() *cobra.Command {
 			if err != nil {
 				base.HandleError(fmt.Errorf("Error: %v", err))
 			} else {
+				base.InitConfig()
 				printHello()
 			}
 		},

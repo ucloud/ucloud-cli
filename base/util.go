@@ -145,7 +145,10 @@ func PrintJSON(dataSet interface{}, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(out, string(bytes))
+	_, err = fmt.Fprintln(out, string(bytes))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -208,7 +211,7 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 	for i := 0; i < listVal.Len(); i++ {
 		elemVal := listVal.Index(i)
 		elemType := elemVal.Type()
-		rows := []map[string]interface{}{}
+		var rows []map[string]interface{}
 		for j := 0; j < elemVal.NumField(); j++ {
 			field := elemVal.Field(j)
 			fieldName := elemType.Field(j).Name

@@ -144,6 +144,13 @@ func addChildren(root *cobra.Command) {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	cmd := NewCmdRoot()
+	if base.InCloudShell {
+		err := base.InitConfigInCloudShell()
+		if err != nil {
+			base.HandleError(err)
+			return
+		}
+	}
 	base.InitConfig()
 	addChildren(cmd)
 	if err := cmd.Execute(); err != nil {
@@ -220,6 +227,9 @@ func initialize(cmd *cobra.Command) {
 	}
 
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
+		if base.InCloudShell {
+			return
+		}
 		if base.ConfigIns.PrivateKey == "" {
 			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)

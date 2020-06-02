@@ -145,10 +145,9 @@ func listProject(out io.Writer) error {
 		return base.HandleBizError(resp)
 	}
 	if global.JSON {
-		base.PrintJSON(resp.ProjectSet, out)
-	} else {
-		base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
+		return base.PrintJSON(resp.ProjectSet, out)
 	}
+	base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
 	return nil
 }
 

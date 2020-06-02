@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,8 @@ var ConfigFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "config.json")
 
 //CredentialFilePath path of credential.json
 var CredentialFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "credential.json")
+
+var CredentialFilePathInCloudShell = os.Getenv("CLOUD_SHELL_CREDENTIAL_FILE")
 
 //LocalFileMode file mode of $HOME/ucloud/*
 const LocalFileMode os.FileMode = 0600
@@ -36,7 +39,9 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.32"
+const Version = "0.1.33"
+
+var InCloudShell = os.Getenv("CLOUD_SHELL") == "true"
 
 //ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
@@ -53,7 +58,7 @@ var AggConfigListIns = &AggConfigManager{}
 var ClientConfig *sdk.Config
 
 //AuthCredential 创建sdk client参数
-var AuthCredential *auth.Credential
+var AuthCredential *CredentialConfig
 
 //BizClient 用于调用业务接口
 var BizClient *Client
@@ -94,6 +99,8 @@ type CLIConfig struct {
 type CredentialConfig struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
+	Cookie     string `json:"cookie"`
+	CSRFToken  string `json:"csrf_token"`
 	Profile    string `json:"profile"`
 }
 
@@ -108,6 +115,8 @@ type AggConfig struct {
 	Timeout        int    `json:"timeout_sec"`
 	PublicKey      string `json:"public_key"`
 	PrivateKey     string `json:"private_key"`
+	Cookie         string `json:"cookie"`
+	CSRFToken      string `json:"csrf_token"`
 	MaxRetryTimes  *int   `json:"max_retry_times"`
 	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
@@ -208,6 +217,8 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 	target.Profile = p.Profile
 	target.PrivateKey = p.PrivateKey
 	target.PublicKey = p.PublicKey
+	target.Cookie = p.Cookie
+	target.CSRFToken = p.CSRFToken
 }
 
 //AggConfigManager 配置管理
@@ -314,6 +325,8 @@ func (p *AggConfigManager) Load() error {
 		p.configs[profile] = &AggConfig{
 			PrivateKey:     cred.PrivateKey,
 			PublicKey:      cred.PublicKey,
+			Cookie:         cred.Cookie,
+			CSRFToken:      cred.CSRFToken,
 			Profile:        config.Profile,
 			ProjectID:      config.ProjectID,
 			Region:         config.Region,
@@ -336,10 +349,105 @@ func (p *AggConfigManager) Load() error {
 	return nil
 }
 
+type CredHeader struct {
+	Key   string
+	Value []string
+}
+
+type project struct {
+	ProjectId   string
+	ProjectName string
+}
+
+type region struct {
+	Region string
+	Zone   string
+}
+
+func NewInCloudShell() (*AggConfigManager, error) {
+	credFile, err := os.OpenFile(CredentialFilePathInCloudShell, os.O_RDONLY, LocalFileMode)
+	if err != nil {
+		return nil, fmt.Errorf("open credential file error: %w", err)
+	}
+	data, err := ioutil.ReadAll(credFile)
+	if err != nil {
+		return nil, fmt.Errorf("read from credential file error: %w", err)
+	}
+	var creds []CredHeader
+	err = json.Unmarshal(data, &creds)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal credential file error: %w", err)
+	}
+
+	var cookie string
+	var tokenMap map[string]string
+	for _, header := range creds {
+		key := strings.ToLower(header.Key)
+		if key == "cookie" {
+			cookie = header.Value[0]
+			tokenMap, err = parseCookie(header.Value[0])
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	email := tokenMap["U_USER_EMAIL"]
+	email = strings.ReplaceAll(email, ".", "_")
+	email = strings.ReplaceAll(email, "@", "_")
+	projectKey := fmt.Sprintf("c_project_%s", email)
+	regionKey := fmt.Sprintf("c_last_region_%s", email)
+	var proj project
+	var reg region
+	err = json.Unmarshal([]byte(tokenMap[projectKey]), &proj)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(tokenMap[regionKey]), &reg)
+	if err != nil {
+		return nil, err
+	}
+	ac := &AggConfig{
+		Cookie:        cookie,
+		Profile:       DefaultProfile,
+		Active:        true,
+		BaseURL:       DefaultBaseURL,
+		ProjectID:     proj.ProjectId,
+		Region:        reg.Region,
+		Zone:          reg.Zone,
+		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
+		CSRFToken:     tokenMap["CSRF_TOKEN"],
+		Timeout:       DefaultTimeoutSec,
+	}
+
+	aggConfigs := make(map[string]*AggConfig, 0)
+	aggConfigs[DefaultProfile] = ac
+
+	return &AggConfigManager{
+		activeProfile: DefaultProfile,
+		configs:       aggConfigs,
+	}, nil
+}
+
+func parseCookie(str string) (map[string]string, error) {
+	items := strings.Split(str, ";")
+	tokenMap := make(map[string]string, 0)
+	for _, str := range items {
+		strs := strings.SplitN(str, "=", 2)
+		if len(strs) == 2 {
+			v, err := url.QueryUnescape(strings.TrimSpace(strs[1]))
+			if err != nil {
+				return tokenMap, err
+			}
+			tokenMap[strings.TrimSpace(strs[0])] = v
+		}
+	}
+	return tokenMap, nil
+}
+
 //Save configs to local file
 func (p *AggConfigManager) Save() error {
-	clics := []*CLIConfig{}
-	credcs := []*CredentialConfig{}
+	var clics []*CLIConfig
+	var credcs []*CredentialConfig
 	for _, aggConfig := range p.configs {
 		cliConfig := &CLIConfig{}
 		aggConfig.copyToCLIConfig(cliConfig)
@@ -475,9 +583,12 @@ func ListAggConfig(json bool) {
 		aggConfigs[idx].PublicKey = MosaicString(ac.PublicKey, 8, 5)
 	}
 	if json {
-		PrintJSON(aggConfigs, os.Stdout)
+		err := PrintJSON(aggConfigs, os.Stdout)
+		if err != nil {
+			HandleError(err)
+		}
 	} else {
-		PrintTableS(aggConfigs)
+		PrintTable(aggConfigs, []string{"Profile", "Active", "ProjectID", "Region", "Zone", "BaseURL", "Timeout", "PublicKey", "PrivateKey", "MaxRetryTimes", "AgreeUploadLog"})
 	}
 }
 
@@ -543,13 +654,18 @@ type OldConfig struct {
 func (p *OldConfig) Load() error {
 	if _, err := os.Stat(ConfigFilePath); os.IsNotExist(err) {
 		p = new(OldConfig)
-	} else {
-		content, err := ioutil.ReadFile(ConfigFilePath)
-		if err != nil {
-			return err
-		}
-		json.Unmarshal(content, p)
+		return nil
 	}
+
+	content, err := ioutil.ReadFile(ConfigFilePath)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(content, p)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -578,14 +694,6 @@ func adaptOldConfig() error {
 	return AggConfigListIns.Append(ac)
 }
 
-func init() {
-	bc, err := GetBizClient(ConfigIns)
-	if err != nil {
-		HandleError(err)
-	}
-	BizClient = bc
-}
-
 //GetBizClient 初始化BizClient
 func GetBizClient(ac *AggConfig) (*Client, error) {
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
@@ -601,11 +709,61 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		ProjectId:  ac.ProjectID,
 		MaxRetries: *ac.MaxRetryTimes,
 	}
-	AuthCredential = &auth.Credential{
+	AuthCredential = &CredentialConfig{
 		PublicKey:  ac.PublicKey,
 		PrivateKey: ac.PrivateKey,
+		Cookie:     ac.Cookie,
+		CSRFToken:  ac.CSRFToken,
 	}
 	return NewClient(ClientConfig, AuthCredential), err
+}
+
+func InitConfigInCloudShell() error {
+	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil {
+		return err
+	}
+	credFile, err := os.OpenFile(CredentialFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(credFile)
+	if err != nil {
+		return err
+	}
+	if len(data) > 0 {
+		var credConfigs []CredentialConfig
+		err = json.Unmarshal(data, &credConfigs)
+		if err != nil {
+			return err
+		}
+		if len(credConfigs) > 0 {
+			cred := credConfigs[0]
+			if cred.Cookie != "" && cred.CSRFToken != "" {
+				return nil
+			}
+		}
+	}
+
+	AggConfigM, err := NewInCloudShell()
+	if err != nil {
+		return err
+	}
+
+	AggConfigM.credFile = credFile
+	AggConfigM.configFile = configFile
+	ins, err := AggConfigM.GetActiveAggConfig()
+	if err != nil {
+		return err
+	}
+	ConfigIns = ins
+	bc, err := GetBizClient(ConfigIns)
+	if err != nil {
+		return err
+	}
+	BizClient = bc
+	return AggConfigM.Save()
 }
 
 //InitConfig 初始化配置
@@ -622,30 +780,31 @@ func InitConfig() {
 	AggConfigListIns, err = NewAggConfigManager(configFile, credFile)
 	if err != nil {
 		LogError(err.Error())
-	} else {
-		var ins *AggConfig
-		if Global.Profile == "" {
-			ins, err = AggConfigListIns.GetActiveAggConfig()
-			if err != nil && len(AggConfigListIns.GetAggConfigList()) != 0 {
-				HandleError(err)
-			}
-		} else {
-			ins, _ = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
-		}
+		return
+	}
 
-		if ins != nil {
-			ConfigIns = ins
-		}
-
-		mergeConfigIns(ConfigIns)
-		logCmd()
-
-		bc, err := GetBizClient(ConfigIns)
-		if err != nil {
+	var ins *AggConfig
+	if Global.Profile == "" {
+		ins, err = AggConfigListIns.GetActiveAggConfig()
+		if err != nil && len(AggConfigListIns.GetAggConfigList()) != 0 {
 			HandleError(err)
-		} else {
-			BizClient = bc
 		}
+	} else {
+		ins, _ = AggConfigListIns.GetAggConfigByProfile(Global.Profile)
+	}
+
+	if ins != nil {
+		ConfigIns = ins
+	}
+
+	mergeConfigIns(ConfigIns)
+	logCmd()
+
+	bc, err := GetBizClient(ConfigIns)
+	if err != nil {
+		HandleError(err)
+	} else {
+		BizClient = bc
 	}
 }
 
