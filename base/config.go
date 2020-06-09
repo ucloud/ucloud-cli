@@ -41,6 +41,8 @@ const DefaultProfile = "default"
 //Version 版本号
 const Version = "0.1.33"
 
+var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
+
 var InCloudShell = os.Getenv("CLOUD_SHELL") == "true"
 
 //ConfigIns 配置实例, 程序加载时生成
@@ -703,7 +705,7 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 	ClientConfig = &sdk.Config{
 		BaseUrl:    ac.BaseURL,
 		Timeout:    timeout,
-		UserAgent:  fmt.Sprintf("UCloud-CLI/%s", Version),
+		UserAgent:  UserAgent,
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
 		ProjectId:  ac.ProjectID,

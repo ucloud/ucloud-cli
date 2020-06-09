@@ -57,9 +57,9 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 					log.Fatal(err)
 				}
 			case "douku":
-				prefix := "developer/cli/cmd/"
+				prefix := "cli/cmd/"
 				err := doc.GenDoukuTree(rootCmd, dir, prefix)
-				printCmdIndex(rootCmd, 0, "developer/cli/cmd")
+				printCmdIndex(rootCmd, 0, "/cli/cmd")
 				if err != nil {
 					log.Fatal(err)
 				}

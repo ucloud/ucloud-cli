@@ -277,7 +277,7 @@ func (t Tracer) Send(logs []string) error {
 	}
 
 	client := &http.Client{}
-	ua := fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, ClientConfig.UserAgent)
+	ua := fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, UserAgent)
 	req, err := http.NewRequest("POST", t.DasUrl, bytes.NewReader(body))
 	req.Header.Add("Origin", "https://sdk.ucloud.cn")
 	req.Header.Add("User-Agent", ua)
