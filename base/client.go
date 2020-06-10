@@ -1,6 +1,7 @@
 package base
 
 import (
+	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
 	ppathx "github.com/ucloud/ucloud-sdk-go/private/services/pathx"
 	pudb "github.com/ucloud/ucloud-sdk-go/private/services/udb"
 	puhost "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
@@ -53,10 +54,25 @@ type Client struct {
 }
 
 // NewClient will return a aggregate client
-func NewClient(config *sdk.Config, credential *auth.Credential) *Client {
+func NewClient(config *sdk.Config, credConfig *CredentialConfig) *Client {
 	var handler sdk.RequestHandler = func(c *sdk.Client, req request.Common) (request.Common, error) {
 		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
 		return req, err
+	}
+	var injectCredHeader sdk.HttpRequestHandler = func(c *sdk.Client, req *http.HttpRequest) (*http.HttpRequest, error) {
+		err := req.SetHeader("Cookie", credConfig.Cookie)
+		if err != nil {
+			return req, err
+		}
+		err = req.SetHeader("Csrf-Token", credConfig.CSRFToken)
+		if err != nil {
+			return req, err
+		}
+		return req, err
+	}
+	credential := &auth.Credential{
+		PublicKey:  credConfig.PublicKey,
+		PrivateKey: credConfig.PrivateKey,
 	}
 	var (
 		uaccountClient = *uaccount.NewClient(config, credential)
@@ -77,20 +93,49 @@ func NewClient(config *sdk.Config, credential *auth.Credential) *Client {
 	)
 
 	uaccountClient.Client.AddRequestHandler(handler)
+	uaccountClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	uhostClient.Client.AddRequestHandler(handler)
+	uhostClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	unetClient.Client.AddRequestHandler(handler)
+	unetClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	vpcClient.Client.AddRequestHandler(handler)
+	vpcClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	udpnClient.Client.AddRequestHandler(handler)
+	udpnClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	pathxClient.Client.AddRequestHandler(handler)
+	pathxClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	udiskClient.Client.AddRequestHandler(handler)
+	udiskClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	ulbClient.Client.AddRequestHandler(handler)
+	ulbClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	udbClient.Client.AddRequestHandler(handler)
+	udbClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	umemClient.Client.AddRequestHandler(handler)
+	umemClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	uphostClient.Client.AddRequestHandler(handler)
+	uphostClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	puhostClient.Client.AddRequestHandler(handler)
+	puhostClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	pudbClient.Client.AddRequestHandler(handler)
+	pudbClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	pumemClient.Client.AddRequestHandler(handler)
+	pumemClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	ppathxClient.Client.AddRequestHandler(handler)
+	ppathxClient.Client.AddHttpRequestHandler(injectCredHeader)
 
 	return &Client{
 		uaccountClient,

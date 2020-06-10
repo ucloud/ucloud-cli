@@ -145,7 +145,10 @@ func PrintJSON(dataSet interface{}, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(out, string(bytes))
+	_, err = fmt.Fprintln(out, string(bytes))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -208,7 +211,7 @@ func displaySlice(listVal reflect.Value, fieldList []string) {
 	for i := 0; i < listVal.Len(); i++ {
 		elemVal := listVal.Index(i)
 		elemType := elemVal.Type()
-		rows := []map[string]interface{}{}
+		var rows []map[string]interface{}
 		for j := 0; j < elemVal.NumField(); j++ {
 			field := elemVal.Field(j)
 			fieldName := elemType.Field(j).Name
@@ -477,7 +480,7 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 }
 
 //Poll function
-func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targetState []string) {
+func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targetState []string) bool {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
@@ -517,14 +520,12 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 		Timeout: p.Timeout,
 	}
 
+	var err error
 	done := make(chan bool)
 	go func() {
-		if _, err := w.Wait(); err != nil {
-			log.Error(err)
-			if _, ok := err.(*waiter.TimeoutError); ok {
-				done <- false
-				return
-			}
+		if _, err = w.Wait(); err != nil {
+			done <- false
+			return
 		}
 		done <- true
 	}()
@@ -532,11 +533,12 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 	spinner := ux.NewDotSpinner(p.Out)
 	spinner.Start(pollText)
 	ret := <-done
-	if ret {
-		spinner.Stop()
+	if err != nil {
+		spinner.Fail(err)
 	} else {
-		spinner.Timeout()
+		spinner.Stop()
 	}
+	return ret
 }
 
 //NewSpoller simple

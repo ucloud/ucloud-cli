@@ -14,7 +14,6 @@
 package doc
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -50,10 +49,6 @@ func GenDoukuTreeCustom(index int, cmd *cobra.Command, dir string, filePrepender
 	defer f.Close()
 
 	if _, err := io.WriteString(f, filePrepender(filename)); err != nil {
-		return err
-	}
-
-	if _, err := io.WriteString(f, fmt.Sprintf("{{indexmenu_n>%d}}\n\n", index)); err != nil {
 		return err
 	}
 

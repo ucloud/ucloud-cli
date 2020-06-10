@@ -167,6 +167,9 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 				fmt.Fprintln(out, "length of name should be between 6 and 63")
 				return
 			}
+			if password != "" {
+				req.Password = &password
+			}
 			if redisType == "master-replica" {
 				resp, err := base.BizClient.CreateURedisGroup(req)
 				if err != nil {
@@ -302,7 +305,7 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 				_req.GroupId = &id
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, restartRedis)
+			coAction := newConcurrentAction(reqs, 10, restartRedis)
 			coAction.Do()
 		},
 	}
@@ -531,7 +534,7 @@ func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 				_req.GroupId = &id
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, restartMemcache)
+			coAction := newConcurrentAction(reqs, 10, restartMemcache)
 			coAction.Do()
 		},
 	}

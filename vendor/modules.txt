@@ -12,12 +12,12 @@ github.com/russross/blackfriday
 github.com/satori/go.uuid
 # github.com/sirupsen/logrus v1.3.0
 github.com/sirupsen/logrus
-# github.com/spf13/cobra v0.0.3 => github.com/lixiaojun629/cobra v0.0.9
+# github.com/spf13/cobra v0.0.3 => github.com/lixiaojun629/cobra v0.0.10
 github.com/spf13/cobra
 github.com/spf13/cobra/doc
 # github.com/spf13/pflag v1.0.3 => github.com/lixiaojun629/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/ucloud/ucloud-sdk-go v0.8.10
+# github.com/ucloud/ucloud-sdk-go v0.16.0
 github.com/ucloud/ucloud-sdk-go/private/protocol/http
 github.com/ucloud/ucloud-sdk-go/private/services/pathx
 github.com/ucloud/ucloud-sdk-go/private/services/udb
@@ -43,9 +43,9 @@ github.com/ucloud/ucloud-sdk-go/ucloud/log
 github.com/ucloud/ucloud-sdk-go/ucloud/request
 github.com/ucloud/ucloud-sdk-go/ucloud/response
 github.com/ucloud/ucloud-sdk-go/ucloud/version
-# golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a
+# golang.org/x/sys v0.0.0-20190412213103-97732733099d
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # gopkg.in/yaml.v2 v2.2.2

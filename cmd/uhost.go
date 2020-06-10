@@ -303,6 +303,9 @@ func NewCmdUHostCreate() *cobra.Command {
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
 			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
 			req.IsolationGroup = sdk.String(base.PickResourceID(*req.IsolationGroup))
+			if *req.Disks[1].Type == "NONE" || *req.Disks[1].Type == "" {
+				req.Disks = req.Disks[:1]
+			}
 			if hotPlug == "true" {
 				req.HotplugFeature = sdk.Bool(true)
 				any, err := describeImageByID(*req.ImageId, *req.ProjectId, *req.Region, *req.Zone)
@@ -326,7 +329,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			wg := &sync.WaitGroup{}
-			tokens := make(chan struct{}, 10)
+			tokens := make(chan struct{}, 20)
 			wg.Add(count)
 			if count <= 5 {
 				for i := 0; i < count; i++ {
@@ -400,16 +403,16 @@ func NewCmdUHostCreate() *cobra.Command {
 	bindRegion(req, flags)
 	bindZone(req, flags)
 
-	req.MachineType = flags.String("machine-type", "", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
-	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Default is 'Normal', also support 'Super' which will enhance multiple times network capability as before")
+	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Accept values: Normal, Super and Ultra. 'Normal' will disable network enhancement. 'Super' will enable network enhancement 1.0. 'Ultra' will enable network enhancement 2.0")
 	flags.StringVar(&hotPlug, "hot-plug", "true", "Optional. Enable hot plug feature or not. Accept values: true or false")
 	req.Disks[0].Type = flags.String("os-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
 	req.Disks[0].Size = flags.Int("os-disk-size-gb", 20, "Optional. Default 20G. Windows should be bigger than 40G Unit GB")
 	req.Disks[0].BackupType = flags.String("os-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Enumeration value. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination.")
+	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Accept values: 'LOCAL_NORMAL','LOCAL_SSD','CLOUD_NORMAL',CLOUD_SSD','CLOUD_RSSD','EXCLUSIVE_LOCAL_DISK' and 'NONE'. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'CLOUD_RSSD', coud rssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination. 'NONE', create uhost without data disk. More details https://docs.ucloud.cn/api/uhost-api/disk_type")
 	req.Disks[1].Size = flags.Int("data-disk-size-gb", 20, "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
@@ -423,10 +426,10 @@ func NewCmdUHostCreate() *cobra.Command {
 	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
 	flags.SetFlagValues("machine-type", "N", "C", "G", "O")
 	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
-	flags.SetFlagValues("net-capability", "Normal", "Super")
+	flags.SetFlagValues("net-capability", "Normal", "Super", "Ultra")
 	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
 	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
-	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "EXCLUSIVE_LOCAL_DISK")
+	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK", "NONE")
 	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
 	flags.SetFlagValues("create-eip-line", "BGP", "International")
 	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
@@ -510,7 +513,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 			return false, logs
 		}
 		block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
-	} else if *eipReq.Bandwidth != 0 {
+	} else if *eipReq.Bandwidth != 0 || *eipReq.PayMode=="ShareBandwidth"{
 		eipReq.ChargeType = req.ChargeType
 		eipReq.Tag = req.Tag
 		eipReq.Quantity = req.Quantity
@@ -582,7 +585,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 				_req.UHostId = sdk.String(id)
 				reqs[idx] = &_req
 			}
-			coAction := newConcurrentAction(reqs, deleteUHost)
+			coAction := newConcurrentAction(reqs, 50, deleteUHost)
 			coAction.Do()
 		},
 	}
@@ -595,7 +598,7 @@ func NewCmdUHostDelete(out io.Writer) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	req.ReleaseEIP = cmd.Flags().Bool("release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
-	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", false, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
+	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", true, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.Flags().SetFlagValues("destroy", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
@@ -679,19 +682,34 @@ func NewCmdUHostStop(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer) {
+func promptStopUhostIns(req *uhost.StopUHostInstanceRequest, yes, async bool, promptText string, out io.Writer) bool {
+	if !yes {
+		agreeClose, err := ux.Prompt(promptText)
+		if err != nil {
+			base.LogError(err.Error())
+			return false
+		}
+		if !agreeClose {
+			return false
+		}
+	}
+	return stopUhostIns(req, false, out)
+}
+
+func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer) bool {
 	resp, err := base.BizClient.StopUHostInstance(req)
 	if err != nil {
 		base.HandleError(err)
-	} else {
-		text := fmt.Sprintf("uhost[%v] is shutting down", resp.UhostId)
-		if async {
-			fmt.Fprintln(out, text)
-		} else {
-			poller := base.NewPoller(describeUHostByID, out)
-			poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
-		}
+		return false
 	}
+
+	text := fmt.Sprintf("uhost [%v] is shutting down", resp.UhostId)
+	if async {
+		fmt.Fprintln(out, text)
+		return false
+	}
+	poller := base.NewPoller(describeUHostByID, out)
+	return poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
 }
 
 //可并发调用版本
@@ -847,8 +865,41 @@ func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func resizeUhost(req *uhost.ResizeUHostInstanceRequest) {
+func resizeAttachedDisk(out io.Writer, req *uhost.ResizeAttachedDiskRequest, host *uhost.UHostInstanceSet, yes, async bool, promptText string) error {
+	req.UHostId = &host.UHostId
+	if host.State == status.HOST_RUNNING {
+		err := tryStopUhost(req, host.UHostId, promptText, yes, async, out)
+		if err != nil {
+			return fmt.Errorf("try to stop uhost error :%w", err)
+		}
+	}
+	req.DryRun = sdk.Bool(false)
+	_, err := base.BizClient.ResizeAttachedDisk(req)
+	if err != nil {
+		return err
+	}
+	text := fmt.Sprintf("uhost [%s] disk [%s] resize", host.UHostId, *req.DiskId)
+	if async {
+		fmt.Fprintln(out, text)
+	} else {
+		poller := base.NewPoller(describeUHostByID, out)
+		poller.Poll(host.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+	}
+	return nil
+}
 
+func tryStopUhost(req *uhost.ResizeAttachedDiskRequest, uhostID, promptText string, yes, async bool, out io.Writer) error {
+	req.DryRun = sdk.Bool(true)
+	resp, err := base.BizClient.ResizeAttachedDisk(req)
+	if err != nil {
+		return err
+	}
+	if resp.NeedRestart {
+		stopReq := base.BizClient.NewStopUHostInstanceRequest()
+		stopReq.UHostId = &uhostID
+		promptStopUhostIns(stopReq, yes, async, promptText, out)
+	}
+	return nil
 }
 
 //NewCmdUHostResize ucloud uhost resize
@@ -881,34 +932,24 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 					return
 				}
 				inst := host.(*uhost.UHostInstanceSet)
-				if inst.State == "Running" {
-					if !*yes {
-						confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
-						if len(*uhostIDs) > 1 {
-							confirmText = "Resize uhost must be done after the uhost is stopped. Do you want to stop those uhosts?"
-						}
-						agreeClose, err := ux.Prompt(confirmText)
-						if err != nil {
-							base.Cxt.Println(err)
-							return
-						}
-						if !agreeClose {
-							return
+				stopReq := base.BizClient.NewStopUHostInstanceRequest()
+				stopReq.ProjectId = req.ProjectId
+				stopReq.Region = req.Region
+				stopReq.Zone = req.Zone
+				stopReq.UHostId = &id
+				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
+				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
+					if inst.State == status.HOST_RUNNING {
+						ret := promptStopUhostIns(stopReq, *yes, *async, confirmText, out)
+						if ret {
+							inst.State = status.HOST_STOPPED
 						}
 					}
-					_req := base.BizClient.NewStopUHostInstanceRequest()
-					_req.ProjectId = req.ProjectId
-					_req.Region = req.Region
-					_req.Zone = req.Zone
-					_req.UHostId = &id
-					stopUhostIns(_req, false, out)
-				}
-				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
 					resp, err := base.BizClient.ResizeUHostInstance(req)
 					if err != nil {
 						base.HandleError(err)
 					} else {
-						text := fmt.Sprintf("uhost [%v] cpu, memory resized", resp.UhostId)
+						text := fmt.Sprintf("uhost [%v] cpu, memory resize", resp.UhostId)
 						if *async {
 							fmt.Fprintln(out, text)
 						} else {
@@ -937,7 +978,13 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 							_req.DiskSpace = &bootDiskSize
 							_req.DiskId = &bootDisk.DiskId
 						}
-					} else if dataDiskSize != 0 {
+						err := resizeAttachedDisk(out, _req, inst, *yes, *async, confirmText)
+						if err != nil {
+							base.HandleError(err)
+						}
+					}
+
+					if dataDiskSize != 0 {
 						var dataDisk uhost.UHostDiskSet
 						if len(dataDisks) > 1 {
 							if dataDiskID == "" {
@@ -964,21 +1011,9 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 						}
 						_req.DiskSpace = &dataDiskSize
 						_req.DiskId = &dataDisk.DiskId
-					}
-					_req.ProjectId = req.ProjectId
-					_req.Region = req.Region
-					_req.Zone = req.Zone
-					_req.UHostId = &id
-					_, err := base.BizClient.ResizeAttachedDisk(_req)
-					if err != nil {
-						base.HandleError(err)
-					} else {
-						text := fmt.Sprintf("uhost [%v] disk resized", id)
-						if *async {
-							fmt.Fprintln(out, text)
-						} else {
-							poller := base.NewPoller(describeUHostByID, out)
-							poller.Poll(id, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+						err := resizeAttachedDisk(out, _req, inst, *yes, *async, confirmText)
+						if err != nil {
+							base.HandleError(err)
 						}
 					}
 				}
@@ -1018,7 +1053,7 @@ func describeUHostByID(uhostID, projectID, region, zone string) (interface{}, er
 		return nil, err
 	}
 	if len(resp.UHostSet) < 1 {
-		return nil, nil
+		return nil, fmt.Errorf("uhost [%s] does not exist", uhostID)
 	}
 
 	return &resp.UHostSet[0], nil
