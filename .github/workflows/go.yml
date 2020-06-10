@@ -1,0 +1,18 @@
+name: Go
+on: [push]
+jobs:
+  docker-buildx:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout master
+        uses: actions/checkout@master
+      -
+        name: Build and publish image
+        uses: zmingxie/docker_buildx@master
+        with:
+          publish: false
+          imageName: uhub.service.ucloud.cn/ucloud-cli
+          dockerHubUser: ${{ secrets.UHUB_ACCOUNT }}
+          dockerHubPassword: ${{ secrets.UHUB_PASS }}
+
