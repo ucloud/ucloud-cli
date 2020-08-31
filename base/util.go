@@ -648,3 +648,54 @@ func curGoroutineID() int64 {
 
 	return int64(id)
 }
+
+func getDefaultRegion(cookie, csrfToken string) (string, string, error) {
+	cfg := &AggConfig{
+		Cookie:        cookie,
+		BaseURL:       DefaultBaseURL,
+		CSRFToken:     csrfToken,
+		Timeout:       DefaultTimeoutSec,
+		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
+	}
+	bc, err := GetBizClient(cfg)
+	req := bc.NewGetRegionRequest()
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := bc.GetRegion(req)
+	if err != nil {
+		return "", "", err
+	}
+	for _, r := range resp.Regions {
+		if r.IsDefault {
+			return r.Region, r.Zone, nil
+		}
+	}
+	return "", "", fmt.Errorf("default region not found")
+}
+
+func getDefaultProject(cookie, csrfToken string) (string, string, error) {
+	cfg := &AggConfig{
+		Cookie:        cookie,
+		BaseURL:       DefaultBaseURL,
+		CSRFToken:     csrfToken,
+		Timeout:       DefaultTimeoutSec,
+		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
+	}
+	bc, err := GetBizClient(cfg)
+	if err != nil {
+		return "", "", err
+	}
+
+	req := bc.NewGetProjectListRequest()
+	resp, err := bc.GetProjectList(req)
+	if err != nil {
+		return "", "", err
+	}
+	for _, project := range resp.ProjectSet {
+		if project.IsDefault == true {
+			return project.ProjectId, project.ProjectName, nil
+		}
+	}
+	return "", "", fmt.Errorf("default project not found")
+}

@@ -400,14 +400,33 @@ func NewInCloudShell() (*AggConfigManager, error) {
 	regionKey := fmt.Sprintf("c_last_region_%s", email)
 	var proj project
 	var reg region
-	err = json.Unmarshal([]byte(tokenMap[projectKey]), &proj)
-	if err != nil {
-		return nil, err
+	if _, ok := tokenMap[projectKey]; ok {
+		err = json.Unmarshal([]byte(tokenMap[projectKey]), &proj)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		id, name, err := getDefaultProject(cookie, tokenMap["CSRF_TOKEN"])
+		if err != nil {
+			return nil, fmt.Errorf("query default project error: %w", err)
+		}
+		proj.ProjectId = id
+		proj.ProjectName = name
 	}
-	err = json.Unmarshal([]byte(tokenMap[regionKey]), &reg)
-	if err != nil {
-		return nil, err
+	if _, ok := tokenMap[regionKey]; ok {
+		err = json.Unmarshal([]byte(tokenMap[regionKey]), &reg)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		region, zone, err := getDefaultRegion(cookie, tokenMap["CSRF_TOKEN"])
+		if err != nil {
+			return nil, fmt.Errorf("query default region error: %w", err)
+		}
+		reg.Region = region
+		reg.Zone = zone
 	}
+
 	ac := &AggConfig{
 		Cookie:        cookie,
 		Profile:       DefaultProfile,
