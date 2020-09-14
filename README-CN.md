@@ -216,3 +216,39 @@ gssh[uga-0psxxx] created
 $ ssh root@152.32.140.92.ipssh.net
 root@152.32.140.92.ipssh.net's password: password of the uhost instance
 ```
+
+使用"ucloud api"命令调用任意API，根据API文档把某个API的参数依次填入。此命令比较特殊，不支持--public-key,--private-key,--debug,--profile,--timeout-sec等公共参数，如果要开启debug模式，可以设置环境变量$UCLOUD_CLI_DEBUG=on
+
+```
+$ ucloud api --Action <APIName>  --Param1 <value> --Param2 <value> ...
+```
+或者把API参数写到JSON文件中，举例如下
+```
+$ ucloud api --local-file ./create_uhost.json
+
+//create_uhost.json文件内容
+{
+    "Action":"CreateUHostInstance",
+    "Region":"cn-bj2",
+    "Zone":"cn-bj2-02",
+    "ImageId":"uimage-gk2x3x",
+    "NetworkInterface": [{
+        "EIP":{
+            "Bandwidth":1,
+            "OperatorName":"Bgp",
+            "PayMode": "Bandwidth"
+        }
+    }],
+    "LoginMode":"Password",
+    "Password":"dGVzdGx4ajEy",
+    "CPU":1,
+    "Memory":2048,
+    "Disks":[
+        {
+            "Size":20,
+            "Type":"LOCAL_NORMAL",
+            "IsBoot":"true"
+        }
+    ]
+}
+```

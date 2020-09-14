@@ -225,3 +225,39 @@ gssh[uga-0psxxx] created
 $ ssh root@152.32.140.92.ipssh.net
 root@152.32.140.92.ipssh.net's password: password of the uhost instance
 ```
+
+Using command "ucloud api" to call any API.Fill in the parameters of an API in sequence according to the API documentation. This command is quite special, and public parameters such as --public-key,--private-key,--debug,--profile,--timeout-sec are not supported. If you want to tune on debug mode, set environment variable $UCLOUD_CLI_DEBUG=on 
+
+```
+$ ucloud api --Action <APIName>  --Param1 <value> --Param2 <value> ...
+```
+You can also put those API parameters into a json file, like this.
+```
+$ ucloud api --local-file ./create_uhost.json
+
+//create_uhost.json文件内容
+{
+    "Action":"CreateUHostInstance",
+    "Region":"cn-bj2",
+    "Zone":"cn-bj2-02",
+    "ImageId":"uimage-gk2x3x",
+    "NetworkInterface": [{
+        "EIP":{
+            "Bandwidth":1,
+            "OperatorName":"Bgp",
+            "PayMode": "Bandwidth"
+        }
+    }],
+    "LoginMode":"Password",
+    "Password":"dGVzdGx4ajEy",
+    "CPU":1,
+    "Memory":2048,
+    "Disks":[
+        {
+            "Size":20,
+            "Type":"LOCAL_NORMAL",
+            "IsBoot":"true"
+        }
+    ]
+}
+```
