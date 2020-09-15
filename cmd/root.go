@@ -21,9 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
-
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
 var global = &base.Global
@@ -129,6 +128,7 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdRedis())
 	root.AddCommand(NewCmdMemcache())
 	root.AddCommand(NewCmdExt())
+	root.AddCommand(NewCmdAPI(out))
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
@@ -144,8 +144,30 @@ func addChildren(root *cobra.Command) {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	cmd := NewCmdRoot()
+	if base.InCloudShell {
+		err := base.InitConfigInCloudShell()
+		if err != nil {
+			base.HandleError(err)
+			return
+		}
+	}
 	base.InitConfig()
+	mode := os.Getenv("UCLOUD_CLI_DEBUG")
+	if mode == "on" || global.Debug {
+		base.ClientConfig.LogLevel = log.DebugLevel
+		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
+	}
+
 	addChildren(cmd)
+
+	targetCmd, flags, err := cmd.Find(os.Args[1:])
+	if err == nil {
+		if targetCmd.Use == "api" {
+			targetCmd.Run(targetCmd, flags)
+			return
+		}
+	}
+
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -213,13 +235,10 @@ func initialize(cmd *cobra.Command) {
 		base.ClientConfig.Zone = zone
 	}
 
-	mode := os.Getenv("UCLOUD_CLI_DEBUG")
-	if mode == "on" || global.Debug {
-		base.ClientConfig.LogLevel = log.DebugLevel
-		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
-	}
-
 	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
+		if base.InCloudShell {
+			return
+		}
 		if base.ConfigIns.PrivateKey == "" {
 			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 			os.Exit(0)
