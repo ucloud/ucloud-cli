@@ -235,7 +235,7 @@ You can also put those API parameters into a json file, like this.
 ```
 $ ucloud api --local-file ./create_uhost.json
 
-//create_uhost.json文件内容
+//content of file create_uhost.json
 {
     "Action":"CreateUHostInstance",
     "Region":"cn-bj2",
