@@ -23,7 +23,7 @@ func (test listUhostTest) run(t *testing.T) {
 	cmd := NewCmdUHostList(buf)
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command:%v", err)
-	
+	}
 }
 
 type listImageTest struct {
