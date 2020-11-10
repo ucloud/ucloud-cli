@@ -288,6 +288,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	var async bool
 	var count int
 	var hotPlugImageFlag bool
+	var userData string
+	var userDataImageFlag bool
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	eipReq := base.BizClient.NewAllocateEIPRequest()
@@ -295,7 +297,7 @@ func NewCmdUHostCreate() *cobra.Command {
 		Use:   "create",
 		Short: "Create UHost instance",
 		Long:  "Create UHost instance",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
@@ -306,25 +308,40 @@ func NewCmdUHostCreate() *cobra.Command {
 			if *req.Disks[1].Type == "NONE" || *req.Disks[1].Type == "" {
 				req.Disks = req.Disks[:1]
 			}
-			if hotPlug == "true" {
-				req.HotplugFeature = sdk.Bool(true)
-				any, err := describeImageByID(*req.ImageId, *req.ProjectId, *req.Region, *req.Zone)
+
+			if hotPlug == "true" || len(userData) > 0 {
+				any, err := describeImageByID(base.PickResourceID(*req.ImageId), *req.ProjectId, *req.Region, *req.Zone)
 				if err != nil {
-					base.LogError(fmt.Sprintf("check image support hot-plug failed: %v", err))
+					return fmt.Errorf("check image support feaures failed: %v", err)
 				} else {
 					image, ok := any.(*uhost.UHostImageSet)
 					if !ok {
-						base.LogError(fmt.Sprintf("check image support hot-plug failed, image %s may not exist", *req.ImageId))
+						return fmt.Errorf("check image support feaures failed, image %s may not exist", *req.ImageId)
 					}
 					for _, feature := range image.Features {
 						if feature == "HotPlug" {
 							hotPlugImageFlag = true
 						}
+						if feature == "CloudInit" {
+							userDataImageFlag = true
+						}
 					}
 				}
-				if !hotPlugImageFlag {
+				if !hotPlugImageFlag && hotPlug == "true" {
 					base.LogWarn(fmt.Sprintf("warning. image %s does not support hot-plug", *req.ImageId))
 					req.HotplugFeature = sdk.Bool(false)
+				}
+
+				if !userDataImageFlag && len(userData) > 0 {
+					return fmt.Errorf("image %s does not support user-data feature", *req.ImageId)
+				}
+
+				if hotPlug == "true" {
+					req.HotplugFeature = sdk.Bool(true)
+				}
+
+				if len(userData) > 0 {
+					req.UserData = sdk.String(base64.StdEncoding.EncodeToString([]byte(userData)))
 				}
 			}
 
@@ -371,6 +388,7 @@ func NewCmdUHostCreate() *cobra.Command {
 				}()
 			}
 			wg.Wait()
+			return nil
 		},
 	}
 
@@ -380,8 +398,8 @@ func NewCmdUHostCreate() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32}")
-	req.Memory = flags.Int("memory-gb", 8, "Required. Memory size. Unit: GB. Range: [1, 128], multiple of 2")
+	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32, 64}")
+	req.Memory = flags.Int("memory-gb", 8, "Required. Memory size. Unit: GB. Range: [1, 512], multiple of 2")
 	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
@@ -403,8 +421,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	bindRegion(req, flags)
 	bindZone(req, flags)
 
-	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
-	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accpet values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
+	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O, OS. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accept values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
 	req.NetCapability = flags.String("net-capability", "Normal", "Optional. Accept values: Normal, Super and Ultra. 'Normal' will disable network enhancement. 'Super' will enable network enhancement 1.0. 'Ultra' will enable network enhancement 2.0")
@@ -418,13 +436,15 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.IsolationGroup = flags.String("isolation-group", "", "Optional. Resource ID of isolation group. see 'ucloud uhost isolation-group list")
+	req.GpuType = flags.String("gpu-type", "", "Optional. The type of GPU instance. Required if defined the `machine-type` as 'G'. Accept values: 'K80', 'P40', 'V100'. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details.")
+	flags.StringVar(&userData, "user-data", "", "Optional. Customize the startup behaviors when launching the instance. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
 
 	flags.MarkDeprecated("type", "please use --machine-type instead")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
 	flags.SetFlagValues("hot-plug", "true", "false")
-	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32")
+	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32", "64")
 	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
-	flags.SetFlagValues("machine-type", "N", "C", "G", "O")
+	flags.SetFlagValues("machine-type", "N", "C", "G", "O", "OS")
 	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
 	flags.SetFlagValues("net-capability", "Normal", "Super", "Ultra")
 	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
@@ -433,6 +453,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
 	flags.SetFlagValues("create-eip-line", "BGP", "International")
 	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	flags.SetFlagValues("gpu-type", "K80", "P40", "V100")
 
 	flags.SetFlagValuesFunc("image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE}, cli.IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
@@ -496,7 +517,13 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 		return false, logs
 	}
 
-	text := fmt.Sprintf("uhost[%s] is initializing", resp.UHostIds[0])
+	var text string
+	if len(req.Disks) > 1 {
+		text = fmt.Sprintf("the uhost[%s] which attached a data disk is initializing", resp.UHostIds[0])
+	} else {
+		text = fmt.Sprintf("the uhost[%s] is initializing", resp.UHostIds[0])
+	}
+
 	if async {
 		block.Append(text)
 	} else {
@@ -513,7 +540,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 			return false, logs
 		}
 		block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
-	} else if *eipReq.Bandwidth != 0 || *eipReq.PayMode=="ShareBandwidth"{
+	} else if *eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth" {
 		eipReq.ChargeType = req.ChargeType
 		eipReq.Tag = req.Tag
 		eipReq.Quantity = req.Quantity
