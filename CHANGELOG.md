@@ -2,6 +2,12 @@
 
 ENHANCEMENTS:
 
+* add the flag `--user-data-base64` about command `ucloud uhost create` to customize the startup behaviors when launching the uhost instance and the value must be base64-encode.(#55)
+
+## 0.1.34 (2020-11-11)
+
+ENHANCEMENTS:
+
 * add the flag `--user-data` about command `ucloud uhost create` to customize the startup behaviors when launching the uhost instance.(#54)
 * add the flag `--gpu-type` about command `ucloud uhost create` to define the type of GPU instance.(#54)
 

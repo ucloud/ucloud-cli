@@ -290,6 +290,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	var hotPlugImageFlag bool
 	var userData string
 	var userDataImageFlag bool
+	var userDataBase64 string
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	eipReq := base.BizClient.NewAllocateEIPRequest()
@@ -297,6 +298,19 @@ func NewCmdUHostCreate() *cobra.Command {
 		Use:   "create",
 		Short: "Create UHost instance",
 		Long:  "Create UHost instance",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if len(userData) > 0 && len(userDataBase64) > 0 {
+				return fmt.Errorf("%q conflicts with %q, can only set one of both", "user-data", "user-data-base64")
+			}
+
+			if len(userDataBase64) > 0 {
+				if !base.IsBase64Encoded([]byte(userDataBase64)) {
+					return fmt.Errorf("%q must be base64-encoded", "user-data-base64")
+				}
+			}
+			return nil
+		},
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			*req.Memory *= 1024
 			req.LoginMode = sdk.String("Password")
@@ -309,7 +323,7 @@ func NewCmdUHostCreate() *cobra.Command {
 				req.Disks = req.Disks[:1]
 			}
 
-			if hotPlug == "true" || len(userData) > 0 {
+			if hotPlug == "true" || len(userData) > 0 || len(userDataBase64) > 0 {
 				any, err := describeImageByID(base.PickResourceID(*req.ImageId), *req.ProjectId, *req.Region, *req.Zone)
 				if err != nil {
 					return fmt.Errorf("check image support feaures failed: %v", err)
@@ -332,7 +346,7 @@ func NewCmdUHostCreate() *cobra.Command {
 					req.HotplugFeature = sdk.Bool(false)
 				}
 
-				if !userDataImageFlag && len(userData) > 0 {
+				if !userDataImageFlag && (len(userData) > 0 || len(userDataBase64) > 0) {
 					return fmt.Errorf("image %s does not support user-data feature", *req.ImageId)
 				}
 
@@ -342,6 +356,10 @@ func NewCmdUHostCreate() *cobra.Command {
 
 				if len(userData) > 0 {
 					req.UserData = sdk.String(base64.StdEncoding.EncodeToString([]byte(userData)))
+				}
+
+				if len(userDataBase64) > 0 {
+					req.UserData = sdk.String(userDataBase64)
 				}
 			}
 
@@ -437,7 +455,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.IsolationGroup = flags.String("isolation-group", "", "Optional. Resource ID of isolation group. see 'ucloud uhost isolation-group list")
 	req.GpuType = flags.String("gpu-type", "", "Optional. The type of GPU instance. Required if defined the `machine-type` as 'G'. Accept values: 'K80', 'P40', 'V100'. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details.")
-	flags.StringVar(&userData, "user-data", "", "Optional. Customize the startup behaviors when launching the instance. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
+	flags.StringVar(&userData, "user-data", "", "Optional. Conflicts with `user-data-base64`. ConCustomize the startup behaviors when launching the instance. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
+	flags.StringVar(&userDataBase64, "user-data-base64", "", "Optional. Conflicts with `user-data`. Customize the startup behaviors when launching the instance. The value must be base64-encode. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
 
 	flags.MarkDeprecated("type", "please use --machine-type instead")
 	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
