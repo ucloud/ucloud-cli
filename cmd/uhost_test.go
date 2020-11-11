@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ucloud/ucloud-cli/ux"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 type listUhostTest struct {
