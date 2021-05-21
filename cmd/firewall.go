@@ -497,8 +497,8 @@ func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	flags.StringVar(&fwID, "fw-id", "", "Required. Resource ID of firewall")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	req.Offset = flags.String("offset", "0", "Optional. Offset")
-	req.Limit = flags.String("limit", "50", "Optional. Limit")
+	req.Offset = flags.Int("offset", 0, "Optional. Offset")
+	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 
 	flags.SetFlagValuesFunc("fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)

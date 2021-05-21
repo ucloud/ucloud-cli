@@ -89,7 +89,7 @@ func (h *HttpRequest) SetQueryString(val string) error {
 	// copy url query into request query map, it will overwrite current query
 	for k, v := range values {
 		if len(v) > 0 {
-			h.SetQuery(k, v[0])
+			_ = h.SetQuery(k, v[0])
 		}
 	}
 
@@ -186,32 +186,37 @@ func (h *HttpRequest) GetRequestBody() []byte {
 }
 
 func (h *HttpRequest) String() string {
-	if qs, err := h.BuildQueryString(); err == nil {
-		return fmt.Sprintf("%s?%s", h.GetURL(), qs)
-	}
-	return h.GetURL()
-}
+	s := h.GetURL()
 
-func (h *HttpRequest) getContentType() string {
-	if v, ok := h.headers["Content-Type"]; ok {
-		return v
+	// resolve query
+	qs, err := h.BuildQueryString()
+	if err != nil {
+		return s
 	}
-	return string(mimeFormURLEncoded)
+	if len(qs) > 0 {
+		s = fmt.Sprintf("%s?%s", s, qs)
+	}
+
+	// resolve body
+	bs := h.GetRequestBody()
+	if len(bs) > 0 {
+		s = fmt.Sprintf("%s %s", s, string(bs))
+	}
+	return s
 }
 
 func (h *HttpRequest) buildHTTPRequest() (*http.Request, error) {
 	qs, err := h.BuildQueryString()
 	if err != nil {
-		return nil, errors.Errorf("cannot build query string, %s", err)
+		return nil, err
 	}
 
-	var httpReq *http.Request
-	if h.getContentType() == string(mimeFormURLEncoded) && len(h.GetRequestBody()) == 0 {
-		httpReq, err = http.NewRequest(h.GetMethod(), h.GetURL(), strings.NewReader(qs))
-	} else {
-		httpReq, err = http.NewRequest(h.GetMethod(), h.String(), bytes.NewReader(h.GetRequestBody()))
+	uri := h.GetURL()
+	if qs != "" {
+		uri = fmt.Sprintf("%s?%s", uri, qs)
 	}
 
+	httpReq, err := http.NewRequest(h.GetMethod(), uri, bytes.NewReader(h.GetRequestBody()))
 	if err != nil {
 		return nil, errors.Errorf("cannot build request, %s", err)
 	}

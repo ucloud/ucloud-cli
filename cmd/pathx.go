@@ -62,13 +62,13 @@ type upathRow struct {
 
 //NewCmdUpathList ucloud pathx upath list
 func NewCmdUpathList(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewDescribeUPathRequest()
+	req := base.BizClient.PrivatePathxClient.NewDescribeUPathRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "list upath instances",
 		Long:  "list upath instances",
 		Run: func(c *cobra.Command, args []string) {
-			resp, err := base.BizClient.DescribeUPath(req)
+			resp, err := base.BizClient.PrivatePathxClient.DescribeUPath(req)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -132,14 +132,14 @@ var protocols = []string{"tcp", "udp"}
 
 //NewCmdUGAList ucloud uga list
 func NewCmdUGAList(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewDescribeUGAInstanceRequest()
+	req := base.BizClient.PrivatePathxClient.NewDescribeUGAInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "list uga instances",
 		Long:  "list uga instances",
 		Run: func(c *cobra.Command, args []string) {
 			*req.UGAId = base.PickResourceID(*req.UGAId)
-			resp, err := base.BizClient.DescribeUGAInstance(req)
+			resp, err := base.BizClient.PrivatePathxClient.DescribeUGAInstance(req)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -195,14 +195,14 @@ func getPortStr(list []ppathx.UGAATask) string {
 
 //NewCmdUGADescribe ucloud uga describe
 func NewCmdUGADescribe(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewDescribeUGAInstanceRequest()
+	req := base.BizClient.PrivatePathxClient.NewDescribeUGAInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Display detail informations about uga instances",
 		Long:  "Display detail informations about uga instances",
 		Run: func(c *cobra.Command, args []string) {
 			*req.UGAId = base.PickResourceID(*req.UGAId)
-			resp, err := base.BizClient.DescribeUGAInstance(req)
+			resp, err := base.BizClient.PrivatePathxClient.DescribeUGAInstance(req)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -214,13 +214,13 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 
 			ins := resp.UGAList[0]
 			list := []base.DescribeTableRow{
-				base.DescribeTableRow{"ResourceID", ins.UGAId},
-				base.DescribeTableRow{"UGAName", ins.UGAName},
-				base.DescribeTableRow{"Origin", fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
-				base.DescribeTableRow{"CName", ins.CName},
-				base.DescribeTableRow{"AcceleratedPath", getUpathStr(ins.UPathSet)},
-				base.DescribeTableRow{"OutIP", getOutIPStr(ins.OutPublicIpList)},
-				base.DescribeTableRow{"Port", getPortStr(ins.TaskSet)},
+				{"ResourceID", ins.UGAId},
+				{"UGAName", ins.UGAName},
+				{"Origin", fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
+				{"CName", ins.CName},
+				{"AcceleratedPath", getUpathStr(ins.UPathSet)},
+				{"OutIP", getOutIPStr(ins.OutPublicIpList)},
+				{"Port", getPortStr(ins.TaskSet)},
 			}
 			base.PrintList(list, out)
 		},
@@ -271,7 +271,7 @@ func formatPortList(userPorts []string) ([]string, error) {
 func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	var protocol string
 	var ports, lines []string
-	req := base.BizClient.NewCreateUGAInstanceRequest()
+	req := base.BizClient.PrivatePathxClient.NewCreateUGAInstanceRequest()
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Create uga instance",
@@ -302,7 +302,7 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 				fmt.Fprintf(out, "protocol should be one of %s, received:%s\n", strings.Join(protocols, ","), protocol)
 			}
 
-			resp, err := base.BizClient.CreateUGAInstance(req)
+			resp, err := base.BizClient.PrivatePathxClient.CreateUGAInstance(req)
 			if err != nil {
 				if uErr, ok := err.(uerr.Error); ok && uErr.Code() == 33756 {
 					fmt.Fprintf(out, "The number of ports added exceeds the limit(50). We recommend that you could reduce the number of ports, then create an uga instance, \nand then add the remaining ports by executing 'ucloud pathx uga add-port --protocol %s --uga-id <uga-id> --port <PortList>'\n", protocol)
@@ -314,11 +314,11 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 
 			for _, path := range lines {
 				p := base.PickResourceID(path)
-				bindReq := base.BizClient.NewUGABindUPathRequest()
+				bindReq := base.BizClient.PrivatePathxClient.NewUGABindUPathRequest()
 				bindReq.ProjectId = req.ProjectId
 				bindReq.UGAId = sdk.String(resp.UGAId)
 				bindReq.UPathId = &p
-				_, err := base.BizClient.UGABindUPath(bindReq)
+				_, err := base.BizClient.PrivatePathxClient.UGABindUPath(bindReq)
 				if err != nil {
 					fmt.Fprintf(out, "bind uga[%s] and upath[%s] failed: %v\n", resp.UGAId, p, err)
 				} else {
@@ -358,7 +358,7 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 //NewCmdUGADelete ucloud uga delete
 func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	idNames := []string{}
-	req := base.BizClient.NewDeleteUGAInstanceRequest()
+	req := base.BizClient.PrivatePathxClient.NewDeleteUGAInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete uga instances",
@@ -367,7 +367,7 @@ func NewCmdUGADelete(out io.Writer) *cobra.Command {
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
 				req.UGAId = &id
-				_, err := base.BizClient.DeleteUGAInstance(req)
+				_, err := base.BizClient.PrivatePathxClient.DeleteUGAInstance(req)
 				if err != nil {
 					base.HandleError(err)
 				} else {
@@ -510,9 +510,9 @@ func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 }
 
 func getUGAList(project string) ([]ppathx.UGAAInfo, error) {
-	req := base.BizClient.NewDescribeUGAInstanceRequest()
+	req := base.BizClient.PrivatePathxClient.NewDescribeUGAInstanceRequest()
 	req.ProjectId = &project
-	resp, err := base.BizClient.DescribeUGAInstance(req)
+	resp, err := base.BizClient.PrivatePathxClient.DescribeUGAInstance(req)
 	if err != nil {
 		return nil, err
 	}
@@ -533,9 +533,9 @@ func getUGAIDList(project string) []string {
 }
 
 func getUpathList(project string) ([]ppathx.UPathInfo, error) {
-	req := base.BizClient.NewDescribeUPathRequest()
+	req := base.BizClient.PrivatePathxClient.NewDescribeUPathRequest()
 	req.ProjectId = &project
-	resp, err := base.BizClient.DescribeUPath(req)
+	resp, err := base.BizClient.PrivatePathxClient.DescribeUPath(req)
 	if err != nil {
 		return nil, err
 	}

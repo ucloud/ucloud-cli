@@ -4,16 +4,20 @@ import (
 	"time"
 )
 
-type mimeType string
+const (
+	MimeFormURLEncoded = "application/x-www-form-urlencoded"
+	MimeJSON           = "application/json"
+)
 
 const (
-	mimeFormURLEncoded mimeType = "application/x-www-form-urlencoded"
-	mimeJSON           mimeType = "application/json"
+	HeaderNameContentType = "Content-Type"
+	HeaderNameUserAgent   = "User-Agent"
+	HeaderUTimestampMs    = "U-Timestamp-Ms"
 )
 
 // DefaultHeaders defined default http headers
 var DefaultHeaders = map[string]string{
-	"Content-Type": string(mimeFormURLEncoded),
+	HeaderNameContentType: MimeFormURLEncoded,
 	// "X-SDK-VERSION": VERSION,
 }
 

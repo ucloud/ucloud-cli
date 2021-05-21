@@ -1313,31 +1313,31 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 				targets = append(targets, item)
 			}
 			rows := []base.DescribeTableRow{
-				base.DescribeTableRow{
+				{
 					Attribute: "ResourceID",
 					Content:   sslcf.SSLId,
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "Name",
 					Content:   sslcf.SSLName,
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "Type",
 					Content:   sslcf.SSLType,
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "UploadTime",
 					Content:   base.FormatDateTime(sslcf.CreateTime),
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "BindResource",
 					Content:   strings.Join(targets, ","),
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "MD5",
 					Content:   sslcf.HashValue,
 				},
-				base.DescribeTableRow{
+				{
 					Attribute: "Content",
 					Content:   sslcf.SSLContent,
 				},

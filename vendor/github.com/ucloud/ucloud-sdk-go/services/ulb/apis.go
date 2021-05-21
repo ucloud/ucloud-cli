@@ -22,17 +22,29 @@ type AllocateBackendRequest struct {
 	// 后端实例状态开关，枚举值： 1：启用； 0：禁用 默认为启用
 	Enabled *int `required:"false"`
 
+	// rs是否为backup，默认为00：普通rs1：backup的rs
+	IsBackup *int `required:"false"`
+
 	// 所添加的后端资源服务端口，取值范围[1-65535]，默认80
 	Port *int `required:"false"`
+
+	// 所添加的后端服务器的资源实例IP，当ResourceType 为 UHybrid 时有效，且必填
+	ResourceIP *string `required:"false"`
 
 	// 所添加的后端资源的资源ID
 	ResourceId *string `required:"true"`
 
-	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器，默认值为“UHost”
+	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UNI -> 虚拟网卡；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器；UHybrid->混合云主机；CUBE->Cube；默认值为UHost。报文转发模式不支持UDocker、UHybrid、CUBE
 	ResourceType *string `required:"true"`
+
+	// 所添加的后端服务器所在的子网，当ResourceType 为 UHybrid 时有效，且必填
+	SubnetId *string `required:"false"`
 
 	// 负载均衡实例的ID
 	ULBId *string `required:"true"`
+
+	// 所添加的后端服务器所在的vpc，当ResourceType 为 UHybrid 时有效，且必填
+	VPCId *string `required:"false"`
 
 	// VServer实例的ID
 	VServerId *string `required:"true"`
@@ -207,6 +219,9 @@ type CreatePolicyRequest struct {
 
 	// 内容转发匹配字段
 	Match *string `required:"true"`
+
+	// 策略优先级，1-9999
+	PolicyPriority *int `required:"false"`
 
 	// 内容转发匹配字段的类型
 	Type *string `required:"false"`
@@ -397,6 +412,9 @@ type CreateULBRequest struct {
 	// 创建的ULB是否为内网模式
 	InnerMode *string `required:"false"`
 
+	// ULB 监听器类型，枚举值：RequestProxy，请求代理； PacketsTransmit ，报文转发。默认为RequestProxy
+	ListenType *string `required:"false"`
+
 	// 创建的ULB是否为外网模式，默认即为外网模式
 	OuterMode *string `required:"false"`
 
@@ -465,31 +483,31 @@ func (c *ULBClient) CreateULB(req *CreateULBRequest) (*CreateULBResponse, error)
 type CreateVServerRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// ListenType为RequestProxy时表示空闲连接的回收时间，单位：秒，取值范围：时(0，86400]，默认值为60；ListenType为PacketsTransmit时表示连接保持的时间，单位：秒，取值范围：[60，900]，0 表示禁用连接保持
 	ClientTimeout *int `required:"false"`
 
-	// 根据MonitorType确认； 当MonitorType为Port时，此字段无意义。当MonitorType为Path时，代表HTTP检查域名
+	// 根据MonitorType确认； 当MonitorType为Path时，此字段有意义，代表HTTP检查域名
 	Domain *string `required:"false"`
 
 	// VServer后端端口，取值范围[1-65535]；默认值为80
 	FrontendPort *int `required:"false"`
 
-	// 监听器类型，枚举值为：RequestProxy -> 请求代理；PacketsTransmit -> 报文转发；默认为"RequestProxy"
+	// 监听器类型，枚举值，RequestProxy ，请求代理；PacketsTransmit ，报文转发。默认为RequestProxy
 	ListenType *string `required:"false"`
 
-	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin在请求代理和报文转发中使用。默认为："Roundrobin"
+	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数;Backup ->主备模式。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin,Backup在请求代理和报文转发中使用。默认为："Roundrobin"
 	Method *string `required:"false"`
 
-	// 健康检查类型，枚举值：Port -> 端口检查；Path -> 路径检查；
+	// 健康检查类型，枚举值：Port -> 端口检查；Path -> 路径检查；Ping -> Ping探测；Customize -> UDP检查请求代理型默认值为Port，其中TCP协议仅支持Port，其他协议支持Port和Path;报文转发型TCP协议仅支持Port，UDP协议支持Ping、Port和Customize，默认值为Ping
 	MonitorType *string `required:"false"`
 
-	// 根据MonitorType确认； 当MonitorType为Port时，此字段无意义。当MonitorType为Path时，代表HTTP检查路径
+	// 根据MonitorType确认； 当MonitorType为Path时，此字段有意义，代表HTTP检查路径
 	Path *string `required:"false"`
 
 	// 根据PersistenceType确认； None和ServerInsert： 此字段无意义； UserDefined：此字段传入自定义会话保持String
@@ -500,6 +518,12 @@ type CreateVServerRequest struct {
 
 	// VServer实例的协议，请求代理模式下有 HTTP、HTTPS、TCP，报文转发下有 TCP，UDP。默认为“HTTP"
 	Protocol *string `required:"false"`
+
+	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查发出的请求报文
+	RequestMsg *string `required:"false"`
+
+	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查请求应收到的响应报文
+	ResponseMsg *string `required:"false"`
 
 	// 负载均衡实例ID
 	ULBId *string `required:"true"`
@@ -557,8 +581,8 @@ type DeletePolicyRequest struct {
 	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
 	// Region *string `required:"true"`
 
-	// 内容转发策略组ID
-	GroupId *string `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	GroupId *string `required:"false" deprecated:"true"`
 
 	// 内容转发策略ID
 	PolicyId *string `required:"true"`
@@ -705,12 +729,12 @@ type DeleteULBRequest struct {
 	request.CommonBase
 
 	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
-	// ProjectId *string `required:"true"`
+	// ProjectId *string `required:"false"`
 
 	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
 	// Region *string `required:"true"`
 
-	// 删除ulb时是否释放绑定的EIP，false标识只解绑EIP，true表示会释放绑定的EIP，默认是false
+	// 删除ulb时是否释放绑定的EIP，false标识只解绑EIP，true表示会释放绑定的EIP，默认是false。Anycast IP 此参数无效
 	ReleaseEip *bool `required:"false"`
 
 	// 负载均衡实例的ID
@@ -928,10 +952,10 @@ func (c *ULBClient) DescribeSSL(req *DescribeSSLRequest) (*DescribeSSLResponse, 
 type DescribeULBRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// ULB所属的业务组ID
@@ -995,14 +1019,85 @@ func (c *ULBClient) DescribeULB(req *DescribeULBRequest) (*DescribeULBResponse, 
 	return &res, nil
 }
 
+// DescribeULBSimpleRequest is request schema for DescribeULBSimple action
+type DescribeULBSimpleRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// Region *string `required:"true"`
+
+	// ULB所属的业务组ID
+	BusinessId *string `required:"false"`
+
+	// 数据分页值，默认为10000
+	Limit *int `required:"false"`
+
+	// 数据偏移量，默认为0
+	Offset *int `required:"false"`
+
+	// ULB所属的子网ID
+	SubnetId *string `required:"false"`
+
+	// 负载均衡实例的Id。 若指定则返回指定的负载均衡实例的信息； 若不指定则返回当前数据中心中所有的负载均衡实例的信息
+	ULBId *string `required:"false"`
+
+	// ULB所属的VPC
+	VPCId *string `required:"false"`
+}
+
+// DescribeULBSimpleResponse is response schema for DescribeULBSimple action
+type DescribeULBSimpleResponse struct {
+	response.CommonBase
+
+	// ULB列表，每项参数详见 ULBSimpleSet
+	DataSet []ULBSimpleSet
+
+	// 满足条件的ULB总数
+	TotalCount int
+}
+
+// NewDescribeULBSimpleRequest will create request of DescribeULBSimple action.
+func (c *ULBClient) NewDescribeULBSimpleRequest() *DescribeULBSimpleRequest {
+	req := &DescribeULBSimpleRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeULBSimple
+
+获取ULB信息
+*/
+func (c *ULBClient) DescribeULBSimple(req *DescribeULBSimpleRequest) (*DescribeULBSimpleResponse, error) {
+	var err error
+	var res DescribeULBSimpleResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeULBSimple", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribeVServerRequest is request schema for DescribeVServer action
 type DescribeVServerRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 数据分页值
@@ -1173,10 +1268,10 @@ func (c *ULBClient) UnbindSSL(req *UnbindSSLRequest) (*UnbindSSLResponse, error)
 type UpdateBackendAttributeRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 后端资源实例的ID(ULB后端ID，非资源自身ID)
@@ -1184,6 +1279,9 @@ type UpdateBackendAttributeRequest struct {
 
 	// 后端实例状态开关
 	Enabled *int `required:"false"`
+
+	// 是否为backup0：主rs1：备rs默认为0
+	IsBackup *int `required:"false"`
 
 	// 后端资源服务端口，取值范围[1-65535]
 	Port *int `required:"false"`
@@ -1241,22 +1339,22 @@ type UpdatePolicyRequest struct {
 	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
 	// Region *string `required:"true"`
 
-	// 内容转发策略应用的后端资源实例的ID，来源于 AllocateBackend 返回的 BackendId
-	BackendId []string `required:"true"`
+	// 内容转发策略应用的后端资源实例的ID，来源于 AllocateBackend 返回的 BackendId，不传表示更新转发节点为空
+	BackendId []string `required:"false"`
 
 	// 内容转发匹配字段
 	Match *string `required:"true"`
 
-	// 转发规则的ID
-	PolicyId *string `required:"true"`
+	// 转发规则的ID，当Type为Default时，可以不传或为空
+	PolicyId *string `required:"false"`
 
-	// 内容转发匹配字段的类型
+	// 内容转发匹配字段的类型，枚举值：Domain -> 域名转发规则；Path -> 路径转发规则；Default -> 默认转发规则，不传默认值Domain
 	Type *string `required:"false"`
 
 	// 需要添加内容转发策略的负载均衡实例ID
 	ULBId *string `required:"true"`
 
-	// 需要添加内容转发策略的VServer实例ID
+	// 需要添加内容转发策略的VServer实例ID，只支持请求代理模式下，HTTP或HTTPS协议的VServer
 	VServerId *string `required:"true"`
 }
 
@@ -1264,8 +1362,8 @@ type UpdatePolicyRequest struct {
 type UpdatePolicyResponse struct {
 	response.CommonBase
 
-	// 转发规则的ID
-	PolicyId string
+	// 【该字段已废弃，请谨慎使用】
+	PolicyId string `deprecated:"true"`
 }
 
 // NewUpdatePolicyRequest will create request of UpdatePolicy action.
@@ -1412,10 +1510,10 @@ func (c *ULBClient) UpdateULBAttribute(req *UpdateULBAttributeRequest) (*UpdateU
 type UpdateVServerAttributeRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 请求代理的VServer下表示空闲连接的回收时间，单位：秒，取值范围：时(0，86400]，默认值为60；报文转发的VServer下表示回话保持的时间，单位：秒，取值范围：[60，900]，0 表示禁用连接保持
@@ -1424,10 +1522,10 @@ type UpdateVServerAttributeRequest struct {
 	// MonitorType 为 Path 时指定健康检查发送请求时HTTP HEADER 里的域名
 	Domain *string `required:"false"`
 
-	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin在请求代理和报文转发中使用。默认为："Roundrobin"
+	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数；Backup -> 主备模式。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin,Backup在请求代理和报文转发中使用。默认为："Roundrobin"
 	Method *string `required:"false"`
 
-	// 健康检查的类型，Port:端口,Path:路径
+	// 健康检查类型，枚举值：Port -> 端口检查；Path -> 路径检查；Ping -> Ping探测，Customize -> UDP检查请求代理型默认值为Port，其中TCP协议仅支持Port，其他协议支持Port和Path;报文转发型TCP协议仅支持Port，UDP协议支持Ping、Port和Customize，默认值为Ping
 	MonitorType *string `required:"false"`
 
 	// MonitorType 为 Path 时指定健康检查发送请求时的路径，默认为 /
@@ -1441,6 +1539,12 @@ type UpdateVServerAttributeRequest struct {
 
 	// 【该字段已废弃，请谨慎使用】
 	Protocol *string `required:"false" deprecated:"true"`
+
+	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查发出的请求报文
+	RequestMsg *string `required:"false"`
+
+	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查请求应收到的响应报文
+	ResponseMsg *string `required:"false"`
 
 	// 负载均衡实例ID
 	ULBId *string `required:"true"`

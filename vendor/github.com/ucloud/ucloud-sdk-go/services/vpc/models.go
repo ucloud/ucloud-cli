@@ -59,7 +59,7 @@ type AssociationInfo struct {
 	SubnetworkId string
 
 	// 所属的VPC ID
-	VpcId string
+	VpcId string `deprecated:"true"`
 }
 
 /*
@@ -146,7 +146,7 @@ type NatGatewayDataSet struct {
 	VPCId string
 
 	// 所属VPC 信息
-	VPCInfo string
+	VPCInfo string `deprecated:"true"`
 }
 
 /*
@@ -188,7 +188,10 @@ TargetResourceInfo - ACL规则应用目标资源信息。
 type TargetResourceInfo struct {
 
 	// 资源内网IP
-	PrivateIP string
+	PrivateIP string `deprecated:"true"`
+
+	// 资源内网IP
+	PrivateIp string
 
 	// 资源ID
 	ResourceId string
@@ -366,14 +369,27 @@ type RouteTableInfo struct {
 }
 
 /*
-VPCSubnetInfoSet - 子网信息
+NATGWSnatRule - Nat网关的Snat规则
 */
-type VPCSubnetInfoSet struct {
-	// 名称 【已废弃】
-	Name string `deprecated:"true"`
+type NATGWSnatRule struct {
 
-	// 虚拟路由 id【已废弃】
-	VRouterId string `deprecated:"true"`
+	// snat规则名称
+	Name string
+
+	// EIP地址，如106.76.xx.xx
+	SnatIp string
+
+	// 资源的内网IP地址
+	SourceIp string
+
+	// SourceIp所属的子网id
+	SubnetworkId string
+}
+
+/*
+SubnetInfo - 子网信息
+*/
+type SubnetInfo struct {
 
 	// 可用IP数量
 	AvailableIPs int
@@ -425,9 +441,9 @@ type VPCSubnetInfoSet struct {
 }
 
 /*
-ResourceInfo - 子网下资源
+SubnetResource - 子网下资源
 */
-type ResourceInfo struct {
+type SubnetResource struct {
 
 	// 资源ip
 	IP string
@@ -531,6 +547,9 @@ VPCIntercomInfo -
 */
 type VPCIntercomInfo struct {
 
+	// 项目Id（数字）
+	AccountId int
+
 	// 所属地域
 	DstRegion string
 
@@ -548,6 +567,9 @@ type VPCIntercomInfo struct {
 
 	// VPCId
 	VPCId string
+
+	// vpc类型（1表示托管VPC，0表示公有云VPC）
+	VPCType int
 }
 
 /*
@@ -614,6 +636,30 @@ type GetAvailableResourceForPolicyDataSet struct {
 }
 
 /*
+GetAvailableResourceForSnatRuleDataSet -
+*/
+type GetAvailableResourceForSnatRuleDataSet struct {
+
+	// 资源内网IP
+	PrivateIP string
+
+	// 资源ID
+	ResourceId string
+
+	// 资源名称
+	ResourceName string
+
+	// 资源类型
+	ResourceType string
+
+	// 资源所属VPC的ID
+	SubnetworkId string
+
+	// 资源所属子网的ID
+	VPCId string
+}
+
+/*
 GetAvailableResourceForWhiteListDataSet - GetAvailableResourceForWhiteList
 */
 type GetAvailableResourceForWhiteListDataSet struct {
@@ -631,13 +677,19 @@ type GetAvailableResourceForWhiteListDataSet struct {
 	ResourceType string
 
 	// 资源绑定的虚拟网卡的实例ID
-	SubResouceId string
+	SubResouceId string `deprecated:"true"`
 
 	// 资源绑定的虚拟网卡的实例类型
-	SubResouceType string
+	SubResouceType string `deprecated:"true"`
+
+	// 资源绑定的虚拟网卡的实例ID
+	SubResourceId string
 
 	// 资源绑定的虚拟网卡的实例名称
 	SubResourceName string
+
+	// 资源绑定的虚拟网卡的实例类型
+	SubResourceType string
 
 	// 资源所属子网Id
 	SubnetworkId string

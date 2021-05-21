@@ -104,8 +104,8 @@ func NewCmdEIPList(out io.Writer) *cobra.Command {
 				row.Group = eip.Tag
 				row.ChargeMode = eip.PayMode
 				row.Bandwidth = strconv.Itoa(eip.Bandwidth) + "Mb"
-				if eip.Resource.ResourceId != "" {
-					row.BindResource = fmt.Sprintf("%s|%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceId, eip.Resource.ResourceType)
+				if eip.Resource.ResourceID != "" {
+					row.BindResource = fmt.Sprintf("%s|%s(%s)", eip.Resource.ResourceName, eip.Resource.ResourceID, eip.Resource.ResourceType)
 				}
 				row.Status = eip.Status
 				row.ExpirationTime = time.Unix(int64(eip.ExpireTime), 0).Format("2006-01-02")
@@ -373,7 +373,7 @@ func NewCmdEIPUnbind() *cobra.Command {
 					return
 				}
 				req.EIPId = sdk.String(base.PickResourceID(eip))
-				req.ResourceId = sdk.String(eipIns.Resource.ResourceId)
+				req.ResourceId = sdk.String(eipIns.Resource.ResourceID)
 				req.ResourceType = sdk.String(eipIns.Resource.ResourceType)
 				_, err = base.BizClient.UnBindEIP(req)
 				if err != nil {

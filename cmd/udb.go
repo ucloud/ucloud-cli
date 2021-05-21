@@ -153,12 +153,12 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 			}
 			conf := resp.DataSet[0]
 			attrs := []base.DescribeTableRow{
-				base.DescribeTableRow{Attribute: "ConfID", Content: strconv.Itoa(conf.GroupId)},
-				base.DescribeTableRow{Attribute: "DBVersion", Content: conf.DBTypeId},
-				base.DescribeTableRow{Attribute: "Name", Content: conf.GroupName},
-				base.DescribeTableRow{Attribute: "Description", Content: conf.Description},
-				base.DescribeTableRow{Attribute: "Modifiable", Content: strconv.FormatBool(conf.Modifiable)},
-				base.DescribeTableRow{Attribute: "Zone", Content: conf.Zone},
+				{Attribute: "ConfID", Content: strconv.Itoa(conf.GroupId)},
+				{Attribute: "DBVersion", Content: conf.DBTypeId},
+				{Attribute: "Name", Content: conf.GroupName},
+				{Attribute: "Description", Content: conf.Description},
+				{Attribute: "Modifiable", Content: strconv.FormatBool(conf.Modifiable)},
+				{Attribute: "Zone", Content: conf.Zone},
 			}
 			fmt.Fprintln(out, "Attributes:")
 			base.PrintList(attrs, out)
@@ -428,7 +428,7 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 	var udbIDs []string
 	var restart, yes, async bool
 
-	req := base.BizClient.NewChangeUDBParamGroupRequest()
+	req := base.BizClient.UDBClient.NewChangeUDBParamGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Apply configuration for UDB instances",
@@ -437,7 +437,7 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 			req.GroupId = sdk.String(base.PickResourceID(confID))
 			for _, idname := range udbIDs {
 				req.DBId = sdk.String(base.PickResourceID(idname))
-				_, err := base.BizClient.ChangeUDBParamGroup(req)
+				_, err := base.BizClient.UDBClient.ChangeUDBParamGroup(req)
 				if err != nil {
 					base.HandleError(err)
 					continue
@@ -498,7 +498,7 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 //NewCmdUDBConfDownload ucloud udb conf download
 func NewCmdUDBConfDownload(out io.Writer) *cobra.Command {
 	var confID string
-	req := base.BizClient.NewExtractUDBParamGroupRequest()
+	req := base.BizClient.UDBClient.NewExtractUDBParamGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "download",
 		Short: "Download UDB configuration",
@@ -511,7 +511,7 @@ func NewCmdUDBConfDownload(out io.Writer) *cobra.Command {
 			}
 
 			req.GroupId = &id
-			resp, err := base.BizClient.ExtractUDBParamGroup(req)
+			resp, err := base.BizClient.UDBClient.ExtractUDBParamGroup(req)
 			if err != nil {
 				base.HandleError(err)
 				return
