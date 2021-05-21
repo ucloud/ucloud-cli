@@ -45,6 +45,9 @@ type Common interface {
 
 	SetRetryable(retryable bool)
 	GetRetryable() bool
+
+	SetEncoder(encoder Encoder)
+	GetEncoder() Encoder
 }
 
 // CommonBase is the base struct of common request
@@ -59,6 +62,7 @@ type CommonBase struct {
 	retryCount  int
 	timeout     time.Duration
 	requestTime time.Time
+	encoder     Encoder
 }
 
 // SetRetryCount will set retry count of request
@@ -210,4 +214,14 @@ func (c *CommonBase) GetProjectIdRef() *string {
 func (c *CommonBase) SetProjectIdRef(val *string) error {
 	c.ProjectId = val
 	return nil
+}
+
+// GetProjectId will get project id of request
+func (c *CommonBase) GetEncoder() Encoder {
+	return c.encoder
+}
+
+// SetProjectId will set project id of request
+func (c *CommonBase) SetEncoder(encoder Encoder) {
+	c.encoder = encoder
 }

@@ -84,15 +84,16 @@ type deleteUHostTest struct {
 }
 
 func (test *deleteUHostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostDelete(buf)
+	cmd := NewCmdUHostDelete()
 	cmd.Flags().Parse(test.flags)
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
 	}
-	list := test.expectedOutRegexp.FindStringSubmatch(buf.String())
+	lines := ux.Doc.Content()
+	content := strings.Join(lines, "\n")
+	list := test.expectedOutRegexp.FindStringSubmatch(content)
 	if list == nil {
-		t.Errorf("unexpect output:%s", buf.String())
+		t.Errorf("unexpect output:%s", content)
 	}
 }
 
@@ -183,12 +184,14 @@ func TestUhost(t *testing.T) {
 	}
 	imageID := listImageT.run(t)
 
-	createT := createUHostTest{expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is initializing\.\.\.done`),
+	createT := createUHostTest{expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] which attached a data disk and binded an eip is initializing\.\.\.done`),
 		flags: []string{
 			"--cpu=1",
 			"--memory-gb=1",
 			"--image-id=" + imageID,
 			"--password=testlxj@123",
+			"--hot-plug=false",
+			"--create-eip-bandwidth-mb=10",
 		},
 	}
 	createT.run(t)

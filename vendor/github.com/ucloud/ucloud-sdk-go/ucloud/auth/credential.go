@@ -4,11 +4,7 @@ Package auth is the credential utilities of sdk
 package auth
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
-	"io"
 	"net/url"
-	"sort"
 	"time"
 )
 
@@ -35,54 +31,68 @@ func NewCredential() Credential {
 
 // CreateSign will encode query string to credential signature.
 func (c *Credential) CreateSign(query string) string {
-	urlValues, err := url.ParseQuery(query)
-	if err != nil {
-		return ""
-	}
-	urlValues.Set("PublicKey", c.PublicKey)
-	return c.verifyAc(urlValues)
+	payload := queryToMap(query)
+	return c.VerifyAc(payload)
 }
 
 // BuildCredentialedQuery will build query string with signature query param.
 func (c *Credential) BuildCredentialedQuery(params map[string]string) string {
-	urlValues := url.Values{}
+	payload := make(map[string]interface{})
 	for k, v := range params {
-		urlValues.Set(k, v)
+		payload[k] = v
 	}
-	if len(c.SecurityToken) != 0 {
-		urlValues.Set("SecurityToken", c.SecurityToken)
-	}
-
-	if c.PublicKey != "" {
-		urlValues.Set("PublicKey", c.PublicKey)
-		urlValues.Set("Signature", c.verifyAc(urlValues))
-	}
-	return urlValues.Encode()
+	return mapToQuery(c.Apply(payload))
 }
 
+// Apply will return payload with credential and signature
+func (c *Credential) Apply(payload map[string]interface{}) map[string]interface{} {
+	payload = c.applyDefaults(payload)
+	payload["Signature"] = sign(c.applyDefaults(payload), c.PrivateKey)
+	return payload
+}
+
+// VerifyAc will return payload with credential and signature
+func (c *Credential) VerifyAc(payload map[string]interface{}) string {
+	return sign(c.applyDefaults(payload), c.PrivateKey)
+}
+
+// IsExpired will return if the credential is expired
 func (c *Credential) IsExpired() bool {
 	return c.CanExpire && time.Now().After(c.Expires)
 }
 
-func (c *Credential) verifyAc(urlValues url.Values) string {
-	// sort keys
-	var keys []string
-	for k := range urlValues {
-		keys = append(keys, k)
+func (c *Credential) applyDefaults(payload map[string]interface{}) map[string]interface{} {
+	values := make(map[string]interface{})
+	for k, v := range payload {
+		values[k] = v
 	}
-	sort.Strings(keys)
-
-	signQuery := ""
-	for _, k := range keys {
-		signQuery += k + urlValues.Get(k)
+	if len(c.SecurityToken) != 0 {
+		values["SecurityToken"] = c.SecurityToken
 	}
-	signQuery += c.PrivateKey
-	return encodeSha1(signQuery)
+	if len(c.PublicKey) != 0 {
+		values["PublicKey"] = c.PublicKey
+	}
+	return values
 }
 
-func encodeSha1(s string) string {
-	h := sha1.New()
-	_, _ = io.WriteString(h, s)
-	bs := h.Sum(nil)
-	return hex.EncodeToString(bs)
+func queryToMap(query string) map[string]interface{} {
+	values := make(map[string]interface{})
+	urlValues, err := url.ParseQuery(query)
+	if err != nil {
+		return values
+	}
+	for k, v := range urlValues {
+		if len(v) != 0 {
+			values[k] = v[0]
+		}
+	}
+	return values
+}
+
+func mapToQuery(values map[string]interface{}) string {
+	urlValues := url.Values{}
+	for k, v := range values {
+		urlValues.Set(k, any2String(v))
+	}
+	return urlValues.Encode()
 }

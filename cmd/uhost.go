@@ -49,7 +49,7 @@ func NewCmdUHost() *cobra.Command {
 	out := base.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdUHostList(out))
 	cmd.AddCommand(NewCmdUHostCreate())
-	cmd.AddCommand(NewCmdUHostDelete(out))
+	cmd.AddCommand(NewCmdUHostDelete())
 	cmd.AddCommand(NewCmdUHostStop(out))
 	cmd.AddCommand(NewCmdUHostStart(out))
 	cmd.AddCommand(NewCmdUHostReboot(out))
@@ -293,7 +293,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	var userDataBase64 string
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
-	eipReq := base.BizClient.NewAllocateEIPRequest()
+	eipReq := uhost.CreateUHostInstanceParamNetworkInterfaceEIP{}
+	updateEIPReq := base.BizClient.NewUpdateEIPAttributeRequest()
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create UHost instance",
@@ -322,7 +323,6 @@ func NewCmdUHostCreate() *cobra.Command {
 			if *req.Disks[1].Type == "NONE" || *req.Disks[1].Type == "" {
 				req.Disks = req.Disks[:1]
 			}
-
 			if hotPlug == "true" || len(userData) > 0 || len(userDataBase64) > 0 {
 				any, err := describeImageByID(base.PickResourceID(*req.ImageId), *req.ProjectId, *req.Region, *req.Zone)
 				if err != nil {
@@ -372,7 +372,16 @@ func NewCmdUHostCreate() *cobra.Command {
 					if len(bindEipIDs) > i {
 						bindEipID = bindEipIDs[i]
 					}
-					go createUhostWrapper(req, eipReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
+					if bindEipID == "" && (*eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth") {
+						if *eipReq.OperatorName == "" {
+							*eipReq.OperatorName = getEIPLine(*req.Region)
+						}
+						networkInterface := uhost.CreateUHostInstanceParamNetworkInterface{}
+						networkInterface.EIP = &eipReq
+						req.NetworkInterface = append(req.NetworkInterface, networkInterface)
+					}
+
+					go createUhostWrapper(req, updateEIPReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
 				}
 			} else {
 				retCh := make(chan bool, count)
@@ -385,7 +394,15 @@ func NewCmdUHostCreate() *cobra.Command {
 						if len(bindEipIDs) > i {
 							bindEipID = bindEipIDs[i]
 						}
-						go createUhostWrapper(req, eipReq, bindEipID, async, retCh, wg, tokens, i)
+						if bindEipID == "" && (*eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth") {
+							if *eipReq.OperatorName == "" {
+								*eipReq.OperatorName = getEIPLine(*req.Region)
+							}
+							networkInterface := uhost.CreateUHostInstanceParamNetworkInterface{}
+							networkInterface.EIP = &eipReq
+							req.NetworkInterface = append(req.NetworkInterface, networkInterface)
+						}
+						go createUhostWrapper(req, updateEIPReq, bindEipID, async, retCh, wg, tokens, i)
 					}
 				}()
 
@@ -430,8 +447,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	eipReq.Bandwidth = flags.Int("create-eip-bandwidth-mb", 0, "Optional. Required if you want to create new EIP. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 300]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
 	eipReq.PayMode = flags.String("create-eip-traffic-mode", "Bandwidth", "Optional. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	eipReq.ShareBandwidthId = flags.String("shared-bw-id", "", "Optional. Resource ID of shared bandwidth. It takes effect when create-eip-traffic-mode is ShareBandwidth ")
-	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
-	eipReq.Remark = flags.String("create-eip-remark", "", "Optional.Remark of your EIP.")
+	updateEIPReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the uhost")
+	updateEIPReq.Remark = flags.String("create-eip-remark", "", "Optional.Remark of your EIP.")
 
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
@@ -502,7 +519,7 @@ func NewCmdUHostCreate() *cobra.Command {
 }
 
 //createUhostWrapper 处理UI和并发控制
-func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
+func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
 	//控制并发数量
 	tokens <- struct{}{}
 	defer func() {
@@ -512,13 +529,13 @@ func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, eipReq *unet.Allo
 		wg.Done()
 	}()
 
-	success, logs := createUhost(req, eipReq, bindEipID, async)
+	success, logs := createUhost(req, updateEIPReq, bindEipID, async)
 	retCh <- success
 	logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
 	base.LogInfo(logs...)
 }
 
-func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIPRequest, bindEipID string, async bool) (bool, []string) {
+func createUhost(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipID string, async bool) (bool, []string) {
 	resp, err := base.BizClient.CreateUHostInstance(req)
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
@@ -536,12 +553,16 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 		return false, logs
 	}
 
-	var text string
+	text := fmt.Sprintf("the uhost[%s]", resp.UHostIds[0])
 	if len(req.Disks) > 1 {
-		text = fmt.Sprintf("the uhost[%s] which attached a data disk is initializing", resp.UHostIds[0])
-	} else {
-		text = fmt.Sprintf("the uhost[%s] is initializing", resp.UHostIds[0])
+		text = fmt.Sprintf("%s which attached a data disk", text)
+		if len(req.NetworkInterface) > 0 {
+			text = fmt.Sprintf("%s and binded an eip", text)
+		}
+	} else if len(req.NetworkInterface) > 0 {
+		text = fmt.Sprintf("%s which binded an eip", text)
 	}
+	text = fmt.Sprintf("%s is initializing", text)
 
 	if async {
 		block.Append(text)
@@ -559,45 +580,68 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, eipReq *unet.AllocateEIP
 			return false, logs
 		}
 		block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
-	} else if *eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth" {
-		eipReq.ChargeType = req.ChargeType
-		eipReq.Tag = req.Tag
-		eipReq.Quantity = req.Quantity
-		eipReq.Region = req.Region
-		eipReq.ProjectId = req.ProjectId
-		logs = append(logs, fmt.Sprintf("create eip request: %v", base.ToQueryMap(eipReq)))
-		if *eipReq.OperatorName == "" {
-			*eipReq.OperatorName = getEIPLine(*req.Region)
-		}
-		eipResp, err := base.BizClient.AllocateEIP(eipReq)
-
+	} else if len(req.NetworkInterface) > 0 {
+		ipSet, err := getEIPByUHostId(resp.UHostIds[0])
 		if err != nil {
-			logs = append(logs, fmt.Sprintf("create eip error: %#v", err))
-			block.Append(base.ParseError(err))
-		} else {
-			logs = append(logs, fmt.Sprintf("create eip resp: %#v", eipResp))
-			for _, eip := range eipResp.EIPSet {
-				block.Append(fmt.Sprintf("allocate EIP[%s] ", eip.EIPId))
-				for _, ip := range eip.EIPAddr {
-					block.Append(fmt.Sprintf("IP:%s  Line:%s", ip.IP, ip.OperatorName))
-				}
-				if len(resp.UHostIds) == 1 {
-					eipLogs, err := sbindEIP(sdk.String(resp.UHostIds[0]), sdk.String("uhost"), sdk.String(eip.EIPId), req.ProjectId, req.Region)
-					logs = append(logs, eipLogs...)
-					if err != nil {
-						block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] failed: %v", eip, resp.UHostIds[0], err))
-						return false, logs
-					}
-					block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, resp.UHostIds[0]))
-				}
+			block.Append(err.Error())
+			return false, logs
+		}
+		block.Append(fmt.Sprintf("IP:%s  Line:%s", ipSet.IP, ipSet.Type))
+		if *updateEIPReq.Name != "" || *updateEIPReq.Remark != "" {
+			var message string
+			if *updateEIPReq.Name != "" && *updateEIPReq.Remark != "" {
+				message = "name and remark"
+			} else if *updateEIPReq.Name != "" {
+				message = "name"
+			} else {
+				message = "remark"
 			}
+
+			logs = append(logs, fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s]", message, ipSet.IPId, resp.UHostIds[0]))
+			updateEIPReq.EIPId = sdk.String(ipSet.IPId)
+			_, err = base.BizClient.UpdateEIPAttribute(updateEIPReq)
+			if err != nil {
+				block.Append(fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s] got err, %s", message, ipSet.IPId, resp.UHostIds[0], err))
+				return false, logs
+			}
+			block.Append(fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s] successfully", message, ipSet.IPId, resp.UHostIds[0]))
 		}
 	}
 	return true, logs
 }
 
+func getEIPByUHostId(uhostId string) (*uhost.UHostIPSet, error) {
+	if uhostId == "" {
+		return nil, fmt.Errorf("the uhost[%s] is not found", uhostId)
+	}
+	for i := 0; i <= 5; i++ {
+		req := base.BizClient.NewDescribeUHostInstanceRequest()
+		req.UHostIds = []string{uhostId}
+
+		resp, err := base.BizClient.DescribeUHostInstance(req)
+		if err != nil {
+			return nil, err
+		}
+		if len(resp.UHostSet) < 1 {
+			return nil, fmt.Errorf("the uhost[%s] is not found", uhostId)
+		}
+
+		if len(resp.UHostSet[0].IPSet) > 0 {
+			for _, v := range resp.UHostSet[0].IPSet {
+				if v.Type != "Private" && v.IPId != "" {
+					return &v, nil
+				}
+			}
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil, fmt.Errorf("can not get eip by uhost[%s]", uhostId)
+}
+
 //NewCmdUHostDelete ucloud uhost delete
-func NewCmdUHostDelete(out io.Writer) *cobra.Command {
+func NewCmdUHostDelete() *cobra.Command {
 	var uhostIDs *[]string
 	var isDestroy = sdk.Bool(false)
 	var yes *bool
@@ -749,13 +793,13 @@ func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer
 		return false
 	}
 
-	text := fmt.Sprintf("uhost [%v] is shutting down", resp.UhostId)
+	text := fmt.Sprintf("uhost[%v] is shutting down", resp.UHostId)
 	if async {
 		fmt.Fprintln(out, text)
 		return false
 	}
 	poller := base.NewPoller(describeUHostByID, out)
-	return poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
+	return poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
 }
 
 //可并发调用版本
@@ -766,11 +810,11 @@ func stopUhostInsV2(req *uhost.StopUHostInstanceRequest, async bool, block *ux.B
 		return
 	}
 
-	text := fmt.Sprintf("uhost[%v] is shutting down", resp.UhostId)
+	text := fmt.Sprintf("uhost[%v] is shutting down", resp.UHostId)
 	if async {
 		block.Append(text)
 	} else {
-		uhostSpoller.Sspoll(resp.UhostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block)
+		uhostSpoller.Sspoll(resp.UHostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block)
 	}
 }
 
@@ -792,12 +836,12 @@ func NewCmdUHostStart(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					text := fmt.Sprintf("uhost[%v] is starting", resp.UhostId)
+					text := fmt.Sprintf("uhost[%v] is starting", resp.UHostId)
 					if *async {
 						fmt.Fprintln(out, text)
 					} else {
 						poller := base.NewPoller(describeUHostByID, out)
-						poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+						poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
 					}
 				}
 			}
@@ -834,12 +878,12 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					text := fmt.Sprintf("uhost[%v] is restarting", resp.UhostId)
+					text := fmt.Sprintf("uhost[%v] is restarting", resp.UHostId)
 					if *async {
 						fmt.Fprintln(out, text)
 					} else {
 						poller := base.NewPoller(describeUHostByID, out)
-						poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+						poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
 					}
 				}
 			}
@@ -891,7 +935,7 @@ func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 				if err != nil {
 					base.HandleError(err)
 				} else {
-					fmt.Fprintf(out, "uhost[%v] is power off\n", resp.UhostId)
+					fmt.Fprintf(out, "uhost[%v] is power off\n", resp.UHostId)
 				}
 			}
 		},
@@ -995,12 +1039,12 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 					if err != nil {
 						base.HandleError(err)
 					} else {
-						text := fmt.Sprintf("uhost [%v] cpu, memory resize", resp.UhostId)
+						text := fmt.Sprintf("uhost [%v] cpu, memory resize", resp.UHostId)
 						if *async {
 							fmt.Fprintln(out, text)
 						} else {
 							poller := base.NewPoller(describeUHostByID, out)
-							poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+							poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
 						}
 					}
 				}
@@ -1327,7 +1371,7 @@ func NewCmdUhostResetPassword(out io.Writer) *cobra.Command {
 					base.HandleError(err)
 					return
 				}
-				fmt.Fprintf(out, "uhost[%s] reset password\n", resp.UhostId)
+				fmt.Fprintf(out, "uhost[%s] reset password\n", resp.UHostId)
 			}
 		},
 	}
@@ -1447,7 +1491,7 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 				fmt.Fprintln(out, text)
 			} else {
 				poller := base.NewPoller(describeUHostByID, out)
-				poller.Poll(resp.UhostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+				poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
 			}
 		},
 	}

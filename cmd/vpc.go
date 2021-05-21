@@ -536,14 +536,14 @@ func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func getAllSubnets(vpcID, project, region string) ([]vpc.VPCSubnetInfoSet, error) {
+func getAllSubnets(vpcID, project, region string) ([]vpc.SubnetInfo, error) {
 	req := base.BizClient.NewDescribeSubnetRequest()
 	req.ProjectId = sdk.String(base.PickResourceID(project))
 	req.Region = sdk.String(region)
 	if vpcID != "" {
 		req.VPCId = sdk.String(base.PickResourceID(vpcID))
 	}
-	subnets := []vpc.VPCSubnetInfoSet{}
+	subnets := []vpc.SubnetInfo{}
 	for limit, offset := 50, 0; ; offset += limit {
 		req.Limit = sdk.Int(limit)
 		req.Offset = sdk.Int(offset)

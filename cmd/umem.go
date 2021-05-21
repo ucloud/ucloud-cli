@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/umem"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
@@ -292,7 +291,7 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 //NewCmdRedisRestart ucloud redis restart
 func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 	idNames := make([]string, 0)
-	req := base.BizClient.NewRestartURedisGroupRequest()
+	req := base.BizClient.UMemClient.NewRestartURedisGroupRequest()
 	cmd := &cobra.Command{
 		Use:   "restart",
 		Short: "Restart redis instances of master-replica type",
@@ -327,12 +326,12 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 }
 
 func restartRedis(creq request.Common) (bool, []string) {
-	req := creq.(*pumem.RestartURedisGroupRequest)
+	req := creq.(*umem.RestartURedisGroupRequest)
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
 	logs := make([]string, 0)
 	logs = append(logs, fmt.Sprintf("api:RestartURedisGroup, request:%v", base.ToQueryMap(req)))
-	_, err := base.BizClient.RestartURedisGroup(req)
+	_, err := base.BizClient.UMemClient.RestartURedisGroup(req)
 	if err != nil {
 		block.Append(base.ParseError(err))
 		logs = append(logs, fmt.Sprintf("restart redis[%s] failed: %s", *req.GroupId, base.ParseError(err)))

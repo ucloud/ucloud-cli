@@ -13,13 +13,13 @@ import (
 type CopyCustomImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 源镜像Id, 参见 DescribeImage
@@ -81,13 +81,13 @@ func (c *UHostClient) CopyCustomImage(req *CopyCustomImageRequest) (*CopyCustomI
 type CreateCustomImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 镜像描述
@@ -146,7 +146,7 @@ type CreateIsolationGroupRequest struct {
 	// [公共参数] 项目id
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 硬件隔离组名称。请遵照[[api:uhost-api:specification|字段规范]]设定隔离组名称。
@@ -211,6 +211,12 @@ type CreateUHostInstanceParamNetworkInterfaceEIPGlobalSSH struct {
 }
 
 /*
+CreateUHostInstanceParamVirtualGpuGPUVirtualGpu is request schema for complex param
+*/
+type CreateUHostInstanceParamVirtualGpuGPUVirtualGpu struct {
+}
+
+/*
 CreateUHostInstanceParamNetworkInterfaceEIP is request schema for complex param
 */
 type CreateUHostInstanceParamNetworkInterfaceEIP struct {
@@ -227,7 +233,7 @@ type CreateUHostInstanceParamNetworkInterfaceEIP struct {
 	// 【若绑定EIP，此参数必填】弹性IP的线路。枚举值: 国际: International BGP: Bgp 各地域允许的线路参数如下: cn-sh1: Bgp cn-sh2: Bgp cn-gd: Bgp cn-bj1: Bgp cn-bj2: Bgp hk: International us-ca: International th-bkk: International kr-seoul:International us-ws:International ge-fra:International sg:International tw-kh:International.其他海外线路均为 International
 	OperatorName *string `required:"false"`
 
-	// 弹性IP的计费模式. 枚举值: "Traffic", 流量计费; "Bandwidth", 带宽计费; "ShareBandwidth",共享带宽模式. "Free":免费带宽模式.默认为 "Bandwidth".
+	// 弹性IP的计费模式. 枚举值: "Traffic", 流量计费; "Bandwidth", 带宽计费; "ShareBandwidth",共享带宽模式. "Free":免费带宽模式,默认为 "Bandwidth"
 	PayMode *string `required:"false"`
 
 	// 绑定的共享带宽Id，仅当PayMode为ShareBandwidth时有效
@@ -235,12 +241,15 @@ type CreateUHostInstanceParamNetworkInterfaceEIP struct {
 }
 
 /*
-CreateUHostInstanceParamNetworkInterface is request schema for complex param
+CreateUHostInstanceParamNetworkInterfaceIPv6 is request schema for complex param
 */
-type CreateUHostInstanceParamNetworkInterface struct {
+type CreateUHostInstanceParamNetworkInterfaceIPv6 struct {
+}
 
-	//
-	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
+/*
+CreateUHostInstanceParamVirtualGpu is request schema for complex param
+*/
+type CreateUHostInstanceParamVirtualGpu struct {
 }
 
 /*
@@ -248,13 +257,13 @@ UHostDisk is request schema for complex param
 */
 type UHostDisk struct {
 
-	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\ 当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]]
+	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\ > SNAPSHOT（SNAPSHOT模式目前仅在上海C支持），快照 \\当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]],默认值:NONE
 	BackupType *string `required:"false"`
 
 	// 云盘代金券id。不适用于系统盘/本地盘。请通过DescribeCoupon接口查询，或登录用户中心查看
 	CouponId *string `required:"false"`
 
-	// 【功能仅部分可用区开放，详询技术支持】磁盘是否加密。加密：true, 不加密: false加密必须传入对应的的KmsKeyId
+	// 【功能仅部分可用区开放，详询技术支持】磁盘是否加密。加密：true, 不加密: false加密必须传入对应的的KmsKeyId,默认值false
 	Encrypted *bool `required:"false"`
 
 	// 是否是系统盘。枚举值：\\ > True，是系统盘 \\ > False，是数据盘（默认）。Disks数组中有且只能有一块盘是系统盘。
@@ -270,21 +279,48 @@ type UHostDisk struct {
 	Type *string `required:"true"`
 }
 
+/*
+CreateUHostInstanceParamVolumes is request schema for complex param
+*/
+type CreateUHostInstanceParamVolumes struct {
+
+	// 【该字段已废弃，请谨慎使用】
+	CouponId *string `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	IsBoot *string `required:"false" deprecated:"true"`
+}
+
+/*
+CreateUHostInstanceParamNetworkInterface is request schema for complex param
+*/
+type CreateUHostInstanceParamNetworkInterface struct {
+
+	// 申请并绑定一个教育网EIP。True为申请并绑定，False为不会申请绑定，默认False。当前只支持具有HPC特性的机型。
+	CreateCernetIp *bool `required:"false"`
+
+	//
+	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
+}
+
 // CreateUHostInstanceRequest is request schema for CreateUHostInstance action
 type CreateUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// 告警模板id，如果传了告警模板id，且告警模板id正确，则绑定告警模板。绑定告警模板失败只会在后台有日志，不会影响创建主机流程，也不会在前端报错。
 	AlarmTemplateId *int `required:"false"`
+
+	// 数据盘是否需要自动分区挂载。当镜像支持“Cloud-init”Feature时可填写此字段。取值 >“On” 自动挂载（默认值）> “Off” 不自动挂载。
+	AutoDataDiskInit *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
 	BootDiskSpace *int `required:"false" deprecated:"true"`
@@ -292,7 +328,7 @@ type CreateUHostInstanceRequest struct {
 	// 虚拟CPU核数。可选参数：1-64（具体机型与CPU的对应关系参照控制台）。默认值: 4。
 	CPU *int `required:"false"`
 
-	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时预付费 \\ > Postpay，按小时后付费（支持关机不收费，目前仅部分可用区支持，请联系您的客户经理） \\ 默认为月付
+	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时预付费 \\ > Postpay，按小时后付费（支持关机不收费，目前仅部分可用区支持，请联系您的客户经理） \\Preemptive计费为抢占式实例 \\ 默认为月付
 	ChargeType *string `required:"false"`
 
 	// 主机代金券ID。请通过DescribeCoupon接口查询，或登录用户中心查看
@@ -307,7 +343,7 @@ type CreateUHostInstanceRequest struct {
 	// GPU卡核心数。仅GPU机型支持此字段（可选范围与MachineType+GpuType相关）
 	GPU *int `required:"false"`
 
-	// GPU类型，枚举值["K80", "P40", "V100"]，MachineType为G时必填
+	// GPU类型，枚举值["K80", "P40", "V100", "T4", "T4S","2080Ti","2080Ti-4C","1080Ti"]，MachineType为G时必填
 	GpuType *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -315,6 +351,9 @@ type CreateUHostInstanceRequest struct {
 
 	// 热升级特性。True为开启，False为未开启，默认False。
 	HotplugFeature *bool `required:"false"`
+
+	// HPC特性，主要涉及绑核操作。True为开启，False为未开启，默认False。
+	HpcEnhanced *bool `required:"false"`
 
 	// 镜像ID。 请通过 [DescribeImage](describe_image.html)获取
 	ImageId *string `required:"true"`
@@ -331,7 +370,7 @@ type CreateUHostInstanceRequest struct {
 	// 主机登陆模式。密码（默认选项）: Password。
 	LoginMode *string `required:"true"`
 
-	// 云主机机型（V2.0），在本字段和字段UHostType中，仅需要其中1个字段即可；当填写了MachineType时，必须填写MinimalCpuPlatform字段。枚举值["N", "C", "G", "O"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
+	// 云主机机型（V2.0），在本字段和字段UHostType中，仅需要其中1个字段即可。枚举值["N", "C", "G", "O", "OS", "OPRO", "OMAX", "O.BM"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	MachineType *string `required:"false"`
 
 	// 本次最大创建主机数量，取值范围是[1,100]，默认值为1。
@@ -340,7 +379,7 @@ type CreateUHostInstanceRequest struct {
 	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围参考控制台）。默认值：8192
 	Memory *int `required:"false"`
 
-	// 最低cpu平台，枚举值["Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake"。
+	// 最低cpu平台，枚举值["Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake"；"Intel/CascadelakeR"; “Amd/Epyc2”,"Amd/Auto"],默认值是"Intel/Auto"。
 	MinimalCpuPlatform *string `required:"false"`
 
 	// UHost实例名称。默认：UHost。请遵照[[api:uhost-api:specification|字段规范]]设定实例名称。
@@ -370,6 +409,9 @@ type CreateUHostInstanceRequest struct {
 	// 【该字段已废弃，请谨慎使用】
 	ResourceType *int `required:"false" deprecated:"true"`
 
+	// 抢占式实例限制模式，仅在ChargeType为"Preemptive"生效。可选模式为PowerOff:代表关机，LowSpeed代码限速 //默认为PowerOff
+	RestrictMode *string `required:"false"`
+
 	// 防火墙ID，默认：Web推荐防火墙。如何查询SecurityGroupId请参见 [DescribeFirewall](../unet-api/describe_firewall.html)。
 	SecurityGroupId *string `required:"false"`
 
@@ -388,7 +430,7 @@ type CreateUHostInstanceRequest struct {
 	// 【建议后续不再使用】云主机机型（V1.0），在本字段和字段MachineType中，仅需要其中1个字段即可。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	UHostType *string `required:"false"`
 
-	// 【即将支持】用户自定义数据。当镜像支持Cloud-init Feature时可填写此字段。注意：1、总数据量大小不超多16K；2、使用base64编码
+	// 用户自定义数据。当镜像支持Cloud-init Feature时可填写此字段。注意：1、总数据量大小不超过 16K；2、使用base64编码
 	UserData *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -396,6 +438,9 @@ type CreateUHostInstanceRequest struct {
 
 	// VPC ID。默认为当前地域的默认VPC。
 	VPCId *string `required:"false"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Volumes []CreateUHostInstanceParamVolumes `required:"false" deprecated:"true"`
 }
 
 // CreateUHostInstanceResponse is response schema for CreateUHostInstance action
@@ -449,7 +494,7 @@ type DeleteIsolationGroupRequest struct {
 	// [公共参数] 项目id
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 硬件隔离组id
@@ -499,13 +544,13 @@ func (c *UHostClient) DeleteIsolationGroup(req *DeleteIsolationGroupRequest) (*D
 type DescribeImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 镜像Id
@@ -531,8 +576,14 @@ type DescribeImageRequest struct {
 type DescribeImageResponse struct {
 	response.CommonBase
 
+	// 操作名称
+	Action string
+
 	// 镜像列表详见 UHostImageSet
 	ImageSet []UHostImageSet
+
+	// 返回码
+	RetCode int
 
 	// 满足条件的镜像总数
 	TotalCount int
@@ -576,7 +627,7 @@ type DescribeIsolationGroupRequest struct {
 	// [公共参数] 项目id
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 待查的硬件隔离组id
@@ -595,6 +646,9 @@ type DescribeIsolationGroupResponse struct {
 
 	// 硬件隔离组集合。参见数据结构IsolationGroup。
 	IsolationGroupSet []IsolationGroup
+
+	// 硬件隔离组总数
+	TotalCount int
 }
 
 // NewDescribeIsolationGroupRequest will create request of DescribeIsolationGroup action.
@@ -632,14 +686,14 @@ func (c *UHostClient) DescribeIsolationGroup(req *DescribeIsolationGroupRequest)
 type DescribeUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
-	// Zone *string `required:"true"`
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
 
 	// 硬件隔离组id。通过硬件隔离组筛选主机。
 	IsolationGroup *string `required:"false"`
@@ -658,6 +712,9 @@ type DescribeUHostInstanceRequest struct {
 
 	// 要查询的业务组名称
 	Tag *string `required:"false"`
+
+	// 要挂载的云盘id，过滤返回能被UDiskId挂载的云主机。目前主要针对rssd云盘使用
+	UDiskIdForAttachment *string `required:"false"`
 
 	// 【数组】UHost主机的资源ID，例如UHostIds.0代表希望获取信息 的主机1，UHostIds.1代表主机2。 如果不传入，则返回当前Region 所有符合条件的UHost实例。
 	UHostIds []string `required:"false"`
@@ -712,13 +769,13 @@ func (c *UHostClient) DescribeUHostInstance(req *DescribeUHostInstanceRequest) (
 type DescribeUHostTagsRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 }
@@ -730,7 +787,7 @@ type DescribeUHostTagsResponse struct {
 	// 业务组集合见 UHostTagSet
 	TagSet []UHostTagSet
 
-	// 已有主机的业务组总个数
+	// 已有主机的业务组总数
 	TotalCount int
 }
 
@@ -769,16 +826,16 @@ func (c *UHostClient) DescribeUHostTags(req *DescribeUHostTagsRequest) (*Describ
 type GetAttachedDiskUpgradePriceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
-	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\ 当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]]。默认值为当前的备份模式。
+	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\> SNAPSHOT(SNAPSHOT模式目前仅在上海C支持)，快照 \\ 当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]]。默认值为当前的备份模式。
 	BackupMode *string `required:"false"`
 
 	// 磁盘ID。参见 [DescribeUHostInstance](describe_uhost_instance.html)返回值中的DiskSet。
@@ -835,7 +892,7 @@ getUHostInstancePriceParamDisks is request schema for complex param
 */
 type getUHostInstancePriceParamDisks struct {
 
-	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\ 当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]]
+	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟 \\ > SNAPSHOT，快照\\ 当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]]
 	BackupType *string `required:"false"`
 
 	// 是否是系统盘。枚举值：\\ > True，是系统盘 \\ > False，是数据盘（默认）。Disks数组中有且只能有一块盘是系统盘。
@@ -848,23 +905,38 @@ type getUHostInstancePriceParamDisks struct {
 	Type *string `required:"true"`
 }
 
+/*
+GetUHostInstancePriceParamVolumes is request schema for complex param
+*/
+type GetUHostInstancePriceParamVolumes struct {
+
+	// 【该字段已废弃，请谨慎使用】
+	IsBoot *string `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Size *int `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Type *string `required:"false" deprecated:"true"`
+}
+
 // GetUHostInstancePriceRequest is request schema for GetUHostInstancePrice action
 type GetUHostInstancePriceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// CPU核数。可选参数：1-64。可选范围参照控制台。默认值: 4
 	CPU *int `required:"true"`
 
-	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时付费 \\ 默认为月付。
+	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时付费 // >Preemptive 抢占式实例 \\ 默认为月付。
 	ChargeType *string `required:"false"`
 
 	// 购买台数，范围[1,5]
@@ -882,7 +954,7 @@ type GetUHostInstancePriceRequest struct {
 	// GPU卡核心数。仅GPU机型支持此字段。
 	GPU *int `required:"false"`
 
-	// GPU类型，枚举值["K80", "P40", "V100"]
+	// GPU类型，枚举值["K80", "P40", "V100", "T4"]
 	GpuType *string `required:"false"`
 
 	// 镜像Id，可通过 [DescribeImage](describe_image.html) 获取镜像ID， 如果镜像ID不传，系统盘大小必传
@@ -891,7 +963,7 @@ type GetUHostInstancePriceRequest struct {
 	// 【该字段已废弃，请谨慎使用】
 	LifeCycle *int `required:"false" deprecated:"true"`
 
-	// 云主机机型（V2版本概念）。枚举值["N", "C", "G", "O"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
+	// 云主机机型（V2版本概念）。枚举值["N", "C", "G", "O", "OS", "OPRO", "OMAX", "O.BM"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	MachineType *string `required:"false"`
 
 	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围参照好控制台）。默认值：8192
@@ -911,6 +983,9 @@ type GetUHostInstancePriceRequest struct {
 
 	// 【待废弃】云主机机型（V1版本概念）。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	UHostType *string `required:"false"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Volumes []GetUHostInstancePriceParamVolumes `required:"false" deprecated:"true"`
 }
 
 // GetUHostInstancePriceResponse is response schema for GetUHostInstancePrice action
@@ -956,13 +1031,13 @@ func (c *UHostClient) GetUHostInstancePrice(req *GetUHostInstancePriceRequest) (
 type GetUHostInstanceVncInfoRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// UHost实例ID 参见 [DescribeUHostInstance](./describe_uhost_instance.html)
@@ -974,7 +1049,10 @@ type GetUHostInstanceVncInfoResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 
 	// Vnc登录IP
 	VncIP string
@@ -1021,13 +1099,13 @@ func (c *UHostClient) GetUHostInstanceVncInfo(req *GetUHostInstanceVncInfoReques
 type GetUHostUpgradePriceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -1058,6 +1136,9 @@ type GetUHostUpgradePriceRequest struct {
 // GetUHostUpgradePriceResponse is response schema for GetUHostUpgradePrice action
 type GetUHostUpgradePriceResponse struct {
 	response.CommonBase
+
+	// 限时优惠的折前原价
+	OriginalPrice float64
 
 	// 规格调整差价。精确到小数点后2位。
 	Price float64
@@ -1098,10 +1179,10 @@ func (c *UHostClient) GetUHostUpgradePrice(req *GetUHostUpgradePriceRequest) (*G
 type ImportCustomImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 是否授权。必须填true
@@ -1172,7 +1253,7 @@ type LeaveIsolationGroupRequest struct {
 	// [公共参数] 项目id
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// [公共参数] 可用区信息
@@ -1224,17 +1305,82 @@ func (c *UHostClient) LeaveIsolationGroup(req *LeaveIsolationGroupRequest) (*Lea
 	return &res, nil
 }
 
+// ModifyUHostIPRequest is request schema for ModifyUHostIP action
+type ModifyUHostIPRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写时为默认项目。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 需要修改为的 IP 地址。新的IP地址和旧IP地址必须属于统一子网，且和主机内部的配置文件一致。
+	PresentIpAddress *string `required:"true"`
+
+	// 所需修改的原 IP 地址 ，当云主机只有一个IP地址时，此参数不必填写。
+	PreviousIpAddress *string `required:"false"`
+
+	// 指定云主机 ID。
+	UHostId *string `required:"true"`
+}
+
+// ModifyUHostIPResponse is response schema for ModifyUHostIP action
+type ModifyUHostIPResponse struct {
+	response.CommonBase
+
+	// 输出错误的信息
+	Message string
+
+	// 目标云主机 ID
+	UHostId string
+}
+
+// NewModifyUHostIPRequest will create request of ModifyUHostIP action.
+func (c *UHostClient) NewModifyUHostIPRequest() *ModifyUHostIPRequest {
+	req := &ModifyUHostIPRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUHostIP
+
+修改云主机内网 IP 地址
+*/
+func (c *UHostClient) ModifyUHostIP(req *ModifyUHostIPRequest) (*ModifyUHostIPResponse, error) {
+	var err error
+	var res ModifyUHostIPResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUHostIP", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ModifyUHostInstanceNameRequest is request schema for ModifyUHostInstanceName action
 type ModifyUHostInstanceNameRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// UHost实例名称
@@ -1249,7 +1395,10 @@ type ModifyUHostInstanceNameResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewModifyUHostInstanceNameRequest will create request of ModifyUHostInstanceName action.
@@ -1287,13 +1436,13 @@ func (c *UHostClient) ModifyUHostInstanceName(req *ModifyUHostInstanceNameReques
 type ModifyUHostInstanceRemarkRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 备注
@@ -1308,7 +1457,10 @@ type ModifyUHostInstanceRemarkResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewModifyUHostInstanceRemarkRequest will create request of ModifyUHostInstanceRemark action.
@@ -1346,13 +1498,13 @@ func (c *UHostClient) ModifyUHostInstanceRemark(req *ModifyUHostInstanceRemarkRe
 type ModifyUHostInstanceTagRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 业务组名称
@@ -1367,7 +1519,10 @@ type ModifyUHostInstanceTagResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewModifyUHostInstanceTagRequest will create request of ModifyUHostInstanceTag action.
@@ -1405,13 +1560,13 @@ func (c *UHostClient) ModifyUHostInstanceTag(req *ModifyUHostInstanceTagRequest)
 type PoweroffUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// UHost实例ID 参见 [DescribeUHostInstance](./describe_uhost_instance.html)
@@ -1422,8 +1577,11 @@ type PoweroffUHostInstanceRequest struct {
 type PoweroffUHostInstanceResponse struct {
 	response.CommonBase
 
-	// UHost实例ID
-	UhostId string
+	// UHost的实例ID
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewPoweroffUHostInstanceRequest will create request of PoweroffUHostInstance action.
@@ -1461,13 +1619,13 @@ func (c *UHostClient) PoweroffUHostInstance(req *PoweroffUHostInstanceRequest) (
 type RebootUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 加密盘密码
@@ -1482,7 +1640,10 @@ type RebootUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewRebootUHostInstanceRequest will create request of RebootUHostInstance action.
@@ -1520,20 +1681,23 @@ func (c *UHostClient) RebootUHostInstance(req *RebootUHostInstanceRequest) (*Reb
 type ReinstallUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
-	// 【该字段已废弃，请谨慎使用】
-	BootDiskSpace *int `required:"false" deprecated:"true"`
+	// 数据盘是否需要自动分区挂载。当镜像支持Cloud-init Feature时可填写此字段。取值“On”（默认值）， “Off”
+	AutoDataDiskInit *string `required:"false"`
 
-	// 针对非私有子网主机，可自定义DNS。n可为0-2
-	DNSServers []string `required:"false"`
+	// 系统盘大小。 单位：GB， 范围[20,100]， 步长：10
+	BootDiskSpace *int `required:"false"`
+
+	// 【该字段已废弃，请谨慎使用】
+	DNSServers []string `required:"false" deprecated:"true"`
 
 	// 镜像Id，默认使用原镜像 参见 [DescribeImage](describe_image.html)
 	ImageId *string `required:"false"`
@@ -1541,14 +1705,17 @@ type ReinstallUHostInstanceRequest struct {
 	// 如果创建UHost实例时LoginMode为Password，则必须填写，如果LoginMode为KeyPair，不需要填写 （密码格式使用BASE64编码；LoginMode不可变更）
 	Password *string `required:"false"`
 
-	// 是否保留数据盘，保留：Yes，不报留：No， 默认：Yes
+	// 是否保留数据盘，保留：Yes，不报留：No， 默认：Yes；如果是从Windows重装为Linux或反之，则无法保留数据盘（该参数目前仅对本地数据盘起作用）
 	ReserveDisk *string `required:"false"`
 
-	// 云灾备指明191
-	ResourceType *int `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	ResourceType *int `required:"false" deprecated:"true"`
 
 	// UHost实例资源ID 参见 [DescribeUHostInstance](describe_uhost_instance.html)
 	UHostId *string `required:"true"`
+
+	// cloudinit初始化使用。注意：1、总数据量大小不超多16K 2、使用base64编码
+	UserData *string `required:"false"`
 }
 
 // ReinstallUHostInstanceResponse is response schema for ReinstallUHostInstance action
@@ -1556,7 +1723,10 @@ type ReinstallUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost实例资源ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewReinstallUHostInstanceRequest will create request of ReinstallUHostInstance action.
@@ -1596,13 +1766,13 @@ func (c *UHostClient) ReinstallUHostInstance(req *ReinstallUHostInstanceRequest)
 type ResetUHostInstancePasswordRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// UHost新密码（密码格式使用BASE64编码）
@@ -1617,7 +1787,10 @@ type ResetUHostInstancePasswordResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewResetUHostInstancePasswordRequest will create request of ResetUHostInstancePassword action.
@@ -1657,13 +1830,13 @@ func (c *UHostClient) ResetUHostInstancePassword(req *ResetUHostInstancePassword
 type ResizeAttachedDiskRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// 磁盘ID。参见 [DescribeUHostInstance](describe_uhost_instance.html)返回值中的DiskSet。
@@ -1672,8 +1845,8 @@ type ResizeAttachedDiskRequest struct {
 	// 磁盘大小，单位GB，步长为10。取值范围需大于当前磁盘大小，最大值请参考[[api:uhost-api:disk_type|磁盘类型]]。
 	DiskSpace *int `required:"true"`
 
-	// 【该字段已废弃，请谨慎使用】
-	DryRun *bool `required:"false" deprecated:"true"`
+	// 用于测试磁盘是否支持在线扩容。DryRun=true,不会执行实际操作，只会返回操作的预期结果。DryRun = false ，正常执行扩容操作。
+	DryRun *bool `required:"false"`
 
 	// UHost实例ID。 参见 [DescribeUHostInstance](describe_uhost_instance.html)。
 	UHostId *string `required:"true"`
@@ -1686,8 +1859,8 @@ type ResizeAttachedDiskResponse struct {
 	// 改配成功的磁盘id
 	DiskId string
 
-	// 【该字段已废弃，请谨慎使用】
-	NeedRestart bool `deprecated:"true"`
+	// 扩容后的状态。NeedRestart = true，必须关闭后启动实例才能使用扩容的磁盘空间。NeedRestart = false,磁盘扩容后无需重启操作。
+	NeedRestart bool
 }
 
 // NewResizeAttachedDiskRequest will create request of ResizeAttachedDisk action.
@@ -1725,25 +1898,25 @@ func (c *UHostClient) ResizeAttachedDisk(req *ResizeAttachedDiskRequest) (*Resiz
 type ResizeUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
-	// 系统盘大小，单位：GB，范围[20,100]，步长：10，系统盘不支持缩容，因此不允许输入比当前实例系统盘小的值
-	BootDiskSpace *int `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	BootDiskSpace *int `required:"false" deprecated:"true"`
 
-	// 虚拟CPU核数，单位：个，范围：[1,16]，最小值为1，其他值是2的倍数，默认值为当前实例的CPU核数（*windows CPU>=2）
+	// 虚拟CPU核数。可选参数：1-240（可选范围与UHostType相关）。默认值为当前实例的CPU核数
 	CPU *int `required:"false"`
 
-	// 数据盘大小，单位：GB，范围[10,1000]； SSD机型，单位：GB，范围[100,500]；步长：10，默认值为当前实例的数据盘大小，数据盘不支持缩容，因此不允许输入比当前实例数据盘大小的值
-	DiskSpace *int `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	DiskSpace *int `required:"false" deprecated:"true"`
 
-	// 内存大小，单位：MB，范围[2048,65536]，步长：2048，默认值为当前实例的内存大小（BGP-C数据中心最小支持1024，限Linux系统）
+	// 内存大小。单位：MB。范围 ：[1024, 1966080]，取值为1024的倍数（可选范围与UHostType相关）。默认值为当前实例的内存大小。
 	Memory *int `required:"false"`
 
 	// 网卡升降级（1，表示升级，2表示降级，0表示不变）
@@ -1758,7 +1931,10 @@ type ResizeUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewResizeUHostInstanceRequest will create request of ResizeUHostInstance action.
@@ -1776,7 +1952,7 @@ func (c *UHostClient) NewResizeUHostInstanceRequest() *ResizeUHostInstanceReques
 /*
 API: ResizeUHostInstance
 
-修改指定UHost实例的资源配置，如CPU核心数，内存容量大小，磁盘空间大小,网络增强等。
+修改指定UHost实例的资源配置，如CPU核心数，内存容量大小，网络增强等。可选配置范围请参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 */
 func (c *UHostClient) ResizeUHostInstance(req *ResizeUHostInstanceRequest) (*ResizeUHostInstanceResponse, error) {
 	var err error
@@ -1796,13 +1972,13 @@ func (c *UHostClient) ResizeUHostInstance(req *ResizeUHostInstanceRequest) (*Res
 type StartUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 加密盘密码
@@ -1817,7 +1993,10 @@ type StartUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewStartUHostInstanceRequest will create request of StartUHostInstance action.
@@ -1855,13 +2034,13 @@ func (c *UHostClient) StartUHostInstance(req *StartUHostInstanceRequest) (*Start
 type StopUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// UHost实例ID 参见 [DescribeUHostInstance](describe_uhost_instance.html)
@@ -1873,7 +2052,10 @@ type StopUHostInstanceResponse struct {
 	response.CommonBase
 
 	// UHost实例ID
-	UhostId string
+	UHostId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UhostId string `deprecated:"true"`
 }
 
 // NewStopUHostInstanceRequest will create request of StopUHostInstance action.
@@ -1911,14 +2093,14 @@ func (c *UHostClient) StopUHostInstance(req *StopUHostInstanceRequest) (*StopUHo
 type TerminateCustomImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
-	// Zone *string `required:"false"`
+	// [公共参数] 【该字段已废弃，请谨慎使用】
+	// Zone *string `required:"false" deprecated:"true"`
 
 	// 自制镜像ID 参见 [DescribeImage](describe_image.html)
 	ImageId *string `required:"true"`
@@ -1967,22 +2149,22 @@ func (c *UHostClient) TerminateCustomImage(req *TerminateCustomImageRequest) (*T
 type TerminateUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
 	Destroy *int `required:"false" deprecated:"true"`
 
-	// 删除主机时是否释放绑定的EIP。默认为False。
+	// 删除主机时是否释放绑定的EIP。默认为false。
 	ReleaseEIP *bool `required:"false"`
 
-	// 删除主机时是否同时删除挂载的数据盘。默认为False。
+	// 删除主机时是否同时删除挂载的数据盘。默认为false。
 	ReleaseUDisk *bool `required:"false"`
 
 	// UHost资源Id 参见 [DescribeUHostInstance](describe_uhost_instance.html)
@@ -2035,10 +2217,10 @@ func (c *UHostClient) TerminateUHostInstance(req *TerminateUHostInstanceRequest)
 type UpgradeToArkUHostInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// 代金券ID 请参考DescribeCoupon接口

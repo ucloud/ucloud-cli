@@ -22,6 +22,8 @@ var (
 	ErrUnexpected = "client.UnexpectedError"
 
 	ErrCredentialExpired = "client.CredentialExpiredError"
+	ErrNullCredential    = "client.NullCredentialError"
+	ErrNullConfig        = "client.NullConfigError"
 )
 
 // ClientError is the ucloud common errorfor server response

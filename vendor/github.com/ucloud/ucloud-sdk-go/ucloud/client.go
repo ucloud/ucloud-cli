@@ -5,6 +5,7 @@ package ucloud
 
 import (
 	"fmt"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
 	"time"
 
 	"github.com/ucloud/ucloud-sdk-go/private/utils"
@@ -16,6 +17,11 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 )
+
+// Version is the version of sdk
+const Version = version.Version
+
+const headerKeyRequestUUID = "X-UCLOUD-REQUEST-UUID"
 
 type ClientMeta struct {
 	Product string
@@ -62,8 +68,9 @@ func NewClient(config *Config, credential *auth.Credential) *Client {
 	client.httpResponseHandlers = append(client.httpResponseHandlers, defaultHttpResponseHandlers...)
 
 	client.logger = log.New()
-	client.logger.SetLevel(config.LogLevel)
-
+	if config != nil {
+		client.logger.SetLevel(config.LogLevel)
+	}
 	return &client
 }
 
@@ -112,9 +119,23 @@ func (c *Client) InvokeAction(action string, req request.Common, resp response.C
 // InvokeActionWithPatcher will invoke action by patchers
 func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp response.Common, patches ...utils.Patch) error {
 	var err error
-	req.SetAction(action)
+	_ = req.SetAction(action)
 	req.SetRequestTime(time.Now())
 	resp.SetRequest(req)
+
+	if c.GetCredential() == nil {
+		return uerr.NewClientError(
+			uerr.ErrNullCredential,
+			fmt.Errorf("null credential error, please set it before request"),
+		)
+	}
+
+	if c.GetConfig() == nil {
+		return uerr.NewClientError(
+			uerr.ErrNullConfig,
+			fmt.Errorf("null config error, please set it before request"),
+		)
+	}
 
 	if c.credential.CanExpire && c.credential.IsExpired() {
 		return uerr.NewClientError(
@@ -165,9 +186,11 @@ func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp
 		}
 
 		err = c.unmarshalHTTPResponse(body, resp)
-
-		uuid := httpResp.GetHeaders().Get(headerKeyRequestUUID)
-		resp.SetRequestUUID(uuid)
+	}
+	// try to get request uuid
+	if httpResp != nil {
+		requestUUID := httpResp.GetHeaders().Get(headerKeyRequestUUID)
+		resp.SetRequestUUID(requestUUID)
 	}
 
 	// use response middle to build and convert response when response has been created.

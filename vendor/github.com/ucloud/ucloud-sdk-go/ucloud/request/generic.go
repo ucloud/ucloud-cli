@@ -56,7 +56,6 @@ func (r BaseGenericRequest) GetPayload() map[string]interface{} {
 	for k, v := range r.payload {
 		m[k] = v
 	}
-
 	return m
 }
 

@@ -17,7 +17,7 @@ github.com/spf13/cobra
 github.com/spf13/cobra/doc
 # github.com/spf13/pflag v1.0.3 => github.com/lixiaojun629/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/ucloud/ucloud-sdk-go v0.16.0
+# github.com/ucloud/ucloud-sdk-go v0.21.4
 github.com/ucloud/ucloud-sdk-go/private/protocol/http
 github.com/ucloud/ucloud-sdk-go/private/services/pathx
 github.com/ucloud/ucloud-sdk-go/private/services/udb
@@ -37,6 +37,7 @@ github.com/ucloud/ucloud-sdk-go/services/uphost
 github.com/ucloud/ucloud-sdk-go/services/vpc
 github.com/ucloud/ucloud-sdk-go/ucloud
 github.com/ucloud/ucloud-sdk-go/ucloud/auth
+github.com/ucloud/ucloud-sdk-go/ucloud/config
 github.com/ucloud/ucloud-sdk-go/ucloud/error
 github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter
 github.com/ucloud/ucloud-sdk-go/ucloud/log

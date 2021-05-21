@@ -1,4 +1,5 @@
 export VERSION=0.1.35
+GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 
 .PHONY : install
 install:
@@ -10,6 +11,11 @@ build_mac:
 	GOOS=darwin GOARCH=amd64 go build -mod=vendor -o out/ucloud main.go
 	tar zcvf out/ucloud-cli-macosx-${VERSION}-amd64.tgz -C out ucloud
 	shasum -a 256 out/ucloud-cli-macosx-${VERSION}-amd64.tgz
+
+build_mac_arm:
+	GOOS=darwin GOARCH=arm64 go build -mod=vendor -o out/ucloud main.go
+	tar zcvf out/ucloud-cli-macosx-${VERSION}-arm64.tgz -C out ucloud
+	shasum -a 256 out/ucloud-cli-macosx-${VERSION}-arm64.tgz
 
 .PHONY : build_linux
 build_linux:
@@ -26,3 +32,6 @@ build_windows:
 .PHONY : build_all
 build_all: build_mac build_linux build_windows
 
+.PHONY: fmt
+fmt:
+	gofmt -w -s $(GOFMT_FILES)
