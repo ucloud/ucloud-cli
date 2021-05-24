@@ -51,7 +51,9 @@ type GSSHRow struct {
 	AcceleratingDomain string
 	SSHServerLocation  string
 	SSHPort            int
+	GlobalSSHPort      int
 	Remark             string
+	InstanceType       string
 }
 
 //NewCmdGsshList ucloud gssh list
@@ -84,7 +86,9 @@ func NewCmdGsshList(out io.Writer) *cobra.Command {
 					row.SSHServerIP = gssh.TargetIP
 					row.AcceleratingDomain = gssh.AcceleratingDomain
 					row.SSHPort = gssh.Port
+					row.GlobalSSHPort = gssh.GlobalSSHPort
 					row.Remark = gssh.Remark
+					row.InstanceType = gssh.InstanceType
 					if val, ok := areaMap[gssh.Area]; ok {
 						row.SSHServerLocation = val
 					} else {
@@ -168,8 +172,8 @@ func NewCmdGsshCreate() *cobra.Command {
 					*req.AreaCode = code
 				}
 			}
-			if port < 1 || port > 65535 || port == 80 || port == 443 {
-				base.Cxt.Println("The port number should be between 1 and 65535, and cannot be 80 or 443")
+			if port < 1 || port > 65535 || port == 80 || port == 443 || port == 65123 {
+				base.Cxt.Println("The port number should be between 1 and 65535, and cannot be 80, 443 or 65123")
 				return
 			}
 			req.TargetIP = sdk.String(targetIP.String())
@@ -187,15 +191,20 @@ func NewCmdGsshCreate() *cobra.Command {
 	req.AreaCode = cmd.Flags().String("location", "", "Required. Location of the source server. See 'ucloud gssh location'")
 	targetIP = cmd.Flags().IP("target-ip", nil, "Required. IP of the source server. Required")
 	bindProjectID(req, flags)
-	req.Port = cmd.Flags().Int("port", 22, "Optional. Port of The SSH service between 1 and 65535. Do not use ports such as 80,443.")
+	req.Port = cmd.Flags().Int("port", 22, "Optional. Port of The SSH service between 1 and 65535. Do not use ports such as 80, 443 or 65123.")
 	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
 	req.ChargeType = cmd.Flags().String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-
+	req.InstanceType = cmd.Flags().String("instance-type", "", "Optional. Possible values: 'Ultimate','Enterprise', 'Basic', 'Free'(Default value)")
+	req.ForwardRegion = cmd.Flags().String("forward-region", "", "Optional. You can select one of 'cn-bj2','cn-sh2','cn-gd' When instance-type is 'Basic'")
+	req.BandwidthPackage = cmd.Flags().Int("bandwidth-package", 0, "Optional. You can set one of 0, 20, 40 When instance-type is 'Ultimate'")
 	cmd.MarkFlagRequired("location")
 	cmd.MarkFlagRequired("target-ip")
 	cmd.Flags().SetFlagValues("location", "LosAngeles", "Singapore", "Lagos", "HongKong", "Tokyo", "Washington", "Frankfurt")
 	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
+	cmd.Flags().SetFlagValues("bandwidth-package", "0", "20", "40")
+	cmd.Flags().SetFlagValues("forward-region", "cn-bj2", "cn-sh2", "cn-gd")
+	cmd.Flags().SetFlagValues("instance-type", "Free", "Basic", "Enterprise", "Ultimate")
 	cmd.Flags().SetFlagValuesFunc("target-ip", func() []string {
 		eips := getAllEip(*req.ProjectId, base.ConfigIns.Region, nil, nil)
 		for idx, eip := range eips {
@@ -258,8 +267,8 @@ func NewCmdGsshModify() *cobra.Command {
 			}
 			if *gsshModifyPortReq.Port != 0 {
 				port := *gsshModifyPortReq.Port
-				if port <= 1 || port >= 65535 || port == 80 || port == 443 {
-					base.Cxt.Println("The port number should be between 1 and 65535, and cannot be equal to 80 or 443")
+				if port <= 1 || port >= 65535 || port == 80 || port == 443 || port == 65123 {
+					base.Cxt.Println("The port number should be between 1 and 65535, and cannot be equal to 80, 443 or 65123")
 					return
 				}
 				for _, idname := range gsshIDs {
