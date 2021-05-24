@@ -51,8 +51,8 @@ type GSSHRow struct {
 	AcceleratingDomain string
 	SSHServerLocation  string
 	SSHPort            int
-	GlobalSSHPort      int
 	Remark             string
+	GlobalSSHPort      int
 	InstanceType       string
 }
 
@@ -86,8 +86,8 @@ func NewCmdGsshList(out io.Writer) *cobra.Command {
 					row.SSHServerIP = gssh.TargetIP
 					row.AcceleratingDomain = gssh.AcceleratingDomain
 					row.SSHPort = gssh.Port
-					row.GlobalSSHPort = gssh.GlobalSSHPort
 					row.Remark = gssh.Remark
+					row.GlobalSSHPort = gssh.GlobalSSHPort
 					row.InstanceType = gssh.InstanceType
 					if val, ok := areaMap[gssh.Area]; ok {
 						row.SSHServerLocation = val
