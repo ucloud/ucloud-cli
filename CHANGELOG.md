@@ -1,3 +1,11 @@
+## 0.1.36 (2021-07-07)
+
+ENHANCEMENTS:
+
+* add the flags: `--instance-type`, `--forward-region`, `--bandwidth-package` about command `gssh create` to customize specific instance type of global ssh.
+* add response fields: `GlobalSSHPort`, `InstanceType` about command `gssh list` to list specific instance type of global ssh.
+* update cmd `uhost create` about bind EIP: EIP creates and binds to UHost when UHost creating instead of after UHost creating.
+
 ## 0.1.35 (2020-11-11)
 
 ENHANCEMENTS:
