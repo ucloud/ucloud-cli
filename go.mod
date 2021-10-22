@@ -3,6 +3,7 @@ module github.com/ucloud/ucloud-cli
 go 1.12
 
 require (
+	git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go v0.21.18-nightly.20211020104704
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0

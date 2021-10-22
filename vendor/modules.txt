@@ -1,3 +1,15 @@
+# git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go v0.21.18-nightly.20211020104704
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/private/protocol/http
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/private/utils
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/services/pathx
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/auth
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/config
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/error
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/log
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/request
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/response
+git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/version
 # github.com/cpuguy83/go-md2man v1.0.10
 github.com/cpuguy83/go-md2man/md2man
 # github.com/inconshreveable/mousetrap v1.0.0
