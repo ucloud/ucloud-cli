@@ -211,12 +211,6 @@ type CreateUHostInstanceParamNetworkInterfaceEIPGlobalSSH struct {
 }
 
 /*
-CreateUHostInstanceParamVirtualGpuGPUVirtualGpu is request schema for complex param
-*/
-type CreateUHostInstanceParamVirtualGpuGPUVirtualGpu struct {
-}
-
-/*
 CreateUHostInstanceParamNetworkInterfaceEIP is request schema for complex param
 */
 type CreateUHostInstanceParamNetworkInterfaceEIP struct {
@@ -250,6 +244,18 @@ type CreateUHostInstanceParamNetworkInterfaceIPv6 struct {
 CreateUHostInstanceParamVirtualGpu is request schema for complex param
 */
 type CreateUHostInstanceParamVirtualGpu struct {
+}
+
+/*
+CreateUHostInstanceParamNetworkInterface is request schema for complex param
+*/
+type CreateUHostInstanceParamNetworkInterface struct {
+
+	// 申请并绑定一个教育网EIP。True为申请并绑定，False为不会申请绑定，默认False。当前只支持具有HPC特性的机型。
+	CreateCernetIp *bool `required:"false"`
+
+	//
+	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
 }
 
 /*
@@ -289,18 +295,6 @@ type CreateUHostInstanceParamVolumes struct {
 
 	// 【该字段已废弃，请谨慎使用】
 	IsBoot *string `required:"false" deprecated:"true"`
-}
-
-/*
-CreateUHostInstanceParamNetworkInterface is request schema for complex param
-*/
-type CreateUHostInstanceParamNetworkInterface struct {
-
-	// 申请并绑定一个教育网EIP。True为申请并绑定，False为不会申请绑定，默认False。当前只支持具有HPC特性的机型。
-	CreateCernetIp *bool `required:"false"`
-
-	//
-	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
 }
 
 // CreateUHostInstanceRequest is request schema for CreateUHostInstance action
@@ -352,8 +346,8 @@ type CreateUHostInstanceRequest struct {
 	// 热升级特性。True为开启，False为未开启，默认False。
 	HotplugFeature *bool `required:"false"`
 
-	// HPC特性，主要涉及绑核操作。True为开启，False为未开启，默认False。
-	HpcEnhanced *bool `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	HpcEnhanced *bool `required:"false" deprecated:"true"`
 
 	// 镜像ID。 请通过 [DescribeImage](describe_image.html)获取
 	ImageId *string `required:"true"`
@@ -367,7 +361,10 @@ type CreateUHostInstanceRequest struct {
 	// 【该字段已废弃，请谨慎使用】
 	KeyPair *string `required:"false" deprecated:"true"`
 
-	// 主机登陆模式。密码（默认选项）: Password。
+	// KeypairId 密钥对ID，LoginMode为KeyPair时此项必须
+	KeyPairId *string `required:"false"`
+
+	// 主机登陆模式。密码（默认选项）: Password，密钥：KeyPair。
 	LoginMode *string `required:"true"`
 
 	// 云主机机型（V2.0），在本字段和字段UHostType中，仅需要其中1个字段即可。枚举值["N", "C", "G", "O", "OS", "OPRO", "OMAX", "O.BM"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
@@ -395,7 +392,7 @@ type CreateUHostInstanceRequest struct {
 	NetworkInterface []CreateUHostInstanceParamNetworkInterface `required:"false"`
 
 	// UHost密码。请遵照[[api:uhost-api:specification|字段规范]]设定密码。密码需使用base64进行编码，举例如下：# echo -n Password1 | base64UGFzc3dvcmQx。
-	Password *string `required:"true"`
+	Password *string `required:"false"`
 
 	// 【数组】创建云主机时指定内网IP。若不传值，则随机分配当前子网下的IP。调用方式举例：PrivateIp.0=x.x.x.x。当前只支持一个内网IP。
 	PrivateIp []string `required:"false"`
@@ -409,10 +406,10 @@ type CreateUHostInstanceRequest struct {
 	// 【该字段已废弃，请谨慎使用】
 	ResourceType *int `required:"false" deprecated:"true"`
 
-	// 抢占式实例限制模式，仅在ChargeType为"Preemptive"生效。可选模式为PowerOff:代表关机，LowSpeed代码限速 //默认为PowerOff
-	RestrictMode *string `required:"false"`
+	// 【该字段已废弃，请谨慎使用】
+	RestrictMode *string `required:"false" deprecated:"true"`
 
-	// 防火墙ID，默认：Web推荐防火墙。如何查询SecurityGroupId请参见 [DescribeFirewall](../unet-api/describe_firewall.html)。
+	// 防火墙ID，默认：Web推荐防火墙。如何查询SecurityGroupId请参见 [DescribeFirewall](api/unet-api/describe_firewall.html)。
 	SecurityGroupId *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -487,6 +484,62 @@ func (c *UHostClient) CreateUHostInstance(req *CreateUHostInstanceRequest) (*Cre
 	return &res, nil
 }
 
+// CreateUHostKeyPairRequest is request schema for CreateUHostKeyPair action
+type CreateUHostKeyPairRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"false"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// 密钥对名称。 由字母，数字，符号组成，长度为1-63位。
+	KeyPairName *string `required:"true"`
+}
+
+// CreateUHostKeyPairResponse is response schema for CreateUHostKeyPair action
+type CreateUHostKeyPairResponse struct {
+	response.CommonBase
+
+	// 密钥信息
+	KeyPair KeyPair
+}
+
+// NewCreateUHostKeyPairRequest will create request of CreateUHostKeyPair action.
+func (c *UHostClient) NewCreateUHostKeyPairRequest() *CreateUHostKeyPairRequest {
+	req := &CreateUHostKeyPairRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateUHostKeyPair
+
+创建主机密钥对信息
+*/
+func (c *UHostClient) CreateUHostKeyPair(req *CreateUHostKeyPairRequest) (*CreateUHostKeyPairResponse, error) {
+	var err error
+	var res CreateUHostKeyPairResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateUHostKeyPair", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DeleteIsolationGroupRequest is request schema for DeleteIsolationGroup action
 type DeleteIsolationGroupRequest struct {
 	request.CommonBase
@@ -533,6 +586,59 @@ func (c *UHostClient) DeleteIsolationGroup(req *DeleteIsolationGroupRequest) (*D
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DeleteIsolationGroup", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DeleteUHostKeyPairsRequest is request schema for DeleteUHostKeyPairs action
+type DeleteUHostKeyPairsRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"false"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// 密钥对ID，最多支持 100 对。
+	KeyPairIds []string `required:"true"`
+}
+
+// DeleteUHostKeyPairsResponse is response schema for DeleteUHostKeyPairs action
+type DeleteUHostKeyPairsResponse struct {
+	response.CommonBase
+}
+
+// NewDeleteUHostKeyPairsRequest will create request of DeleteUHostKeyPairs action.
+func (c *UHostClient) NewDeleteUHostKeyPairsRequest() *DeleteUHostKeyPairsRequest {
+	req := &DeleteUHostKeyPairsRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteUHostKeyPairs
+
+删除一对或者多对密钥对。
+*/
+func (c *UHostClient) DeleteUHostKeyPairs(req *DeleteUHostKeyPairsRequest) (*DeleteUHostKeyPairsResponse, error) {
+	var err error
+	var res DeleteUHostKeyPairsResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteUHostKeyPairs", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -765,6 +871,74 @@ func (c *UHostClient) DescribeUHostInstance(req *DescribeUHostInstanceRequest) (
 	return &res, nil
 }
 
+// DescribeUHostKeyPairsRequest is request schema for DescribeUHostKeyPairs action
+type DescribeUHostKeyPairsRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"false"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// 密钥对的指纹。
+	KeyPairFingerPrint *string `required:"false"`
+
+	// 密钥对名称。
+	KeyPairName *string `required:"false"`
+
+	// 返回数据长度，默认为20，最大100
+	Limit *int `required:"false"`
+
+	// 列表起始位置偏移量，默认为0
+	Offset *int `required:"false"`
+}
+
+// DescribeUHostKeyPairsResponse is response schema for DescribeUHostKeyPairs action
+type DescribeUHostKeyPairsResponse struct {
+	response.CommonBase
+
+	// 密钥对信息集合
+	KeyPairs []KeyPairDesc
+
+	// 密钥对总数
+	TotalCount int
+}
+
+// NewDescribeUHostKeyPairsRequest will create request of DescribeUHostKeyPairs action.
+func (c *UHostClient) NewDescribeUHostKeyPairsRequest() *DescribeUHostKeyPairsRequest {
+	req := &DescribeUHostKeyPairsRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUHostKeyPairs
+
+查询一个或多个密钥对。
+*/
+func (c *UHostClient) DescribeUHostKeyPairs(req *DescribeUHostKeyPairsRequest) (*DescribeUHostKeyPairsResponse, error) {
+	var err error
+	var res DescribeUHostKeyPairsResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUHostKeyPairs", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribeUHostTagsRequest is request schema for DescribeUHostTags action
 type DescribeUHostTagsRequest struct {
 	request.CommonBase
@@ -920,6 +1094,12 @@ type GetUHostInstancePriceParamVolumes struct {
 	Type *string `required:"false" deprecated:"true"`
 }
 
+/*
+GetUHostInstancePriceParamVirtualGpu is request schema for complex param
+*/
+type GetUHostInstancePriceParamVirtualGpu struct {
+}
+
 // GetUHostInstancePriceRequest is request schema for GetUHostInstancePrice action
 type GetUHostInstancePriceRequest struct {
 	request.CommonBase
@@ -936,7 +1116,7 @@ type GetUHostInstancePriceRequest struct {
 	// CPU核数。可选参数：1-64。可选范围参照控制台。默认值: 4
 	CPU *int `required:"true"`
 
-	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时付费 // >Preemptive 抢占式实例 \\ 默认为月付。
+	// 计费模式。枚举值为： \\ > Year，按年付费； \\ > Month，按月付费；\\ > Dynamic，按小时付费 // >Preemptive 抢占式实例 \\ 如果不传某个枚举值，默认返回年付、月付、时付的价格组合集。
 	ChargeType *string `required:"false"`
 
 	// 购买台数，范围[1,5]
@@ -954,7 +1134,7 @@ type GetUHostInstancePriceRequest struct {
 	// GPU卡核心数。仅GPU机型支持此字段。
 	GPU *int `required:"false"`
 
-	// GPU类型，枚举值["K80", "P40", "V100", "T4"]
+	// GPU类型，枚举值["K80", "P40", "V100", "T4","T4S","2080Ti","2080Ti-4C","1080Ti"]
 	GpuType *string `required:"false"`
 
 	// 镜像Id，可通过 [DescribeImage](describe_image.html) 获取镜像ID， 如果镜像ID不传，系统盘大小必传
@@ -1239,6 +1419,71 @@ func (c *UHostClient) ImportCustomImage(req *ImportCustomImageRequest) (*ImportC
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("ImportCustomImage", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ImportUHostKeyPairsRequest is request schema for ImportUHostKeyPairs action
+type ImportUHostKeyPairsRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"false"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// 密钥对名称。由字母，数字，符号组成，长度为1-63位。
+	KeyPairName *string `required:"true"`
+
+	// 密钥对的公钥内容。
+	PublicKeyBody *string `required:"true"`
+}
+
+// ImportUHostKeyPairsResponse is response schema for ImportUHostKeyPairs action
+type ImportUHostKeyPairsResponse struct {
+	response.CommonBase
+
+	// 密钥对指纹。根据RFC4716定义的公钥指纹格式，采用MD5信息摘要算法。算法处理的具体信息格式：`ProjectIdKeyPairId|PublicKeyBody`。
+	KeyPairFingerPrint string
+
+	// 密钥对标识
+	KeyPairId string
+
+	// 密钥对名称
+	KeyPairName string
+}
+
+// NewImportUHostKeyPairsRequest will create request of ImportUHostKeyPairs action.
+func (c *UHostClient) NewImportUHostKeyPairsRequest() *ImportUHostKeyPairsRequest {
+	req := &ImportUHostKeyPairsRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: ImportUHostKeyPairs
+
+导入密钥对后，仅保管公钥部分，需自行妥善保存密钥对的私钥部分。
+*/
+func (c *UHostClient) ImportUHostKeyPairs(req *ImportUHostKeyPairsRequest) (*ImportUHostKeyPairsResponse, error) {
+	var err error
+	var res ImportUHostKeyPairsResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ImportUHostKeyPairs", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1702,7 +1947,13 @@ type ReinstallUHostInstanceRequest struct {
 	// 镜像Id，默认使用原镜像 参见 [DescribeImage](describe_image.html)
 	ImageId *string `required:"false"`
 
-	// 如果创建UHost实例时LoginMode为Password，则必须填写，如果LoginMode为KeyPair，不需要填写 （密码格式使用BASE64编码；LoginMode不可变更）
+	// KeypairId 密钥对ID，LoginMode为KeyPair时此项必须。
+	KeyPairId *string `required:"false"`
+
+	// 主机登陆模式。密码（默认选项）: Password，密钥 KeyPair。
+	LoginMode *string `required:"false"`
+
+	// 如果重装UHost实例时LoginMode为Password，则必须填写，如果LoginMode为KeyPair，不需要填写 （密码格式使用BASE64编码；举例如下：# echo -n Password1 | base64UGFzc3dvcmQx。）
 	Password *string `required:"false"`
 
 	// 是否保留数据盘，保留：Yes，不报留：No， 默认：Yes；如果是从Windows重装为Linux或反之，则无法保留数据盘（该参数目前仅对本地数据盘起作用）

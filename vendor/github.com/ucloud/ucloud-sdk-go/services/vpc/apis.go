@@ -432,10 +432,10 @@ func (c *VPCClient) CloneRouteTable(req *CloneRouteTableRequest) (*CloneRouteTab
 type CreateNATGWRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目Id。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目Id。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// NAT网关绑定的EIPId
@@ -453,8 +453,8 @@ type CreateNATGWRequest struct {
 	// 备注。默认为空
 	Remark *string `required:"false"`
 
-	// NAT网关绑定的子网Id
-	SubnetworkIds []string `required:"true"`
+	// NAT网关绑定的子网Id，默认为空。
+	SubnetworkIds []string `required:"false"`
 
 	// 业务组。默认为空
 	Tag *string `required:"false"`
@@ -2090,14 +2090,14 @@ func (c *VPCClient) DescribeRouteTable(req *DescribeRouteTableRequest) (*Describ
 type DescribeSecondaryIpRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
-	// Zone *string `required:"true"`
+	// [公共参数] 【该字段已废弃，请谨慎使用】
+	// Zone *string `required:"true" deprecated:"true"`
 
 	// Ip
 	Ip *string `required:"false"`
@@ -3025,6 +3025,65 @@ func (c *VPCClient) ModifyRouteRule(req *ModifyRouteRuleRequest) (*ModifyRouteRu
 	return &res, nil
 }
 
+// MoveSecondaryIPMacRequest is request schema for MoveSecondaryIPMac action
+type MoveSecondaryIPMacRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// Secondary IP
+	Ip *string `required:"true"`
+
+	// 新 Mac。Secondary IP 迁移的目的 Mac
+	NewMac *string `required:"true"`
+
+	// 旧 Mac。Secondary IP 当前所绑定的 Mac
+	OldMac *string `required:"true"`
+
+	// 子网 ID。IP/OldMac/NewMac 三者必须在同一子网
+	SubnetId *string `required:"true"`
+}
+
+// MoveSecondaryIPMacResponse is response schema for MoveSecondaryIPMac action
+type MoveSecondaryIPMacResponse struct {
+	response.CommonBase
+}
+
+// NewMoveSecondaryIPMacRequest will create request of MoveSecondaryIPMac action.
+func (c *VPCClient) NewMoveSecondaryIPMacRequest() *MoveSecondaryIPMacRequest {
+	req := &MoveSecondaryIPMacRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: MoveSecondaryIPMac
+
+把 Secondary IP 从旧 MAC 迁移到新 MAC
+*/
+func (c *VPCClient) MoveSecondaryIPMac(req *MoveSecondaryIPMacRequest) (*MoveSecondaryIPMacResponse, error) {
+	var err error
+	var res MoveSecondaryIPMacResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("MoveSecondaryIPMac", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ReleaseVIPRequest is request schema for ReleaseVIP action
 type ReleaseVIPRequest struct {
 	request.CommonBase
@@ -3138,13 +3197,13 @@ func (c *VPCClient) SetGwDefaultExport(req *SetGwDefaultExportRequest) (*SetGwDe
 type UpdateNATGWPolicyRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目Id。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目Id。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 目标IP。填写对饮的目标IP地址
+	// 目标IP。填写对应的目标IP地址
 	DstIP *string `required:"true"`
 
 	// 目标端口。可填写固定端口，也可填写端口范围。支持的端口范围为1-65535

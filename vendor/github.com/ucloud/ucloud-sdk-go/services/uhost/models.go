@@ -3,6 +3,30 @@
 package uhost
 
 /*
+KeyPair - 密钥对信息
+*/
+type KeyPair struct {
+
+	// 密钥对的创建时间，格式为Unix Timestamp。
+	CreateTime int
+
+	// 密钥对指纹。md5(ProjectId|KeyPairId|PublicKey)
+	KeyPairFingerPrint string
+
+	// 密钥对ID。
+	KeyPairId string
+
+	// 密钥对名称。 长度为1~63个英文或中文字符。
+	KeyPairName string
+
+	// 密钥对的私钥内容。只有创建接口才会返回。
+	PrivateKeyBody string
+
+	// 项目ID。
+	ProjectId string
+}
+
+/*
 UHostImageSet - DescribeImage
 */
 type UHostImageSet struct {
@@ -300,6 +324,27 @@ type UHostInstanceSet struct {
 
 	// 可用区。参见 [可用区列表](../summary/regionlist.html)
 	Zone string
+}
+
+/*
+KeyPairDesc - 密钥对信息，不包含私钥内容。
+*/
+type KeyPairDesc struct {
+
+	// 密钥对的创建时间，格式为Unix Timestamp。
+	CreateTime int
+
+	// 密钥对指纹。md5(ProjectId|KeyPairId|PublicKey)
+	KeyPairFingerPrint string
+
+	// 密钥对ID。
+	KeyPairId string
+
+	// 密钥对名称。 长度为1~63个英文或中文字符。
+	KeyPairName string
+
+	// 项目ID。
+	ProjectId string
 }
 
 /*

@@ -159,6 +159,198 @@ type PathXSSLSet struct {
 }
 
 /*
+ForwardArea - 全地域加速源站区域
+*/
+type ForwardArea struct {
+
+	// 源站区域中文
+	Area string
+
+	// 源站区域代码
+	AreaCode string
+
+	// 大陆代码
+	ContinentCode string
+
+	// 国家代码
+	CountryCode string
+
+	// 国旗 emoji
+	FlagEmoji string
+
+	// 国旗unicode
+	FlagUnicode string
+}
+
+/*
+SrcAreaInfo - 接入地域信息
+*/
+type SrcAreaInfo struct {
+
+	// AreaCode对应城市名
+	Area string
+
+	// AreaCode ,城市机场代码
+	AreaCode string
+
+	// 国旗Emoji
+	FlagEmoji string
+
+	// 国旗Unicode
+	FlagUnicode string
+}
+
+/*
+AccelerationAreaInfos - 加速大区信息
+*/
+type AccelerationAreaInfos struct {
+
+	// 加速区code
+	AccelerationArea string
+
+	// 加速节点信息
+	AccelerationNodes []SrcAreaInfo
+}
+
+/*
+ForwardTask - 全球统一接入转发端口任务信息
+*/
+type ForwardTask struct {
+
+	// 加速端口
+	Port int
+
+	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"，"WSWS"，"WSSWS"，"WSSWSS"]。TCP和UDP代表四层转发，其余为七层转发。
+	Protocol string
+
+	// 源站服务器监听的端口号
+	RSPort int
+}
+
+/*
+OutPublicIpInfo - 线路回源IP信息
+*/
+type OutPublicIpInfo struct {
+
+	// 线路回源节点机房代号
+	Area string
+
+	// 线路回源节点EIP
+	IP string
+}
+
+/*
+ForwardInfo - 全球统一接入加速实例配置信息
+*/
+type ForwardInfo struct {
+
+	// 加速大区代码
+	AccelerationArea string
+
+	// 加速节点列表
+	AccelerationAreaInfos []AccelerationAreaInfos
+
+	// 加速大区名称
+	AccelerationAreaName string
+
+	// 购买的带宽值
+	Bandwidth int
+
+	// 加速域名
+	CName string
+
+	// 计费方式
+	ChargeType string
+
+	// 资源创建时间
+	CreateTime int
+
+	// 源站域名
+	Domain string
+
+	// 回源出口IP地址
+	EgressIpList []OutPublicIpInfo
+
+	// 资源过期时间
+	ExpireTime int
+
+	// 源站IP列表，多个值由半角英文逗号相隔
+	IPList []string
+
+	// 加速配置ID
+	InstanceId string
+
+	// 加速实例名称
+	Name string
+
+	// 源站中文名
+	OriginArea string
+
+	// 源站AreaCode
+	OriginAreaCode string
+
+	// 端口列表
+	PortSets []ForwardTask
+
+	// 备注
+	Remark string
+}
+
+/*
+NodeDelays - 全地域加速各个区域加速延迟情况
+*/
+type NodeDelays struct {
+
+	// 加速区域
+	Area string
+
+	// 加速区域Code
+	AreaCode string
+
+	// 国家代码
+	CountryCode string
+
+	// 国旗Emoji
+	FlagEmoji string
+
+	// 国旗Code
+	FlagUnicode string
+
+	// 加速延迟
+	Latency float64
+
+	// 公网延迟
+	LatencyInternet float64
+
+	// 加速提升比例
+	LatencyOptimization float64
+
+	// 加速后丢包率
+	Loss float64
+
+	// 原始丢包率
+	LossInternet float64
+
+	// 丢包下降比例
+	LossOptimization float64
+}
+
+/*
+AccelerationInfo - 加速提升信息
+*/
+type AccelerationInfo struct {
+
+	// 加速大区代码
+	AccelerationArea string
+
+	// 加速大区名称
+	AccelerationName string
+
+	// 加速提升情况
+	NodeInfo []NodeDelays
+}
+
+/*
 UGAL7Forwarder - UGA实例 7层转发器信息
 */
 type UGAL7Forwarder struct {
@@ -219,18 +411,6 @@ type UGAATask struct {
 
 	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"]。TCP和UDP代表四层转发，其余为七层转发
 	Protocol string
-}
-
-/*
-OutPublicIpInfo - 线路出口IP信息
-*/
-type OutPublicIpInfo struct {
-
-	// 线路出口机房代号
-	Area string
-
-	// 线路出口EIP
-	IP string
 }
 
 /*
@@ -405,4 +585,64 @@ type MetricPeriod struct {
 
 	// 出向带宽使用率
 	NetworkOutUsage []MatricPoint
+}
+
+/*
+UGA3Metric - 一段时间内的监控数据
+*/
+type UGA3Metric struct {
+
+	// 当前连接数
+	ConnectCount []MatricPoint
+
+	// 子线路当前连接数
+	ConnectCountSubline []MatricPoint
+
+	// 线路平均延迟
+	Delay []MatricPoint
+
+	// 延迟提升
+	DelayPromote []MatricPoint
+
+	// 子线路延迟提升
+	DelayPromoteSubline []MatricPoint
+
+	// 子线路延迟
+	DelaySubline []MatricPoint
+
+	// 入向带宽
+	NetworkIn []MatricPoint
+
+	// 子线路入口带宽
+	NetworkInSubline []MatricPoint
+
+	// 入向带宽使用率
+	NetworkInUsage []MatricPoint
+
+	// 出向带宽
+	NetworkOut []MatricPoint
+
+	// 子线路出口带宽
+	NetworkOutSubline []MatricPoint
+
+	// 出向带宽使用率
+	NetworkOutUsage []MatricPoint
+}
+
+/*
+UGA3Price -
+*/
+type UGA3Price struct {
+
+	// 加速大区代码
+	AccelerationArea string
+
+	// 加速大区名称
+	AccelerationAreaName string
+
+	// 加速配置带宽价格
+	AccelerationBandwidthPrice float64
+
+	// 转发配置价格
+	AccelerationForwarderPrice float64
 }

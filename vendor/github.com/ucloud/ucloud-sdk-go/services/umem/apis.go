@@ -759,6 +759,77 @@ func (c *UMemClient) DescribeUDRedisSlowlog(req *DescribeUDRedisSlowlogRequest) 
 	return &res, nil
 }
 
+// DescribeUMemRequest is request schema for DescribeUMem action
+type DescribeUMemRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// 分页显示的条目数, 默认值为20
+	Limit *int `required:"false"`
+
+	// 分页显示的起始偏移, 默认值为0
+	Offset *int `required:"false"`
+
+	// 协议类型: memcache, redis
+	Protocol *string `required:"true"`
+
+	// 资源ID
+	ResourceId *string `required:"false"`
+
+	//
+	ResourceType *string `required:"false"`
+}
+
+// DescribeUMemResponse is response schema for DescribeUMem action
+type DescribeUMemResponse struct {
+	response.CommonBase
+
+	// UMem实例列表, 详细参见UMemDataSet
+	DataSet []UMemDataSet
+
+	// 根据过滤条件得到的总数
+	TotalCount int
+}
+
+// NewDescribeUMemRequest will create request of DescribeUMem action.
+func (c *UMemClient) NewDescribeUMemRequest() *DescribeUMemRequest {
+	req := &DescribeUMemRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUMem
+
+获取UMem列表
+*/
+func (c *UMemClient) DescribeUMem(req *DescribeUMemRequest) (*DescribeUMemResponse, error) {
+	var err error
+	var res DescribeUMemResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUMem", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribeUMemBackupRequest is request schema for DescribeUMemBackup action
 type DescribeUMemBackupRequest struct {
 	request.CommonBase
@@ -1961,6 +2032,65 @@ func (c *UMemClient) GetUMemSpaceState(req *GetUMemSpaceStateRequest) (*GetUMemS
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("GetUMemSpaceState", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ISolationURedisGroupRequest is request schema for ISolationURedisGroup action
+type ISolationURedisGroupRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 组的ID
+	GroupId *string `required:"true"`
+
+	// 跨机房URedis，slave所在可用区（必须和Zone在同一Region，且不可相同）
+	SlaveZone *string `required:"false"`
+
+	// UNBind(关闭)或Bind(打开)
+	TransformType *string `required:"true"`
+}
+
+// ISolationURedisGroupResponse is response schema for ISolationURedisGroup action
+type ISolationURedisGroupResponse struct {
+	response.CommonBase
+}
+
+// NewISolationURedisGroupRequest will create request of ISolationURedisGroup action.
+func (c *UMemClient) NewISolationURedisGroupRequest() *ISolationURedisGroupRequest {
+	req := &ISolationURedisGroupRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ISolationURedisGroup
+
+打开/关闭URedis
+*/
+func (c *UMemClient) ISolationURedisGroup(req *ISolationURedisGroupRequest) (*ISolationURedisGroupResponse, error) {
+	var err error
+	var res ISolationURedisGroupResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ISolationURedisGroup", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}

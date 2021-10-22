@@ -21,6 +21,177 @@ type UDRedisSlowlogSet struct {
 }
 
 /*
+UMemSlaveDataSet - DescribeUMem
+*/
+type UMemSlaveDataSet struct {
+
+	// 计费模式，Year, Month, Dynamic, Trial
+	ChargeType string
+
+	// 节点的配置ID
+	ConfigId string
+
+	// 创建时间
+	CreateTime int
+
+	// 到期时间
+	ExpireTime int
+
+	// 资源id
+	GroupId string
+
+	// 资源名称
+	GroupName string
+
+	// 主实例id
+	MasterGroupId string
+
+	// 实力大小
+	MemorySize int
+
+	// 修改时间
+	ModifyTime int
+
+	// 资源名称
+	Name string
+
+	// 端口
+	Port int
+
+	// distributed: 分布式版Redis,或者分布式Memcache；single：主备版Redis,或者单机Memcache；performance：高性能版
+	ResourceType string
+
+	// 主备Redis返回运维时间 0//0点 1 //1点 以此类推
+	RewriteTime int
+
+	// 表示实例是主库还是从库,master,slave
+	Role string
+
+	// 容量单位GB
+	Size int
+
+	// 实例状态                                  Starting                  // 创建中       Creating                  // 初始化中     CreateFail                // 创建失败     Fail                      // 创建失败     Deleting                  // 删除中       DeleteFail                // 删除失败     Running                   // 运行         Resizing                  // 容量调整中   ResizeFail                // 容量调整失败 Configing                 // 配置中       ConfigFail                // 配置失败Restarting                // 重启中SetPasswordFail  //设置密码失败
+	State string
+
+	// 子网
+	SubnetId string
+
+	// 业务组名称
+	Tag string
+
+	// 使用量单位MB
+	UsedSize int
+
+	// vpc
+	VPCId string
+
+	// Redis版本信息
+	Version string
+
+	//
+	VirtualIP string
+
+	// 实例所在可用区，或者master redis所在可用区，参见 [可用区列表](../summary/regionlist.html)
+	Zone string
+}
+
+/*
+UMemSpaceAddressSet - DescribeUMemSpace
+*/
+type UMemSpaceAddressSet struct {
+
+	// UMem实例访问IP
+	IP string
+
+	// UMem实例访问Port
+	Port int
+}
+
+/*
+UMemDataSet - DescribeUMem
+*/
+type UMemDataSet struct {
+
+	// IP端口信息请，参见UMemSpaceAddressSet
+	Address []UMemSpaceAddressSet
+
+	// 是否需要自动备份,enable,disable
+	AutoBackup string
+
+	// 自动备份开始时间,单位小时计,范围[0-23]
+	BackupTime int
+
+	// 计费模式，Year, Month, Dynamic, Trial
+	ChargeType string
+
+	// 节点的配置ID
+	ConfigId string
+
+	// 创建时间
+	CreateTime int
+
+	// UMEM实例列表 UMemSlaveDataSet 如果没有slave，则没有该字段
+	DataSet []UMemSlaveDataSet
+
+	// 到期时间
+	ExpireTime int
+
+	// 是否开启高可用,enable,disable
+	HighAvailability string
+
+	// 资源名称
+	Name string
+
+	// 是否拥有只读Slave“Yes” 包含“No” 不包含
+	OwnSlave string
+
+	// 协议类型: memcache, redis
+	Protocol string
+
+	// 资源ID
+	ResourceId string
+
+	// distributed: 分布式版Redis,或者分布式Memcache；single：主备版Redis,或者单机Memcache；performance：高性能版
+	ResourceType string
+
+	// 主备redis和分布式redis运维时间0  //0点1  //1点以此类推单机版memcache不返回该项
+	RewriteTime int
+
+	// 表示实例是主库还是从库,master,slave仅主备redis返回该项参数
+	Role string
+
+	// 容量单位GB
+	Size int
+
+	// 跨机房URedis，slave redis所在可用区，参见 [可用区列表](../summary/regionlist.html)
+	SlaveZone string
+
+	// 实例状态                                  Starting                  // 创建中       Creating                  // 初始化中     CreateFail                // 创建失败     Fail                      // 创建失败     Deleting                  // 删除中       DeleteFail                // 删除失败     Running                   // 运行         Resizing                  // 容量调整中   ResizeFail                // 容量调整失败 Configing                 // 配置中       ConfigFail                // 配置失败Restarting                // 重启中SetPasswordFail    //设置密码失败
+	State string
+
+	// 子网
+	SubnetId string
+
+	// 业务组名称
+	Tag string
+
+	// 空间类型:single(无热备),double(热备)
+	Type string
+
+	// 使用量单位MB
+	UsedSize int
+
+	// vpc
+	VPCId string
+
+	// Redis版本信息
+	Version string
+
+	// 实例所在可用区，或者master redis所在可用区，参见 [可用区列表](../summary/regionlist.html)
+	Zone string
+}
+
+/*
 UMemBackupSet - DescribeUMemBackup
 */
 type UMemBackupSet struct {
@@ -90,18 +261,6 @@ type UMemPriceSet struct {
 
 	// 现价
 	Price int
-}
-
-/*
-UMemSpaceAddressSet - DescribeUMemSpace
-*/
-type UMemSpaceAddressSet struct {
-
-	// UMem实例访问IP
-	IP string
-
-	// UMem实例访问Port
-	Port int
 }
 
 /*

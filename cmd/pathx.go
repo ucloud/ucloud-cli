@@ -19,38 +19,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/ux"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 
-	"git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/services/pathx"
-	"git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud"
-	"git.ucloudadmin.com/ucloud-sdk/ucloud-sdk-go/ucloud/auth"
-
 	ppathx "github.com/ucloud/ucloud-sdk-go/private/services/pathx"
+	"github.com/ucloud/ucloud-sdk-go/services/pathx"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
 	"github.com/ucloud/ucloud-cli/base"
 )
-
-// TODO: delete for development
-var pathxClient *pathx.PathXClient
-
-func init() {
-	cfg := ucloud.NewConfig()
-	cfg.Region = "cn-bj2"
-	cfg.ProjectId = "org-ydzxob"
-	cfg.Zone = ""
-
-	// replace the public/private key by your own
-	credential := &auth.Credential{
-		PublicKey:  os.Getenv("UCLOUD_PUBLIC_KEY"),
-		PrivateKey: os.Getenv("UCLOUD_PRIVATE_KEY"),
-	}
-
-	pathxClient = pathx.NewClient(&cfg, credential)
-}
 
 //NewCmdPathx ucloud pathx
 func NewCmdPathx() *cobra.Command {
@@ -74,8 +52,8 @@ func NewCmdPathx() *cobra.Command {
 
 // create pathx instance
 func NewCmdUGA3Create(out io.Writer) *cobra.Command {
-	createPathxReq := pathxClient.NewCreateUGA3InstanceRequest()
-	createPathxPortReq := pathxClient.NewCreateUGA3PortRequest()
+	createPathxReq := base.BizClient.NewCreateUGA3InstanceRequest()
+	createPathxPortReq := base.BizClient.NewCreateUGA3PortRequest()
 	spinner := ux.NewDotSpinner(out)
 	var ports, originPorts []string
 	protocol := "tcp"
@@ -87,7 +65,7 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 			"--charge-type Month --quantity 4 --accel Global --origin-ip 110.111.111.111" +
 			"--protocol TCP --port 30654 --origin-port 30564",
 		Run: func(cmd *cobra.Command, args []string) {
-			spinner.Start("Creating the pathx resource")
+			spinner.Start("The pathx resource creating")
 			if *createPathxReq.OriginIPList == "" && *createPathxReq.OriginDomain == "" {
 				spinner.Fail(fmt.Errorf("The origin-ip and origin-domain cannot be empty at the same time"))
 				return
@@ -154,7 +132,7 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 				*createPathxReq.ChargeType = "Year"
 			}
 			// post create pathx resource
-			createUGA3InstanceResp, err := pathxClient.CreateUGA3Instance(createPathxReq)
+			createUGA3InstanceResp, err := base.BizClient.CreateUGA3Instance(createPathxReq)
 			if err != nil {
 				spinner.Fail(err)
 				return
@@ -169,31 +147,32 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 			// CreatePathxPort
 			if len(portIntList) > 0 && len(originPortIntList) > 0 {
 				createPathxPortReq.InstanceId = &createUGA3InstanceResp.InstanceId
-				spinner.Start("Creating the pathx port")
+				createPathxPortReq.SetRegionRef(createPathxReq.GetRegionRef())
+				createPathxPortReq.SetProjectIdRef(createPathxReq.GetProjectIdRef())
+				createPathxPortReq.SetZoneRef(createPathxReq.GetZoneRef())
+				spinner.Start("The pathx port creating")
 				// Temporary support tcp protocol
 				if strings.EqualFold(protocol, "TCP") {
 					createPathxPortReq.TCP = portIntList
 					createPathxPortReq.TCPRS = originPortIntList
 				}
-				_, err := pathxClient.CreateUGA3Port(createPathxPortReq)
+				_, err := base.BizClient.CreateUGA3Port(createPathxPortReq)
 				if err != nil {
 					spinner.Fail(err)
 					return
 				}
 				spinner.Stop()
 			}
+
+			fmt.Fprintf(out, "The resource is created, and the resource ID is: %s\n", createUGA3InstanceResp.InstanceId)
 		},
 	}
 	flags := createCmd.Flags()
 	flags.SortFlags = false
 
-	//bindProjectID(createPathxReq, flags)
-	//bindRegion(createPathxReq, flags)
-	//bindZone(createPathxReq, flags)
-	//
-	//bindProjectID(createPathxPortReq, flags)
-	//bindRegion(createPathxPortReq, flags)
-	//bindZone(createPathxPortReq, flags)
+	bindProjectID(createPathxReq, flags)
+	bindRegion(createPathxReq, flags)
+	bindZone(createPathxReq, flags)
 
 	createPathxReq.Bandwidth = flags.String("bandwidth", "",
 		"Required. Shared bandwidth of the resource")
@@ -233,8 +212,8 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 
 // delete pathx instance
 func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
-	deleteUga3Req := pathxClient.NewDeleteUGA3InstanceRequest()
-	deleteUga3PortReq := pathxClient.NewDeleteUGA3PortRequest()
+	deleteUga3Req := base.BizClient.NewDeleteUGA3InstanceRequest()
+	deleteUga3PortReq := base.BizClient.NewDeleteUGA3PortRequest()
 	spinner := ux.NewDotSpinner(out)
 	var yes bool
 	var instanceId string
@@ -256,7 +235,7 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 			}
 			spinner.Start(fmt.Sprintf("Starting delete the pathx[%s] resource port", instanceId))
 			deleteUga3PortReq.InstanceId = &instanceId
-			_, deletePortErr := pathxClient.DeleteUGA3Port(deleteUga3PortReq)
+			_, deletePortErr := base.BizClient.DeleteUGA3Port(deleteUga3PortReq)
 			if deletePortErr != nil {
 				spinner.Fail(deletePortErr)
 				return
@@ -265,7 +244,10 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 
 			spinner.Start(fmt.Sprintf("Starting delete the pathx[%s] resource", instanceId))
 			deleteUga3Req.InstanceId = &instanceId
-			_, err := pathxClient.DeleteUGA3Instance(deleteUga3Req)
+			deleteUga3Req.SetProjectIdRef(deleteUga3PortReq.GetProjectIdRef())
+			deleteUga3Req.SetRegionRef(deleteUga3PortReq.GetRegionRef())
+			deleteUga3Req.SetZoneRef(deleteUga3PortReq.GetZoneRef())
+			_, err := base.BizClient.DeleteUGA3Instance(deleteUga3Req)
 			if err != nil {
 				spinner.Fail(err)
 				return
@@ -278,27 +260,24 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of pathx, and the deletion will be performed according to this")
 
-	//bindProjectID(deleteUga3Req, flags)
-	//bindRegion(deleteUga3Req, flags)
-	//bindZone(deleteUga3Req, flags)
-	//
-	//bindProjectID(deleteUga3PortReq, flags)
-	//bindRegion(deleteUga3PortReq, flags)
-	//bindZone(deleteUga3PortReq, flags)
+	bindProjectID(deleteUga3PortReq, flags)
+	bindRegion(deleteUga3PortReq, flags)
+	bindZone(deleteUga3PortReq, flags)
 
 	removeCmd.MarkFlagRequired("id")
 	flags.SetFlagValuesFunc("id", func() []string {
-		return getPathxList(*deleteUga3Req.ProjectId, *deleteUga3Req.Region, *deleteUga3Req.Zone)
+		return getPathxList(*deleteUga3PortReq.ProjectId, *deleteUga3PortReq.Region, *deleteUga3PortReq.Zone)
 	})
 	return removeCmd
 }
+
 func getPathxList(project, region, zone string) []string {
-	getInstanceReq := pathxClient.NewDescribeUGA3InstanceRequest()
+	getInstanceReq := base.BizClient.NewDescribeUGA3InstanceRequest()
 	getInstanceReq.ProjectId = sdk.String(project)
 	getInstanceReq.Region = sdk.String(region)
 	getInstanceReq.Zone = sdk.String(zone)
 	getInstanceReq.Limit = sdk.Int(50)
-	resp, err := pathxClient.DescribeUGA3Instance(getInstanceReq)
+	resp, err := base.BizClient.DescribeUGA3Instance(getInstanceReq)
 	if err != nil {
 		base.HandleError(err)
 		return nil
@@ -312,10 +291,10 @@ func getPathxList(project, region, zone string) []string {
 
 // modify UGA3 instance
 func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
-	modifyBandwidthReq := pathxClient.NewModifyUGA3BandwidthRequest()
-	modifyOriginInfoReq := pathxClient.NewModifyUGA3OriginInfoRequest()
-	modifyInstanceReq := pathxClient.NewModifyUGA3InstanceRequest()
-	modifyPortReq := pathxClient.NewModifyUGA3PortRequest()
+	modifyBandwidthReq := base.BizClient.NewModifyUGA3BandwidthRequest()
+	modifyOriginInfoReq := base.BizClient.NewModifyUGA3OriginInfoRequest()
+	modifyInstanceReq := base.BizClient.NewModifyUGA3InstanceRequest()
+	modifyPortReq := base.BizClient.NewModifyUGA3PortRequest()
 
 	spinner := ux.NewDotSpinner(out)
 	var tcpPorts, rsTcpPorts []string
@@ -331,9 +310,16 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 			modifyInstanceReq.InstanceId = &instanceId
 			modifyOriginInfoReq.InstanceId = &instanceId
 			modifyPortReq.InstanceId = &instanceId
-			if *modifyBandwidthReq.Bandwidth != "" {
+			if *modifyBandwidthReq.Bandwidth != 0 {
 				spinner.Start(fmt.Sprintf("Starting modify the pathx[%s] bandwidth", instanceId))
-				_, err := pathxClient.ModifyUGA3Bandwidth(modifyBandwidthReq)
+				if *modifyBandwidthReq.Bandwidth < 1 || *modifyBandwidthReq.Bandwidth > 100 {
+					spinner.Fail(fmt.Errorf("The value of bandwidth size cannot be less than 1 and cannot be greater than 100"))
+					return
+				}
+				modifyBandwidthReq.SetProjectIdRef(modifyInstanceReq.GetProjectIdRef())
+				modifyBandwidthReq.SetRegionRef(modifyInstanceReq.GetRegionRef())
+				modifyBandwidthReq.SetZoneRef(modifyInstanceReq.GetZoneRef())
+				_, err := base.BizClient.ModifyUGA3Bandwidth(modifyBandwidthReq)
 				if err != nil {
 					spinner.Fail(err)
 					return
@@ -342,7 +328,10 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 			}
 			if *modifyOriginInfoReq.OriginIPList != "" || *modifyOriginInfoReq.OriginDomain != "" {
 				spinner.Start(fmt.Sprintf("Starting modify the pathx[%s] origin information", instanceId))
-				_, err := pathxClient.ModifyUGA3OriginInfo(modifyOriginInfoReq)
+				modifyOriginInfoReq.SetProjectIdRef(modifyInstanceReq.GetProjectIdRef())
+				modifyOriginInfoReq.SetRegionRef(modifyInstanceReq.GetRegionRef())
+				modifyOriginInfoReq.SetZoneRef(modifyInstanceReq.GetZoneRef())
+				_, err := base.BizClient.ModifyUGA3OriginInfo(modifyOriginInfoReq)
 				if err != nil {
 					spinner.Fail(err)
 					return
@@ -351,7 +340,7 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 			}
 			if *modifyInstanceReq.Name != "" || *modifyInstanceReq.Remark != "" {
 				spinner.Start(fmt.Sprintf("Starting modify the pathx[%s] resource information", instanceId))
-				_, err := pathxClient.ModifyUGA3Instance(modifyInstanceReq)
+				_, err := base.BizClient.ModifyUGA3Instance(modifyInstanceReq)
 				if err != nil {
 					spinner.Fail(err)
 					return
@@ -413,7 +402,10 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 					modifyPortReq.TCP = tcpPortIntList
 					modifyPortReq.TCPRS = rsTcpPortIntList
 				}
-				_, err := pathxClient.ModifyUGA3Port(modifyPortReq)
+				modifyPortReq.SetProjectIdRef(modifyInstanceReq.GetProjectIdRef())
+				modifyPortReq.SetRegionRef(modifyInstanceReq.GetRegionRef())
+				modifyPortReq.SetZoneRef(modifyInstanceReq.GetZoneRef())
+				_, err := base.BizClient.ModifyUGA3Port(modifyPortReq)
 				if err != nil {
 					base.HandleError(err)
 					return
@@ -424,25 +416,14 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 	}
 	flags := modifyCmd.Flags()
 	flags.SortFlags = false
-	//bindProjectID(modifyBandwidthReq, flags)
-	//bindRegion(modifyBandwidthReq, flags)
-	//bindZone(modifyBandwidthReq, flags)
-	//
-	//bindProjectID(modifyOriginInfoReq, flags)
-	//bindRegion(modifyOriginInfoReq, flags)
-	//bindZone(modifyOriginInfoReq, flags)
-	//
-	//bindProjectID(modifyInstanceReq, flags)
-	//bindRegion(modifyInstanceReq, flags)
-	//bindZone(modifyInstanceReq, flags)
-	//
-	//bindProjectID(modifyPortReq, flags)
-	//bindRegion(modifyPortReq, flags)
-	//bindZone(modifyPortReq, flags)
+
+	bindProjectID(modifyInstanceReq, flags)
+	bindRegion(modifyInstanceReq, flags)
+	bindZone(modifyInstanceReq, flags)
 
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of the pathx")
-	modifyBandwidthReq.Bandwidth = flags.String("bandwidth", "",
+	modifyBandwidthReq.Bandwidth = flags.Int("bandwidth", 0,
 		"Optional. The bandwidth size. Its value range [1-100],no update if no value is specified")
 	modifyOriginInfoReq.OriginIPList = flags.String("origin-ip", "",
 		"Optional. Acceleration source IP. If multiple values exist,please split by ','")
@@ -470,7 +451,7 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 
 // ucloud pathx list
 func NewCmdUGA3List(out io.Writer) *cobra.Command {
-	getPathxListReq := pathxClient.NewDescribeUGA3InstanceRequest()
+	getPathxListReq := base.BizClient.NewDescribeUGA3InstanceRequest()
 	var instanceId string
 	var detail bool
 	listCmd := &cobra.Command{
@@ -482,7 +463,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 			if len(instanceId) > 0 {
 				getPathxListReq.InstanceId = &instanceId
 			}
-			resp, err := pathxClient.DescribeUGA3Instance(getPathxListReq)
+			resp, err := base.BizClient.DescribeUGA3Instance(getPathxListReq)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -528,9 +509,9 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 	flags := listCmd.Flags()
 	flags.SortFlags = false
 
-	//bindProjectID(getPathxListReq, flags)
-	//bindRegion(getPathxListReq, flags)
-	//bindZone(getPathxListReq, flags)
+	bindProjectID(getPathxListReq, flags)
+	bindRegion(getPathxListReq, flags)
+	bindZone(getPathxListReq, flags)
 
 	flags.StringVar(&instanceId, "id", "", "Required. It is the resource ID of pathx resource")
 	flags.BoolVar(&detail, "detail", false, "Optional. If it is specified,the details will be printed")
@@ -539,6 +520,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 	})
 	return listCmd
 }
+
 func printPathxDetail(instanceInfo pathx.ForwardInfo, out io.Writer) {
 	attrs := []base.DescribeTableRow{
 		{Attribute: "ResourceID", Content: instanceInfo.InstanceId},
@@ -624,7 +606,7 @@ func NewCmdPathxPrice(out io.Writer) *cobra.Command {
 
 // ucloud pathx price list
 func NewPathxPriceList(out io.Writer) *cobra.Command {
-	priceReq := pathxClient.NewGetUGA3PriceRequest()
+	priceReq := base.BizClient.NewGetUGA3PriceRequest()
 	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List all the pathx acceleration area price",
@@ -647,7 +629,7 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 				*priceReq.ChargeType = "Year"
 			}
 
-			response, err := pathxClient.GetUGA3Price(priceReq)
+			response, err := base.BizClient.GetUGA3Price(priceReq)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -674,9 +656,9 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	//bindProjectID(priceReq, flags)
-	//bindRegion(priceReq, flags)
-	//bindZone(priceReq, flags)
+	bindProjectID(priceReq, flags)
+	bindRegion(priceReq, flags)
+	bindZone(priceReq, flags)
 
 	priceReq.Bandwidth = flags.Int("bandwidth", 1,
 		"Required. The bandwidth of acceleration area to get price")
@@ -711,8 +693,8 @@ func NewCmdPathxArea(out io.Writer) *cobra.Command {
 
 // ucloud pathx area list
 func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
-	areaGetReq := pathxClient.NewDescribeUGA3AreaRequest()
-	optimizationReq := pathxClient.NewDescribeUGA3OptimizationRequest()
+	areaGetReq := base.BizClient.NewDescribeUGA3AreaRequest()
+	optimizationReq := base.BizClient.NewDescribeUGA3OptimizationRequest()
 	var timeRange, accelerationArea, originDomain, originIp string
 	var noAccel bool
 	cmd := &cobra.Command{
@@ -722,7 +704,7 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 		Example: "ucloud pathx area list --origin-ip 0.0.0.0 --origin-domain test.com",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(originDomain) == 0 && len(originIp) == 0 {
-				response, err := pathxClient.DescribeUGA3Area(areaGetReq)
+				response, err := base.BizClient.DescribeUGA3Area(areaGetReq)
 				if err != nil {
 					base.HandleError(err)
 					return
@@ -756,7 +738,7 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 			}
 			areaGetReq.Domain = &originDomain
 			areaGetReq.IPList = &originIp
-			response, err := pathxClient.DescribeUGA3Area(areaGetReq)
+			response, err := base.BizClient.DescribeUGA3Area(areaGetReq)
 			if err != nil {
 				base.HandleError(err)
 				return
@@ -779,6 +761,7 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 				FlagEmoji:   forwardArea.FlagEmoji,
 			})
 			base.PrintTable(areas, []string{"AreaCode", "Area", "CountryCode", "FlagUnicode", "FlagEmoji"})
+			fmt.Println()
 
 			// display acceleration areas
 			if !noAccel {
@@ -786,7 +769,10 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 				optimizationReq.AreaCode = &areaCode
 				optimizationReq.AccelerationArea = &accelerationArea
 				optimizationReq.TimeRange = &timeRange
-				optimizationResponse, err := pathxClient.DescribeUGA3Optimization(optimizationReq)
+				optimizationReq.SetProjectIdRef(areaGetReq.GetProjectIdRef())
+				optimizationReq.SetRegionRef(areaGetReq.GetRegionRef())
+				optimizationReq.SetZoneRef(areaGetReq.GetZoneRef())
+				optimizationResponse, err := base.BizClient.DescribeUGA3Optimization(optimizationReq)
 				if err != nil {
 					base.HandleError(err)
 					return
@@ -821,7 +807,6 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 					}
 					base.PrintTable(list, []string{"AreaCode", "Area", "CountryCode", "FlagUnicode", "FlagEmoji",
 						"Latency", "LatencyWAN", "LatencyPathX", "Loss", "LossWAN", "LossPathx"})
-					fmt.Println()
 				}
 				return
 			}
@@ -831,13 +816,9 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	//bindProjectID(areaGetReq, flags)
-	//bindRegion(areaGetReq, flags)
-	//bindZone(areaGetReq, flags)
-	//
-	//bindProjectID(optimizationReq, flags)
-	//bindRegion(optimizationReq, flags)
-	//bindZone(optimizationReq, flags)
+	bindProjectID(areaGetReq, flags)
+	bindRegion(areaGetReq, flags)
+	bindZone(areaGetReq, flags)
 
 	flags.StringVar(&timeRange, "time-range", "",
 		"Optional. The default value is 1 day. Acceptable values:'Hour','Day','Week',and its value is not case sensitive")
