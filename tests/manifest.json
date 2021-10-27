@@ -1,0 +1,6 @@
+{
+  "Language": "go",
+  "Plugins": [
+    "html-report"
+  ]
+}
