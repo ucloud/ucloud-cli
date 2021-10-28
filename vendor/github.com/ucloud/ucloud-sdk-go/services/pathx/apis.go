@@ -66,10 +66,10 @@ func (c *PathXClient) BindPathXSSL(req *BindPathXSSLRequest) (*BindPathXSSLRespo
 type CreateGlobalSSHInstanceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// 填写支持SSH访问IP的地区名称，如“洛杉矶”，“新加坡”，“香港”，“东京”，“华盛顿”，“法兰克福”。Area和AreaCode两者必填一个
+	// 填写支持SSH访问IP的地区名称，如“洛杉矶”，“新加坡”，“香港”，“东京”，“华盛顿”，“法兰克福”，“首尔”。Area和AreaCode两者必填一个
 	Area *string `required:"true"`
 
 	// AreaCode, 区域航空港国际通用代码。Area和AreaCode两者必填一个
@@ -78,22 +78,22 @@ type CreateGlobalSSHInstanceRequest struct {
 	// Ultimate版本带宽包大小,枚举值：[0,20,40]。单位MB
 	BandwidthPackage *int `required:"false"`
 
-	// 支付方式，如按月、按年、按时
+	// 支付方式，如按月：Month、 按年：Year、按时：Dynamic
 	ChargeType *string `required:"false"`
 
 	// 使用代金券可冲抵部分费用
 	CouponId *string `required:"false"`
 
-	// InstanceType等于Basic时可以在["cn-bj2","cn-sh2","cn-gd"]中选择1个作为转发机房，Free版本固定为cn-bj2,其他付费版默认配置三个转发机房
+	// InstanceType等于Basic时可以在["cn-bj2","cn-sh2","cn-gd"]中选择1个作为转发机房，其他付费版默认配置三个转发机房
 	ForwardRegion *string `required:"false"`
 
-	// 枚举值：["Enterprise","Basic","Free"], 分别代表企业版，基础版，免费版
+	// 枚举值：["Ultimate","Enterprise","Basic","Primary"], 分别代表旗舰版，企业版，基础版，入门版
 	InstanceType *string `required:"false"`
 
 	// 源站服务器监听的SSH端口，可取范围[1-65535]，不能使用80，443,  65123端口。如果InstanceType=Free，取值范围缩小为[22,3389],linux系统选择22，windows系统自动选3389。
 	Port *int `required:"true"`
 
-	// 购买数量
+	// 购买数量按月购买至月底请传0
 	Quantity *int `required:"false"`
 
 	// 备注信息
@@ -113,8 +113,8 @@ type CreateGlobalSSHInstanceResponse struct {
 	// 实例ID，资源唯一标识
 	InstanceId string
 
-	// 提示信息
-	Message string
+	// 【该字段已废弃，请谨慎使用】
+	Message string `deprecated:"true"`
 }
 
 // NewCreateGlobalSSHInstanceRequest will create request of CreateGlobalSSHInstance action.
@@ -213,11 +213,150 @@ func (c *PathXClient) CreatePathXSSL(req *CreatePathXSSLRequest) (*CreatePathXSS
 	return &res, nil
 }
 
+// CreateUGA3InstanceRequest is request schema for CreateUGA3Instance action
+type CreateUGA3InstanceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速大区,默认Global,[    "Global":"全球",    "AP":"亚太",    "EU":"欧洲",    "ME":"中东",    "OA":"大洋洲",    "AF":"非洲",    "NA":"北美洲",    "SA":"南美洲"]
+	AccelerationArea *string `required:"false"`
+
+	// 非必填,如果不填，会根据Domain 和IPList 去选一个最近的源站区域BKK表示AreaCode;曼谷表示Area["BKK":"曼谷","DXB":"迪拜","FRA":"法兰克福","SGN":"胡志明市","HKG":"香港",CGK":"雅加达","LOS":"拉各斯","LHR":"伦敦","LAX":"洛杉矶","MNL":"马尼拉","DME":"莫斯科","BOM":"孟买","MSP":"圣保罗","ICN":"首尔","PVG":"上海","SIN":"新加坡","NRT":"东京","IAD":"华盛顿","TPE": "台北"]
+	AreaCode *string `required:"false"`
+
+	// 实例的共享带宽
+	Bandwidth *string `required:"true"`
+
+	// 支付方式，如按月、按年、按时
+	ChargeType *string `required:"false"`
+
+	// 使用代金券可冲抵部分费用，仅全地域可用的代金券
+	CouponId *string `required:"false"`
+
+	// 加速配置实例名称,默认PathX
+	Name *string `required:"false"`
+
+	// 加速源域名，IPList和Domain二选一必填
+	OriginDomain *string `required:"false"`
+
+	// 加速源IP，多个IP用英文半角逗号(,)隔开；IPList和Domain二选一必填
+	OriginIPList *string `required:"false"`
+
+	// 购买周期
+	Quantity *int `required:"false"`
+
+	// 备注项
+	Remark *string `required:"false"`
+}
+
+// CreateUGA3InstanceResponse is response schema for CreateUGA3Instance action
+type CreateUGA3InstanceResponse struct {
+	response.CommonBase
+
+	// 加速域名 用户可把业务域名CName到此域名上
+	CName string
+
+	// 加速配置ID
+	InstanceId string
+
+	// 返回信息
+	Message string
+}
+
+// NewCreateUGA3InstanceRequest will create request of CreateUGA3Instance action.
+func (c *PathXClient) NewCreateUGA3InstanceRequest() *CreateUGA3InstanceRequest {
+	req := &CreateUGA3InstanceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateUGA3Instance
+
+创建全球统一接入加速配置项
+*/
+func (c *PathXClient) CreateUGA3Instance(req *CreateUGA3InstanceRequest) (*CreateUGA3InstanceResponse, error) {
+	var err error
+	var res CreateUGA3InstanceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateUGA3Instance", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// CreateUGA3PortRequest is request schema for CreateUGA3Port action
+type CreateUGA3PortRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID
+	InstanceId *string `required:"true"`
+
+	// TCP接入端口，禁用65123端口
+	TCP []int `required:"false"`
+
+	// TCP回源端口
+	TCPRS []int `required:"false"`
+}
+
+// CreateUGA3PortResponse is response schema for CreateUGA3Port action
+type CreateUGA3PortResponse struct {
+	response.CommonBase
+
+	// 返回信息 说明
+	Message string
+}
+
+// NewCreateUGA3PortRequest will create request of CreateUGA3Port action.
+func (c *PathXClient) NewCreateUGA3PortRequest() *CreateUGA3PortRequest {
+	req := &CreateUGA3PortRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateUGA3Port
+
+创建统一接入加速实例端口，目前仅支持四层TCP端口
+*/
+func (c *PathXClient) CreateUGA3Port(req *CreateUGA3PortRequest) (*CreateUGA3PortResponse, error) {
+	var err error
+	var res CreateUGA3PortResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateUGA3Port", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // CreateUGAForwarderRequest is request schema for CreateUGAForwarder action
 type CreateUGAForwarderRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
 	// HTTP接入HTTP回源转发，接入端口。禁用65123端口
@@ -238,13 +377,13 @@ type CreateUGAForwarderRequest struct {
 	// HTTPS接入HTTPS回源转发，源站监听端口
 	HTTPSHTTPSRS []int `required:"false"`
 
-	// TCP接入端口
+	// TCP接入端口，禁用65123端口
 	TCP []int `required:"false"`
 
 	// TCP回源端口
 	TCPRS []int `required:"false"`
 
-	// UDP接入端口
+	// UDP接入端口，禁用65123端口
 	UDP []int `required:"false"`
 
 	// UDP回源端口
@@ -252,14 +391,32 @@ type CreateUGAForwarderRequest struct {
 
 	// 加速配置实例ID
 	UGAId *string `required:"true"`
+
+	// WebSocketS接入WebSocket回源转发，接入端口。禁用65123。
+	WSSWS []int `required:"false"`
+
+	// WebSocketS接入WebSocket回源转发，源站监听端口。
+	WSSWSRS []int `required:"false"`
+
+	// WebSocketS接入WebSocketS回源转发，接入端口。禁用65123。
+	WSSWSS []int `required:"false"`
+
+	// WebSocketS接入WebSocketS回源转发，源站监听端口。
+	WSSWSSRS []int `required:"false"`
+
+	// WebSocket接入WebSocket回源转发，接入端口。禁用65123。
+	WSWS []int `required:"false"`
+
+	// WebSocket接入WebSocket回源转发，源站监听端口
+	WSWSRS []int `required:"false"`
 }
 
 // CreateUGAForwarderResponse is response schema for CreateUGAForwarder action
 type CreateUGAForwarderResponse struct {
 	response.CommonBase
 
-	// 返回信息 说明
-	Message string
+	// 【该字段已废弃，请谨慎使用】
+	Message string `deprecated:"true"`
 }
 
 // NewCreateUGAForwarderRequest will create request of CreateUGAForwarder action.
@@ -433,7 +590,10 @@ func (c *PathXClient) CreateUPath(req *CreateUPathRequest) (*CreateUPathResponse
 type DeleteGlobalSSHInstanceRequest struct {
 	request.CommonBase
 
-	//
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 实例Id,资源的唯一标识
 	InstanceId *string `required:"true"`
 }
 
@@ -441,7 +601,7 @@ type DeleteGlobalSSHInstanceRequest struct {
 type DeleteGlobalSSHInstanceResponse struct {
 	response.CommonBase
 
-	//
+	// 提示信息
 	Message string
 }
 
@@ -453,14 +613,14 @@ func (c *PathXClient) NewDeleteGlobalSSHInstanceRequest() *DeleteGlobalSSHInstan
 	c.Client.SetupRequest(req)
 
 	// setup retryable with default retry policy (retry for non-create action and common error)
-	req.SetRetryable(false)
+	req.SetRetryable(true)
 	return req
 }
 
 /*
 API: DeleteGlobalSSHInstance
 
-
+删除GlobalSSH实例
 */
 func (c *PathXClient) DeleteGlobalSSHInstance(req *DeleteGlobalSSHInstanceRequest) (*DeleteGlobalSSHInstanceResponse, error) {
 	var err error
@@ -523,11 +683,114 @@ func (c *PathXClient) DeletePathXSSL(req *DeletePathXSSLRequest) (*DeletePathXSS
 	return &res, nil
 }
 
+// DeleteUGA3InstanceRequest is request schema for DeleteUGA3Instance action
+type DeleteUGA3InstanceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 实例Id,资源的唯一标识
+	InstanceId *string `required:"true"`
+}
+
+// DeleteUGA3InstanceResponse is response schema for DeleteUGA3Instance action
+type DeleteUGA3InstanceResponse struct {
+	response.CommonBase
+
+	// 提示信息
+	Message string
+}
+
+// NewDeleteUGA3InstanceRequest will create request of DeleteUGA3Instance action.
+func (c *PathXClient) NewDeleteUGA3InstanceRequest() *DeleteUGA3InstanceRequest {
+	req := &DeleteUGA3InstanceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteUGA3Instance
+
+删除全球统一接入转发实例
+*/
+func (c *PathXClient) DeleteUGA3Instance(req *DeleteUGA3InstanceRequest) (*DeleteUGA3InstanceResponse, error) {
+	var err error
+	var res DeleteUGA3InstanceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteUGA3Instance", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DeleteUGA3PortRequest is request schema for DeleteUGA3Port action
+type DeleteUGA3PortRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID
+	InstanceId *string `required:"true"`
+
+	// TCP接入端口
+	TCP []int `required:"false"`
+}
+
+// DeleteUGA3PortResponse is response schema for DeleteUGA3Port action
+type DeleteUGA3PortResponse struct {
+	response.CommonBase
+
+	// 返回信息 说明
+	Message string
+}
+
+// NewDeleteUGA3PortRequest will create request of DeleteUGA3Port action.
+func (c *PathXClient) NewDeleteUGA3PortRequest() *DeleteUGA3PortRequest {
+	req := &DeleteUGA3PortRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteUGA3Port
+
+删除统一接入加速实例转发器 按接入端口删除
+*/
+func (c *PathXClient) DeleteUGA3Port(req *DeleteUGA3PortRequest) (*DeleteUGA3PortResponse, error) {
+	var err error
+	var res DeleteUGA3PortResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteUGA3Port", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DeleteUGAForwarderRequest is request schema for DeleteUGAForwarder action
 type DeleteUGAForwarderRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
 	// HTTP接入HTTP回源，接入端口。禁用65123端口
@@ -547,14 +810,23 @@ type DeleteUGAForwarderRequest struct {
 
 	// 加速配置实例ID
 	UGAId *string `required:"true"`
+
+	// WebSocketS接入WebSocket回源， 接入端口。禁用65123端口。
+	WSSWS []int `required:"false"`
+
+	// WebSocketS接入WebSocketS回源， 接入端口。禁用65123端口
+	WSSWSS []int `required:"false"`
+
+	// WebSocket接入WebSocket回源， 接入端口。禁用65123端口
+	WSWS []int `required:"false"`
 }
 
 // DeleteUGAForwarderResponse is response schema for DeleteUGAForwarder action
 type DeleteUGAForwarderResponse struct {
 	response.CommonBase
 
-	// 返回信息 说明
-	Message string
+	// 【该字段已废弃，请谨慎使用】
+	Message string `deprecated:"true"`
 }
 
 // NewDeleteUGAForwarderRequest will create request of DeleteUGAForwarder action.
@@ -885,6 +1157,180 @@ func (c *PathXClient) DescribePathXSSL(req *DescribePathXSSLRequest) (*DescribeP
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribePathXSSL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeUGA3AreaRequest is request schema for DescribeUGA3Area action
+type DescribeUGA3AreaRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// 域名，非必填。如果填IP或者域名，会推荐一个地域在返回列表的第一个
+	Domain *string `required:"false"`
+
+	// IP集合，非必填。如果填IP或者域名，会推荐一个地域在返回列表的第一个，源站IP集合，以逗号分隔[127.0.0.1,127.0.0.2]
+	IPList *string `required:"false"`
+}
+
+// DescribeUGA3AreaResponse is response schema for DescribeUGA3Area action
+type DescribeUGA3AreaResponse struct {
+	response.CommonBase
+
+	// 支持源站的地区,比如：AreaSet[{            "Area": "首尔",            "AreaCode": "ICN",            "CountryCode": "CN",            "ContinentCode": "CN"        }]ContinentCode:["CN","NA","OT"];"CN":表示国内，"NA":表示美洲，“OT"：表示欧洲等其他地区
+	AreaSet []ForwardArea
+
+	// 提示信息
+	Message string
+}
+
+// NewDescribeUGA3AreaRequest will create request of DescribeUGA3Area action.
+func (c *PathXClient) NewDescribeUGA3AreaRequest() *DescribeUGA3AreaRequest {
+	req := &DescribeUGA3AreaRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUGA3Area
+
+获取全球接入源站可选列表
+*/
+func (c *PathXClient) DescribeUGA3Area(req *DescribeUGA3AreaRequest) (*DescribeUGA3AreaResponse, error) {
+	var err error
+	var res DescribeUGA3AreaResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUGA3Area", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeUGA3InstanceRequest is request schema for DescribeUGA3Instance action
+type DescribeUGA3InstanceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID，如果传了实例ID 则返回匹配实例ID的记录；如果没传则返回 ProjectId 下全部实例且符合分页要求
+	InstanceId *string `required:"false"`
+
+	// 返回的最大条数，默认为100，最大值400
+	Limit *int `required:"false"`
+
+	// 偏移量，默认为0
+	Offset *int `required:"false"`
+}
+
+// DescribeUGA3InstanceResponse is response schema for DescribeUGA3Instance action
+type DescribeUGA3InstanceResponse struct {
+	response.CommonBase
+
+	// 全球加速实例信息列表
+	ForwardInstanceInfos []ForwardInfo
+
+	// 符合条件的总数
+	TotalCount int
+}
+
+// NewDescribeUGA3InstanceRequest will create request of DescribeUGA3Instance action.
+func (c *PathXClient) NewDescribeUGA3InstanceRequest() *DescribeUGA3InstanceRequest {
+	req := &DescribeUGA3InstanceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUGA3Instance
+
+获取全球统一接入加速服务加速配置信息，指定实例ID返回单个实例。未指定实例ID时 指定分页参数 则按创建时间降序 返回记录
+*/
+func (c *PathXClient) DescribeUGA3Instance(req *DescribeUGA3InstanceRequest) (*DescribeUGA3InstanceResponse, error) {
+	var err error
+	var res DescribeUGA3InstanceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUGA3Instance", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeUGA3OptimizationRequest is request schema for DescribeUGA3Optimization action
+type DescribeUGA3OptimizationRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// 加速大区,默认Global,[    "Global":"全球",    "AP":"亚太",    "EU":"欧洲",    "ME":"中东",    "OA":"大洋洲",    "AF":"非洲",    "NA":"北美洲",    "SA":"南美洲"]
+	AccelerationArea *string `required:"false"`
+
+	// 源站AreaCode
+	AreaCode *string `required:"true"`
+
+	// 默认一天 ，枚举类型["Hour","Day","Week"]
+	TimeRange *string `required:"false"`
+}
+
+// DescribeUGA3OptimizationResponse is response schema for DescribeUGA3Optimization action
+type DescribeUGA3OptimizationResponse struct {
+	response.CommonBase
+
+	// 加速详情
+	AccelerationInfos []AccelerationInfo
+
+	// 【该字段已废弃，请谨慎使用】
+	Message string `deprecated:"true"`
+}
+
+// NewDescribeUGA3OptimizationRequest will create request of DescribeUGA3Optimization action.
+func (c *PathXClient) NewDescribeUGA3OptimizationRequest() *DescribeUGA3OptimizationRequest {
+	req := &DescribeUGA3OptimizationRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUGA3Optimization
+
+获取全球接入UGA3线路加速化情况
+*/
+func (c *PathXClient) DescribeUGA3Optimization(req *DescribeUGA3OptimizationRequest) (*DescribeUGA3OptimizationResponse, error) {
+	var err error
+	var res DescribeUGA3OptimizationResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUGA3Optimization", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1231,14 +1677,203 @@ func (c *PathXClient) GetPathXMetric(req *GetPathXMetricRequest) (*GetPathXMetri
 	return &res, nil
 }
 
+// GetUGA3MetricRequest is request schema for GetUGA3Metric action
+type GetUGA3MetricRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 子线路AreaCode ,子线路的时候传，不是子线路可以不传
+	AreaCode *string `required:"false"`
+
+	// 查询起始时间，10位长度时间戳
+	BeginTime *int `required:"true"`
+
+	// 查询结束时间，10位长度时间戳
+	EndTime *int `required:"true"`
+
+	// 资源ID
+	InstanceId *string `required:"true"`
+
+	// 是否为子线路。为了简化查询,true 会返回所有子线路监控项可以，false:返回所有汇总的监控数据
+	IsSubline *bool `required:"false"`
+
+	// 查询监控的指标项。可不传	NetworkOut:出口总带宽	NetworkIn：入口总带宽	NetworkOutUsage：出口带宽使用率	NetworkInUsage：入口总带宽使用率	NetworkOutSubline ：子线路出口带宽	NetworkInSubline：子线路入口带宽	Delay：线路平均延迟	DelaySubline：子线路延迟	ConnectCount：当前连接数	ConnectCountSubline：子线路当前连接数	DelayPromote：延迟提升	DelayPromoteSubline：子线路延迟提升
+	MetricName []string `required:"false"`
+}
+
+// GetUGA3MetricResponse is response schema for GetUGA3Metric action
+type GetUGA3MetricResponse struct {
+	response.CommonBase
+
+	// 监控数据结果集
+	DataSet UGA3Metric
+}
+
+// NewGetUGA3MetricRequest will create request of GetUGA3Metric action.
+func (c *PathXClient) NewGetUGA3MetricRequest() *GetUGA3MetricRequest {
+	req := &GetUGA3MetricRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetUGA3Metric
+
+获取全地域加速监控信息
+*/
+func (c *PathXClient) GetUGA3Metric(req *GetUGA3MetricRequest) (*GetUGA3MetricResponse, error) {
+	var err error
+	var res GetUGA3MetricResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetUGA3Metric", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// GetUGA3PriceRequest is request schema for GetUGA3Price action
+type GetUGA3PriceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速大区,默认返回所有加速大区价格
+	AccelerationArea *string `required:"false"`
+
+	// 源站区域
+	AreaCode *string `required:"true"`
+
+	// 共享带宽大小
+	Bandwidth *int `required:"true"`
+
+	// 计费方式，默认按月支付。Month: 按月; Year: 按年; Dynamic: 按小时收
+	ChargeType *string `required:"false"`
+
+	// 购买时间数量，当ChargeType为Month时 Quantity默认为0，代表购买至月底。按年按小时必须为大于0
+	Quantity *int `required:"false"`
+}
+
+// GetUGA3PriceResponse is response schema for GetUGA3Price action
+type GetUGA3PriceResponse struct {
+	response.CommonBase
+
+	// 加速大区对应价格
+	UGA3Price []UGA3Price
+}
+
+// NewGetUGA3PriceRequest will create request of GetUGA3Price action.
+func (c *PathXClient) NewGetUGA3PriceRequest() *GetUGA3PriceRequest {
+	req := &GetUGA3PriceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetUGA3Price
+
+获取全球统一接入转发实例价格
+*/
+func (c *PathXClient) GetUGA3Price(req *GetUGA3PriceRequest) (*GetUGA3PriceResponse, error) {
+	var err error
+	var res GetUGA3PriceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetUGA3Price", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// GetUGA3UpdatePriceRequest is request schema for GetUGA3UpdatePrice action
+type GetUGA3UpdatePriceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 暂未支持，加速大区，在更换加速大区的时候使用
+	AccelerationArea *string `required:"false"`
+
+	// 暂未支持，源站区域
+	AreaCode *string `required:"false"`
+
+	// 只有升级带宽的时候有价格变化
+	Bandwidth *int `required:"false"`
+
+	// 资源ID
+	InstanceId *string `required:"true"`
+}
+
+// GetUGA3UpdatePriceResponse is response schema for GetUGA3UpdatePrice action
+type GetUGA3UpdatePriceResponse struct {
+	response.CommonBase
+
+	// 价格 元。大于0需付费，小于0则退费。
+	Price float64
+}
+
+// NewGetUGA3UpdatePriceRequest will create request of GetUGA3UpdatePrice action.
+func (c *PathXClient) NewGetUGA3UpdatePriceRequest() *GetUGA3UpdatePriceRequest {
+	req := &GetUGA3UpdatePriceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetUGA3UpdatePrice
+
+全球统一接入获取实例更新价格（增加、删退）
+*/
+func (c *PathXClient) GetUGA3UpdatePrice(req *GetUGA3UpdatePriceRequest) (*GetUGA3UpdatePriceResponse, error) {
+	var err error
+	var res GetUGA3UpdatePriceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetUGA3UpdatePrice", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ModifyGlobalSSHPortRequest is request schema for ModifyGlobalSSHPort action
 type ModifyGlobalSSHPortRequest struct {
 	request.CommonBase
 
-	//
+	// [公共参数] 项目ID，如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 实例ID,资源唯一标识。当前仅收费版GlobalSSH实例可以修改端口。
 	InstanceId *string `required:"true"`
 
-	//
+	// 源站服务器监听的SSH端口号。收费版本端口范围[1,65535]且不能为80，443，65123端口。免费版不支持修改端口。
 	Port *int `required:"true"`
 }
 
@@ -1246,7 +1881,7 @@ type ModifyGlobalSSHPortRequest struct {
 type ModifyGlobalSSHPortResponse struct {
 	response.CommonBase
 
-	//
+	// 提示信息
 	Message string
 }
 
@@ -1258,14 +1893,14 @@ func (c *PathXClient) NewModifyGlobalSSHPortRequest() *ModifyGlobalSSHPortReques
 	c.Client.SetupRequest(req)
 
 	// setup retryable with default retry policy (retry for non-create action and common error)
-	req.SetRetryable(false)
+	req.SetRetryable(true)
 	return req
 }
 
 /*
 API: ModifyGlobalSSHPort
 
-
+修改GlobalSSH端口
 */
 func (c *PathXClient) ModifyGlobalSSHPort(req *ModifyGlobalSSHPortRequest) (*ModifyGlobalSSHPortResponse, error) {
 	var err error
@@ -1386,6 +2021,236 @@ func (c *PathXClient) ModifyGlobalSSHType(req *ModifyGlobalSSHTypeRequest) (*Mod
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("ModifyGlobalSSHType", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ModifyUGA3BandwidthRequest is request schema for ModifyUGA3Bandwidth action
+type ModifyUGA3BandwidthRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 带宽大小，范围[1,100]，不传则不更新
+	Bandwidth *int `required:"false"`
+
+	// 需要全地域可用的代金券
+	CouponId *string `required:"false"`
+
+	// 加速配置实例ID，格式uga3-xxxx
+	InstanceId *string `required:"true"`
+}
+
+// ModifyUGA3BandwidthResponse is response schema for ModifyUGA3Bandwidth action
+type ModifyUGA3BandwidthResponse struct {
+	response.CommonBase
+
+	// 补充描述信息
+	Message string
+}
+
+// NewModifyUGA3BandwidthRequest will create request of ModifyUGA3Bandwidth action.
+func (c *PathXClient) NewModifyUGA3BandwidthRequest() *ModifyUGA3BandwidthRequest {
+	req := &ModifyUGA3BandwidthRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUGA3Bandwidth
+
+修改统一接入加速配置带宽
+*/
+func (c *PathXClient) ModifyUGA3Bandwidth(req *ModifyUGA3BandwidthRequest) (*ModifyUGA3BandwidthResponse, error) {
+	var err error
+	var res ModifyUGA3BandwidthResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUGA3Bandwidth", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ModifyUGA3InstanceRequest is request schema for ModifyUGA3Instance action
+type ModifyUGA3InstanceRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID，格式uga-xxxx。不支持GlobalSSH实例。
+	InstanceId *string `required:"true"`
+
+	// 加速配置实例名称，不填或空字符串则不更新
+	Name *string `required:"false"`
+
+	// 备注信息，暂时前端为使用
+	Remark *string `required:"false"`
+}
+
+// ModifyUGA3InstanceResponse is response schema for ModifyUGA3Instance action
+type ModifyUGA3InstanceResponse struct {
+	response.CommonBase
+
+	// 补充描述信息
+	Message string
+}
+
+// NewModifyUGA3InstanceRequest will create request of ModifyUGA3Instance action.
+func (c *PathXClient) NewModifyUGA3InstanceRequest() *ModifyUGA3InstanceRequest {
+	req := &ModifyUGA3InstanceRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUGA3Instance
+
+修改统一接入加速配置属性，如Name，ReMark
+*/
+func (c *PathXClient) ModifyUGA3Instance(req *ModifyUGA3InstanceRequest) (*ModifyUGA3InstanceResponse, error) {
+	var err error
+	var res ModifyUGA3InstanceResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUGA3Instance", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ModifyUGA3OriginInfoRequest is request schema for ModifyUGA3OriginInfo action
+type ModifyUGA3OriginInfoRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID，格式uga3-xxxx。
+	InstanceId *string `required:"true"`
+
+	// 加速源域名，仅支持1个域名。修改源站时 OriginIPList和OriginDomain至少填一个。OriginIPList和OriginDomain都填时 以Domain为准,如果两个都不填，不修改
+	OriginDomain *string `required:"true"`
+
+	// ，加速源IP，多个IP用英文半角逗号(,)隔开。修改源站时 ，OriginIPList和OriginDomain至少填一个。OriginIPList和OriginDomain都填时 以OriginDomain为准。如果两个都不填，不修改
+	OriginIPList *string `required:"true"`
+}
+
+// ModifyUGA3OriginInfoResponse is response schema for ModifyUGA3OriginInfo action
+type ModifyUGA3OriginInfoResponse struct {
+	response.CommonBase
+
+	// 操作名称
+	Action string
+
+	// 补充描述信息
+	Message string
+
+	// 返回码
+	RetCode int
+}
+
+// NewModifyUGA3OriginInfoRequest will create request of ModifyUGA3OriginInfo action.
+func (c *PathXClient) NewModifyUGA3OriginInfoRequest() *ModifyUGA3OriginInfoRequest {
+	req := &ModifyUGA3OriginInfoRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUGA3OriginInfo
+
+Domain， IPList注意：修改Domain或IPList时， 请确保源站服务端口已经开启且外网防火墙允许pathx出口ip访问。
+*/
+func (c *PathXClient) ModifyUGA3OriginInfo(req *ModifyUGA3OriginInfoRequest) (*ModifyUGA3OriginInfoResponse, error) {
+	var err error
+	var res ModifyUGA3OriginInfoResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUGA3OriginInfo", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ModifyUGA3PortRequest is request schema for ModifyUGA3Port action
+type ModifyUGA3PortRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 加速配置实例ID
+	InstanceId *string `required:"true"`
+
+	// TCP接入端口，禁用65123端口
+	TCP []int `required:"false"`
+
+	// TCP回源端口
+	TCPRS []int `required:"false"`
+}
+
+// ModifyUGA3PortResponse is response schema for ModifyUGA3Port action
+type ModifyUGA3PortResponse struct {
+	response.CommonBase
+
+	// 返回信息 说明
+	Message string
+}
+
+// NewModifyUGA3PortRequest will create request of ModifyUGA3Port action.
+func (c *PathXClient) NewModifyUGA3PortRequest() *ModifyUGA3PortRequest {
+	req := &ModifyUGA3PortRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUGA3Port
+
+修改统一接入加速实例端口,目前仅支持四层TCP端口
+*/
+func (c *PathXClient) ModifyUGA3Port(req *ModifyUGA3PortRequest) (*ModifyUGA3PortResponse, error) {
+	var err error
+	var res ModifyUGA3PortResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUGA3Port", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1660,6 +2525,56 @@ func (c *PathXClient) UnBindPathXSSL(req *UnBindPathXSSLRequest) (*UnBindPathXSS
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("UnBindPathXSSL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// UpdatePathXWhitelistRequest is request schema for UpdatePathXWhitelist action
+type UpdatePathXWhitelistRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// GlobalSSH实例ID，资源唯一标识
+	InstanceId *string `required:"true"`
+
+	// 白名单规则,例如 "Whitelist.0": "192.168.1.1/24|tcp|22"，"Whitelist.1": "192.168.1.2|tcp|8080:8090"，第一个参数为ip或ip段，第二个参数代表协议（tcp/udp），第三个参数代表端口号或端口范围（使用 ':' 隔开）；可以添加多条规则（递增Whitelist.n字段内的n值）；此接口需要列出全部规则，例如不填则为清空白名单规则，如若需要增量添加，使用InsertPathXWhitelist接口,globalssh 没有端口范围：端口设置成加速端口，协议设置成tcp:ip|tcp|加速端口
+	Whitelist []string `required:"false"`
+}
+
+// UpdatePathXWhitelistResponse is response schema for UpdatePathXWhitelist action
+type UpdatePathXWhitelistResponse struct {
+	response.CommonBase
+}
+
+// NewUpdatePathXWhitelistRequest will create request of UpdatePathXWhitelist action.
+func (c *PathXClient) NewUpdatePathXWhitelistRequest() *UpdatePathXWhitelistRequest {
+	req := &UpdatePathXWhitelistRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdatePathXWhitelist
+
+更新入口白名单,仅限GlobalSSH 实例使用。其他uga-实例不生效
+*/
+func (c *PathXClient) UpdatePathXWhitelist(req *UpdatePathXWhitelistRequest) (*UpdatePathXWhitelistResponse, error) {
+	var err error
+	var res UpdatePathXWhitelistResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdatePathXWhitelist", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}

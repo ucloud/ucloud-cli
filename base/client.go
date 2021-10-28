@@ -49,7 +49,7 @@ type Client struct {
 	uphost.UPHostClient
 	PrivateUHostClient
 	PrivateUDBClient
-	PrivateUMemClient
+	PrivateUMemClient PrivateUMemClient
 	PrivatePathxClient
 }
 
