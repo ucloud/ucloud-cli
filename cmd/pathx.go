@@ -16,8 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/ux"
 	"io"
 	"strconv"
 	"strings"
@@ -27,7 +25,9 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
+	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 //NewCmdPathx ucloud pathx
@@ -215,7 +215,7 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 	deleteUga3Req := base.BizClient.NewDeleteUGA3InstanceRequest()
 	deleteUga3PortReq := base.BizClient.NewDeleteUGA3PortRequest()
 	spinner := ux.NewDotSpinner(out)
-	var yes bool
+	var yes *bool
 	var instanceId string
 	removeCmd := &cobra.Command{
 		Use:     "delete",
@@ -223,7 +223,7 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 		Long:    "Delete the pathx resource and port",
 		Example: "ucloud pathx delete --id uga3-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			if !yes {
+			if !*yes {
 				sure, err := ux.Prompt("Are you sure you want to delete this resource ?")
 				if err != nil {
 					base.Cxt.Println(err)
@@ -265,6 +265,7 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 	bindZone(deleteUga3PortReq, flags)
 
 	removeCmd.MarkFlagRequired("id")
+	yes = removeCmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	flags.SetFlagValuesFunc("id", func() []string {
 		return getPathxList(*deleteUga3PortReq.ProjectId, *deleteUga3PortReq.Region, *deleteUga3PortReq.Zone)
 	})
