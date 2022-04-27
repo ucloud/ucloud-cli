@@ -1,3 +1,7 @@
+## 0.1.38 (2021-07-07)
+
+* fix build failure when using go 1.18 on darwin_arm64. ([golang/go#49219](https://github.com/golang/go/issues/49219))
+
 ## 0.1.36 (2021-07-07)
 
 ENHANCEMENTS:
