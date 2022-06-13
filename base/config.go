@@ -39,7 +39,7 @@ const DefaultBaseURL = "https://api.ucloud.cn/"
 const DefaultProfile = "default"
 
 //Version 版本号
-const Version = "0.1.38"
+const Version = "0.1.39"
 
 var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 

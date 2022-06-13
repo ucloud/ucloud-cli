@@ -1,4 +1,9 @@
-## 0.1.38 (2021-07-07)
+## 0.1.39 (2022-06-13)
+
+* fix init failure when user donot have a default project in ucloud console.
+* update the description of init.
+
+## 0.1.38 (2022-04-27)
 
 * fix build failure when using go 1.18 on darwin_arm64. ([golang/go#49219](https://github.com/golang/go/issues/49219))
 
