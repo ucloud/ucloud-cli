@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -26,7 +27,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-const configDesc = `Public-key and private-key could be acquired from https://console.ucloud.cn/uapi/apikey.`
+const configDesc = `Public-key and private-key could be acquired from https://console.ucloud.cn/uaccount/api_manage`
 
 const helloUcloud = `
   _   _      _ _         _   _ _____ _                 _ 
@@ -72,12 +73,16 @@ func NewCmdInit() *cobra.Command {
 			fmt.Printf("Configured default region:%s zone:%s\n", region.DefaultRegion, region.DefaultZone)
 
 			projectID, projectName, err := getDefaultProjectWithConfig(base.ConfigIns)
-			if err != nil {
+			if err != nil && !errors.Is(err, errNoDefaultProject) {
 				base.HandleError(err)
 				return
 			}
-			base.ConfigIns.ProjectID = projectID
-			fmt.Printf("Configured default project:%s %s\n", projectID, projectName)
+			if projectID != "" && projectName != "" {
+				base.ConfigIns.ProjectID = projectID
+				fmt.Printf("Configured default project:%s %s\n", projectID, projectName)
+			} else {
+				fmt.Println("No default project, skip.")
+			}
 			base.ConfigIns.Timeout = base.DefaultTimeoutSec
 			base.ConfigIns.BaseURL = base.DefaultBaseURL
 			base.ConfigIns.MaxRetryTimes = sdk.Int(base.DefaultMaxRetryTimes)

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -164,6 +165,8 @@ func getZoneList(region string) []string {
 	return list
 }
 
+var errNoDefaultProject = errors.New("No default project")
+
 func getDefaultProject() (string, string, error) {
 	req := base.BizClient.NewGetProjectListRequest()
 
@@ -176,8 +179,9 @@ func getDefaultProject() (string, string, error) {
 			return project.ProjectId, project.ProjectName, nil
 		}
 	}
-	return "", "", fmt.Errorf("No default project")
+	return "", "", errNoDefaultProject
 }
+
 func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
 	bc, err := base.GetBizClient(cfg)
 	if err != nil {
@@ -194,7 +198,7 @@ func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
 			return project.ProjectId, project.ProjectName, nil
 		}
 	}
-	return "", "", fmt.Errorf("No default project")
+	return "", "", errNoDefaultProject
 }
 
 func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
