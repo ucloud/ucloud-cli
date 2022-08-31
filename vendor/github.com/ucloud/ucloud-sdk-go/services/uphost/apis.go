@@ -131,6 +131,68 @@ func (c *UPHostClient) CreatePHost(req *CreatePHostRequest) (*CreatePHostRespons
 	return &res, nil
 }
 
+// CreatePHostImageRequest is request schema for CreatePHostImage action
+type CreatePHostImageRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 镜像描述
+	ImageDescription *string `required:"false"`
+
+	// 镜像名称
+	ImageName *string `required:"true"`
+
+	// UPHost实例ID
+	PHostId *string `required:"true"`
+}
+
+// CreatePHostImageResponse is response schema for CreatePHostImage action
+type CreatePHostImageResponse struct {
+	response.CommonBase
+
+	// 镜像ID
+	ImageId string
+}
+
+// NewCreatePHostImageRequest will create request of CreatePHostImage action.
+func (c *UPHostClient) NewCreatePHostImageRequest() *CreatePHostImageRequest {
+	req := &CreatePHostImageRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreatePHostImage
+
+创建裸金属2.0用户自定义镜像
+*/
+func (c *UPHostClient) CreatePHostImage(req *CreatePHostImageRequest) (*CreatePHostImageResponse, error) {
+	var err error
+	var res CreatePHostImageResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreatePHostImage", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribeBaremetalMachineTypeRequest is request schema for DescribeBaremetalMachineType action
 type DescribeBaremetalMachineTypeRequest struct {
 	request.CommonBase
@@ -262,19 +324,19 @@ func (c *UPHostClient) DescribePHost(req *DescribePHostRequest) (*DescribePHostR
 type DescribePHostImageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// 镜像ID
 	ImageId []string `required:"false"`
 
-	// 镜像类别，枚举值，Base是基础镜像；
+	// 镜像类别，枚举值，Base是基础镜像；Custom是自制镜像。
 	ImageType *string `required:"false"`
 
 	// 返回数据长度，默认为20
@@ -651,6 +713,68 @@ func (c *UPHostClient) GetPhostDiskUpgradePrice(req *GetPhostDiskUpgradePriceReq
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("GetPhostDiskUpgradePrice", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ModifyPHostImageInfoRequest is request schema for ModifyPHostImageInfo action
+type ModifyPHostImageInfoRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 镜像ID
+	ImageId *string `required:"true"`
+
+	// 镜像名称
+	Name *string `required:"false"`
+
+	// 备注
+	Remark *string `required:"false"`
+}
+
+// ModifyPHostImageInfoResponse is response schema for ModifyPHostImageInfo action
+type ModifyPHostImageInfoResponse struct {
+	response.CommonBase
+
+	// 镜像ID
+	ImageId string
+}
+
+// NewModifyPHostImageInfoRequest will create request of ModifyPHostImageInfo action.
+func (c *UPHostClient) NewModifyPHostImageInfoRequest() *ModifyPHostImageInfoRequest {
+	req := &ModifyPHostImageInfoRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyPHostImageInfo
+
+修改自定义镜像名称和备注
+*/
+func (c *UPHostClient) ModifyPHostImageInfo(req *ModifyPHostImageInfoRequest) (*ModifyPHostImageInfoResponse, error) {
+	var err error
+	var res ModifyPHostImageInfoResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyPHostImageInfo", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1092,6 +1216,62 @@ func (c *UPHostClient) StartPHost(req *StartPHostRequest) (*StartPHostResponse, 
 	return &res, nil
 }
 
+// StopPHostRequest is request schema for StopPHost action
+type StopPHostRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
+	// PHost资源ID
+	PHostId *string `required:"true"`
+}
+
+// StopPHostResponse is response schema for StopPHost action
+type StopPHostResponse struct {
+	response.CommonBase
+
+	// PHost 的资源ID
+	PHostId string
+}
+
+// NewStopPHostRequest will create request of StopPHost action.
+func (c *UPHostClient) NewStopPHostRequest() *StopPHostRequest {
+	req := &StopPHostRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: StopPHost
+
+关闭物理机
+*/
+func (c *UPHostClient) StopPHost(req *StopPHostRequest) (*StopPHostResponse, error) {
+	var err error
+	var res StopPHostResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("StopPHost", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // TerminatePHostRequest is request schema for TerminatePHost action
 type TerminatePHostRequest struct {
 	request.CommonBase
@@ -1147,6 +1327,62 @@ func (c *UPHostClient) TerminatePHost(req *TerminatePHostRequest) (*TerminatePHo
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("TerminatePHost", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// TerminatePHostImageRequest is request schema for TerminatePHostImage action
+type TerminatePHostImageRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 自制镜像ID
+	ImageId *string `required:"true"`
+}
+
+// TerminatePHostImageResponse is response schema for TerminatePHostImage action
+type TerminatePHostImageResponse struct {
+	response.CommonBase
+
+	// 自制镜像ID
+	ImageId string
+}
+
+// NewTerminatePHostImageRequest will create request of TerminatePHostImage action.
+func (c *UPHostClient) NewTerminatePHostImageRequest() *TerminatePHostImageRequest {
+	req := &TerminatePHostImageRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: TerminatePHostImage
+
+删除裸金属2.0用户自定义镜像
+*/
+func (c *UPHostClient) TerminatePHostImage(req *TerminatePHostImageRequest) (*TerminatePHostImageResponse, error) {
+	var err error
+	var res TerminatePHostImageResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("TerminatePHostImage", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}

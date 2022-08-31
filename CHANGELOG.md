@@ -1,3 +1,7 @@
+## 0.1.40 (2022-08-31)
+
+* add `signature` command to calculate signature quickly.
+
 ## 0.1.39 (2022-06-13)
 
 * fix init failure when user donot have a default project in ucloud console.

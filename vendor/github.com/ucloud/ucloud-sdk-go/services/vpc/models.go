@@ -3,6 +3,45 @@
 package vpc
 
 /*
+StatusInfo -
+*/
+type StatusInfo struct {
+
+	// IP分配失败原因
+	Message string
+
+	// 枚举值：Succeeded，Failed
+	StatusCode string
+}
+
+/*
+IpsInfo -
+*/
+type IpsInfo struct {
+
+	// 网关
+	Gateway string
+
+	// 内网IP地址
+	Ip string
+
+	// MAC地址
+	Mac string
+
+	// 掩码
+	Mask string
+
+	// IP分配结果，详见StatusInfo
+	Status StatusInfo
+
+	// 子网资源ID
+	SubnetId string
+
+	// VPC资源ID
+	VPCId string
+}
+
+/*
 IpInfo -
 */
 type IpInfo struct {
@@ -60,6 +99,108 @@ type AssociationInfo struct {
 
 	// 所属的VPC ID
 	VpcId string `deprecated:"true"`
+}
+
+/*
+NetworkInterfaceInfo - 虚拟网卡信息
+*/
+type NetworkInterfaceInfo struct {
+
+	// 绑定实例资源ID
+	AttachInstanceId string
+
+	// 创建时间
+	CreateTime int
+
+	// 是否是绑定实例的默认网卡 false:不是 true:是
+	Default bool
+
+	// 默认网关
+	Gateway string
+
+	// 虚拟网卡资源ID
+	InterfaceId string
+
+	// 关联Mac
+	MacAddress string
+
+	// 虚拟网卡名称
+	Name string
+
+	// 内网IP掩码
+	Netmask string
+
+	// 关联内网IP。当前一个网卡仅支持绑定一个内网IP
+	PrivateIpSet []string
+
+	// 备注
+	Remark string
+
+	// 绑定状态
+	Status int
+
+	// 所属子网
+	SubnetId string
+
+	// 业务组
+	Tag string
+
+	// 所属VPC
+	VPCId string
+}
+
+/*
+InstanceNetworkInterface - 实例绑定的虚拟网卡信息
+*/
+type InstanceNetworkInterface struct {
+
+	// 绑定实例资源ID
+	AttachInstanceId string
+
+	// 创建时间
+	CreateTime int
+
+	// 是否是绑定实例的默认网卡 false:不是 true:是
+	Default bool
+
+	// 虚拟网卡绑定的EIP ID信息
+	EIPIdSet []string
+
+	// 虚拟网卡绑定的防火墙ID信息
+	FirewallIdSet []string
+
+	// 默认网关
+	Gateway string
+
+	// 虚拟网卡资源ID
+	InterfaceId string
+
+	// 关联Mac
+	MacAddress string
+
+	// 虚拟网卡名称
+	Name string
+
+	// 内网IP掩码
+	Netmask string
+
+	// 关联内网IP。当前一个网卡仅支持绑定一个内网IP
+	PrivateIpSet []string
+
+	// 备注
+	Remark string
+
+	// 绑定状态
+	Status int
+
+	// 所属子网
+	SubnetId string
+
+	// 业务组
+	Tag string
+
+	// 所属VPC
+	VPCId string
 }
 
 /*
@@ -124,6 +265,9 @@ type NatGatewayDataSet struct {
 	// 绑定的EIP 信息
 	IPSet []NatGatewayIPSet
 
+	// 枚举值，“enable”，默认出口规则使用了负载均衡；“disable”，默认出口规则未使用负载均衡。
+	IsSnatpoolEnabled string
+
 	// natgw id
 	NATGWId string
 
@@ -147,6 +291,9 @@ type NatGatewayDataSet struct {
 
 	// 所属VPC 信息
 	VPCInfo string `deprecated:"true"`
+
+	// VPC名称
+	VPCName string
 }
 
 /*
@@ -288,6 +435,90 @@ type AclInfo struct {
 }
 
 /*
+UNIIpInfo - 虚拟网卡内网IP信息
+*/
+type UNIIpInfo struct {
+
+	// ip 地址
+	IpAddr []string
+
+	// ip类型 SecondaryIp/PrimaryIp
+	IpType string
+}
+
+/*
+UNIQuotaInfo - 虚拟网卡内网IP配额使用情况
+*/
+type UNIQuotaInfo struct {
+
+	// 网卡拥有的内网IP数量
+	PrivateIpCount int
+
+	// 网卡内网IP配额
+	PrivateIpQuota int
+}
+
+/*
+NetworkInterface - 虚拟网卡信息
+*/
+type NetworkInterface struct {
+
+	// 绑定实例资源ID
+	AttachInstanceId string
+
+	// 创建时间
+	CreateTime int
+
+	// 是否是绑定实例的默认网卡 false:不是 true:是
+	Default bool
+
+	// 虚拟网卡绑定的EIP ID信息
+	EIPIdSet []string
+
+	// 虚拟网卡绑定的防火墙ID信息
+	FirewallIdSet []string
+
+	// 默认网关
+	Gateway string
+
+	// 虚拟网卡资源ID
+	InterfaceId string
+
+	// 关联Mac
+	MacAddress string
+
+	// 虚拟网卡名称
+	Name string
+
+	// 内网IP掩码
+	Netmask string
+
+	// 网卡的内网IP信息
+	PrivateIp []UNIIpInfo
+
+	// 网卡的内网IP配额信息
+	PrivateIpLimit UNIQuotaInfo
+
+	// 关联内网IP。当前一个网卡仅支持绑定一个内网IP
+	PrivateIpSet []string
+
+	// 备注
+	Remark string
+
+	// 绑定状态
+	Status int
+
+	// 所属子网
+	SubnetId string
+
+	// 业务组
+	Tag string
+
+	// 所属VPC
+	VPCId string
+}
+
+/*
 RouteRuleInfo - 路由规则信息
 */
 type RouteRuleInfo struct {
@@ -300,6 +531,9 @@ type RouteRuleInfo struct {
 
 	// 保留字段，暂未使用
 	DstPort int
+
+	// 实例类型，枚举值：UHOST，云主机；UNI，虚拟网卡；PHOST，物理云主机
+	InstanceType string
 
 	// 路由下一跳资源ID
 	NexthopId string
@@ -358,6 +592,9 @@ type RouteTableInfo struct {
 	// 绑定该路由表的子网数量
 	SubnetCount int
 
+	// 绑定该路由表的子网
+	SubnetIds []string
+
 	// 路由表所属业务组
 	Tag string
 
@@ -366,6 +603,21 @@ type RouteTableInfo struct {
 
 	// 路由表所属的VPC资源名称
 	VPCName string
+}
+
+/*
+SnatDnatRuleInfo -
+*/
+type SnatDnatRuleInfo struct {
+
+	// EIP的IP地址
+	EIP string
+
+	// 映射所使用的NAT网关资源ID
+	NATGWId string
+
+	// 内网IP地址
+	PrivateIp string
 }
 
 /*
@@ -511,35 +763,38 @@ VPCInfo - VPC信息
 */
 type VPCInfo struct {
 
-	//
+	// 创建时间
 	CreateTime int
 
 	// VPC关联的IPv6网段
 	IPv6Network string
 
-	//
+	// VPC名称
 	Name string
 
-	//
+	// VPC网段
 	Network []string
 
-	//
+	// vpc地址空间信息，详见VPCNetworkInfo
 	NetworkInfo []VPCNetworkInfo
 
 	// VPC关联的IPv6网段所属运营商
 	OperatorName string
 
-	//
+	// 子网数
 	SubnetCount int
 
-	//
+	// 业务组
 	Tag string
 
-	//
+	// 更新时间
 	UpdateTime int
 
-	// VPCId
+	// VPC资源ID
 	VPCId string
+
+	// DefaultVPC 默认VPC，DefinedVPC，自定义VPC
+	VPCType string
 }
 
 /*

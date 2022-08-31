@@ -129,6 +129,7 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdMemcache())
 	root.AddCommand(NewCmdExt())
 	root.AddCommand(NewCmdAPI(out))
+	root.AddCommand(NewCmdSignature())
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")

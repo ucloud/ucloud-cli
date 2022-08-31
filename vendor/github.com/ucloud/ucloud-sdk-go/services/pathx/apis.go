@@ -226,10 +226,10 @@ type CreateUGA3InstanceRequest struct {
 	// 非必填,如果不填，会根据Domain 和IPList 去选一个最近的源站区域BKK表示AreaCode;曼谷表示Area["BKK":"曼谷","DXB":"迪拜","FRA":"法兰克福","SGN":"胡志明市","HKG":"香港",CGK":"雅加达","LOS":"拉各斯","LHR":"伦敦","LAX":"洛杉矶","MNL":"马尼拉","DME":"莫斯科","BOM":"孟买","MSP":"圣保罗","ICN":"首尔","PVG":"上海","SIN":"新加坡","NRT":"东京","IAD":"华盛顿","TPE": "台北"]
 	AreaCode *string `required:"false"`
 
-	// 实例的共享带宽
-	Bandwidth *string `required:"true"`
+	// 实例的共享带宽大小，单位Mbps
+	Bandwidth *int `required:"true"`
 
-	// 支付方式，如按月、按年、按时
+	// 支付方式，如按月、按年、按时[Year,Month,Dynamic]
 	ChargeType *string `required:"false"`
 
 	// 使用代金券可冲抵部分费用，仅全地域可用的代金券
@@ -261,8 +261,8 @@ type CreateUGA3InstanceResponse struct {
 	// 加速配置ID
 	InstanceId string
 
-	// 返回信息
-	Message string
+	// 【该字段已废弃，请谨慎使用】
+	Message string `deprecated:"true"`
 }
 
 // NewCreateUGA3InstanceRequest will create request of CreateUGA3Instance action.
@@ -522,10 +522,10 @@ func (c *PathXClient) CreateUGAInstance(req *CreateUGAInstanceRequest) (*CreateU
 type CreateUPathRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// 线路带宽，最小1Mbps,最大带宽由 DescribePathXLineConfig 接口获得。如需更大带宽，请联系产品团队。
+	// 当PostPaid为false时，该值为预付费固定带宽；当PostPaid为true时，该值为后付费保底带宽，保底带宽越大可用的上限带宽越大。最小1Mbps,最大带宽由 DescribePathXLineConfig 接口获得。可联系产品团队咨询最大带宽。
 	Bandwidth *int `required:"true"`
 
 	// 计费模式，默认为Month 按月收费,可选范围['Month','Year','Dynamic']
@@ -534,13 +534,16 @@ type CreateUPathRequest struct {
 	// 代金券Id
 	CouponId *string `required:"false"`
 
-	// 选择的线路
+	// 选择的线路，由DescribePathXLineConfig接口提供
 	LineId *string `required:"true"`
 
-	// UPath名字
+	// 名字，便于记忆区分
 	Name *string `required:"true"`
 
-	// 是否开启后付费, 默认为false
+	// private:专线线路；public:海外SD-WAN。默认为private。
+	PathType *string `required:"false"`
+
+	// 是否开启后付费, 默认为false ，不开启后付费。当ChargeType为Dynamic时不能开启后付费。
 	PostPaid *bool `required:"false"`
 
 	// 购买周期，ChargeType为Month时，Quantity默认为0代表购买到月底，按时和按年付费该参数必须大于0
@@ -552,7 +555,10 @@ type CreateUPathResponse struct {
 	response.CommonBase
 
 	// 加速线路实例Id
-	UPathId string
+	PathId string
+
+	// 【该字段已废弃，请谨慎使用】
+	UPathId string `deprecated:"true"`
 }
 
 // NewCreateUPathRequest will create request of CreateUPath action.
@@ -1920,10 +1926,13 @@ func (c *PathXClient) ModifyGlobalSSHPort(req *ModifyGlobalSSHPortRequest) (*Mod
 type ModifyGlobalSSHRemarkRequest struct {
 	request.CommonBase
 
-	//
+	// [公共参数] 项目ID，如org-xxxx。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// 实例ID,资源唯一标识
 	InstanceId *string `required:"true"`
 
-	//
+	// 备注信息，不填默认为空字符串
 	Remark *string `required:"false"`
 }
 
@@ -1931,7 +1940,7 @@ type ModifyGlobalSSHRemarkRequest struct {
 type ModifyGlobalSSHRemarkResponse struct {
 	response.CommonBase
 
-	//
+	// 接口返回消息
 	Message string
 }
 
@@ -1943,14 +1952,14 @@ func (c *PathXClient) NewModifyGlobalSSHRemarkRequest() *ModifyGlobalSSHRemarkRe
 	c.Client.SetupRequest(req)
 
 	// setup retryable with default retry policy (retry for non-create action and common error)
-	req.SetRetryable(false)
+	req.SetRetryable(true)
 	return req
 }
 
 /*
 API: ModifyGlobalSSHRemark
 
-
+修改GlobalSSH备注
 */
 func (c *PathXClient) ModifyGlobalSSHRemark(req *ModifyGlobalSSHRemarkRequest) (*ModifyGlobalSSHRemarkResponse, error) {
 	var err error
