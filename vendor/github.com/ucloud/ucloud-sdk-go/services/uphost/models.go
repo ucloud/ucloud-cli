@@ -38,7 +38,7 @@ type PHostCPUSet struct {
 	Count int
 
 	// CPU主频
-	Frequence string
+	Frequence float64
 
 	// CPU型号
 	Model string
@@ -63,6 +63,33 @@ type PHostCloudMachineTypeSet struct {
 
 	// 物理云主机机型别名，全网唯一。
 	Type string
+}
+
+/*
+PHostIPSet - DescribePHost
+*/
+type PHostIPSet struct {
+
+	// IP对应带宽，单位Mb，内网IP不显示带宽信息
+	Bandwidth int
+
+	// IP地址，
+	IPAddr string
+
+	// IP资源ID(内网IP无资源ID)（待废弃）
+	IPId string
+
+	// MAC地址
+	MACAddr string
+
+	// 国际: Internation， BGP: BGP， 内网: Private
+	OperatorName string
+
+	// 子网ID
+	SubnetId string
+
+	// VPC ID
+	VPCId string
 }
 
 /*
@@ -93,33 +120,6 @@ type PHostDescDiskSet struct {
 
 	// 磁盘属性
 	Type string
-}
-
-/*
-PHostIPSet - DescribePHost
-*/
-type PHostIPSet struct {
-
-	// IP对应带宽，单位Mb，内网IP不显示带宽信息
-	Bandwidth int
-
-	// IP地址，
-	IPAddr string
-
-	// IP资源ID(内网IP无资源ID)（待废弃）
-	IPId string
-
-	// MAC地址
-	MACAddr string
-
-	// 国际: Internation， BGP: BGP， 内网: Private
-	OperatorName string
-
-	// 子网ID
-	SubnetId string
-
-	// VPC ID
-	VPCId string
 }
 
 /*
@@ -208,17 +208,32 @@ PHostImageSet - DescribePHostImage
 */
 type PHostImageSet struct {
 
+	// 裸金属2.0参数。镜像创建时间。
+	CreateTime int
+
+	// 镜像描述
+	ImageDescription string
+
 	// 镜像ID
 	ImageId string
 
 	// 镜像名称
 	ImageName string
 
+	// 裸金属2.0参数。镜像大小。
+	ImageSize int
+
+	// 枚举值：Base=>基础镜像，Custom=>自制镜像。
+	ImageType string
+
 	// 操作系统名称
 	OsName string
 
 	// 操作系统类型
 	OsType string
+
+	// 裸金属2.0参数。镜像当前状态。
+	State string
 
 	// 支持的机型
 	Support []string

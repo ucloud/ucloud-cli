@@ -1888,13 +1888,13 @@ func (c *UDBClient) DescribeUDBInstanceBinlogBackupState(req *DescribeUDBInstanc
 type DescribeUDBInstanceLogRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 查询的日志开始的时间戳（Unix Timestamp）。对于实时查询，这个参数应该是上次轮询请求时的时间戳，后台会返回从该值到当前时间的日志内容。
@@ -1906,7 +1906,7 @@ type DescribeUDBInstanceLogRequest struct {
 	// 查询日志的结束时间戳(Unix Timestamp），对于实时查询不传该值，与BeginTime的差值不超过24小时：(EndTime-BeginTime) < 24*60*60
 	EndTime *int `required:"true"`
 
-	// 查询日志的类型
+	// 查询日志的类型error：错误日志；slow：慢日志
 	LogType *string `required:"true"`
 }
 
@@ -2157,10 +2157,13 @@ func (c *UDBClient) DescribeUDBInstanceUpgradePrice(req *DescribeUDBInstanceUpgr
 type DescribeUDBLogBackupURLRequest struct {
 	request.CommonBase
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// DB实例备份ID
@@ -2174,8 +2177,11 @@ type DescribeUDBLogBackupURLRequest struct {
 type DescribeUDBLogBackupURLResponse struct {
 	response.CommonBase
 
-	// DB实例备份文件的地址
+	// 备份外网URL
 	BackupPath string
+
+	// 备份用户网URL
+	UsernetPath string
 }
 
 // NewDescribeUDBLogBackupURLRequest will create request of DescribeUDBLogBackupURL action.
@@ -2779,6 +2785,62 @@ func (c *UDBClient) FetchUDBInstanceEarliestRecoverTime(req *FetchUDBInstanceEar
 	return &res, nil
 }
 
+// GetUDBClientConnNumRequest is request schema for GetUDBClientConnNum action
+type GetUDBClientConnNumRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// DB实例id
+	DBId *string `required:"true"`
+}
+
+// GetUDBClientConnNumResponse is response schema for GetUDBClientConnNum action
+type GetUDBClientConnNumResponse struct {
+	response.CommonBase
+
+	// db实例ip和连接数信息
+	DataSet []ConnNumMap
+}
+
+// NewGetUDBClientConnNumRequest will create request of GetUDBClientConnNum action.
+func (c *UDBClient) NewGetUDBClientConnNumRequest() *GetUDBClientConnNumRequest {
+	req := &GetUDBClientConnNumRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetUDBClientConnNum
+
+输入一个DBID，能够获取客户端来源IP以及对应的连接数
+*/
+func (c *UDBClient) GetUDBClientConnNum(req *GetUDBClientConnNumRequest) (*GetUDBClientConnNumResponse, error) {
+	var err error
+	var res GetUDBClientConnNumResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetUDBClientConnNum", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ModifyUDBInstanceNameRequest is request schema for ModifyUDBInstanceName action
 type ModifyUDBInstanceNameRequest struct {
 	request.CommonBase
@@ -2931,7 +2993,7 @@ func (c *UDBClient) NewPromoteUDBInstanceToHARequest() *PromoteUDBInstanceToHARe
 /*
 API: PromoteUDBInstanceToHA
 
-普通db升级为高可用(只针对mysql5.5及以上版本)
+普通db升级为高可用(只针对mysql5.5及以上版本SSD机型的实例)  ，对于NVMe机型的单点升级高可用，虽然也能使用该操作再加上SwitchUDBInstanceToHA，但是更建议直接调用新的API接口（UpgradeUDBInstanceToHA）
 */
 func (c *UDBClient) PromoteUDBInstanceToHA(req *PromoteUDBInstanceToHARequest) (*PromoteUDBInstanceToHAResponse, error) {
 	var err error
@@ -3361,17 +3423,20 @@ func (c *UDBClient) StopUDBInstance(req *StopUDBInstanceRequest) (*StopUDBInstan
 type SwitchUDBHAToSentinelRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// UDB的实例ID
 	DBId *string `required:"true"`
+
+	// 是否跳过预检查强制升级。
+	ForceSwitch *bool `required:"false"`
 }
 
 // SwitchUDBHAToSentinelResponse is response schema for SwitchUDBHAToSentinel action
@@ -3394,7 +3459,7 @@ func (c *UDBClient) NewSwitchUDBHAToSentinelRequest() *SwitchUDBHAToSentinelRequ
 /*
 API: SwitchUDBHAToSentinel
 
-UDB高可用实例从HAProxy版本升级为Sentinel版本（不带HAProxy）升级耗时30-70秒
+UDB高可用实例从HAProxy版本升级为Sentinel版本（不带HAProxy）升级耗时5-10秒
 */
 func (c *UDBClient) SwitchUDBHAToSentinel(req *SwitchUDBHAToSentinelRequest) (*SwitchUDBHAToSentinelResponse, error) {
 	var err error
@@ -3414,23 +3479,23 @@ func (c *UDBClient) SwitchUDBHAToSentinel(req *SwitchUDBHAToSentinelRequest) (*S
 type SwitchUDBInstanceToHARequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 【该字段已废弃，请谨慎使用】
-	ChargeType *string `required:"false" deprecated:"true"`
+	// Year， Month， Dynamic，Trial，不填则按现在单点计费执行
+	ChargeType *string `required:"false"`
 
 	// 实例的Id,该值可以通过DescribeUDBInstance获取
 	DBId *string `required:"true"`
 
-	// 【该字段已废弃，请谨慎使用】
-	Quantity *string `required:"false" deprecated:"true"`
+	// 购买时长，需要和 ChargeType 搭配使用，否则使用单点计费策略的值
+	Quantity *string `required:"false"`
 
-	// 【该字段已废弃，请谨慎使用】
-	Tag *string `required:"false" deprecated:"true"`
+	// 业务组
+	Tag *string `required:"false"`
 }
 
 // SwitchUDBInstanceToHAResponse is response schema for SwitchUDBInstanceToHA action
@@ -3456,7 +3521,7 @@ func (c *UDBClient) NewSwitchUDBInstanceToHARequest() *SwitchUDBInstanceToHARequ
 /*
 API: SwitchUDBInstanceToHA
 
-普通UDB切换为高可用，原db状态为WaitForSwitch时，调用改api
+普通UDB切换为高可用(只针对mysql5.5及以上版本SSD机型的实例) ，原db状态为WaitForSwitch时，调用该api； 对于NVMe机型的单点升级高可用，虽然也能使用PromoteUDBInstanceToHA再加上该操作，但是更建议直接调用新的API接口（UpgradeUDBInstanceToHA）
 */
 func (c *UDBClient) SwitchUDBInstanceToHA(req *SwitchUDBInstanceToHARequest) (*SwitchUDBInstanceToHAResponse, error) {
 	var err error
@@ -3657,6 +3722,59 @@ func (c *UDBClient) UpdateUDBParamGroup(req *UpdateUDBParamGroupRequest) (*Updat
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("UpdateUDBParamGroup", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// UpgradeUDBInstanceToHARequest is request schema for UpgradeUDBInstanceToHA action
+type UpgradeUDBInstanceToHARequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 实例的Id,该值可以通过DescribeUDBInstance获取
+	DBId *string `required:"true"`
+}
+
+// UpgradeUDBInstanceToHAResponse is response schema for UpgradeUDBInstanceToHA action
+type UpgradeUDBInstanceToHAResponse struct {
+	response.CommonBase
+}
+
+// NewUpgradeUDBInstanceToHARequest will create request of UpgradeUDBInstanceToHA action.
+func (c *UDBClient) NewUpgradeUDBInstanceToHARequest() *UpgradeUDBInstanceToHARequest {
+	req := &UpgradeUDBInstanceToHARequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpgradeUDBInstanceToHA
+
+快杰普通db升级为高可用(只针对mysql5.5及以上版本Nvme机型的实例)
+*/
+func (c *UDBClient) UpgradeUDBInstanceToHA(req *UpgradeUDBInstanceToHARequest) (*UpgradeUDBInstanceToHAResponse, error) {
+	var err error
+	var res UpgradeUDBInstanceToHAResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpgradeUDBInstanceToHA", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}

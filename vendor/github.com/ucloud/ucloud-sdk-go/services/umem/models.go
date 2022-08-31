@@ -3,6 +3,24 @@
 package umem
 
 /*
+UDRedisProxyInfo - udredis代理信息
+*/
+type UDRedisProxyInfo struct {
+
+	// 代理id
+	ProxyId string
+
+	// 代理资源id
+	ResourceId string
+
+	// 代理状态
+	State string
+
+	// 代理ip
+	Vip string
+}
+
+/*
 UDRedisSlowlogSet - DescribeUDRedisSlowlog
 */
 type UDRedisSlowlogSet struct {
@@ -18,6 +36,18 @@ type UDRedisSlowlogSet struct {
 
 	// 查询发生的时间
 	StartTime int
+}
+
+/*
+UMemSpaceAddressSet - DescribeUMemSpace
+*/
+type UMemSpaceAddressSet struct {
+
+	// UMem实例访问IP
+	IP string
+
+	// UMem实例访问Port
+	Port int
 }
 
 /*
@@ -93,18 +123,6 @@ type UMemSlaveDataSet struct {
 
 	// 实例所在可用区，或者master redis所在可用区，参见 [可用区列表](../summary/regionlist.html)
 	Zone string
-}
-
-/*
-UMemSpaceAddressSet - DescribeUMemSpace
-*/
-type UMemSpaceAddressSet struct {
-
-	// UMem实例访问IP
-	IP string
-
-	// UMem实例访问Port
-	Port int
 }
 
 /*

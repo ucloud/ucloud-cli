@@ -37,17 +37,26 @@ type GlobalSSHInfo struct {
 	// 资源创建时间戳
 	CreateTime int
 
+	// 加速域名当前可用性检测结果 HashMap 结构 0表示可用, 1 表示有污染
+	DomainStatus string
+
 	// 是否过期
 	Expire bool
 
 	// 资源过期时间戳
 	ExpireTime int
 
+	// GlobalSSH分配的其他可用加速域名列表
+	ExtraDomain []string
+
 	// InstanceType为Basic版本时，需要展示具体分配的转发机房
 	ForwardRegion string
 
 	// InstanceType等于Free时，由系统自动分配，不等于源站Port值。InstanceType不等于Free时，与源站Port值相同。
 	GlobalSSHPort int
+
+	// 是否开启EIP IPV6 接入,Flase:未开启
+	IPV6Access bool
 
 	// 实例ID，资源唯一标识
 	InstanceId string
@@ -351,9 +360,21 @@ type AccelerationInfo struct {
 }
 
 /*
-UGAL7Forwarder - UGA实例 7层转发器信息
+UGAATask - 用户在UGAA实例下配置的多端口任务
 */
-type UGAL7Forwarder struct {
+type UGAATask struct {
+
+	// 接入端口
+	Port int
+
+	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"]。TCP和UDP代表四层转发，其余为七层转发
+	Protocol string
+}
+
+/*
+UGAL4Forwarder - UGA实例 4层转发器信息
+*/
+type UGAL4Forwarder struct {
 
 	// 接入端口
 	Port int
@@ -363,12 +384,6 @@ type UGAL7Forwarder struct {
 
 	// RSPort，源站监听端口
 	RSPort int
-
-	// 证书ID
-	SSLId string
-
-	// 证书名称
-	SSLName string
 }
 
 /*
@@ -402,21 +417,9 @@ type UPathSet struct {
 }
 
 /*
-UGAATask - 用户在UGAA实例下配置的多端口任务
+UGAL7Forwarder - UGA实例 7层转发器信息
 */
-type UGAATask struct {
-
-	// 接入端口
-	Port int
-
-	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"]。TCP和UDP代表四层转发，其余为七层转发
-	Protocol string
-}
-
-/*
-UGAL4Forwarder - UGA实例 4层转发器信息
-*/
-type UGAL4Forwarder struct {
+type UGAL7Forwarder struct {
 
 	// 接入端口
 	Port int
@@ -426,6 +429,12 @@ type UGAL4Forwarder struct {
 
 	// RSPort，源站监听端口
 	RSPort int
+
+	// 证书ID
+	SSLId string
+
+	// 证书名称
+	SSLName string
 }
 
 /*

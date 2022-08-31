@@ -1,12 +1,44 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
 	"reflect"
 	"sort"
 	"strconv"
 )
+
+type SignatureResult struct {
+	SortedKeys []string
+
+	WithoutPrivateKey string
+
+	Origin string
+	Hashed [20]byte
+
+	Sign string
+}
+
+func CalculateSignature(params map[string]interface{}, privateKey string) SignatureResult {
+	var r SignatureResult
+	r.SortedKeys = extractKeys(params)
+
+	var buf bytes.Buffer
+	for _, k := range r.SortedKeys {
+		buf.WriteString(k)
+		buf.WriteString(any2String(params[k]))
+	}
+	r.WithoutPrivateKey = buf.String()
+
+	buf.WriteString(privateKey)
+	r.Origin = buf.String()
+	r.Hashed = sha1.Sum([]byte(r.Origin))
+
+	r.Sign = hex.EncodeToString(r.Hashed[:])
+
+	return r
+}
 
 // extractKeys extract all Keys from map[string]interface{}
 func extractKeys(m map[string]interface{}) []string {

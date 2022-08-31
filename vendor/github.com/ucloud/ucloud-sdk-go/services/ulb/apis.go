@@ -13,10 +13,10 @@ import (
 type AllocateBackendRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 后端实例状态开关，枚举值： 1：启用； 0：禁用 默认为启用
@@ -34,7 +34,7 @@ type AllocateBackendRequest struct {
 	// 所添加的后端资源的资源ID
 	ResourceId *string `required:"true"`
 
-	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UNI -> 虚拟网卡；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器；UHybrid->混合云主机；CUBE->Cube；默认值为UHost。报文转发模式不支持UDocker、UHybrid、CUBE
+	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UNI -> 虚拟网卡；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器；UHybrid->混合云主机；CUBE->Cube，USDP->智能大数据平台；默认值为UHost。报文转发模式不支持UDocker、UHybrid、CUBE
 	ResourceType *string `required:"true"`
 
 	// 所添加的后端服务器所在的子网，当ResourceType 为 UHybrid 时有效，且必填
@@ -49,7 +49,7 @@ type AllocateBackendRequest struct {
 	// VServer实例的ID
 	VServerId *string `required:"true"`
 
-	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[0-100]，默认为1
+	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[1-100]，默认为1
 	Weight *int `required:"false"`
 }
 
@@ -326,10 +326,10 @@ func (c *ULBClient) CreatePolicyGroup(req *CreatePolicyGroupRequest) (*CreatePol
 type CreateSSLRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// CA证书
@@ -341,11 +341,14 @@ type CreateSSLRequest struct {
 	// SSL证书的完整内容，包括用户证书、加密证书的私钥、CA证书
 	SSLContent *string `required:"false"`
 
-	// SSL证书的名字，默认值为空
+	// SSL证书的名字，默认值不为空
 	SSLName *string `required:"true"`
 
 	// 所添加的SSL证书类型，目前只支持Pem格式
 	SSLType *string `required:"false"`
+
+	// USSL证书的ID
+	USSLId *string `required:"false"`
 
 	// 用户的证书
 	UserCert *string `required:"false"`
@@ -390,14 +393,73 @@ func (c *ULBClient) CreateSSL(req *CreateSSLRequest) (*CreateSSLResponse, error)
 	return &res, nil
 }
 
+// CreateSecurityPolicyRequest is request schema for CreateSecurityPolicy action
+type CreateSecurityPolicyRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 加密套件
+	SSLCiphers []string `required:"true"`
+
+	// 安全策略名称
+	SecurityPolicyName *string `required:"true"`
+
+	// TLS版本
+	TLSVersion *string `required:"true"`
+}
+
+// CreateSecurityPolicyResponse is response schema for CreateSecurityPolicy action
+type CreateSecurityPolicyResponse struct {
+	response.CommonBase
+
+	// 安全策略ID
+	SecurityPolicyId string
+}
+
+// NewCreateSecurityPolicyRequest will create request of CreateSecurityPolicy action.
+func (c *ULBClient) NewCreateSecurityPolicyRequest() *CreateSecurityPolicyRequest {
+	req := &CreateSecurityPolicyRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateSecurityPolicy
+
+创建安全策略
+*/
+func (c *ULBClient) CreateSecurityPolicy(req *CreateSecurityPolicyRequest) (*CreateSecurityPolicyResponse, error) {
+	var err error
+	var res CreateSecurityPolicyResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateSecurityPolicy", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // CreateULBRequest is request schema for CreateULB action
 type CreateULBRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// ULB 所属的业务组ID，如果不传则使用默认的业务组
@@ -412,7 +474,7 @@ type CreateULBRequest struct {
 	// 创建的ULB是否为内网模式
 	InnerMode *string `required:"false"`
 
-	// ULB 监听器类型，枚举值：RequestProxy，请求代理； PacketsTransmit ，报文转发。默认为RequestProxy
+	// ULB 监听器类型，外网ULB默认RequestProxy，内网ULB默认PacketsTransmit。枚举值：RequestProxy，请求代理； PacketsTransmit ，报文转发。
 	ListenType *string `required:"false"`
 
 	// 创建的ULB是否为外网模式，默认即为外网模式
@@ -424,7 +486,7 @@ type CreateULBRequest struct {
 	// 备注
 	Remark *string `required:"false"`
 
-	// 内网ULB 所属的子网ID，如果不传则使用默认的子网
+	// ULB 所属的子网ID，如果不传则随机选择一个。
 	SubnetId *string `required:"false"`
 
 	// 业务组
@@ -495,6 +557,15 @@ type CreateVServerRequest struct {
 	// 根据MonitorType确认； 当MonitorType为Path时，此字段有意义，代表HTTP检查域名
 	Domain *string `required:"false"`
 
+	// 0:关闭 1:开启，用于数据压缩功能
+	EnableCompression *int `required:"false"`
+
+	// 0:关闭 1:开启，用于开启http2功能；默认值为0
+	EnableHTTP2 *int `required:"false"`
+
+	// 重定向端口，取值范围[0-65535]；默认值为0，代表关闭；仅HTTP协议支持开启重定向功能
+	ForwardPort *int `required:"false"`
+
 	// VServer后端端口，取值范围[1-65535]；默认值为80
 	FrontendPort *int `required:"false"`
 
@@ -524,6 +595,9 @@ type CreateVServerRequest struct {
 
 	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查请求应收到的响应报文
 	ResponseMsg *string `required:"false"`
+
+	// 安全策略组ID，默认值'Default'
+	SecurityPolicyId *string `required:"false"`
 
 	// 负载均衡实例ID
 	ULBId *string `required:"true"`
@@ -724,6 +798,56 @@ func (c *ULBClient) DeleteSSL(req *DeleteSSLRequest) (*DeleteSSLResponse, error)
 	return &res, nil
 }
 
+// DeleteSecurityPolicyRequest is request schema for DeleteSecurityPolicy action
+type DeleteSecurityPolicyRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 安全策略ID
+	SecurityPolicyId *string `required:"true"`
+}
+
+// DeleteSecurityPolicyResponse is response schema for DeleteSecurityPolicy action
+type DeleteSecurityPolicyResponse struct {
+	response.CommonBase
+}
+
+// NewDeleteSecurityPolicyRequest will create request of DeleteSecurityPolicy action.
+func (c *ULBClient) NewDeleteSecurityPolicyRequest() *DeleteSecurityPolicyRequest {
+	req := &DeleteSecurityPolicyRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteSecurityPolicy
+
+删除安全策略
+*/
+func (c *ULBClient) DeleteSecurityPolicy(req *DeleteSecurityPolicyRequest) (*DeleteSecurityPolicyResponse, error) {
+	var err error
+	var res DeleteSecurityPolicyResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteSecurityPolicy", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DeleteULBRequest is request schema for DeleteULB action
 type DeleteULBRequest struct {
 	request.CommonBase
@@ -890,10 +1014,10 @@ func (c *ULBClient) DescribePolicyGroup(req *DescribePolicyGroupRequest) (*Descr
 type DescribeSSLRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 数据分页值，默认为20
@@ -941,6 +1065,119 @@ func (c *ULBClient) DescribeSSL(req *DescribeSSLRequest) (*DescribeSSLResponse, 
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribeSSL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeSecurityPoliciesRequest is request schema for DescribeSecurityPolicies action
+type DescribeSecurityPoliciesRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 数据分页值
+	Limit *int `required:"false"`
+
+	// 数据偏移量
+	Offset *int `required:"false"`
+
+	// 安全策略ID
+	SecurityPolicyId *string `required:"false"`
+}
+
+// DescribeSecurityPoliciesResponse is response schema for DescribeSecurityPolicies action
+type DescribeSecurityPoliciesResponse struct {
+	response.CommonBase
+
+	// 安全策略列表，每项参数详见SecurityPolicy
+	DataSet []SecurityPolicy
+
+	// 满足条件的安全策略总数
+	TotalCount int
+}
+
+// NewDescribeSecurityPoliciesRequest will create request of DescribeSecurityPolicies action.
+func (c *ULBClient) NewDescribeSecurityPoliciesRequest() *DescribeSecurityPoliciesRequest {
+	req := &DescribeSecurityPoliciesRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeSecurityPolicies
+
+获取安全策略的信息
+*/
+func (c *ULBClient) DescribeSecurityPolicies(req *DescribeSecurityPoliciesRequest) (*DescribeSecurityPoliciesResponse, error) {
+	var err error
+	var res DescribeSecurityPoliciesResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeSecurityPolicies", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeSupportCiphersRequest is request schema for DescribeSupportCiphers action
+type DescribeSupportCiphersRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+}
+
+// DescribeSupportCiphersResponse is response schema for DescribeSupportCiphers action
+type DescribeSupportCiphersResponse struct {
+	response.CommonBase
+
+	// 返回支持的TLS最低版本和加密套件，每项参数详见 TLSAndCiphers
+	DataSet []TLSAndCiphers
+}
+
+// NewDescribeSupportCiphersRequest will create request of DescribeSupportCiphers action.
+func (c *ULBClient) NewDescribeSupportCiphersRequest() *DescribeSupportCiphersRequest {
+	req := &DescribeSupportCiphersRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeSupportCiphers
+
+返回安全策略所有支持的加密套件
+*/
+func (c *ULBClient) DescribeSupportCiphers(req *DescribeSupportCiphersRequest) (*DescribeSupportCiphersResponse, error) {
+	var err error
+	var res DescribeSupportCiphersResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeSupportCiphers", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1107,7 +1344,7 @@ type DescribeVServerRequest struct {
 	Offset *int `required:"false"`
 
 	// 负载均衡实例的Id
-	ULBId *string `required:"true"`
+	ULBId *string `required:"false"`
 
 	// VServer实例的Id；若指定则返回指定的VServer实例的信息； 若不指定则返回当前负载均衡实例下所有VServer的信息
 	VServerId *string `required:"false"`
@@ -1208,6 +1445,56 @@ func (c *ULBClient) ReleaseBackend(req *ReleaseBackendRequest) (*ReleaseBackendR
 	return &res, nil
 }
 
+// UnBindSecurityPolicyRequest is request schema for UnBindSecurityPolicy action
+type UnBindSecurityPolicyRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 安全策略ID
+	SecurityPolicyId *string `required:"true"`
+}
+
+// UnBindSecurityPolicyResponse is response schema for UnBindSecurityPolicy action
+type UnBindSecurityPolicyResponse struct {
+	response.CommonBase
+}
+
+// NewUnBindSecurityPolicyRequest will create request of UnBindSecurityPolicy action.
+func (c *ULBClient) NewUnBindSecurityPolicyRequest() *UnBindSecurityPolicyRequest {
+	req := &UnBindSecurityPolicyRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UnBindSecurityPolicy
+
+批量解绑安全策略
+*/
+func (c *ULBClient) UnBindSecurityPolicy(req *UnBindSecurityPolicyRequest) (*UnBindSecurityPolicyResponse, error) {
+	var err error
+	var res UnBindSecurityPolicyResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UnBindSecurityPolicy", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // UnbindSSLRequest is request schema for UnbindSSL action
 type UnbindSSLRequest struct {
 	request.CommonBase
@@ -1289,7 +1576,7 @@ type UpdateBackendAttributeRequest struct {
 	// 负载均衡资源ID
 	ULBId *string `required:"true"`
 
-	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[0-100]，默认为1
+	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[1-100]，默认为1
 	Weight *int `required:"false"`
 }
 
@@ -1447,6 +1734,118 @@ func (c *ULBClient) UpdatePolicyGroupAttribute(req *UpdatePolicyGroupAttributeRe
 	return &res, nil
 }
 
+// UpdateSSLAttributeRequest is request schema for UpdateSSLAttribute action
+type UpdateSSLAttributeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// SSL的资源id
+	SSLId *string `required:"true"`
+
+	// SSL实例名称，不允许传空
+	SSLName *string `required:"true"`
+}
+
+// UpdateSSLAttributeResponse is response schema for UpdateSSLAttribute action
+type UpdateSSLAttributeResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateSSLAttributeRequest will create request of UpdateSSLAttribute action.
+func (c *ULBClient) NewUpdateSSLAttributeRequest() *UpdateSSLAttributeRequest {
+	req := &UpdateSSLAttributeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateSSLAttribute
+
+更新修改SSL的属性，如：修改SSLName
+*/
+func (c *ULBClient) UpdateSSLAttribute(req *UpdateSSLAttributeRequest) (*UpdateSSLAttributeResponse, error) {
+	var err error
+	var res UpdateSSLAttributeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateSSLAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// UpdateSecurityPolicyRequest is request schema for UpdateSecurityPolicy action
+type UpdateSecurityPolicyRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 加密套件，TLS最低版本和加密套件必须全不为空或全为空
+	SSLCiphers []string `required:"false"`
+
+	// 安全策略ID
+	SecurityPolicyId *string `required:"true"`
+
+	// 安全策略名称
+	SecurityPolicyName *string `required:"false"`
+
+	// TLS最低版本，TLS最低版本和加密套件必须全不为空或全为空
+	TLSVersion *string `required:"false"`
+}
+
+// UpdateSecurityPolicyResponse is response schema for UpdateSecurityPolicy action
+type UpdateSecurityPolicyResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateSecurityPolicyRequest will create request of UpdateSecurityPolicy action.
+func (c *ULBClient) NewUpdateSecurityPolicyRequest() *UpdateSecurityPolicyRequest {
+	req := &UpdateSecurityPolicyRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateSecurityPolicy
+
+更新安全策略
+*/
+func (c *ULBClient) UpdateSecurityPolicy(req *UpdateSecurityPolicyRequest) (*UpdateSecurityPolicyResponse, error) {
+	var err error
+	var res UpdateSecurityPolicyResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateSecurityPolicy", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // UpdateULBAttributeRequest is request schema for UpdateULBAttribute action
 type UpdateULBAttributeRequest struct {
 	request.CommonBase
@@ -1522,6 +1921,15 @@ type UpdateVServerAttributeRequest struct {
 	// MonitorType 为 Path 时指定健康检查发送请求时HTTP HEADER 里的域名
 	Domain *string `required:"false"`
 
+	// 0:关闭 1:开启，用于数据压缩功能
+	EnableCompression *int `required:"false"`
+
+	// 0:关闭 1:开启，用于开启http2功能；默认值为0
+	EnableHTTP2 *int `required:"false"`
+
+	// 重定向端口，取值范围[0-65535]；默认值为0，代表关闭；仅HTTP协议支持开启重定向功能
+	ForwardPort *int `required:"false"`
+
 	// VServer负载均衡模式，枚举值：Roundrobin -> 轮询;Source -> 源地址；ConsistentHash -> 一致性哈希；SourcePort -> 源地址（计算端口）；ConsistentHashPort -> 一致性哈希（计算端口）; WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数；Backup -> 主备模式。ConsistentHash，SourcePort，ConsistentHashPort 只在报文转发中使用；Leastconn只在请求代理中使用；Roundrobin、Source和WeightRoundrobin,Backup在请求代理和报文转发中使用。默认为："Roundrobin"
 	Method *string `required:"false"`
 
@@ -1545,6 +1953,9 @@ type UpdateVServerAttributeRequest struct {
 
 	// 根据MonitorType确认； 当MonitorType为Customize时，此字段有意义，代表UDP检查请求应收到的响应报文
 	ResponseMsg *string `required:"false"`
+
+	// 安全策略组ID
+	SecurityPolicyId *string `required:"false"`
 
 	// 负载均衡实例ID
 	ULBId *string `required:"true"`

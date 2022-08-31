@@ -697,6 +697,62 @@ func (c *UMemClient) DeleteURedisGroup(req *DeleteURedisGroupRequest) (*DeleteUR
 	return &res, nil
 }
 
+// DescribeUDRedisProxyInfoRequest is request schema for DescribeUDRedisProxyInfo action
+type DescribeUDRedisProxyInfoRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// udredis实例id
+	SpaceId *string `required:"true"`
+}
+
+// DescribeUDRedisProxyInfoResponse is response schema for DescribeUDRedisProxyInfo action
+type DescribeUDRedisProxyInfoResponse struct {
+	response.CommonBase
+
+	// 代理数据集
+	DataSet []UDRedisProxyInfo
+}
+
+// NewDescribeUDRedisProxyInfoRequest will create request of DescribeUDRedisProxyInfo action.
+func (c *UMemClient) NewDescribeUDRedisProxyInfoRequest() *DescribeUDRedisProxyInfoRequest {
+	req := &DescribeUDRedisProxyInfoRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeUDRedisProxyInfo
+
+拉取udredis所有的代理信息
+*/
+func (c *UMemClient) DescribeUDRedisProxyInfo(req *DescribeUDRedisProxyInfoRequest) (*DescribeUDRedisProxyInfoResponse, error) {
+	var err error
+	var res DescribeUDRedisProxyInfoResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeUDRedisProxyInfo", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribeUDRedisSlowlogRequest is request schema for DescribeUDRedisSlowlog action
 type DescribeUDRedisSlowlogRequest struct {
 	request.CommonBase
@@ -958,13 +1014,13 @@ func (c *UMemClient) DescribeUMemBackupURL(req *DescribeUMemBackupURLRequest) (*
 type DescribeUMemBlockInfoRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
 	// 分页显示的条目数, 默认值为10
@@ -2032,6 +2088,65 @@ func (c *UMemClient) GetUMemSpaceState(req *GetUMemSpaceStateRequest) (*GetUMemS
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("GetUMemSpaceState", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// GetURedisSizeRequest is request schema for GetURedisSize action
+type GetURedisSizeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 是否查询高性能Redis， 默认为false， 或者不填， 查询高性能为true
+	HighPerformance *bool `required:"false"`
+
+	// 是否是跨机房实例，默认为false，跨机房为true。
+	RegionFlag *bool `required:"false"`
+}
+
+// GetURedisSizeResponse is response schema for GetURedisSize action
+type GetURedisSizeResponse struct {
+	response.CommonBase
+
+	// 容量大小
+	DataSize []string
+}
+
+// NewGetURedisSizeRequest will create request of GetURedisSize action.
+func (c *UMemClient) NewGetURedisSizeRequest() *GetURedisSizeRequest {
+	req := &GetURedisSizeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetURedisSize
+
+获取容量范围
+*/
+func (c *UMemClient) GetURedisSize(req *GetURedisSizeRequest) (*GetURedisSizeResponse, error) {
+	var err error
+	var res GetURedisSizeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetURedisSize", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}

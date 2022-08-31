@@ -125,10 +125,10 @@ func (c *UAccountClient) CreateCharacter(req *CreateCharacterRequest) (*CreateCh
 type CreateProjectRequest struct {
 	request.CommonBase
 
-	// 【该字段已废弃，请谨慎使用】
-	ParentId *string `required:"false" deprecated:"true"`
+	//
+	ParentId *string `required:"false"`
 
-	// 项目名称，不得与现有项目重名
+	//
 	ProjectName *string `required:"true"`
 }
 
@@ -136,7 +136,7 @@ type CreateProjectRequest struct {
 type CreateProjectResponse struct {
 	response.CommonBase
 
-	// 所创建项目的Id
+	//
 	ProjectId string
 }
 
@@ -155,7 +155,7 @@ func (c *UAccountClient) NewCreateProjectRequest() *CreateProjectRequest {
 /*
 API: CreateProject
 
-创建项目
+
 */
 func (c *UAccountClient) CreateProject(req *CreateProjectRequest) (*CreateProjectResponse, error) {
 	var err error
