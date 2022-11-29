@@ -50,10 +50,6 @@ func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
 		Short: "Create UDPN tunnel",
 		Long:  "Create UDPN tunnel",
 		Run: func(c *cobra.Command, args []string) {
-			if *req.Bandwidth < 2 || *req.Bandwidth > 1000 {
-				fmt.Fprintln(out, "Error, bandwidth must be between 2Mb and 1000Mb")
-				return
-			}
 			if *req.Peer1 == *req.Peer2 {
 				fmt.Fprintln(out, "Error, flags peer1 and peer2 can't be equal")
 				return
@@ -200,10 +196,6 @@ func NewCmdUdpnModifyBW(out io.Writer) *cobra.Command {
 		Short: "Modify bandwidth of UDPN tunnel",
 		Long:  "Modify bandwidth of UDPN tunnel",
 		Run: func(c *cobra.Command, args []string) {
-			if *req.Bandwidth < 2 || *req.Bandwidth > 1000 {
-				fmt.Fprintln(out, "Error, bandwidth must be between 2Mb and 1000Mb")
-				return
-			}
 			for _, idname := range idNames {
 				req.UDPNId = sdk.String(base.PickResourceID(idname))
 				_, err := base.BizClient.ModifyUDPNBandwidth(req)
