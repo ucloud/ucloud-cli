@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    if: contains(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19.3
+
+    - name: Build
+      run: bash hack/github-release.sh
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+        files: |
+          out/*.zip
+

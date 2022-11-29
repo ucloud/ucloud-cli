@@ -34,10 +34,6 @@ build-windows-amd64:
 .PHONY : build-all
 build-all: build-darwin-amd64 build-darwin-arm64 build-linux-arm64 build-linux-amd64 build-windows-amd64
 
-.PHONY : release
-release:
-	@gitflow run release -f .gitflow.yaml
-
 .PHONY: fmt
 fmt:
 	gofmt -w -s $(GOFMT_FILES)
