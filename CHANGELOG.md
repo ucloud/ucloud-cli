@@ -1,3 +1,7 @@
+## 0.1.41 (2022-11-30)
+
+* remove bandwith limit for unet and udpn product in cli
+
 ## 0.1.40 (2022-08-31)
 
 * add `signature` command to calculate signature quickly.
