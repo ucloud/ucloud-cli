@@ -38,7 +38,7 @@ import (
 
 var uhostSpoller = base.NewSpoller(sdescribeUHostByID, base.Cxt.GetWriter())
 
-//NewCmdUHost ucloud uhost
+// NewCmdUHost ucloud uhost
 func NewCmdUHost() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uhost",
@@ -65,7 +65,7 @@ func NewCmdUHost() *cobra.Command {
 	return cmd
 }
 
-//UHostRow UHost表格行
+// UHostRow UHost表格行
 type UHostRow struct {
 	UHostName    string
 	Remark       string
@@ -209,7 +209,7 @@ func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegi
 	return uhosts, nil
 }
 
-//NewCmdUHostList [ucloud uhost list]
+// NewCmdUHostList [ucloud uhost list]
 func NewCmdUHostList(out io.Writer) *cobra.Command {
 	var allRegion, pageOff, idOnly bool
 	var output string
@@ -281,12 +281,13 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUHostCreate [ucloud uhost create]
+// NewCmdUHostCreate [ucloud uhost create]
 func NewCmdUHostCreate() *cobra.Command {
 	var bindEipIDs []string
 	var hotPlug string
 	var async bool
 	var count int
+	var concurrent int
 	var hotPlugImageFlag bool
 	var userData string
 	var userDataImageFlag bool
@@ -308,6 +309,10 @@ func NewCmdUHostCreate() *cobra.Command {
 				if !base.IsBase64Encoded([]byte(userDataBase64)) {
 					return fmt.Errorf("%q must be base64-encoded", "user-data-base64")
 				}
+			}
+
+			if concurrent > 50 {
+				return fmt.Errorf("%q should not be more than 50, current value is %v", "concurrent", concurrent)
 			}
 			return nil
 		},
@@ -364,7 +369,8 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			wg := &sync.WaitGroup{}
-			tokens := make(chan struct{}, 20)
+			fmt.Println(concurrent)
+			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
 			if count <= 5 {
 				for i := 0; i < count; i++ {
@@ -439,6 +445,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
 	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create.")
+	flags.IntVar(&concurrent, "concurrent", 20, "Optional. The count of concurrent uhost creation requests.")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
 	req.Name = flags.String("name", "UHost", "Optional. UHost instance name")
@@ -518,7 +525,7 @@ func NewCmdUHostCreate() *cobra.Command {
 	return cmd
 }
 
-//createUhostWrapper 处理UI和并发控制
+// createUhostWrapper 处理UI和并发控制
 func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
 	//控制并发数量
 	tokens <- struct{}{}
@@ -640,7 +647,7 @@ func getEIPByUHostId(uhostId string) (*uhost.UHostIPSet, error) {
 	return nil, fmt.Errorf("can not get eip by uhost[%s]", uhostId)
 }
 
-//NewCmdUHostDelete ucloud uhost delete
+// NewCmdUHostDelete ucloud uhost delete
 func NewCmdUHostDelete() *cobra.Command {
 	var uhostIDs *[]string
 	var isDestroy = sdk.Bool(false)
@@ -740,7 +747,7 @@ func deleteUHost(creq request.Common) (bool, []string) {
 	return true, logs
 }
 
-//NewCmdUHostStop ucloud uhost stop
+// NewCmdUHostStop ucloud uhost stop
 func NewCmdUHostStop(out io.Writer) *cobra.Command {
 	var uhostIDs *[]string
 	var async *bool
@@ -802,7 +809,7 @@ func stopUhostIns(req *uhost.StopUHostInstanceRequest, async bool, out io.Writer
 	return poller.Poll(resp.UHostId, *req.ProjectId, *req.Region, *req.Zone, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
 }
 
-//可并发调用版本
+// 可并发调用版本
 func stopUhostInsV2(req *uhost.StopUHostInstanceRequest, async bool, block *ux.Block) {
 	resp, err := base.BizClient.StopUHostInstance(req)
 	if err != nil {
@@ -818,7 +825,7 @@ func stopUhostInsV2(req *uhost.StopUHostInstanceRequest, async bool, block *ux.B
 	}
 }
 
-//NewCmdUHostStart ucloud uhost start
+// NewCmdUHostStart ucloud uhost start
 func NewCmdUHostStart(out io.Writer) *cobra.Command {
 	var async *bool
 	var uhostIDs *[]string
@@ -860,7 +867,7 @@ func NewCmdUHostStart(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUHostReboot ucloud uhost restart
+// NewCmdUHostReboot ucloud uhost restart
 func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 	var uhostIDs *[]string
 	var async *bool
@@ -903,7 +910,7 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUHostPoweroff ucloud uhost poweroff
+// NewCmdUHostPoweroff ucloud uhost poweroff
 func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	var yes *bool
 	var uhostIDs *[]string
@@ -992,7 +999,7 @@ func tryStopUhost(req *uhost.ResizeAttachedDiskRequest, uhostID, promptText stri
 	return nil
 }
 
-//NewCmdUHostResize ucloud uhost resize
+// NewCmdUHostResize ucloud uhost resize
 func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	var yes, async *bool
 	var bootDiskSize, dataDiskSize int
@@ -1190,7 +1197,7 @@ func getUhostList(states []string, project, region, zone string) []string {
 	return list
 }
 
-//NewCmdUHostClone ucloud uhost clone
+// NewCmdUHostClone ucloud uhost clone
 func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	var uhostID *string
 	var async *bool
@@ -1295,7 +1302,7 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUhostCreateImage ucloud uhost create-image
+// NewCmdUhostCreateImage ucloud uhost create-image
 func NewCmdUhostCreateImage(out io.Writer) *cobra.Command {
 	var async *bool
 	req := base.BizClient.NewCreateCustomImageRequest()
@@ -1339,7 +1346,7 @@ func NewCmdUhostCreateImage(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUhostResetPassword ucloud uhost reset-password
+// NewCmdUhostResetPassword ucloud uhost reset-password
 func NewCmdUhostResetPassword(out io.Writer) *cobra.Command {
 	var yes *bool
 	var uhostIDs *[]string
@@ -1423,7 +1430,7 @@ func checkAndCloseUhost(yes, async bool, uhostID, project, region, zone string, 
 	return nil
 }
 
-//NewCmdUhostReinstallOS ucloud uhost reinstall-os
+// NewCmdUhostReinstallOS ucloud uhost reinstall-os
 func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	var isReserveDataDisk, yes, async *bool
 	req := base.BizClient.NewReinstallUHostInstanceRequest()
@@ -1514,7 +1521,7 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUhostLeaveIsolationGroup ucloud uhost leave-isolation-group
+// NewCmdUhostLeaveIsolationGroup ucloud uhost leave-isolation-group
 func NewCmdUhostLeaveIsolationGroup(out io.Writer) *cobra.Command {
 	var uhostIds []string
 	req := base.BizClient.NewLeaveIsolationGroupRequest()
@@ -1562,7 +1569,7 @@ func NewCmdUhostLeaveIsolationGroup(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdIsolation ucloud uhost isolation-gorup
+// NewCmdIsolation ucloud uhost isolation-gorup
 func NewCmdIsolation(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isolation-group",
@@ -1575,7 +1582,7 @@ func NewCmdIsolation(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdIsolationCreate ucloud uhost isolation-group create
+// NewCmdIsolationCreate ucloud uhost isolation-group create
 func NewCmdIsolationCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewCreateIsolationGroupRequest()
 	cmd := &cobra.Command{
@@ -1608,7 +1615,7 @@ func NewCmdIsolationCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdIsolationDelete ucloud uhost
+// NewCmdIsolationDelete ucloud uhost
 func NewCmdIsolationDelete(out io.Writer) *cobra.Command {
 	var ids []string
 	req := base.BizClient.NewDeleteIsolationGroupRequest()
@@ -1650,7 +1657,7 @@ type isolationGroupRow struct {
 	UHostCount string
 }
 
-//NewCmdIsolationList ucloud uhost isolation-group list
+// NewCmdIsolationList ucloud uhost isolation-group list
 func NewCmdIsolationList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeIsolationGroupRequest()
 	cmd := &cobra.Command{
