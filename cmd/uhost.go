@@ -369,7 +369,6 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			wg := &sync.WaitGroup{}
-			fmt.Println(concurrent)
 			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
 			if count <= 5 {
