@@ -15,37 +15,37 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
-//ConfigFilePath path of config.json
+// ConfigFilePath path of config.json
 var ConfigFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "config.json")
 
-//CredentialFilePath path of credential.json
+// CredentialFilePath path of credential.json
 var CredentialFilePath = fmt.Sprintf("%s/%s", GetConfigDir(), "credential.json")
 
 var CredentialFilePathInCloudShell = os.Getenv("CLOUD_SHELL_CREDENTIAL_FILE")
 
-//LocalFileMode file mode of $HOME/ucloud/*
+// LocalFileMode file mode of $HOME/ucloud/*
 const LocalFileMode os.FileMode = 0600
 
-//DefaultTimeoutSec default timeout for requesting api, 15s
+// DefaultTimeoutSec default timeout for requesting api, 15s
 const DefaultTimeoutSec = 15
 
-//DefaultMaxRetryTimes default timeout for requesting api, 15s
+// DefaultMaxRetryTimes default timeout for requesting api, 15s
 const DefaultMaxRetryTimes = 3
 
-//DefaultBaseURL location of api server
+// DefaultBaseURL location of api server
 const DefaultBaseURL = "https://api.ucloud.cn/"
 
-//DefaultProfile name of default profile
+// DefaultProfile name of default profile
 const DefaultProfile = "default"
 
-//Version 版本号
-const Version = "0.1.41"
+// Version 版本号
+const Version = "0.1.42"
 
 var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 
 var InCloudShell = os.Getenv("CLOUD_SHELL") == "true"
 
-//ConfigIns 配置实例, 程序加载时生成
+// ConfigIns 配置实例, 程序加载时生成
 var ConfigIns = &AggConfig{
 	Profile:       DefaultProfile,
 	BaseURL:       DefaultBaseURL,
@@ -53,22 +53,22 @@ var ConfigIns = &AggConfig{
 	MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 }
 
-//AggConfigListIns 配置列表, 进程启动时从本地文件加载
+// AggConfigListIns 配置列表, 进程启动时从本地文件加载
 var AggConfigListIns = &AggConfigManager{}
 
-//ClientConfig 创建sdk client参数
+// ClientConfig 创建sdk client参数
 var ClientConfig *sdk.Config
 
-//AuthCredential 创建sdk client参数
+// AuthCredential 创建sdk client参数
 var AuthCredential *CredentialConfig
 
-//BizClient 用于调用业务接口
+// BizClient 用于调用业务接口
 var BizClient *Client
 
-//Global 全局flag
+// Global 全局flag
 var Global GlobalFlag
 
-//GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
+// GlobalFlag 几乎所有接口都需要的参数，例如 region zone projectID
 type GlobalFlag struct {
 	Debug         bool
 	JSON          bool
@@ -84,7 +84,7 @@ type GlobalFlag struct {
 	MaxRetryTimes int
 }
 
-//CLIConfig cli_config element
+// CLIConfig cli_config element
 type CLIConfig struct {
 	ProjectID      string `json:"project_id"`
 	Region         string `json:"region"`
@@ -97,7 +97,7 @@ type CLIConfig struct {
 	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
-//CredentialConfig credential element
+// CredentialConfig credential element
 type CredentialConfig struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
@@ -106,7 +106,7 @@ type CredentialConfig struct {
 	Profile    string `json:"profile"`
 }
 
-//AggConfig 聚合配置 config+credential
+// AggConfig 聚合配置 config+credential
 type AggConfig struct {
 	Profile        string `json:"profile"`
 	Active         bool   `json:"active"`
@@ -123,7 +123,7 @@ type AggConfig struct {
 	AgreeUploadLog bool   `json:"agree_upload_log"`
 }
 
-//ConfigPublicKey 输入公钥
+// ConfigPublicKey 输入公钥
 func (p *AggConfig) ConfigPublicKey() error {
 	Cxt.Print("Your public-key:")
 	_, err := fmt.Scanf("%s\n", &p.PublicKey)
@@ -136,7 +136,7 @@ func (p *AggConfig) ConfigPublicKey() error {
 	return nil
 }
 
-//ConfigPrivateKey 输入私钥
+// ConfigPrivateKey 输入私钥
 func (p *AggConfig) ConfigPrivateKey() error {
 	Cxt.Print("Your private-key:")
 	_, err := fmt.Scanf("%s\n", &p.PrivateKey)
@@ -149,7 +149,7 @@ func (p *AggConfig) ConfigPrivateKey() error {
 	return nil
 }
 
-//ConfigBaseURL 输入BaseURL
+// ConfigBaseURL 输入BaseURL
 func (p *AggConfig) ConfigBaseURL() error {
 	fmt.Printf("Default base-url(%s):", DefaultBaseURL)
 	_, err := fmt.Scanf("%s\n", &p.BaseURL)
@@ -163,7 +163,7 @@ func (p *AggConfig) ConfigBaseURL() error {
 	return nil
 }
 
-//ConfigUploadLog agree upload log or not
+// ConfigUploadLog agree upload log or not
 func (p *AggConfig) ConfigUploadLog() error {
 	var input string
 	fmt.Print("Do you agree to upload log in local file ~/.ucloud/cli.log to help ucloud-cli get better(yes|no):")
@@ -179,7 +179,7 @@ func (p *AggConfig) ConfigUploadLog() error {
 	return nil
 }
 
-//GetClientConfig 用来生成sdkClient
+// GetClientConfig 用来生成sdkClient
 func (p *AggConfig) GetClientConfig(isDebug bool) *sdk.Config {
 	clientConfig := &sdk.Config{
 		Region:    p.Region,
@@ -195,7 +195,7 @@ func (p *AggConfig) GetClientConfig(isDebug bool) *sdk.Config {
 	return clientConfig
 }
 
-//GetCredential 用来生成SDkClient
+// GetCredential 用来生成SDkClient
 func (p *AggConfig) GetCredential() *auth.Credential {
 	return &auth.Credential{
 		PublicKey:  p.PublicKey,
@@ -223,7 +223,7 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 	target.CSRFToken = p.CSRFToken
 }
 
-//AggConfigManager 配置管理
+// AggConfigManager 配置管理
 type AggConfigManager struct {
 	activeProfile string
 	configs       map[string]*AggConfig
@@ -231,7 +231,7 @@ type AggConfigManager struct {
 	credFile      *os.File
 }
 
-//NewAggConfigManager create instance
+// NewAggConfigManager create instance
 func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) {
 	manager := &AggConfigManager{
 		configs:    make(map[string]*AggConfig),
@@ -260,7 +260,7 @@ func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) 
 	return manager, nil
 }
 
-//Append config to list, override if already exist the same profile
+// Append config to list, override if already exist the same profile
 func (p *AggConfigManager) Append(config *AggConfig) error {
 	if _, ok := p.configs[config.Profile]; ok {
 		return fmt.Errorf("profile [%s] exists already", config.Profile)
@@ -276,7 +276,7 @@ func (p *AggConfigManager) Append(config *AggConfig) error {
 	return p.Save()
 }
 
-//UpdateAggConfig  update AggConfig append if not exist
+// UpdateAggConfig  update AggConfig append if not exist
 func (p *AggConfigManager) UpdateAggConfig(config *AggConfig) error {
 	if _, ok := p.configs[config.Profile]; !ok {
 		return p.Append(config)
@@ -291,7 +291,7 @@ func (p *AggConfigManager) UpdateAggConfig(config *AggConfig) error {
 	return p.Save()
 }
 
-//Load AggConfigList from local file  $HOME/.ucloud/config.json+credential.json
+// Load AggConfigList from local file  $HOME/.ucloud/config.json+credential.json
 func (p *AggConfigManager) Load() error {
 	configs, err := p.parseCLIConfigs()
 	if err != nil {
@@ -465,7 +465,7 @@ func parseCookie(str string) (map[string]string, error) {
 	return tokenMap, nil
 }
 
-//Save configs to local file
+// Save configs to local file
 func (p *AggConfigManager) Save() error {
 	var clics []*CLIConfig
 	var credcs []*CredentialConfig
@@ -493,7 +493,7 @@ func (p *AggConfigManager) Save() error {
 	return nil
 }
 
-//DeleteByProfile 从AggConfigList和本地文件中删除此配置
+// DeleteByProfile 从AggConfigList和本地文件中删除此配置
 func (p *AggConfigManager) DeleteByProfile(profile string) error {
 	if _, ok := p.configs[profile]; !ok {
 		return fmt.Errorf("profile: %s is not exist", profile)
@@ -513,7 +513,7 @@ func (p *AggConfigManager) DeleteByProfile(profile string) error {
 	return nil
 }
 
-//GetProfileNameList 获取所有profiles 用于ucloud config --profile 补全
+// GetProfileNameList 获取所有profiles 用于ucloud config --profile 补全
 func (p *AggConfigManager) GetProfileNameList() []string {
 	profiles := []string{}
 	for _, item := range p.configs {
@@ -522,7 +522,7 @@ func (p *AggConfigManager) GetProfileNameList() []string {
 	return profiles
 }
 
-//GetAggConfigList get all profile config
+// GetAggConfigList get all profile config
 func (p *AggConfigManager) GetAggConfigList() []AggConfig {
 	configs := []AggConfig{}
 	for _, cfg := range p.configs {
@@ -531,7 +531,7 @@ func (p *AggConfigManager) GetAggConfigList() []AggConfig {
 	return configs
 }
 
-//GetAggConfigByProfile get config of specify profile
+// GetAggConfigByProfile get config of specify profile
 func (p *AggConfigManager) GetAggConfigByProfile(profile string) (*AggConfig, bool) {
 	if ac, ok := p.configs[profile]; ok {
 		return ac, true
@@ -539,7 +539,7 @@ func (p *AggConfigManager) GetAggConfigByProfile(profile string) (*AggConfig, bo
 	return nil, false
 }
 
-//GetActiveAggConfig get active agg config
+// GetActiveAggConfig get active agg config
 func (p *AggConfigManager) GetActiveAggConfig() (*AggConfig, error) {
 	if ac, ok := p.configs[p.activeProfile]; ok {
 		return ac, nil
@@ -547,7 +547,7 @@ func (p *AggConfigManager) GetActiveAggConfig() (*AggConfig, error) {
 	return nil, fmt.Errorf("active profile not found. see 'ucloud config list'")
 }
 
-//GetActiveAggConfigName get active config name
+// GetActiveAggConfigName get active config name
 func (p *AggConfigManager) GetActiveAggConfigName() string {
 	if ac, ok := p.configs[p.activeProfile]; ok {
 		return ac.Profile
@@ -596,7 +596,7 @@ func (p *AggConfigManager) parseCredentials() ([]CredentialConfig, error) {
 	return credentials, nil
 }
 
-//ListAggConfig ucloud --config + ucloud config list
+// ListAggConfig ucloud --config + ucloud config list
 func ListAggConfig(json bool) {
 	aggConfigs := AggConfigListIns.GetAggConfigList()
 	for idx, ac := range aggConfigs {
@@ -613,7 +613,7 @@ func ListAggConfig(json bool) {
 	}
 }
 
-//LoadUserInfo 从~/.ucloud/user.json加载用户信息
+// LoadUserInfo 从~/.ucloud/user.json加载用户信息
 func LoadUserInfo() (*uaccount.UserInfo, error) {
 	filePath := GetConfigDir() + "/user.json"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -631,7 +631,7 @@ func LoadUserInfo() (*uaccount.UserInfo, error) {
 	return &user, nil
 }
 
-//GetUserInfo from local file and remote api
+// GetUserInfo from local file and remote api
 func GetUserInfo() (*uaccount.UserInfo, error) {
 	user, err := LoadUserInfo()
 	if err == nil {
@@ -662,7 +662,7 @@ func GetUserInfo() (*uaccount.UserInfo, error) {
 	return user, nil
 }
 
-//OldConfig 0.1.7以及之前版本的配置struct
+// OldConfig 0.1.7以及之前版本的配置struct
 type OldConfig struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
@@ -671,7 +671,7 @@ type OldConfig struct {
 	ProjectID  string `json:"project_id"`
 }
 
-//Load 从本地文件加载配置
+// Load 从本地文件加载配置
 func (p *OldConfig) Load() error {
 	if _, err := os.Stat(ConfigFilePath); os.IsNotExist(err) {
 		p = new(OldConfig)
@@ -715,7 +715,7 @@ func adaptOldConfig() error {
 	return AggConfigListIns.Append(ac)
 }
 
-//GetBizClient 初始化BizClient
+// GetBizClient 初始化BizClient
 func GetBizClient(ac *AggConfig) (*Client, error) {
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
 	if err != nil {
@@ -787,7 +787,7 @@ func InitConfigInCloudShell() error {
 	return AggConfigM.Save()
 }
 
-//InitConfig 初始化配置
+// InitConfig 初始化配置
 func InitConfig() {
 	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
 	if err != nil && !os.IsNotExist(err) {
