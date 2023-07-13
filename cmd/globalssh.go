@@ -28,7 +28,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdGssh ucloud gssh
+// NewCmdGssh ucloud gssh
 func NewCmdGssh() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gssh",
@@ -44,7 +44,7 @@ func NewCmdGssh() *cobra.Command {
 	return cmd
 }
 
-//GSSHRow gssh表格行
+// GSSHRow gssh表格行
 type GSSHRow struct {
 	ResourceID         string
 	SSHServerIP        string
@@ -56,7 +56,7 @@ type GSSHRow struct {
 	InstanceType       string
 }
 
-//NewCmdGsshList ucloud gssh list
+// NewCmdGsshList ucloud gssh list
 func NewCmdGsshList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeGlobalSSHInstanceRequest()
 	cmd := &cobra.Command{
@@ -106,7 +106,7 @@ func NewCmdGsshList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdGsshArea ucloud gssh area
+// NewCmdGsshArea ucloud gssh area
 func NewCmdGsshArea() *cobra.Command {
 	req := base.BizClient.NewDescribeGlobalSSHAreaRequest()
 	cmd := &cobra.Command{
@@ -139,7 +139,7 @@ func NewCmdGsshArea() *cobra.Command {
 	return cmd
 }
 
-//GsshLocation 服务地点和覆盖区域
+// GsshLocation 服务地点和覆盖区域
 type GsshLocation struct {
 	AirportCode       string
 	SSHServerLocation string
@@ -156,7 +156,7 @@ var areaCodeMap = map[string]string{
 	"LOS": "Lagos",
 }
 
-//NewCmdGsshCreate ucloud gssh create
+// NewCmdGsshCreate ucloud gssh create
 func NewCmdGsshCreate() *cobra.Command {
 	var targetIP *net.IP
 	req := base.BizClient.NewCreateGlobalSSHInstanceRequest()
@@ -215,7 +215,7 @@ func NewCmdGsshCreate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdGsshDelete ucloud gssh delete
+// NewCmdGsshDelete ucloud gssh delete
 func NewCmdGsshDelete() *cobra.Command {
 	var req = base.BizClient.NewDeleteGlobalSSHInstanceRequest()
 	var gsshIds *[]string
@@ -248,7 +248,7 @@ func NewCmdGsshDelete() *cobra.Command {
 	return cmd
 }
 
-//NewCmdGsshModify ucloud gssh modify
+// NewCmdGsshModify ucloud gssh modify
 func NewCmdGsshModify() *cobra.Command {
 	gsshModifyPortReq := base.BizClient.NewModifyGlobalSSHPortRequest()
 	gsshModifyRemarkReq := base.BizClient.NewModifyGlobalSSHRemarkRequest()

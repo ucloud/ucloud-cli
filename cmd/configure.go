@@ -40,7 +40,7 @@ const helloUcloud = `
 If you want add or modify your configurations, run 'ucloud config add/update'
 `
 
-//NewCmdInit ucloud init
+// NewCmdInit ucloud init
 func NewCmdInit() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -118,7 +118,7 @@ func printHello() {
 	base.Cxt.Println(helloUcloud)
 }
 
-//根据用户设置的region和zone,检查其合法性，补上缺失的部分，给出一个合理的符合用户本意设置的region和zone
+// 根据用户设置的region和zone,检查其合法性，补上缺失的部分，给出一个合理的符合用户本意设置的region和zone
 func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
 	userRegion := cfg.Region
 	userZone := cfg.Zone
@@ -159,7 +159,7 @@ func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
 	return userRegion, userZone, nil
 }
 
-//NewCmdConfig ucloud config
+// NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
 	var active, upload string
 	cfg := base.AggConfig{}
@@ -328,7 +328,7 @@ func NewCmdConfig() *cobra.Command {
 	return cmd
 }
 
-//NewCmdConfigAdd ucloud config add
+// NewCmdConfigAdd ucloud config add
 func NewCmdConfigAdd() *cobra.Command {
 	var active, upload string
 	cfg := &base.AggConfig{}
@@ -409,7 +409,7 @@ func NewCmdConfigAdd() *cobra.Command {
 	return cmd
 }
 
-//NewCmdConfigUpdate ucloud config update
+// NewCmdConfigUpdate ucloud config update
 func NewCmdConfigUpdate() *cobra.Command {
 	var timeout, active, maxRetries, upload string
 	cfg := &base.AggConfig{}
@@ -543,7 +543,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdConfigList ucloud config list
+// NewCmdConfigList ucloud config list
 func NewCmdConfigList() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -556,7 +556,7 @@ func NewCmdConfigList() *cobra.Command {
 	return cmd
 }
 
-//NewCmdConfigDelete ucloud config Delete
+// NewCmdConfigDelete ucloud config Delete
 func NewCmdConfigDelete() *cobra.Command {
 	var profileList []string
 	cmd := &cobra.Command{

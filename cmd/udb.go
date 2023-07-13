@@ -32,7 +32,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdUDBConf ucloud udb conf
+// NewCmdUDBConf ucloud udb conf
 func NewCmdUDBConf() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "conf",
@@ -51,7 +51,7 @@ func NewCmdUDBConf() *cobra.Command {
 	return cmd
 }
 
-//UDBConfRow 表格行
+// UDBConfRow 表格行
 type UDBConfRow struct {
 	ConfID      int
 	DBVersion   string
@@ -70,7 +70,7 @@ var dbTypeMap = map[string]string{
 
 var dbTypeList = []string{"mysql", "mongodb", "postgresql", "sqlserver"}
 
-//NewCmdUDBConfList ucloud mysql conf list
+// NewCmdUDBConfList ucloud mysql conf list
 func NewCmdUDBConfList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBParamGroupRequest()
 	cmd := &cobra.Command{
@@ -120,13 +120,13 @@ func NewCmdUDBConfList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//UDBConfParamRow 参数配置展示表格行
+// UDBConfParamRow 参数配置展示表格行
 type UDBConfParamRow struct {
 	Key   string
 	Value string
 }
 
-//NewCmdUDBConfDescribe ucloud udb conf describe
+// NewCmdUDBConfDescribe ucloud udb conf describe
 func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 	var confID string
 	req := base.BizClient.NewDescribeUDBParamGroupRequest()
@@ -194,7 +194,7 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBConfClone ucloud udb conf clone
+// NewCmdUDBConfClone ucloud udb conf clone
 func NewCmdUDBConfClone(out io.Writer) *cobra.Command {
 	var srcConfID string
 	req := base.BizClient.NewCreateUDBParamGroupRequest()
@@ -260,7 +260,7 @@ var udbSubtypeMap = map[string]int{
 
 var subtypeList = []string{"Shardsvr-MMAPv1", "Shardsvr-WiredTiger", "Configsvr-MMAPv1", "Configsvr-WiredTiger", "Mongos", "Mysql", "Postgresql"}
 
-//NewCmdUDBConfUpload ucloud udb conf upload
+// NewCmdUDBConfUpload ucloud udb conf upload
 func NewCmdUDBConfUpload(out io.Writer) *cobra.Command {
 	var file string
 	req := base.BizClient.NewUploadUDBParamGroupRequest()
@@ -313,7 +313,7 @@ func NewCmdUDBConfUpload(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBConfUpdate ucloud udb conf update
+// NewCmdUDBConfUpdate ucloud udb conf update
 func NewCmdUDBConfUpdate(out io.Writer) *cobra.Command {
 	var confID, key, value, file string
 	req := base.BizClient.NewUpdateUDBParamGroupRequest()
@@ -384,7 +384,7 @@ func NewCmdUDBConfUpdate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBConfDelete ucloud udb conf delete
+// NewCmdUDBConfDelete ucloud udb conf delete
 func NewCmdUDBConfDelete(out io.Writer) *cobra.Command {
 	var confID string
 	req := base.BizClient.NewDeleteUDBParamGroupRequest()
@@ -495,7 +495,7 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBConfDownload ucloud udb conf download
+// NewCmdUDBConfDownload ucloud udb conf download
 func NewCmdUDBConfDownload(out io.Writer) *cobra.Command {
 	var confID string
 	req := base.BizClient.UDBClient.NewExtractUDBParamGroupRequest()

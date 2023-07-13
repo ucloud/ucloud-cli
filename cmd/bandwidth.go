@@ -29,7 +29,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdBandwidth ucloud bw
+// NewCmdBandwidth ucloud bw
 func NewCmdBandwidth() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bw",
@@ -41,7 +41,7 @@ func NewCmdBandwidth() *cobra.Command {
 	return cmd
 }
 
-//NewCmdSharedBW ucloud shared-bw
+// NewCmdSharedBW ucloud shared-bw
 func NewCmdSharedBW() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "shared",
@@ -56,7 +56,7 @@ func NewCmdSharedBW() *cobra.Command {
 	return cmd
 }
 
-//NewCmdSharedBWCreate ucloud shared-bw create
+// NewCmdSharedBWCreate ucloud shared-bw create
 func NewCmdSharedBWCreate() *cobra.Command {
 	req := base.BizClient.NewAllocateShareBandwidthRequest()
 	cmd := &cobra.Command{
@@ -91,7 +91,7 @@ func NewCmdSharedBWCreate() *cobra.Command {
 	return cmd
 }
 
-//SharedBWRow 表格行
+// SharedBWRow 表格行
 type SharedBWRow struct {
 	Name           string
 	ResourceID     string
@@ -101,7 +101,7 @@ type SharedBWRow struct {
 	ExpirationTime string
 }
 
-//NewCmdSharedBWList ucloud shared-bw list
+// NewCmdSharedBWList ucloud shared-bw list
 func NewCmdSharedBWList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeShareBandwidthRequest()
 	cmd := &cobra.Command{
@@ -147,7 +147,7 @@ func NewCmdSharedBWList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSharedBWResize ucloud shared-bw resize
+// NewCmdSharedBWResize ucloud shared-bw resize
 func NewCmdSharedBWResize() *cobra.Command {
 	req := base.BizClient.NewResizeShareBandwidthRequest()
 	cmd := &cobra.Command{
@@ -188,7 +188,7 @@ func NewCmdSharedBWResize() *cobra.Command {
 	return cmd
 }
 
-//NewCmdSharedBWDelete ucloud shared-bw delete
+// NewCmdSharedBWDelete ucloud shared-bw delete
 func NewCmdSharedBWDelete() *cobra.Command {
 	req := base.BizClient.NewReleaseShareBandwidthRequest()
 	ids := []string{}
@@ -242,7 +242,7 @@ func getAllSharedBW(project, region string) ([]string, error) {
 	return list, nil
 }
 
-//NewCmdBandwidthPkg ucloud bw-pkg
+// NewCmdBandwidthPkg ucloud bw-pkg
 func NewCmdBandwidthPkg() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pkg",
@@ -256,7 +256,7 @@ func NewCmdBandwidthPkg() *cobra.Command {
 	return cmd
 }
 
-//NewCmdBandwidthPkgCreate ucloud bw-pkg create
+// NewCmdBandwidthPkgCreate ucloud bw-pkg create
 func NewCmdBandwidthPkgCreate() *cobra.Command {
 	var start, end *string
 	timeLayout := "2006-01-02/15:04:05"
@@ -323,7 +323,7 @@ func NewCmdBandwidthPkgCreate() *cobra.Command {
 	return cmd
 }
 
-//BandwidthPkgRow 表格行
+// BandwidthPkgRow 表格行
 type BandwidthPkgRow struct {
 	ResourceID string
 	EIP        string
@@ -332,7 +332,7 @@ type BandwidthPkgRow struct {
 	EndTime    string
 }
 
-//NewCmdBandwidthPkgList ucloud bw-pkg list
+// NewCmdBandwidthPkgList ucloud bw-pkg list
 func NewCmdBandwidthPkgList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeBandwidthPackageRequest()
 	cmd := &cobra.Command{
@@ -373,7 +373,7 @@ func NewCmdBandwidthPkgList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdBandwidthPkgDelete ucloud bw-pkg delete
+// NewCmdBandwidthPkgDelete ucloud bw-pkg delete
 func NewCmdBandwidthPkgDelete() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewDeleteBandwidthPackageRequest()

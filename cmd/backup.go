@@ -27,7 +27,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdUDBBackup ucloud udb backup
+// NewCmdUDBBackup ucloud udb backup
 func NewCmdUDBBackup() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "backup",
@@ -42,7 +42,7 @@ func NewCmdUDBBackup() *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBBackupCreate ucloud udb backup create
+// NewCmdUDBBackupCreate ucloud udb backup create
 func NewCmdUDBBackupCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewBackupUDBInstanceRequest()
 	cmd := &cobra.Command{
@@ -91,7 +91,7 @@ type udbBackupRow struct {
 	BackupEndTime    string
 }
 
-//NewCmdUDBBackupList ucloud udb backup list
+// NewCmdUDBBackupList ucloud udb backup list
 func NewCmdUDBBackupList(out io.Writer) *cobra.Command {
 	var bpType, dbType, beginTime, endTime, backupID string
 	bpTypeMap := map[string]int{
@@ -189,7 +189,7 @@ func NewCmdUDBBackupList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBBackupDelete ucloud udb backup delete
+// NewCmdUDBBackupDelete ucloud udb backup delete
 func NewCmdUDBBackupDelete(out io.Writer) *cobra.Command {
 	ids := []int{}
 	req := base.BizClient.NewDeleteUDBBackupRequest()
@@ -222,7 +222,7 @@ func NewCmdUDBBackupDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBBackupGetDownloadURL ucloud udb backup get-download-url
+// NewCmdUDBBackupGetDownloadURL ucloud udb backup get-download-url
 func NewCmdUDBBackupGetDownloadURL(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBInstanceBackupURLRequest()
 	cmd := &cobra.Command{
@@ -255,7 +255,7 @@ func NewCmdUDBBackupGetDownloadURL(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBLog ucloud udb log
+// NewCmdUDBLog ucloud udb log
 func NewCmdUDBLog() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs",
@@ -272,7 +272,7 @@ func NewCmdUDBLog() *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBLogArchiveCreate ucloud udb log archive create
+// NewCmdUDBLogArchiveCreate ucloud udb log archive create
 func NewCmdUDBLogArchiveCreate(out io.Writer) *cobra.Command {
 	var region, zone, project, udbID string
 	var name, logType, beginTime, endTime string
@@ -364,7 +364,7 @@ type udbArchiveRow struct {
 	CreateTime string
 }
 
-//NewCmdUDBLogArchiveList ucloud udb log archive list
+// NewCmdUDBLogArchiveList ucloud udb log archive list
 func NewCmdUDBLogArchiveList(out io.Writer) *cobra.Command {
 	var beginTime, endTime string
 	logTypes := []string{}
@@ -456,7 +456,7 @@ func NewCmdUDBLogArchiveList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBLogArchiveGetDownloadURL ucloud udb log archive get-download-url
+// NewCmdUDBLogArchiveGetDownloadURL ucloud udb log archive get-download-url
 func NewCmdUDBLogArchiveGetDownloadURL(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBBinlogBackupURLRequest()
 	cmd := &cobra.Command{
@@ -493,7 +493,7 @@ func NewCmdUDBLogArchiveGetDownloadURL(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBLogArchiveDelete ucloud udb log archive delete
+// NewCmdUDBLogArchiveDelete ucloud udb log archive delete
 func NewCmdUDBLogArchiveDelete(out io.Writer) *cobra.Command {
 	var ids []int
 	req := base.BizClient.NewDeleteUDBLogPackageRequest()

@@ -22,7 +22,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdUPHost ucloud uphost
+// NewCmdUPHost ucloud uphost
 func NewCmdUPHost() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uphost",
@@ -48,7 +48,7 @@ type uphostRow struct {
 	Group      string
 }
 
-//NewCmdUPHostList ucloud uphost list
+// NewCmdUPHostList ucloud uphost list
 func NewCmdUPHostList(out io.Writer) *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewDescribePHostRequest()

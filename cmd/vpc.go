@@ -15,7 +15,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdVpc ucloud vpc
+// NewCmdVpc ucloud vpc
 func NewCmdVpc() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vpc",
@@ -33,7 +33,7 @@ func NewCmdVpc() *cobra.Command {
 	return cmd
 }
 
-//VPCRow 表格行
+// VPCRow 表格行
 type VPCRow struct {
 	VPCName        string
 	ResourceID     string
@@ -43,7 +43,7 @@ type VPCRow struct {
 	CreationTime   string
 }
 
-//NewCmdVPCList ucloud vpc list
+// NewCmdVPCList ucloud vpc list
 func NewCmdVPCList(out io.Writer) *cobra.Command {
 	vpcIDs := []string{}
 	req := base.BizClient.NewDescribeVPCRequest()
@@ -89,7 +89,7 @@ func NewCmdVPCList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdVpcCreate ucloud vpc create
+// NewCmdVpcCreate ucloud vpc create
 func NewCmdVpcCreate() *cobra.Command {
 	var segments *[]string
 	req := base.BizClient.NewCreateVPCRequest()
@@ -129,7 +129,7 @@ func NewCmdVpcCreate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdVpcDelete ucloud vpc delete
+// NewCmdVpcDelete ucloud vpc delete
 func NewCmdVpcDelete() *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.NewDeleteVPCRequest()
@@ -166,7 +166,7 @@ func NewCmdVpcDelete() *cobra.Command {
 	return cmd
 }
 
-//NewCmdVpcCreatePeer ucloud vpc peer
+// NewCmdVpcCreatePeer ucloud vpc peer
 func NewCmdVpcCreatePeer() *cobra.Command {
 	req := base.BizClient.NewCreateVPCIntercomRequest()
 	cmd := &cobra.Command{
@@ -214,7 +214,7 @@ func NewCmdVpcCreatePeer() *cobra.Command {
 	return cmd
 }
 
-//VPCIntercomRow 表格行
+// VPCIntercomRow 表格行
 type VPCIntercomRow struct {
 	VPCName    string
 	ResourceID string
@@ -224,7 +224,7 @@ type VPCIntercomRow struct {
 	Group      string
 }
 
-//NewCmdVpcListPeer ucloud vpc list-intercome
+// NewCmdVpcListPeer ucloud vpc list-intercome
 func NewCmdVpcListPeer(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeVPCIntercomRequest()
 	cmd := &cobra.Command{
@@ -268,7 +268,7 @@ func NewCmdVpcListPeer(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdVpcDeletePeer ucloud vpc delete-intercome
+// NewCmdVpcDeletePeer ucloud vpc delete-intercome
 func NewCmdVpcDeletePeer() *cobra.Command {
 	req := base.BizClient.NewDeleteVPCIntercomRequest()
 	cmd := &cobra.Command{
@@ -331,7 +331,7 @@ func getAllVPCIdNames(project, region string) []string {
 	return list
 }
 
-//NewCmdSubnet  ucloud subnet
+// NewCmdSubnet  ucloud subnet
 func NewCmdSubnet() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "subnet",
@@ -348,7 +348,7 @@ func NewCmdSubnet() *cobra.Command {
 	return cmd
 }
 
-//SubnetRow 表格行
+// SubnetRow 表格行
 type SubnetRow struct {
 	SubnetName     string
 	ResourceID     string
@@ -358,7 +358,7 @@ type SubnetRow struct {
 	CreationTime   string
 }
 
-//NewCmdSubnetList ucloud subnet list
+// NewCmdSubnetList ucloud subnet list
 func NewCmdSubnetList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSubnetRequest()
 	cmd := &cobra.Command{
@@ -400,7 +400,7 @@ func NewCmdSubnetList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSubnetCreate  ucloud subnet create
+// NewCmdSubnetCreate  ucloud subnet create
 func NewCmdSubnetCreate() *cobra.Command {
 	var segment *net.IPNet
 	req := base.BizClient.NewCreateSubnetRequest()
@@ -448,7 +448,7 @@ func NewCmdSubnetCreate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdSubnetDelete ucloud subnet delete
+// NewCmdSubnetDelete ucloud subnet delete
 func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.NewDeleteSubnetRequest()
@@ -484,7 +484,7 @@ func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//SubnetResourceRow 表格行
+// SubnetResourceRow 表格行
 type SubnetResourceRow struct {
 	ResourceName string
 	ResourceID   string
@@ -492,7 +492,7 @@ type SubnetResourceRow struct {
 	PrivateIP    string
 }
 
-//NewCmdSubnetListResource ucloud subnet list-resource
+// NewCmdSubnetListResource ucloud subnet list-resource
 func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSubnetResourceRequest()
 	cmd := &cobra.Command{

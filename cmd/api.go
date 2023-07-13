@@ -13,7 +13,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdAPI ucloud api --xkey xvalue
+// NewCmdAPI ucloud api --xkey xvalue
 func NewCmdAPI(out io.Writer) *cobra.Command {
 	return &cobra.Command{
 		Use:   "api",

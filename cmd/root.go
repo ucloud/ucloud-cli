@@ -27,7 +27,7 @@ import (
 
 var global = &base.Global
 
-//NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
+// NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "ucloud",
@@ -95,7 +95,7 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-//概要帮助信息模板
+// 概要帮助信息模板
 const usageTmpl = `Usage:{{if .Runnable}}
  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
  {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 1)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}

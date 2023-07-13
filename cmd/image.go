@@ -28,7 +28,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdUImage ucloud uimage
+// NewCmdUImage ucloud uimage
 func NewCmdUImage() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "image",
@@ -47,7 +47,7 @@ func NewCmdUImage() *cobra.Command {
 	return cmd
 }
 
-//ImageRow 表格行
+// ImageRow 表格行
 type ImageRow struct {
 	ImageName         string
 	ImageID           string
@@ -58,7 +58,7 @@ type ImageRow struct {
 	State             string
 }
 
-//NewCmdUImageList ucloud uimage list
+// NewCmdUImageList ucloud uimage list
 func NewCmdUImageList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeImageRequest()
 	cmd := &cobra.Command{
@@ -105,7 +105,7 @@ func NewCmdUImageList(out io.Writer) *cobra.Command {
 // 	req := BizClient.NewImportCustomImageRequest()
 // }
 
-//NewCmdUImageDelete ucloud image delete
+// NewCmdUImageDelete ucloud image delete
 func NewCmdUImageDelete() *cobra.Command {
 	var imageIDs *[]string
 	req := base.BizClient.NewTerminateCustomImageRequest()
@@ -139,7 +139,7 @@ func NewCmdUImageDelete() *cobra.Command {
 	return cmd
 }
 
-//NewCmdImageCopy ucloud image copy
+// NewCmdImageCopy ucloud image copy
 func NewCmdImageCopy(out io.Writer) *cobra.Command {
 	var imageIDs *[]string
 	var async *bool

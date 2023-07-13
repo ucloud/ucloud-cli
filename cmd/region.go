@@ -29,7 +29,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdRegion ucloud region
+// NewCmdRegion ucloud region
 func NewCmdRegion(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "region",
@@ -52,7 +52,7 @@ func NewCmdRegion(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//RegionTable 为显示region表格创建的类型
+// RegionTable 为显示region表格创建的类型
 type RegionTable struct {
 	Region string
 	Zones  string
@@ -75,7 +75,7 @@ func getDefaultRegion() (string, string, error) {
 	return "", "", fmt.Errorf("No default region")
 }
 
-//Region region, zone, isDefault
+// Region region, zone, isDefault
 type Region struct {
 	Labels        map[string][]string
 	DefaultRegion string
@@ -136,7 +136,7 @@ func getAllRegions() ([]string, error) {
 	return list, nil
 }
 
-//仅在命令补全中使用，忽略错误
+// 仅在命令补全中使用，忽略错误
 func getRegionList() []string {
 	regionIns, err := fetchRegion()
 	if err != nil {

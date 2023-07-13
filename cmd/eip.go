@@ -31,7 +31,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdEIP ucloud eip
+// NewCmdEIP ucloud eip
 func NewCmdEIP() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "eip",
@@ -52,7 +52,7 @@ func NewCmdEIP() *cobra.Command {
 	return cmd
 }
 
-//EIPRow 表格行
+// EIPRow 表格行
 type EIPRow struct {
 	Name           string
 	IP             string
@@ -65,7 +65,7 @@ type EIPRow struct {
 	ExpirationTime string
 }
 
-//NewCmdEIPList ucloud eip list
+// NewCmdEIPList ucloud eip list
 func NewCmdEIPList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeEIPRequest()
 	fetchAll := false
@@ -165,7 +165,7 @@ func fetchAllEip(projectID, region string) ([]unet.UnetEIPSet, error) {
 	return list, nil
 }
 
-//states,paymodes 为nil时，不作为过滤条件
+// states,paymodes 为nil时，不作为过滤条件
 func getAllEip(projectID, region string, states, paymodes []string) []string {
 	list, err := fetchAllEip(projectID, region)
 	if err != nil {
@@ -220,7 +220,7 @@ func getEIP(eipID string) (*unet.UnetEIPSet, error) {
 	return nil, fmt.Errorf("eip[%s] may not exist", eipID)
 }
 
-//NewCmdEIPAllocate ucloud eip allocate
+// NewCmdEIPAllocate ucloud eip allocate
 func NewCmdEIPAllocate() *cobra.Command {
 	var count *int
 	var req = base.BizClient.NewAllocateEIPRequest()
@@ -269,7 +269,7 @@ func NewCmdEIPAllocate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPBind ucloud eip bind
+// NewCmdEIPBind ucloud eip bind
 func NewCmdEIPBind() *cobra.Command {
 	var projectID, region, resourceID, resourceType *string
 	var eipIDs []string
@@ -355,7 +355,7 @@ func sbindEIP(resourceID, resourceType, eipID, projectID, region *string) ([]str
 	return logs, nil
 }
 
-//NewCmdEIPUnbind ucloud eip unbind
+// NewCmdEIPUnbind ucloud eip unbind
 func NewCmdEIPUnbind() *cobra.Command {
 	eipIDs := []string{}
 	req := base.BizClient.NewUnBindEIPRequest()
@@ -427,7 +427,7 @@ func unbindEIP(resourceID, resourceType, eipID, projectID, region string) ([]str
 	return logs, nil
 }
 
-//NewCmdEIPRelease ucloud eip release
+// NewCmdEIPRelease ucloud eip release
 func NewCmdEIPRelease() *cobra.Command {
 	var ids []string
 	req := base.BizClient.NewReleaseEIPRequest()
@@ -462,7 +462,7 @@ func NewCmdEIPRelease() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPModifyBandwidth ucloud eip modify-bw
+// NewCmdEIPModifyBandwidth ucloud eip modify-bw
 func NewCmdEIPModifyBandwidth() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewModifyEIPBandwidthRequest()
@@ -498,7 +498,7 @@ func NewCmdEIPModifyBandwidth() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPSetChargeMode ucloud eip modify-traffic-mode
+// NewCmdEIPSetChargeMode ucloud eip modify-traffic-mode
 func NewCmdEIPSetChargeMode() *cobra.Command {
 	ids := []string{}
 	req := base.BizClient.NewSetEIPPayModeRequest()
@@ -541,7 +541,7 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPJoinSharedBW ucloud eip join-shared-bw
+// NewCmdEIPJoinSharedBW ucloud eip join-shared-bw
 func NewCmdEIPJoinSharedBW() *cobra.Command {
 	eipIDs := []string{}
 	req := base.BizClient.NewAssociateEIPWithShareBandwidthRequest()
@@ -582,7 +582,7 @@ func NewCmdEIPJoinSharedBW() *cobra.Command {
 	return cmd
 }
 
-//NewCmdEIPLeaveSharedBW ucloud eip leave-shared-bw
+// NewCmdEIPLeaveSharedBW ucloud eip leave-shared-bw
 func NewCmdEIPLeaveSharedBW() *cobra.Command {
 	eipIDs := []string{}
 	req := base.BizClient.NewDisassociateEIPWithShareBandwidthRequest()

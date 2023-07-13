@@ -30,7 +30,7 @@ import (
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
-//NewCmdDisk ucloud disk
+// NewCmdDisk ucloud disk
 func NewCmdDisk() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "udisk",
@@ -52,7 +52,7 @@ func NewCmdDisk() *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskCreate ucloud udisk create
+// NewCmdDiskCreate ucloud udisk create
 func NewCmdDiskCreate(out io.Writer) *cobra.Command {
 	var async *bool
 	var count *int
@@ -160,7 +160,7 @@ func NewCmdDiskCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//DiskRow TableRow
+// DiskRow TableRow
 type DiskRow struct {
 	ResourceID     string
 	Name           string
@@ -175,7 +175,7 @@ type DiskRow struct {
 	ExpirationTime string
 }
 
-//NewCmdDiskList ucloud disk list
+// NewCmdDiskList ucloud disk list
 func NewCmdDiskList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDiskRequest()
 	typeMap := map[string]string{
@@ -238,7 +238,7 @@ func NewCmdDiskList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskAttach ucloud disk attach
+// NewCmdDiskAttach ucloud disk attach
 func NewCmdDiskAttach(out io.Writer) *cobra.Command {
 	var async *bool
 	var udiskIDs *[]string
@@ -291,7 +291,7 @@ func NewCmdDiskAttach(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskDetach ucloud udisk detach
+// NewCmdDiskDetach ucloud udisk detach
 func NewCmdDiskDetach(out io.Writer) *cobra.Command {
 	var async, yes *bool
 	var udiskIDs *[]string
@@ -368,7 +368,7 @@ func detachUdisk(async bool, udiskID string, out io.Writer) error {
 	return nil
 }
 
-//NewCmdDiskDelete ucloud udisk delete
+// NewCmdDiskDelete ucloud udisk delete
 func NewCmdDiskDelete() *cobra.Command {
 	var yes *bool
 	var udiskIDs *[]string
@@ -418,7 +418,7 @@ func NewCmdDiskDelete() *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskClone ucloud disk clone
+// NewCmdDiskClone ucloud disk clone
 func NewCmdDiskClone(out io.Writer) *cobra.Command {
 	var async *bool
 	req := base.BizClient.NewCloneUDiskRequest()
@@ -480,7 +480,7 @@ func NewCmdDiskClone(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskExpand ucloud udisk expand
+// NewCmdDiskExpand ucloud udisk expand
 func NewCmdDiskExpand() *cobra.Command {
 	var udiskIDs *[]string
 	req := base.BizClient.NewResizeUDiskRequest()
@@ -519,7 +519,7 @@ func NewCmdDiskExpand() *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskSnapshot ucloud udisk snapshot
+// NewCmdDiskSnapshot ucloud udisk snapshot
 func NewCmdDiskSnapshot(out io.Writer) *cobra.Command {
 	var async *bool
 	var udiskIDs *[]string
@@ -568,7 +568,7 @@ func NewCmdDiskSnapshot(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdDiskRestore ucloud udisk restore
+// NewCmdDiskRestore ucloud udisk restore
 func NewCmdDiskRestore(out io.Writer) *cobra.Command {
 	var snapshotIDs *[]string
 	req := base.BizClient.NewRestoreUHostDiskRequest()
@@ -627,7 +627,7 @@ func NewCmdDiskRestore(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//SnapshotRow 表格行
+// SnapshotRow 表格行
 type SnapshotRow struct {
 	Name             string
 	ResourceID       string
@@ -639,7 +639,7 @@ type SnapshotRow struct {
 	CreationTime     string
 }
 
-//NewCmdSnapshotList ucloud udisk list-snapshot
+// NewCmdSnapshotList ucloud udisk list-snapshot
 func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSnapshotRequest()
 	cmd := &cobra.Command{
@@ -685,7 +685,7 @@ func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSnapshotDelete ucloud udisk delete-snapshot
+// NewCmdSnapshotDelete ucloud udisk delete-snapshot
 func NewCmdSnapshotDelete(out io.Writer) *cobra.Command {
 	var snapshotIds *[]string
 	req := base.BizClient.NewDeleteSnapshotRequest()

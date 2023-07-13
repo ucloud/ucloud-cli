@@ -29,7 +29,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdFirewall  ucloud firewall
+// NewCmdFirewall  ucloud firewall
 func NewCmdFirewall() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "firewall",
@@ -51,7 +51,7 @@ func NewCmdFirewall() *cobra.Command {
 	return cmd
 }
 
-//FirewallRow 表格行
+// FirewallRow 表格行
 type FirewallRow struct {
 	ResourceID          string
 	FirewallName        string
@@ -62,7 +62,7 @@ type FirewallRow struct {
 	CreationTime        string
 }
 
-//NewCmdFirewallList ucloud firewall list
+// NewCmdFirewallList ucloud firewall list
 func NewCmdFirewallList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeFirewallRequest()
 	cmd := &cobra.Command{
@@ -125,7 +125,7 @@ func parseRulesFromFile(filePath string) ([]string, error) {
 	return lines, nil
 }
 
-//NewCmdFirewallCreate ucloud firewall create
+// NewCmdFirewallCreate ucloud firewall create
 func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	var rulesFilePath string
 	var rules []string
@@ -174,7 +174,7 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallAddRule ucloud firewall add-rule
+// NewCmdFirewallAddRule ucloud firewall add-rule
 func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 	var rulesFilePath string
 	var fwIDs []string
@@ -247,7 +247,7 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallDeleteRule ucloud firewall remove-rule
+// NewCmdFirewallDeleteRule ucloud firewall remove-rule
 func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 	var rulesFilePath string
 	var fwIDs []string
@@ -321,7 +321,7 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallApply ucloud firewall apply
+// NewCmdFirewallApply ucloud firewall apply
 func NewCmdFirewallApply() *cobra.Command {
 	req := base.BizClient.NewGrantFirewallRequest()
 	resourceIDs := []string{}
@@ -365,7 +365,7 @@ func NewCmdFirewallApply() *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallCopy ucloud firewall copy
+// NewCmdFirewallCopy ucloud firewall copy
 func NewCmdFirewallCopy() *cobra.Command {
 	srcFirewall := ""
 	srcRegion := ""
@@ -417,7 +417,7 @@ func NewCmdFirewallCopy() *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallDelete ucloud firewall delete
+// NewCmdFirewallDelete ucloud firewall delete
 func NewCmdFirewallDelete() *cobra.Command {
 	req := base.BizClient.NewDeleteFirewallRequest()
 	ids := []string{}
@@ -452,7 +452,7 @@ func NewCmdFirewallDelete() *cobra.Command {
 	return cmd
 }
 
-//FirewallResourceRow 表格行
+// FirewallResourceRow 表格行
 type FirewallResourceRow struct {
 	ResourceName string
 	ResourceID   string
@@ -462,7 +462,7 @@ type FirewallResourceRow struct {
 	Remark       string
 }
 
-//NewCmdFirewallResource ucloud firewall resource
+// NewCmdFirewallResource ucloud firewall resource
 func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	fwID := ""
 	req := base.BizClient.NewDescribeFirewallResourceRequest()
@@ -509,7 +509,7 @@ func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdFirewallUpdate ucloud firewall update
+// NewCmdFirewallUpdate ucloud firewall update
 func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
 	fwIDs := []string{}
 	req := base.BizClient.NewUpdateFirewallAttributeRequest()
