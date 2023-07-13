@@ -1,3 +1,11 @@
+## 0.1.43 (2023-07-13)
+
+* skip no permission region when query all uhosts in all regions
+
+## 0.1.42 (2023-02-22)
+
+* add concurrent parameter for uhost creating to tune concurrent level
+
 ## 0.1.41 (2022-11-30)
 
 * remove bandwith limit for unet and udpn product in cli
