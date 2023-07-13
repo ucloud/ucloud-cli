@@ -26,7 +26,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdUDPN ucloud udpn
+// NewCmdUDPN ucloud udpn
 func NewCmdUDPN(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "udpn",
@@ -42,7 +42,7 @@ func NewCmdUDPN(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDPNCreate ucloud udpn create
+// NewCmdUDPNCreate ucloud udpn create
 func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewAllocateUDPNRequest()
 	cmd := &cobra.Command{
@@ -96,7 +96,7 @@ func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//UDPNRow 表格行
+// UDPNRow 表格行
 type UDPNRow struct {
 	ResourceID   string
 	Peers        string
@@ -105,7 +105,7 @@ type UDPNRow struct {
 	CreationTime string
 }
 
-//NewCmdUDPNList ucloud udpn list
+// NewCmdUDPNList ucloud udpn list
 func NewCmdUDPNList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDPNRequest()
 	cmd := &cobra.Command{
@@ -151,7 +151,7 @@ func NewCmdUDPNList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUdpnDelete ucloud udpn delete
+// NewCmdUdpnDelete ucloud udpn delete
 func NewCmdUdpnDelete(out io.Writer) *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.NewReleaseUDPNRequest()
@@ -187,7 +187,7 @@ func NewCmdUdpnDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUdpnModifyBW ucloud udpn modify-bw
+// NewCmdUdpnModifyBW ucloud udpn modify-bw
 func NewCmdUdpnModifyBW(out io.Writer) *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.NewModifyUDPNBandwidthRequest()

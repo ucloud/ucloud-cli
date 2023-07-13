@@ -27,7 +27,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdDoc ucloud doc
+// NewCmdDoc ucloud doc
 func NewCmdDoc(out io.Writer) *cobra.Command {
 	var dir, format string
 	cmd := &cobra.Command{

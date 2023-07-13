@@ -102,7 +102,7 @@ var spinnerFrames = []rune{'⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷
 // DotSpinner dot spinner
 var DotSpinner = NewDotSpinner(os.Stdout)
 
-//NewDotSpinner get new DotSpinner instance
+// NewDotSpinner get new DotSpinner instance
 func NewDotSpinner(out io.Writer) *Spinner {
 	return &Spinner{
 		out:             out,
@@ -114,13 +114,13 @@ func NewDotSpinner(out io.Writer) *Spinner {
 	}
 }
 
-//Refresh 刷新显示文本
+// Refresh 刷新显示文本
 type Refresh struct {
 	out   io.Writer
 	reset bool
 }
 
-//Do 刷新显示
+// Do 刷新显示
 func (r *Refresh) Do(text string) {
 	if r.reset {
 		fmt.Fprintf(r.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
@@ -130,7 +130,7 @@ func (r *Refresh) Do(text string) {
 	fmt.Fprintln(r.out, text)
 }
 
-//NewRefresh create a new Refresh instance
+// NewRefresh create a new Refresh instance
 func NewRefresh() *Refresh {
 	return &Refresh{
 		out: os.Stdout,

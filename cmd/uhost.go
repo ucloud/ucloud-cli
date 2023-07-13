@@ -28,6 +28,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	sdkerror "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -35,6 +36,8 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/ux"
 )
+
+const _RetCodeRegionNoPermission = 230
 
 var uhostSpoller = base.NewSpoller(sdescribeUHostByID, base.Cxt.GetWriter())
 
@@ -84,7 +87,7 @@ type UHostRow struct {
 	CreationTime string
 }
 
-func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
+func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string, listAllRegion bool) {
 	list := make([]UHostRow, 0)
 	for _, host := range uhosts {
 		row := UHostRow{}
@@ -134,6 +137,9 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string) {
 			cols = []string{"UHostName", "Remark", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "DiskSet", "Zone", "Image", "VPC", "Subnet", "Type", "State", "CreationTime"}
 		} else {
 			cols = []string{"UHostName", "ResourceID", "Group", "PrivateIP", "PublicIP", "Config", "Image", "Type", "State", "CreationTime"}
+			if listAllRegion {
+				cols = append(cols, "Zone")
+			}
 		}
 		base.PrintTable(list, cols)
 	}
@@ -185,6 +191,10 @@ func getAllUHosts(req *uhost.DescribeUHostInstanceRequest, pageOff bool, allRegi
 			_req.Region = sdk.String(region)
 			//如果要获取所有region的主机，则不分页
 			uhosts, err := fetchUHostsPageOff(&_req)
+			// Has no permission in current region for UHost
+			if e, ok := err.(sdkerror.Error); ok && e.Code() == _RetCodeRegionNoPermission {
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -235,7 +245,7 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 			if idOnly {
 				listUhostID(uhosts, out)
 			} else {
-				listUhost(uhosts, out, output)
+				listUhost(uhosts, out, output, allRegion)
 			}
 		},
 	}

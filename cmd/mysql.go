@@ -35,7 +35,7 @@ var dbDiskTypeList = []string{"normal", "sata_ssd", "pcie_ssd"}
 
 var poller = base.NewSpoller(describeUdbByID, base.Cxt.GetWriter())
 
-//NewCmdMysql ucloud mysql
+// NewCmdMysql ucloud mysql
 func NewCmdMysql() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mysql",
@@ -50,7 +50,7 @@ func NewCmdMysql() *cobra.Command {
 	return cmd
 }
 
-//NewCmdMysqlDB ucloud mysql db
+// NewCmdMysqlDB ucloud mysql db
 func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "db",
@@ -74,7 +74,7 @@ func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdMysqlCreate ucloud mysql create
+// NewCmdMysqlCreate ucloud mysql create
 func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	var confID, diskType string
 	var backupID int
@@ -178,7 +178,7 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//UDBMysqlRow 表格行
+// UDBMysqlRow 表格行
 type UDBMysqlRow struct {
 	Name       string
 	ResourceID string
@@ -195,7 +195,7 @@ type UDBMysqlRow struct {
 	// CreateTime string
 }
 
-//NewCmdUDBList ucloud udb list
+// NewCmdUDBList ucloud udb list
 func NewCmdUDBList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUDBInstanceRequest()
 	cmd := &cobra.Command{
@@ -267,7 +267,7 @@ func NewCmdUDBList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBDelete ucloud udb delete
+// NewCmdUDBDelete ucloud udb delete
 func NewCmdUDBDelete(out io.Writer) *cobra.Command {
 	var idNames []string
 	var yes bool
@@ -323,7 +323,7 @@ func NewCmdUDBDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBStop ucloud udb stop
+// NewCmdUDBStop ucloud udb stop
 func NewCmdUDBStop(out io.Writer) *cobra.Command {
 	var idNames []string
 	var async bool
@@ -360,7 +360,7 @@ func NewCmdUDBStop(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBStart ucloud udb start
+// NewCmdUDBStart ucloud udb start
 func NewCmdUDBStart(out io.Writer) *cobra.Command {
 	var async bool
 	var idNames []string
@@ -405,7 +405,7 @@ func NewCmdUDBStart(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBRestart ucloud udb restart
+// NewCmdUDBRestart ucloud udb restart
 func NewCmdUDBRestart(out io.Writer) *cobra.Command {
 	var async bool
 	var idNames []string
@@ -449,7 +449,7 @@ func NewCmdUDBRestart(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBResize ucloud udb resize
+// NewCmdUDBResize ucloud udb resize
 func NewCmdUDBResize(out io.Writer) *cobra.Command {
 	var diskTypes = []string{"normal", "sata_ssd", "pcie_ssd", "normal_volume", "sata_ssd_volume", "pcie_ssd_volume"}
 	var async, yes bool
@@ -557,7 +557,7 @@ func NewCmdUDBResize(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBResetPassword ucloud udb reset-password
+// NewCmdUDBResetPassword ucloud udb reset-password
 func NewCmdUDBResetPassword(out io.Writer) *cobra.Command {
 	var idNames []string
 	req := base.BizClient.NewModifyUDBInstancePasswordRequest()
@@ -598,7 +598,7 @@ func NewCmdUDBResetPassword(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBRestore ucloud udb restore
+// NewCmdUDBRestore ucloud udb restore
 func NewCmdUDBRestore(out io.Writer) *cobra.Command {
 	var datetime, diskType string
 	var async bool
@@ -666,7 +666,7 @@ func NewCmdUDBRestore(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBCreateSlave ucloud udb create-slave
+// NewCmdUDBCreateSlave ucloud udb create-slave
 func NewCmdUDBCreateSlave(out io.Writer) *cobra.Command {
 	var diskType string
 	var async bool
@@ -724,7 +724,7 @@ func NewCmdUDBCreateSlave(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBPromoteSlave ucloud udb promote-slave
+// NewCmdUDBPromoteSlave ucloud udb promote-slave
 func NewCmdUDBPromoteSlave(out io.Writer) *cobra.Command {
 	var ids []string
 	req := base.BizClient.NewPromoteUDBSlaveRequest()
@@ -759,7 +759,7 @@ func NewCmdUDBPromoteSlave(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUDBPromoteToHA ucloud udb promote-to-ha 低频操作 暂不开放
+// NewCmdUDBPromoteToHA ucloud udb promote-to-ha 低频操作 暂不开放
 func NewCmdUDBPromoteToHA(out io.Writer) *cobra.Command {
 	var idNames []string
 	req := base.BizClient.NewPromoteUDBInstanceToHARequest()

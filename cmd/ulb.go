@@ -29,7 +29,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-//NewCmdULB  ucloud ulb
+// NewCmdULB  ucloud ulb
 func NewCmdULB() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ulb",
@@ -48,7 +48,7 @@ func NewCmdULB() *cobra.Command {
 	return cmd
 }
 
-//ULBRow 表格行
+// ULBRow 表格行
 type ULBRow struct {
 	Name         string
 	ResourceID   string
@@ -59,7 +59,7 @@ type ULBRow struct {
 	CreationTime string
 }
 
-//NewCmdULBList ucloud ulb list
+// NewCmdULBList ucloud ulb list
 func NewCmdULBList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeULBRequest()
 	cmd := &cobra.Command{
@@ -119,7 +119,7 @@ func NewCmdULBList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBCreate ucloud ulb create
+// NewCmdULBCreate ucloud ulb create
 func NewCmdULBCreate(out io.Writer) *cobra.Command {
 	var bindEipID *string
 	mode := "outer"
@@ -224,7 +224,7 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBDelete ucloud ulb delete
+// NewCmdULBDelete ucloud ulb delete
 func NewCmdULBDelete(out io.Writer) *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.NewDeleteULBRequest()
@@ -262,7 +262,7 @@ func NewCmdULBDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBUpdate ucloud ulb update
+// NewCmdULBUpdate ucloud ulb update
 func NewCmdULBUpdate(out io.Writer) *cobra.Command {
 	var name, group, remark string
 	idNames := []string{}
@@ -353,7 +353,7 @@ func getAllULBIDNames(project, region string) []string {
 	return list
 }
 
-//NewCmdULBVserver ucloud ulb-vserver
+// NewCmdULBVserver ucloud ulb-vserver
 func NewCmdULBVserver() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vserver",
@@ -372,7 +372,7 @@ func NewCmdULBVserver() *cobra.Command {
 	return cmd
 }
 
-//ULBVServerRow 表格行
+// ULBVServerRow 表格行
 type ULBVServerRow struct {
 	VServerName         string
 	ResourceID          string
@@ -388,7 +388,7 @@ type ULBVServerRow struct {
 	HealthCheckPath     string
 }
 
-//NewCmdULBVServerList ucloud ulb-vserver list
+// NewCmdULBVServerList ucloud ulb-vserver list
 func NewCmdULBVServerList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeVServerRequest()
 	cmd := &cobra.Command{
@@ -441,7 +441,7 @@ func NewCmdULBVServerList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerCreate ucloud ulb-vserver create
+// NewCmdULBVServerCreate ucloud ulb-vserver create
 func NewCmdULBVServerCreate(out io.Writer) *cobra.Command {
 	sslID := ""
 	req := base.BizClient.NewCreateVServerRequest()
@@ -530,7 +530,7 @@ func NewCmdULBVServerCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerUpdate ucloud ulb-vserver update
+// NewCmdULBVServerUpdate ucloud ulb-vserver update
 func NewCmdULBVServerUpdate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewUpdateVServerAttributeRequest()
 	vserverIDs := []string{}
@@ -609,7 +609,7 @@ func NewCmdULBVServerUpdate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerDelete ucloud ulb-vserver delete
+// NewCmdULBVServerDelete ucloud ulb-vserver delete
 func NewCmdULBVServerDelete(out io.Writer) *cobra.Command {
 	vserverIDs := []string{}
 	req := base.BizClient.NewDeleteVServerRequest()
@@ -655,7 +655,7 @@ func NewCmdULBVServerDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerNode ucloud ulb vserver node
+// NewCmdULBVServerNode ucloud ulb vserver node
 func NewCmdULBVServerNode() *cobra.Command {
 	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
@@ -670,7 +670,7 @@ func NewCmdULBVServerNode() *cobra.Command {
 	return cmd
 }
 
-//ULBVServerNode 表格行
+// ULBVServerNode 表格行
 type ULBVServerNode struct {
 	Name        string
 	ResourceID  string
@@ -682,7 +682,7 @@ type ULBVServerNode struct {
 	Weight      int
 }
 
-//NewCmdULBVServerListNode ucloud ulb-vserver list-node
+// NewCmdULBVServerListNode ucloud ulb-vserver list-node
 func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeVServerRequest()
 	cmd := &cobra.Command{
@@ -749,7 +749,7 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerAddNode ucloud ulb-vserver add-node
+// NewCmdULBVServerAddNode ucloud ulb-vserver add-node
 func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	var enable *string
 	var weight *int
@@ -815,7 +815,7 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerUpdateNode ucloud ulb-vserver update-node
+// NewCmdULBVServerUpdateNode ucloud ulb-vserver update-node
 func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 	var mode *string
 	var weight *int
@@ -886,7 +886,7 @@ func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerDeleteNode ucloud ulb-vserver delete-node
+// NewCmdULBVServerDeleteNode ucloud ulb-vserver delete-node
 func NewCmdULBVServerDeleteNode(out io.Writer) *cobra.Command {
 	backendIDs := []string{}
 	req := base.BizClient.NewReleaseBackendRequest()
@@ -927,7 +927,7 @@ func NewCmdULBVServerDeleteNode(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerPolicy ucloud ulb vserver policy
+// NewCmdULBVServerPolicy ucloud ulb vserver policy
 func NewCmdULBVServerPolicy() *cobra.Command {
 	out := base.Cxt.GetWriter()
 	cmd := &cobra.Command{
@@ -942,7 +942,7 @@ func NewCmdULBVServerPolicy() *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerCreatePolicy ucloud ulb-vserver create-policy
+// NewCmdULBVServerCreatePolicy ucloud ulb-vserver create-policy
 func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 	backendIDs := []string{}
 	req := base.BizClient.NewCreatePolicyRequest()
@@ -1001,7 +1001,7 @@ func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//ULBVServerPolicy 表格行
+// ULBVServerPolicy 表格行
 type ULBVServerPolicy struct {
 	ForwardMethod string
 	Expression    string
@@ -1010,7 +1010,7 @@ type ULBVServerPolicy struct {
 	Backends      string
 }
 
-//NewCmdULBVServerListPolicy ucloud ulb-vserver list-policy
+// NewCmdULBVServerListPolicy ucloud ulb-vserver list-policy
 func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 	var ulbID, vserverID *string
 	region := base.ConfigIns.Region
@@ -1067,7 +1067,7 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerUpdatePolicy ucloud ulb-vserver update-policy
+// NewCmdULBVServerUpdatePolicy ucloud ulb-vserver update-policy
 func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	policyIDs := []string{}
 	backendIDs := []string{}
@@ -1182,7 +1182,7 @@ func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBVServerDeletePolicy ucloud ulb-vserver delete-policy
+// NewCmdULBVServerDeletePolicy ucloud ulb-vserver delete-policy
 func NewCmdULBVServerDeletePolicy(out io.Writer) *cobra.Command {
 	policyIDs := []string{}
 	req := base.BizClient.NewDeletePolicyRequest()
@@ -1216,7 +1216,7 @@ func NewCmdULBVServerDeletePolicy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdULBSSL ucloud ulb-ssl-certificate
+// NewCmdULBSSL ucloud ulb-ssl-certificate
 func NewCmdULBSSL() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssl",
@@ -1233,7 +1233,7 @@ func NewCmdULBSSL() *cobra.Command {
 	return cmd
 }
 
-//SSLCertificate 表格行
+// SSLCertificate 表格行
 type SSLCertificate struct {
 	Name         string
 	ResourceID   string
@@ -1242,7 +1242,7 @@ type SSLCertificate struct {
 	UploadTime   string
 }
 
-//NewCmdSSLList ucloud ulb-ssl-certificate list
+// NewCmdSSLList ucloud ulb-ssl-certificate list
 func NewCmdSSLList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSSLRequest()
 	cmd := &cobra.Command{
@@ -1286,7 +1286,7 @@ func NewCmdSSLList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSSLDescribe ucloud ulb-ssl-certificate describe
+// NewCmdSSLDescribe ucloud ulb-ssl-certificate describe
 func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeSSLRequest()
 	cmd := &cobra.Command{
@@ -1358,7 +1358,7 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSSLAdd ucloud ulb-ssl-certificate add
+// NewCmdSSLAdd ucloud ulb-ssl-certificate add
 func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	var allPath, sitePath, keyPath, caPath *string
 	req := base.BizClient.NewCreateSSLRequest()
@@ -1440,7 +1440,7 @@ func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSSLDelete ucloud ulb-ssl-certificate delete
+// NewCmdSSLDelete ucloud ulb-ssl-certificate delete
 func NewCmdSSLDelete(out io.Writer) *cobra.Command {
 	var idNames []string
 	req := base.BizClient.NewDeleteSSLRequest()
@@ -1473,7 +1473,7 @@ func NewCmdSSLDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSSLBind ucloud ulb-ssl-certificate bind
+// NewCmdSSLBind ucloud ulb-ssl-certificate bind
 func NewCmdSSLBind(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewBindSSLRequest()
 	cmd := &cobra.Command{
@@ -1516,7 +1516,7 @@ func NewCmdSSLBind(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdSSLUnbind ucloud ulb-ssl-certificate unbind
+// NewCmdSSLUnbind ucloud ulb-ssl-certificate unbind
 func NewCmdSSLUnbind(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewUnbindSSLRequest()
 	cmd := &cobra.Command{

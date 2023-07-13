@@ -22,19 +22,19 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
 
-//PrivateUHostClient 私有模块的uhost client 即未在官网开放的接口
+// PrivateUHostClient 私有模块的uhost client 即未在官网开放的接口
 type PrivateUHostClient = puhost.UHostClient
 
-//PrivateUDBClient 私有模块的udb client 即未在官网开放的接口
+// PrivateUDBClient 私有模块的udb client 即未在官网开放的接口
 type PrivateUDBClient = pudb.UDBClient
 
-//PrivateUMemClient 私有模块的umem client 即未在官网开放的接口
+// PrivateUMemClient 私有模块的umem client 即未在官网开放的接口
 type PrivateUMemClient = pumem.UMemClient
 
-//PrivatePathxClient 私有模块的pathx client 即未在官网开放的接口
+// PrivatePathxClient 私有模块的pathx client 即未在官网开放的接口
 type PrivatePathxClient = ppathx.PathXClient
 
-//Client aggregate client for business
+// Client aggregate client for business
 type Client struct {
 	uaccount.UAccountClient
 	uhost.UHostClient

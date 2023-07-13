@@ -107,7 +107,7 @@ func (s *Spin) newFrameFactory() func() rune {
 
 var spinFrames = []rune{'⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'}
 
-//NewDotSpin get new DotSpinner instance
+// NewDotSpin get new DotSpinner instance
 func NewDotSpin(out io.Writer, doingText string) *Spin {
 	s := &Spin{
 		out:             out,

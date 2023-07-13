@@ -25,19 +25,19 @@ import (
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
-//ConfigPath 配置文件路径
+// ConfigPath 配置文件路径
 const ConfigPath = ".ucloud"
 
-//GAP 表格列直接的间隔字符数
+// GAP 表格列直接的间隔字符数
 const GAP = 2
 
-//Cxt 上下文
+// Cxt 上下文
 var Cxt = model.GetContext(os.Stdout)
 
-//SdkClient 用于上报数据
+// SdkClient 用于上报数据
 var SdkClient *sdk.Client
 
-//GetHomePath 获取家目录
+// GetHomePath 获取家目录
 func GetHomePath() string {
 	if runtime.GOOS == "windows" {
 		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
@@ -49,7 +49,7 @@ func GetHomePath() string {
 	return os.Getenv("HOME")
 }
 
-//MosaicString 对字符串敏感部分打马赛克 如公钥私钥
+// MosaicString 对字符串敏感部分打马赛克 如公钥私钥
 func MosaicString(str string, beginChars, lastChars int) string {
 	r := len(str) - lastChars - beginChars
 	if r > 5 {
@@ -58,7 +58,7 @@ func MosaicString(str string, beginChars, lastChars int) string {
 	return strings.Repeat("*", len(str))
 }
 
-//AppendToFile 添加到文件中
+// AppendToFile 添加到文件中
 func AppendToFile(name string, content string) error {
 	f, err := os.OpenFile(name, os.O_RDWR|os.O_APPEND, 0)
 	if err != nil {
@@ -69,7 +69,7 @@ func AppendToFile(name string, content string) error {
 	return err
 }
 
-//LineInFile 检查某一行是否在某文件中
+// LineInFile 检查某一行是否在某文件中
 func LineInFile(fileName string, lookFor string) bool {
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -98,7 +98,7 @@ func LineInFile(fileName string, lookFor string) bool {
 	}
 }
 
-//GetConfigDir 获取配置文件所在目录
+// GetConfigDir 获取配置文件所在目录
 func GetConfigDir() string {
 	path := GetHomePath() + "/" + ConfigPath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -110,14 +110,14 @@ func GetConfigDir() string {
 	return path
 }
 
-//HandleBizError 处理RetCode != 0 的业务异常
+// HandleBizError 处理RetCode != 0 的业务异常
 func HandleBizError(resp response.Common) error {
 	format := "Something wrong. RetCode:%d. Message:%s\n"
 	LogError(fmt.Sprintf(format, resp.GetRetCode(), resp.GetMessage()))
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
-//HandleError 处理错误，业务错误 和 HTTP错误
+// HandleError 处理错误，业务错误 和 HTTP错误
 func HandleError(err error) {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s\n"
@@ -127,7 +127,7 @@ func HandleError(err error) {
 	}
 }
 
-//ParseError 解析错误为字符串
+// ParseError 解析错误为字符串
 func ParseError(err error) string {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s"
@@ -140,7 +140,7 @@ func ParseError(err error) string {
 	return fmt.Sprintf("Error:%v", err)
 }
 
-//PrintJSON 以JSON格式打印数据集合
+// PrintJSON 以JSON格式打印数据集合
 func PrintJSON(dataSet interface{}, out io.Writer) error {
 	bytes, err := json.MarshalIndent(dataSet, "", "  ")
 	if err != nil {
@@ -153,7 +153,7 @@ func PrintJSON(dataSet interface{}, out io.Writer) error {
 	return nil
 }
 
-//PrintTableS 简化版表格打印，无需传表头，根据结构体反射解析
+// PrintTableS 简化版表格打印，无需传表头，根据结构体反射解析
 func PrintTableS(dataSet interface{}) {
 	dataSetVal := reflect.ValueOf(dataSet)
 	fieldNameList := make([]string, 0)
@@ -170,7 +170,7 @@ func PrintTableS(dataSet interface{}) {
 	}
 }
 
-//PrintList 打印表格或者JSON
+// PrintList 打印表格或者JSON
 func PrintList(dataSet interface{}, out io.Writer) {
 	if Global.JSON {
 		PrintJSON(dataSet, out)
@@ -179,7 +179,7 @@ func PrintList(dataSet interface{}, out io.Writer) {
 	}
 }
 
-//PrintDescribe 打印详情
+// PrintDescribe 打印详情
 func PrintDescribe(attrs []DescribeTableRow, json bool) {
 	if json {
 		PrintJSON(attrs, os.Stdout)
@@ -192,7 +192,7 @@ func PrintDescribe(attrs []DescribeTableRow, json bool) {
 	}
 }
 
-//PrintTable 以表格方式打印数据集合
+// PrintTable 以表格方式打印数据集合
 func PrintTable(dataSet interface{}, fieldList []string) {
 	dataSetVal := reflect.ValueOf(dataSet)
 	switch dataSetVal.Kind() {
@@ -264,7 +264,7 @@ func printTable(rowList []map[string]interface{}, fieldList []string, fieldWidth
 	}
 }
 
-//DescribeTableRow 详情表格通用表格行
+// DescribeTableRow 详情表格通用表格行
 type DescribeTableRow struct {
 	Attribute string
 	Content   string
@@ -294,20 +294,20 @@ func calcWidth(text string) int {
 	return width
 }
 
-//FormatDate 格式化时间,把以秒为单位的时间戳格式化未年月日
+// FormatDate 格式化时间,把以秒为单位的时间戳格式化未年月日
 func FormatDate(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02")
 }
 
-//DateTimeLayout 时间格式
+// DateTimeLayout 时间格式
 const DateTimeLayout = "2006-01-02/15:04:05"
 
-//FormatDateTime 格式化时间,把以秒为单位的时间戳格式化未年月日/时分秒
+// FormatDateTime 格式化时间,把以秒为单位的时间戳格式化未年月日/时分秒
 func FormatDateTime(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
 }
 
-//RegionLabel regionlable
+// RegionLabel regionlable
 var RegionLabel = map[string]string{
 	"cn-bj1":       "Beijing1",
 	"cn-bj2":       "Beijing2",
@@ -333,7 +333,7 @@ var RegionLabel = map[string]string{
 	"afr-nigeria":  "Lagos",
 }
 
-//Poller 轮询器
+// Poller 轮询器
 type Poller struct {
 	stateFields   []string
 	DescribeFunc  func(string, string, string, string) (interface{}, error)
@@ -348,7 +348,7 @@ type pollResult struct {
 	Err     error
 }
 
-//Sspoll 简化版, 支持并发
+// Sspoll 简化版, 支持并发
 func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) *pollResult {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
@@ -417,7 +417,7 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 	return &ret
 }
 
-//Spoll 简化版
+// Spoll 简化版
 func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
@@ -480,7 +480,7 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 	}
 }
 
-//Poll function
+// Poll function
 func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targetState []string) bool {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
@@ -542,7 +542,7 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 	return ret
 }
 
-//NewSpoller simple
+// NewSpoller simple
 func NewSpoller(describeFunc func(string) (interface{}, error), out io.Writer) *Poller {
 	return &Poller{
 		SdescribeFunc: describeFunc,
@@ -552,7 +552,7 @@ func NewSpoller(describeFunc func(string) (interface{}, error), out io.Writer) *
 	}
 }
 
-//NewPoller 轮询
+// NewPoller 轮询
 func NewPoller(describeFunc func(string, string, string, string) (interface{}, error), out io.Writer) *Poller {
 	return &Poller{
 		DescribeFunc: describeFunc,
@@ -562,7 +562,7 @@ func NewPoller(describeFunc func(string, string, string, string) (interface{}, e
 	}
 }
 
-//PickResourceID  uhost-xxx/uhost-name => uhost-xxx
+// PickResourceID  uhost-xxx/uhost-name => uhost-xxx
 func PickResourceID(str string) string {
 	if strings.Index(str, "/") > -1 {
 		return strings.SplitN(str, "/", 2)[0]
@@ -570,7 +570,7 @@ func PickResourceID(str string) string {
 	return str
 }
 
-//WriteJSONFile 写json文件
+// WriteJSONFile 写json文件
 func WriteJSONFile(list interface{}, filePath string) error {
 	byts, err := json.Marshal(list)
 	if err != nil {
@@ -583,7 +583,7 @@ func WriteJSONFile(list interface{}, filePath string) error {
 	return nil
 }
 
-//GetFileList 补全文件名
+// GetFileList 补全文件名
 func GetFileList(suffix string) []string {
 	cmdLine := strings.TrimSpace(os.Getenv("COMP_LINE"))
 	words := strings.Split(cmdLine, " ")
@@ -621,7 +621,7 @@ func GetFileList(suffix string) []string {
 	return names
 }
 
-//Confirm 二次确认
+// Confirm 二次确认
 func Confirm(yes bool, text string) bool {
 	if yes {
 		return true

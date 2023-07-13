@@ -30,7 +30,7 @@ import (
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
-//NewCmdPathx ucloud pathx
+// NewCmdPathx ucloud pathx
 func NewCmdPathx() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pathx",
@@ -949,7 +949,7 @@ type EgressIpInfoRow struct {
 	Area string
 }
 
-//NewCmdUpath ucloud pathx upath
+// NewCmdUpath ucloud pathx upath
 func NewCmdUpath() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upath",
@@ -968,7 +968,7 @@ type upathRow struct {
 	BoundUGA        string
 }
 
-//NewCmdUpathList ucloud pathx upath list
+// NewCmdUpathList ucloud pathx upath list
 func NewCmdUpathList(out io.Writer) *cobra.Command {
 	req := base.BizClient.PrivatePathxClient.NewDescribeUPathRequest()
 	cmd := &cobra.Command{
@@ -1008,7 +1008,7 @@ func NewCmdUpathList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUGA ucloud uga
+// NewCmdUGA ucloud uga
 func NewCmdUGA() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uga",
@@ -1027,7 +1027,7 @@ func NewCmdUGA() *cobra.Command {
 	return cmd
 }
 
-//UGARow 表格行
+// UGARow 表格行
 type UGARow struct {
 	ResourceID      string
 	UGAName         string
@@ -1038,7 +1038,7 @@ type UGARow struct {
 
 var protocols = []string{"tcp", "udp"}
 
-//NewCmdUGAList ucloud uga list
+// NewCmdUGAList ucloud uga list
 func NewCmdUGAList(out io.Writer) *cobra.Command {
 	req := base.BizClient.PrivatePathxClient.NewDescribeUGAInstanceRequest()
 	cmd := &cobra.Command{
@@ -1101,7 +1101,7 @@ func getPortStr(list []ppathx.UGAATask) string {
 	return strings.Join(strs, "\n")
 }
 
-//NewCmdUGADescribe ucloud uga describe
+// NewCmdUGADescribe ucloud uga describe
 func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 	req := base.BizClient.PrivatePathxClient.NewDescribeUGAInstanceRequest()
 	cmd := &cobra.Command{
@@ -1175,7 +1175,7 @@ func formatPortList(userPorts []string) ([]string, error) {
 	return portList, nil
 }
 
-//NewCmdUGACreate ucloud uga create
+// NewCmdUGACreate ucloud uga create
 func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	var protocol string
 	var ports, lines []string
@@ -1263,7 +1263,7 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUGADelete ucloud uga delete
+// NewCmdUGADelete ucloud uga delete
 func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	idNames := []string{}
 	req := base.BizClient.PrivatePathxClient.NewDeleteUGAInstanceRequest()
@@ -1299,7 +1299,7 @@ func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUGAAddPort ucloud pathx uga add-port
+// NewCmdUGAAddPort ucloud pathx uga add-port
 func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	var ports []string
 	var protocol string
@@ -1358,7 +1358,7 @@ func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdUGARemovePort ucloud pathx uga delete-port
+// NewCmdUGARemovePort ucloud pathx uga delete-port
 func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 	var ports []string
 	var protocol string

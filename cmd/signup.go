@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//NewCmdSignup ucloud signup
+// NewCmdSignup ucloud signup
 func NewCmdSignup() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:     "signup",

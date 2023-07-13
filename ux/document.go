@@ -12,7 +12,7 @@ import (
 
 var width, rows, _ = terminalSize()
 
-//Document 当前进程在打印的内容
+// Document 当前进程在打印的内容
 type document struct {
 	blocks          []*Block
 	mux             sync.RWMutex
@@ -98,10 +98,10 @@ func newDocument(out io.Writer) *document {
 	return doc
 }
 
-//Doc global document
+// Doc global document
 var Doc = newDocument(os.Stdout)
 
-//Block in document, including a spinner and some text
+// Block in document, including a spinner and some text
 type Block struct {
 	spinner      *Spin
 	spinnerIndex int
@@ -111,17 +111,17 @@ type Block struct {
 	getLines     chan []string
 }
 
-//Update lines in Block
+// Update lines in Block
 func (b *Block) Update(text string, index int) {
 	b.updateLine <- updateBlockLine{text, index}
 }
 
-//Append text to Block
+// Append text to Block
 func (b *Block) Append(text string) {
 	b.updateLine <- updateBlockLine{text, -1}
 }
 
-//SetSpin set spin for block
+// SetSpin set spin for block
 func (b *Block) SetSpin(s *Spin) error {
 	if b.spinner != nil {
 		return fmt.Errorf("block has spinner already")
@@ -146,7 +146,7 @@ type updateBlockLine struct {
 	index int
 }
 
-//NewSpinBlock create a new Block with spinner
+// NewSpinBlock create a new Block with spinner
 func NewSpinBlock(s *Spin) *Block {
 	block := NewBlock()
 	if s != nil {
@@ -155,7 +155,7 @@ func NewSpinBlock(s *Spin) *Block {
 	return block
 }
 
-//NewBlock  create a new Block without spinner. block.Stable closed
+// NewBlock  create a new Block without spinner. block.Stable closed
 func NewBlock() *Block {
 	block := &Block{
 		lines:      []string{},

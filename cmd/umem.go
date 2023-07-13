@@ -30,7 +30,7 @@ import (
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
-//NewCmdRedis ucloud redis
+// NewCmdRedis ucloud redis
 func NewCmdRedis() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "redis",
@@ -45,7 +45,7 @@ func NewCmdRedis() *cobra.Command {
 	return cmd
 }
 
-//NewCmdMemcache ucloud memcache
+// NewCmdMemcache ucloud memcache
 func NewCmdMemcache() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "memcache",
@@ -60,7 +60,7 @@ func NewCmdMemcache() *cobra.Command {
 	return cmd
 }
 
-//UMemRedisRow 表格行
+// UMemRedisRow 表格行
 type UMemRedisRow struct {
 	ResourceID string
 	Name       string
@@ -80,7 +80,7 @@ var redisTypeMap = map[string]string{
 	"distributed": "distributed",
 }
 
-//NewCmdRedisList ucloud redis list
+// NewCmdRedisList ucloud redis list
 func NewCmdRedisList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemRequest()
 	cmd := &cobra.Command{
@@ -152,7 +152,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdRedisCreate ucloud redis create
+// NewCmdRedisCreate ucloud redis create
 func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewCreateURedisGroupRequest()
 	req.HighAvailability = sdk.String("enable")
@@ -235,7 +235,7 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdRedisDelete ucloud redis delete
+// NewCmdRedisDelete ucloud redis delete
 func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	var idNames []string
 	req := base.BizClient.NewDeleteURedisGroupRequest()
@@ -288,7 +288,7 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdRedisRestart ucloud redis restart
+// NewCmdRedisRestart ucloud redis restart
 func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 	idNames := make([]string, 0)
 	req := base.BizClient.UMemClient.NewRestartURedisGroupRequest()
@@ -373,7 +373,7 @@ func getRedisIDList(project, region string) []string {
 	return list
 }
 
-//UMemMemcacheRow 表格行
+// UMemMemcacheRow 表格行
 type UMemMemcacheRow struct {
 	ResourceID string
 	Name       string
@@ -385,7 +385,7 @@ type UMemMemcacheRow struct {
 	CreateTime string
 }
 
-//NewCmdMemcacheList ucloud memcache list
+// NewCmdMemcacheList ucloud memcache list
 func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewDescribeUMemcacheGroupRequest()
 	cmd := &cobra.Command{
@@ -429,7 +429,7 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdMemcacheCreate ucloud memcache create
+// NewCmdMemcacheCreate ucloud memcache create
 func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req := base.BizClient.NewCreateUMemcacheGroupRequest()
 	cmd := &cobra.Command{
@@ -477,7 +477,7 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdMemcacheDelete ucloud memcache delete
+// NewCmdMemcacheDelete ucloud memcache delete
 func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 	var idNames []string
 	req := base.BizClient.NewDeleteUMemcacheGroupRequest()
@@ -517,7 +517,7 @@ func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdMemcacheRestart ucloud memcache restart
+// NewCmdMemcacheRestart ucloud memcache restart
 func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 	idNames := make([]string, 0)
 	req := base.BizClient.NewRestartUMemcacheGroupRequest()

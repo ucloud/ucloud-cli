@@ -20,7 +20,7 @@ import (
 
 const DefaultDasURL = "https://das-rpt.ucloud.cn/log"
 
-//Logger 日志
+// Logger 日志
 var logger *log.Logger
 var mu sync.Mutex
 var out = Cxt.GetWriter()
@@ -62,22 +62,22 @@ func logCmd() {
 	LogInfo(fmt.Sprintf("command: %s", strings.Join(args, " ")))
 }
 
-//GetLogger return point of logger
+// GetLogger return point of logger
 func GetLogger() *log.Logger {
 	return logger
 }
 
-//GetLogFileDir 获取日志文件路径
+// GetLogFileDir 获取日志文件路径
 func GetLogFileDir() string {
 	return GetHomePath() + fmt.Sprintf("/%s", ConfigPath)
 }
 
-//GetLogFilePath 获取日志文件路径
+// GetLogFilePath 获取日志文件路径
 func GetLogFilePath() string {
 	return GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
 }
 
-//LogInfo 记录日志
+// LogInfo 记录日志
 func LogInfo(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
 	if ok {
@@ -94,7 +94,7 @@ func LogInfo(logs ...string) {
 	}
 }
 
-//LogPrint 记录日志
+// LogPrint 记录日志
 func LogPrint(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
 	if ok {
@@ -112,7 +112,7 @@ func LogPrint(logs ...string) {
 	}
 }
 
-//LogWarn 记录日志
+// LogWarn 记录日志
 func LogWarn(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
 	if ok {
@@ -130,7 +130,7 @@ func LogWarn(logs ...string) {
 	}
 }
 
-//LogError 记录日志
+// LogError 记录日志
 func LogError(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
 	if ok {
@@ -148,7 +148,7 @@ func LogError(logs ...string) {
 	}
 }
 
-//UploadLogs send logs to das server
+// UploadLogs send logs to das server
 func UploadLogs(logs []string, level string, goID int64) {
 	var lines []string
 	for _, log := range logs {
@@ -158,7 +158,7 @@ func UploadLogs(logs []string, level string, goID int64) {
 	tracer.Send(lines)
 }
 
-//LogRotateHook rotate log file
+// LogRotateHook rotate log file
 type LogRotateHook struct {
 	MaxSize int64
 	Cut     float32
@@ -166,12 +166,12 @@ type LogRotateHook struct {
 	mux     sync.Mutex
 }
 
-//Levels fires hook
+// Levels fires hook
 func (hook *LogRotateHook) Levels() []log.Level {
 	return log.AllLevels
 }
 
-//Fire do someting when hook is triggered
+// Fire do someting when hook is triggered
 func (hook *LogRotateHook) Fire(entry *log.Entry) error {
 	hook.mux.Lock()
 	defer hook.mux.Unlock()
@@ -212,7 +212,7 @@ func (hook *LogRotateHook) Fire(entry *log.Entry) error {
 	return nil
 }
 
-//NewLogRotateHook create a LogRotateHook
+// NewLogRotateHook create a LogRotateHook
 func NewLogRotateHook(file *os.File) *LogRotateHook {
 	return &LogRotateHook{
 		MaxSize: 1024 * 1024, //1MB
@@ -221,7 +221,7 @@ func NewLogRotateHook(file *os.File) *LogRotateHook {
 	}
 }
 
-//ToQueryMap tranform request to map
+// ToQueryMap tranform request to map
 func ToQueryMap(req request.Common) map[string]string {
 	reqMap, err := request.ToQueryMap(req)
 	if err != nil {
@@ -231,7 +231,7 @@ func ToQueryMap(req request.Common) map[string]string {
 	return reqMap
 }
 
-//Tracer upload log to server if allowed
+// Tracer upload log to server if allowed
 type Tracer struct {
 	DasUrl string
 }
@@ -266,7 +266,7 @@ func (t Tracer) wrapLogs(log []string) ([]byte, error) {
 	return marshaled, nil
 }
 
-//Send logs to server
+// Send logs to server
 func (t Tracer) Send(logs []string) error {
 	body, err := t.wrapLogs(logs)
 	if err != nil {

@@ -26,7 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
 
-//NewCmdExt ucloud ext
+// NewCmdExt ucloud ext
 func NewCmdExt() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ext",
@@ -37,7 +37,7 @@ func NewCmdExt() *cobra.Command {
 	return cmd
 }
 
-//NewCmdExtUHost ucloud ext uhost
+// NewCmdExtUHost ucloud ext uhost
 func NewCmdExtUHost() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uhost",
@@ -48,7 +48,7 @@ func NewCmdExtUHost() *cobra.Command {
 	return cmd
 }
 
-//NewCmdExtUHostSwitchEIP ucloud ext uhost switch-eip
+// NewCmdExtUHostSwitchEIP ucloud ext uhost switch-eip
 func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	var project, region, zone, chargeType, trafficMode, shareBandwidthID string
 	var uhostIDs, eipAddrs []string

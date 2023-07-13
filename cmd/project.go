@@ -24,7 +24,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 )
 
-//NewCmdProject ucloud project
+// NewCmdProject ucloud project
 func NewCmdProject() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:     "project",
@@ -40,7 +40,7 @@ func NewCmdProject() *cobra.Command {
 	return cmd
 }
 
-//NewCmdProjectList ucloud project list
+// NewCmdProjectList ucloud project list
 func NewCmdProjectList(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -54,7 +54,7 @@ func NewCmdProjectList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-//NewCmdProjectCreate ucloud project create
+// NewCmdProjectCreate ucloud project create
 func NewCmdProjectCreate() *cobra.Command {
 	req := base.BizClient.NewCreateProjectRequest()
 	cmd := &cobra.Command{
@@ -81,7 +81,7 @@ func NewCmdProjectCreate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdProjectUpdate ucloud project update
+// NewCmdProjectUpdate ucloud project update
 func NewCmdProjectUpdate() *cobra.Command {
 	req := base.BizClient.NewModifyProjectRequest()
 	cmd := &cobra.Command{
@@ -109,7 +109,7 @@ func NewCmdProjectUpdate() *cobra.Command {
 	return cmd
 }
 
-//NewCmdProjectDelete ucloud project delete
+// NewCmdProjectDelete ucloud project delete
 func NewCmdProjectDelete() *cobra.Command {
 	req := base.BizClient.NewTerminateProjectRequest()
 	cmd := &cobra.Command{
