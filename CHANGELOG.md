@@ -1,3 +1,7 @@
+## 0.1.44 (2023-08-15)
+
+* fix failing to specify release-eip and delete-cloud-disk to false
+
 ## 0.1.43 (2023-07-13)
 
 * skip no permission region when query all uhosts in all regions
