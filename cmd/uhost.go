@@ -661,7 +661,8 @@ func NewCmdUHostDelete() *cobra.Command {
 	var uhostIDs *[]string
 	var isDestroy = sdk.Bool(false)
 	var yes *bool
-
+	var releaseEIP bool
+	var releaseUDisk bool
 	req := base.BizClient.NewTerminateUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "delete",
@@ -683,7 +684,8 @@ func NewCmdUHostDelete() *cobra.Command {
 			} else {
 				req.Destroy = sdk.Int(0)
 			}
-
+			req.ReleaseEIP = &releaseEIP
+			req.ReleaseUDisk = &releaseUDisk
 			reqs := make([]request.Common, len(*uhostIDs))
 			for idx, id := range *uhostIDs {
 				_req := *req
@@ -703,8 +705,8 @@ func NewCmdUHostDelete() *cobra.Command {
 	bindProjectID(req, flags)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
-	req.ReleaseEIP = cmd.Flags().Bool("release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
-	req.ReleaseUDisk = cmd.Flags().Bool("delete-cloud-disk", true, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
+	cmd.Flags().BoolVar(&releaseEIP, "release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
+	cmd.Flags().BoolVar(&releaseUDisk, "delete-cloud-disk", true, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	cmd.Flags().SetFlagValues("destroy", "true", "false")
 	cmd.Flags().SetFlagValues("release-eip", "true", "false")
