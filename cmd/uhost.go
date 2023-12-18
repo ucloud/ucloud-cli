@@ -377,49 +377,45 @@ func NewCmdUHostCreate() *cobra.Command {
 					req.UserData = sdk.String(userDataBase64)
 				}
 			}
-
+			if *eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth" {
+				if *eipReq.OperatorName == "" {
+					*eipReq.OperatorName = getEIPLine(*req.Region)
+				}
+				req.NetworkInterface = []uhost.CreateUHostInstanceParamNetworkInterface{{EIP: &eipReq}}
+			}
 			wg := &sync.WaitGroup{}
 			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
+
 			if count <= 5 {
 				for i := 0; i < count; i++ {
 					bindEipID := ""
 					if len(bindEipIDs) > i {
 						bindEipID = bindEipIDs[i]
 					}
-					if bindEipID == "" && (*eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth") {
-						if *eipReq.OperatorName == "" {
-							*eipReq.OperatorName = getEIPLine(*req.Region)
-						}
-						networkInterface := uhost.CreateUHostInstanceParamNetworkInterface{}
-						networkInterface.EIP = &eipReq
-						req.NetworkInterface = append(req.NetworkInterface, networkInterface)
+					var actualRequest uhost.CreateUHostInstanceRequest
+					actualRequest = *req
+					if bindEipID != "" {
+						actualRequest.NetworkInterface = nil
 					}
-
-					go createUhostWrapper(req, updateEIPReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
+					createUhostWrapper(&actualRequest, updateEIPReq, bindEipID, async, make(chan bool, count), wg, tokens, i)
 				}
 			} else {
 				retCh := make(chan bool, count)
 				ux.Doc.Disable()
 				refresh := ux.NewRefresh()
 
-				go func() {
+				go func(req uhost.CreateUHostInstanceRequest) {
 					for i := 0; i < count; i++ {
+						actualRequest := req
 						bindEipID := ""
 						if len(bindEipIDs) > i {
 							bindEipID = bindEipIDs[i]
+							actualRequest.NetworkInterface = nil
 						}
-						if bindEipID == "" && (*eipReq.Bandwidth != 0 || *eipReq.PayMode == "ShareBandwidth") {
-							if *eipReq.OperatorName == "" {
-								*eipReq.OperatorName = getEIPLine(*req.Region)
-							}
-							networkInterface := uhost.CreateUHostInstanceParamNetworkInterface{}
-							networkInterface.EIP = &eipReq
-							req.NetworkInterface = append(req.NetworkInterface, networkInterface)
-						}
-						go createUhostWrapper(req, updateEIPReq, bindEipID, async, retCh, wg, tokens, i)
+						go createUhostWrapper(&actualRequest, updateEIPReq, bindEipID, async, retCh, wg, tokens, i)
 					}
-				}()
+				}(*req)
 
 				go func() {
 					var success, fail int
@@ -1456,7 +1452,7 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 				req.ReserveDisk = sdk.String("No")
 			}
 			req.UHostId = sdk.String(base.PickResourceID(*req.UHostId))
-			req.Password = sdk.String(base64.StdEncoding.EncodeToString([]byte(sdk.StringValue(req.Password))))
+			req.Password = sdk.String(sdk.StringValue(req.Password))
 
 			any, err := describeUHostByID(*req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
 			if err != nil {
