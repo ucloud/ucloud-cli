@@ -163,13 +163,13 @@ UDiskSnapshotSet - DescribeUDiskSnapshot
 */
 type UDiskSnapshotSet struct {
 
-	// 该快照的cmk id
+	// 【已废弃】该快照的cmk id
 	CmkId string
 
-	// cmk id 别名
+	// 【已废弃】cmk id 别名
 	CmkIdAlias string
 
-	// 该快照cmk的状态, Enabled(正常)，Disabled(失效)，Deleted(删除)，NoCmkId(非加密盘)
+	// 【已废弃】该快照cmk的状态, Enabled(正常)，Disabled(失效)，Deleted(删除)，NoCmkId(非加密盘)
 	CmkIdStatus string
 
 	// 快照描述
@@ -178,13 +178,13 @@ type UDiskSnapshotSet struct {
 	// 创建时间
 	CreateTime int
 
-	// 该快照的密文密钥
+	// 【已废弃】该快照的密文密钥
 	DataKey string
 
 	// 磁盘类型，0：普通数据盘；1：普通系统盘；2：SSD数据盘；3：SSD系统盘；4：RSSD数据盘；5：RSSD系统盘。
 	DiskType int
 
-	// 过期时间
+	// 【已废弃】过期时间
 	ExpiredTime int
 
 	// 对应磁盘是否处于可用状态
@@ -211,7 +211,7 @@ type UDiskSnapshotSet struct {
 	// 对应磁盘制作快照时所挂载的主机
 	UHostId string
 
-	// 是否是加密盘快照，是:"Yes", 否:"No"
+	// 【已废弃】是否是加密盘快照，是:"Yes", 否:"No"
 	UKmsMode string
 
 	// 快照版本

@@ -3,14 +3,14 @@
 package unet
 
 /*
-UnetEIPAddrSet - DescribeEIP
+UnetEIPAddrSet - AllocateEIP
 */
 type UnetEIPAddrSet struct {
 
 	// IP地址
 	IP string
 
-	// 运营商信息如: 电信: Telecom, 联通: Unicom, 国际: International, Duplet: 双线IP（电信+联通), BGP: Bgp
+	// 运营商信息如: 国际: International, BGP: BGP
 	OperatorName string
 }
 
@@ -78,6 +78,21 @@ type UnetBandwidthUsageEIPSet struct {
 }
 
 /*
+ShareBandwidthSet - DescribeEIP
+*/
+type ShareBandwidthSet struct {
+
+	// 共享带宽带宽值
+	ShareBandwidth int
+
+	// 共享带宽ID
+	ShareBandwidthId string
+
+	// 共享带宽的资源名称
+	ShareBandwidthName string
+}
+
+/*
 UnetEIPResourceSet - DescribeEIP
 */
 type UnetEIPResourceSet struct {
@@ -108,18 +123,18 @@ type UnetEIPResourceSet struct {
 }
 
 /*
-ShareBandwidthSet - DescribeEIP
+EIPBinding - EIP绑定内网IP关系数据
 */
-type ShareBandwidthSet struct {
+type EIPBinding struct {
 
-	// 共享带宽带宽值
-	ShareBandwidth int
+	// 外网ip
+	EIP string
 
-	// 共享带宽ID
-	ShareBandwidthId string
+	// 内网ip
+	PrivateIP string
 
-	// 共享带宽的资源名称
-	ShareBandwidthName string
+	// 内网ip类型：PrimaryIP（默认）、SecondaryIP（非默认）
+	PrivateIPType string
 }
 
 /*
@@ -141,6 +156,9 @@ type UnetEIPSet struct {
 
 	// 弹性IP的详细信息列表, 具体结构见下方 UnetEIPAddrSet
 	EIPAddr []UnetEIPAddrSet
+
+	// EIP绑定内网IP关系数据
+	EIPBinding EIPBinding
 
 	// 弹性IP的资源ID
 	EIPId string
@@ -321,6 +339,36 @@ type UnetShareBandwidthSet struct {
 
 	// 共享带宽的资源ID
 	ShareBandwidthId string
+}
+
+/*
+EIPExclusiveInfo - EIP专属流量包信息
+*/
+type EIPExclusiveInfo struct {
+
+	//
+	AccountId int
+
+	// 专属流量包剩余可用规格（单位MB）
+	AvailableSize int
+
+	// 资源创建时间
+	CreateTime int
+
+	// EIP资源Id
+	EIPId string
+
+	// 专属流量包上次重置时间
+	LastResetTime int
+
+	// 专属流量包下次重置时间
+	NextResetTime int
+
+	// 专属流量包重置策略枚举：Day、Month、Year
+	ResetPolicy string
+
+	// 专属流量包总规格（单位MB）
+	TotalSize int
 }
 
 /*

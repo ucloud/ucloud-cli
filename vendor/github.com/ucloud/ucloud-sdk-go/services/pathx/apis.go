@@ -226,10 +226,10 @@ type CreateUGA3InstanceRequest struct {
 	// 非必填,如果不填，会根据Domain 和IPList 去选一个最近的源站区域BKK表示AreaCode;曼谷表示Area["BKK":"曼谷","DXB":"迪拜","FRA":"法兰克福","SGN":"胡志明市","HKG":"香港",CGK":"雅加达","LOS":"拉各斯","LHR":"伦敦","LAX":"洛杉矶","MNL":"马尼拉","DME":"莫斯科","BOM":"孟买","MSP":"圣保罗","ICN":"首尔","PVG":"上海","SIN":"新加坡","NRT":"东京","IAD":"华盛顿","TPE": "台北"]
 	AreaCode *string `required:"false"`
 
-	// 实例的共享带宽大小，单位Mbps
-	Bandwidth *int `required:"true"`
+	// 实例的共享带宽
+	Bandwidth *string `required:"true"`
 
-	// 支付方式，如按月、按年、按时[Year,Month,Dynamic]
+	// 支付方式，如按月、按年、按时
 	ChargeType *string `required:"false"`
 
 	// 使用代金券可冲抵部分费用，仅全地域可用的代金券
@@ -261,8 +261,8 @@ type CreateUGA3InstanceResponse struct {
 	// 加速配置ID
 	InstanceId string
 
-	// 【该字段已废弃，请谨慎使用】
-	Message string `deprecated:"true"`
+	// 返回信息
+	Message string
 }
 
 // NewCreateUGA3InstanceRequest will create request of CreateUGA3Instance action.
@@ -993,8 +993,6 @@ func (c *PathXClient) NewDescribeGlobalSSHAreaRequest() *DescribeGlobalSSHAreaRe
 
 /*
 API: DescribeGlobalSSHArea
-
-
 */
 func (c *PathXClient) DescribeGlobalSSHArea(req *DescribeGlobalSSHAreaRequest) (*DescribeGlobalSSHAreaResponse, error) {
 	var err error
@@ -1064,8 +1062,8 @@ func (c *PathXClient) DescribeGlobalSSHInstance(req *DescribeGlobalSSHInstanceRe
 type DescribePathXLineConfigRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID,如org-xxxx。请参考[GetProjectList接口](../summary/get_project_list.html)
-	// ProjectId *string `required:"true"`
+	// [公共参数] 项目ID,如org-xxxx。不填为默认项目。请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
 
 }
 

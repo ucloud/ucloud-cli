@@ -5,8 +5,8 @@ Package vpc include resources of ucloud vpc product
 
 See also
 
-	- API: https://docs.ucloud.cn/api/vpc-api/index
-	- Product: https://www.ucloud.cn/site/product/vpc.html
+  - API: https://docs.ucloud.cn/api/vpc-api/index
+  - Product: https://www.ucloud.cn/site/product/vpc.html
 
 for detail.
 */

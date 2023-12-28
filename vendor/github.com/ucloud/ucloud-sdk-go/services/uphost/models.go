@@ -15,15 +15,123 @@ type PHostComponentSet struct {
 }
 
 /*
-PHostClusterSet - 物理云主机集群库存信息
+PHostGpuInfoV2 - 裸金属Gpu信息V2版本
 */
-type PHostClusterSet struct {
+type PHostGpuInfoV2 struct {
+
+	// GPU数量
+	Count int
+
+	// GPU显存大小
+	Memory string
+
+	// GPU名称，例如：NVIDIA_V100S
+	Name string
+
+	// GPU性能指标
+	Performance string
+}
+
+/*
+PHostDiskSetV2 - 裸金属磁盘信息V2版本
+*/
+type PHostDiskSetV2 struct {
+
+	// 磁盘类型
+	DiskType int
+
+	// IO性能
+	IoCap int
+
+	// 磁盘名
+	Name string
+
+	// 数量
+	Number int
+
+	// Raid级别
+	RaidLevel int
+
+	// 空间大小
+	Space int
+
+	// 转换单位
+	UnitSize int
+}
+
+/*
+PHostCPUSetV2 - 裸金属磁盘信息V2版本
+*/
+type PHostCPUSetV2 struct {
+
+	// CPU核数
+	CoreCount int
+
+	// CPU个数
+	Count int
+
+	// CPU主频
+	Frequency string
+
+	// CPU型号
+	Model string
+}
+
+/*
+PHostCloudMachineTypeSetV2 - 裸金属云盘的MachineTypeSet V2版本
+*/
+type PHostCloudMachineTypeSetV2 struct {
+
+	// CPU信息
+	CPU PHostCPUSetV2
 
 	// 集群名。枚举值：千兆网络集群：1G；万兆网络集群：10G；智能网卡网络：25G；
-	Name string
+	Cluster string
+
+	// 组件信息
+	Components []PHostComponentSet
+
+	// 磁盘信息
+	Disks []PHostDiskSetV2
+
+	// GPU信息
+	GpuInfo PHostGpuInfoV2
+
+	// 是否是裸金属机型
+	IsBaremetal bool
+
+	// 是否是GPU机型
+	IsGpu bool
+
+	// 是否需要加新机型标记
+	IsNew bool
+
+	// 内存大小，单位MB
+	Memory int
+
+	// 通常获取到的都是可售卖的
+	OnSale bool
+
+	// 参考价格。字典类型，default:为默认价格；cn-wlcb-01:乌兰察布A可用区价格
+	Price string
+
+	// 是否支持做Raid。枚举值：可以：Yes；不可以：No
+	RaidSupported string
+
+	// 适用场景。例如：ai表示AI学习场景；
+	Scene []string
+
+	// 库存数量
+	Stock int
 
 	// 库存状态。枚举值：有库存：Available；无库存：SoldOut
 	StockStatus string
+
+	// 物理云主机机型别名
+	Type string
+
+	// 机型所在可用区
+	Zone string
 }
 
 /*
@@ -42,54 +150,6 @@ type PHostCPUSet struct {
 
 	// CPU型号
 	Model string
-}
-
-/*
-PHostCloudMachineTypeSet - 裸金属云盘的MachineTypeSet
-*/
-type PHostCloudMachineTypeSet struct {
-
-	// CPU信息
-	CPU PHostCPUSet
-
-	// 集群库存信息
-	Clusters []PHostClusterSet
-
-	// 其他组件信息
-	Components PHostComponentSet
-
-	// 内存大小，单位MB
-	Memory int
-
-	// 物理云主机机型别名，全网唯一。
-	Type string
-}
-
-/*
-PHostIPSet - DescribePHost
-*/
-type PHostIPSet struct {
-
-	// IP对应带宽，单位Mb，内网IP不显示带宽信息
-	Bandwidth int
-
-	// IP地址，
-	IPAddr string
-
-	// IP资源ID(内网IP无资源ID)（待废弃）
-	IPId string
-
-	// MAC地址
-	MACAddr string
-
-	// 国际: Internation， BGP: BGP， 内网: Private
-	OperatorName string
-
-	// 子网ID
-	SubnetId string
-
-	// VPC ID
-	VPCId string
 }
 
 /*
@@ -123,12 +183,42 @@ type PHostDescDiskSet struct {
 }
 
 /*
+PHostIPSet - DescribePHost
+*/
+type PHostIPSet struct {
+
+	// IP对应带宽，单位Mb，内网IP不显示带宽信息
+	Bandwidth int
+
+	// IP地址，
+	IPAddr string
+
+	// IP资源ID(内网IP无资源ID)（待废弃）
+	IPId string
+
+	// MAC地址
+	MACAddr string
+
+	// 国际: Internation， BGP: BGP， 内网: Private
+	OperatorName string
+
+	// 子网ID
+	SubnetId string
+
+	// VPC ID
+	VPCId string
+}
+
+/*
 PHostSet - DescribePHost
 */
 type PHostSet struct {
 
 	// 自动续费
 	AutoRenew string
+
+	// 裸金属机型字段。枚举值：Normal=>正常、ImageMaking=>镜像制作中。
+	BootDiskState string
 
 	// CPU信息，见 PHostCPUSet
 	CPUSet PHostCPUSet
@@ -190,6 +280,9 @@ type PHostSet struct {
 	// 是否支持Raid。枚举值：Yes：支持；No：不支持。
 	RaidSupported string
 
+	// RDMA集群id，仅云盘裸金属返回该值；其他类型物理云主机返回""。当物理机的此值与RSSD云盘的RdmaClusterId相同时，RSSD可以挂载到这台物理机。
+	RdmaClusterId string
+
 	// 物理机备注
 	Remark string
 
@@ -209,7 +302,7 @@ PHostImageSet - DescribePHostImage
 type PHostImageSet struct {
 
 	// 裸金属2.0参数。镜像创建时间。
-	CreateTime int
+	CreateTime string
 
 	// 镜像描述
 	ImageDescription string
@@ -240,54 +333,6 @@ type PHostImageSet struct {
 
 	// 当前版本
 	Version string
-}
-
-/*
-PHostDiskSet - GetPHostTypeInfo
-*/
-type PHostDiskSet struct {
-
-	// 磁盘数量
-	Count int
-
-	// 磁盘IO性能，单位MB/s（待废弃）
-	IOCap int
-
-	// 磁盘名称，sys/data
-	Name string
-
-	// 单盘大小，单位GB
-	Space int
-
-	// 磁盘属性
-	Type string
-}
-
-/*
-PHostMachineTypeSet - 物理云主机机型列表
-*/
-type PHostMachineTypeSet struct {
-
-	// CPU信息
-	CPU PHostCPUSet
-
-	// 集群库存信息
-	Clusters []PHostClusterSet
-
-	// 其他组件信息
-	Components PHostComponentSet
-
-	// 磁盘信息
-	Disks []PHostDiskSet
-
-	// 内存大小，单位MB
-	Memory int
-
-	// 是否支持Raid。枚举值：支持：YES；不支持：NO
-	RaidSupported string
-
-	// 物理云主机机型别名，全网唯一。
-	Type string
 }
 
 /*
