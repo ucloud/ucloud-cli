@@ -1,3 +1,11 @@
+## 0.1.46 (2023-12-28)
+
+* update ucloud go sdk version
+
+## 0.1.45 (2023-12-18)
+
+* fix reinstall password encoding
+
 ## 0.1.44 (2023-08-15)
 
 * fix failing to specify release-eip and delete-cloud-disk to false
