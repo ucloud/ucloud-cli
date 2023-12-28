@@ -111,6 +111,9 @@ type AllocateShareBandwidthRequest struct {
 	// 共享带宽名字
 	Name *string `required:"true"`
 
+	// 共享带宽线路：BGP 国内多线,International 国际多线,ChinaMobile 移动单线,Unicom 联通单线,Telecom 电信单线,BGPPro 精品BGP（仅香港支持精品BGP）
+	OperatorName *string `required:"false"`
+
 	// 购买时长
 	Quantity *int `required:"false"`
 
@@ -710,10 +713,10 @@ type DescribeFirewallRequest struct {
 	// 列表起始位置偏移量，默认为0
 	Offset *int `required:"false"`
 
-	// 绑定防火墙组的资源ID
+	// 绑定防火墙组的资源ID。
 	ResourceId *string `required:"false"`
 
-	// 绑定防火墙组的资源类型，默认为全部资源类型。枚举值为："unatgw"，NAT网关； "uhost"，云主机；“uni”，虚拟网卡； "upm"，物理云主机； "hadoophost"，hadoop节点； "fortresshost"，堡垒机； "udhost"，私有专区主机；"udockhost"，容器；"dbaudit"，数据库审计.
+	// 绑定防火墙的资源类型，仅获取资源对应防火墙信息时需要。枚举值为："unatgw"，NAT网关； "uhost"，云主机； "upm"，物理云主机； "hadoophost"，hadoop节点； "fortresshost"，堡垒机； "udhost"，私有专区主机；"udockhost"，容器；"dbaudit"，数据库审计；”uni“，虚拟网卡；“cube”，Cube容器实例；“ulb”，负载均衡实例。
 	ResourceType *string `required:"false"`
 }
 
@@ -1110,6 +1113,62 @@ func (c *UNetClient) DisassociateFirewall(req *DisassociateFirewallRequest) (*Di
 	return &res, nil
 }
 
+// GetEIPExclusiveUTPInfoRequest is request schema for GetEIPExclusiveUTPInfo action
+type GetEIPExclusiveUTPInfoRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// EIP资源Id
+	EIPId *string `required:"true"`
+}
+
+// GetEIPExclusiveUTPInfoResponse is response schema for GetEIPExclusiveUTPInfo action
+type GetEIPExclusiveUTPInfoResponse struct {
+	response.CommonBase
+
+	// EIP专属流量包信息
+	EIPExclusiveInfo EIPExclusiveInfo
+}
+
+// NewGetEIPExclusiveUTPInfoRequest will create request of GetEIPExclusiveUTPInfo action.
+func (c *UNetClient) NewGetEIPExclusiveUTPInfoRequest() *GetEIPExclusiveUTPInfoRequest {
+	req := &GetEIPExclusiveUTPInfoRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetEIPExclusiveUTPInfo
+
+获取EIP专属流量包信息
+*/
+func (c *UNetClient) GetEIPExclusiveUTPInfo(req *GetEIPExclusiveUTPInfoRequest) (*GetEIPExclusiveUTPInfoResponse, error) {
+	var err error
+	var res GetEIPExclusiveUTPInfoResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetEIPExclusiveUTPInfo", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // GetEIPPayModeRequest is request schema for GetEIPPayMode action
 type GetEIPPayModeRequest struct {
 	request.CommonBase
@@ -1365,7 +1424,7 @@ type GrantFirewallRequest struct {
 	// 所应用资源ID
 	ResourceId *string `required:"true"`
 
-	// 绑定防火墙组的资源类型，默认为全部资源类型。枚举值为："unatgw"，NAT网关； "uhost"，云主机； "upm"，物理云主机； "hadoophost"，hadoop节点； "fortresshost"，堡垒机； "udhost"，私有专区主机；"udockhost"，容器；"dbaudit"，数据库审计，”uni“，虚拟网卡，“cube”，Cube容器实例。
+	// 绑定防火墙的资源类型，枚举值为："unatgw"，NAT网关； "uhost"，云主机； "upm"，物理云主机； "hadoophost"，hadoop节点； "fortresshost"，堡垒机； "udhost"，私有专区主机；"udockhost"，容器；"dbaudit"，数据库审计；”uni“，虚拟网卡；“cube”，Cube容器实例；“ulb”，负载均衡实例。
 	ResourceType *string `required:"true"`
 }
 

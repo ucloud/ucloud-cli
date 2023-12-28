@@ -174,7 +174,7 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 	bindRegion(createPathxReq, flags)
 	bindZone(createPathxReq, flags)
 
-	createPathxReq.Bandwidth = flags.Int("bandwidth", 0,
+	createPathxReq.Bandwidth = flags.String("bandwidth", "0",
 		"Required. Shared bandwidth of the resource")
 	flags.String("area-code", "",
 		"Optional. When it is empty,the nearest zone will be selected based on the origin-domain and origin-ip. "+

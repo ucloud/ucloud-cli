@@ -5,17 +5,17 @@ package ucloud
 
 import (
 	"fmt"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
+	stdhttp "net/http"
 	"time"
 
-	"github.com/ucloud/ucloud-sdk-go/private/utils"
-
 	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
+	"github.com/ucloud/ucloud-sdk-go/private/utils"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
 )
 
 // Version is the version of sdk
@@ -52,6 +52,8 @@ type Client struct {
 
 	// client information injection
 	meta ClientMeta
+
+	transport stdhttp.RoundTripper
 }
 
 // NewClient will create an client of ucloud sdk
@@ -84,6 +86,10 @@ func NewClientWithMeta(config *Config, credential *auth.Credential, meta ClientM
 func (c *Client) SetHttpClient(httpClient http.Client) error {
 	c.httpClient = httpClient
 	return nil
+}
+
+func (c *Client) SetTransport(transport stdhttp.RoundTripper) {
+	c.transport = transport
 }
 
 // GetCredential will return the credential config of client.
@@ -164,7 +170,12 @@ func (c *Client) InvokeActionWithPatcher(action string, req request.Common, resp
 	}
 
 	if c.httpClient == nil {
-		httpClient := http.NewHttpClient()
+		var httpClient http.HttpClient
+		if c.transport == nil {
+			httpClient = http.NewHttpClient()
+		} else {
+			httpClient = http.NewHttpClientWithTransport(c.transport)
+		}
 		c.httpClient = &httpClient
 	}
 

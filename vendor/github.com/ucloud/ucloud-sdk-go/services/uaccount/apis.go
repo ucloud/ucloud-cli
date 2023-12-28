@@ -9,56 +9,6 @@ import (
 
 // UAccount API Schema
 
-// AddMemberToProjectRequest is request schema for AddMemberToProject action
-type AddMemberToProjectRequest struct {
-	request.CommonBase
-
-	// [公共参数] 项目ID，请参考[GetProjectList接口](../summary/get_project_list.html)的描述。不填写为创建时间最早的项目。
-	// ProjectId *string `required:"false"`
-
-	// 被加入成员归属角色ID
-	CharacterId *string `required:"true"`
-
-	// 被加入成员Email
-	MemberEmail *string `required:"true"`
-}
-
-// AddMemberToProjectResponse is response schema for AddMemberToProject action
-type AddMemberToProjectResponse struct {
-	response.CommonBase
-}
-
-// NewAddMemberToProjectRequest will create request of AddMemberToProject action.
-func (c *UAccountClient) NewAddMemberToProjectRequest() *AddMemberToProjectRequest {
-	req := &AddMemberToProjectRequest{}
-
-	// setup request with client config
-	c.Client.SetupRequest(req)
-
-	// setup retryable with default retry policy (retry for non-create action and common error)
-	req.SetRetryable(false)
-	return req
-}
-
-/*
-API: AddMemberToProject
-
-添加成员到项目
-*/
-func (c *UAccountClient) AddMemberToProject(req *AddMemberToProjectRequest) (*AddMemberToProjectResponse, error) {
-	var err error
-	var res AddMemberToProjectResponse
-
-	reqCopier := *req
-
-	err = c.Client.InvokeAction("AddMemberToProject", &reqCopier, &res)
-	if err != nil {
-		return &res, err
-	}
-
-	return &res, nil
-}
-
 // CreateCharacterRequest is request schema for CreateCharacter action
 type CreateCharacterRequest struct {
 	request.CommonBase
@@ -154,8 +104,6 @@ func (c *UAccountClient) NewCreateProjectRequest() *CreateProjectRequest {
 
 /*
 API: CreateProject
-
-
 */
 func (c *UAccountClient) CreateProject(req *CreateProjectRequest) (*CreateProjectResponse, error) {
 	var err error
@@ -273,50 +221,6 @@ func (c *UAccountClient) DescribeMemberList(req *DescribeMemberListRequest) (*De
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribeMemberList", &reqCopier, &res)
-	if err != nil {
-		return &res, err
-	}
-
-	return &res, nil
-}
-
-// FreezeMemberRequest is request schema for FreezeMember action
-type FreezeMemberRequest struct {
-	request.CommonBase
-
-	// 需要被冻结的成员Email
-	MemberEmail *string `required:"true"`
-}
-
-// FreezeMemberResponse is response schema for FreezeMember action
-type FreezeMemberResponse struct {
-	response.CommonBase
-}
-
-// NewFreezeMemberRequest will create request of FreezeMember action.
-func (c *UAccountClient) NewFreezeMemberRequest() *FreezeMemberRequest {
-	req := &FreezeMemberRequest{}
-
-	// setup request with client config
-	c.Client.SetupRequest(req)
-
-	// setup retryable with default retry policy (retry for non-create action and common error)
-	req.SetRetryable(true)
-	return req
-}
-
-/*
-API: FreezeMember
-
-冻结成员
-*/
-func (c *UAccountClient) FreezeMember(req *FreezeMemberRequest) (*FreezeMemberResponse, error) {
-	var err error
-	var res FreezeMemberResponse
-
-	reqCopier := *req
-
-	err = c.Client.InvokeAction("FreezeMember", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -492,8 +396,6 @@ func (c *UAccountClient) NewGetUserInfoRequest() *GetUserInfoRequest {
 
 /*
 API: GetUserInfo
-
-
 */
 func (c *UAccountClient) GetUserInfo(req *GetUserInfoRequest) (*GetUserInfoResponse, error) {
 	var err error
@@ -651,8 +553,6 @@ func (c *UAccountClient) NewModifyProjectRequest() *ModifyProjectRequest {
 
 /*
 API: ModifyProject
-
-
 */
 func (c *UAccountClient) ModifyProject(req *ModifyProjectRequest) (*ModifyProjectResponse, error) {
 	var err error

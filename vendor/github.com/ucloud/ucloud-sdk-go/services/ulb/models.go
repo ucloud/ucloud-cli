@@ -3,6 +3,45 @@
 package ulb
 
 /*
+TargetSet - 服务节点信息
+*/
+type TargetSet struct {
+
+	// 服务节点是否启用。 默认值：true
+	Enabled bool
+
+	// 服务节点的标识ID。
+	Id string
+
+	// 服务节点是否为备节点。 默认值：false
+	IsBackup bool
+
+	// 服务节点的端口。限定取值：[1-65535]； 默认值：80
+	Port int
+
+	// 服务节点的IP。在IP类型时，必传
+	ResourceIP string
+
+	// 服务节点的资源ID。在非IP类型时，必传
+	ResourceId string
+
+	// 服务节点的类型。限定枚举值：UHost -> 云主机，UNI -> 虚拟网卡，UPM -> 物理云主机，IP ->  IP类型； 默认值："UHost"； 非IP类型，如果该资源有多个IP，将只能添加主IP； 非IP类型，展示时，会显示相关资源信息，IP类型只展示IP信息。 在相关资源被删除时，非IP类型会把相关资源从lb中剔除，IP类型不保证这个逻辑
+	ResourceType string
+
+	// 服务节点的健康检查状态。限定枚举值：Healthy -> 健康，Unhealthy -> 不健康
+	State string
+
+	// 服务节点的子网资源ID。在IP类型时，必传
+	SubnetId string
+
+	// 服务节点的VPC资源ID。在IP类型时，必传
+	VPCId string
+
+	// 服务节点的权重。限定取值：[1-100]； 仅在加权轮询算法时有效； 默认值：1
+	Weight int
+}
+
+/*
 BackendSet -
 */
 type BackendSet struct {
@@ -100,6 +139,75 @@ type ULBSSLSet struct {
 	// SSL证书的HASH值
 	HashValue string
 
+	// 证书过期时间,只有当SSLSource为1时才出现
+	NotAfter int
+
+	// 证书颁发时间,只有当SSLSource为1时才出现
+	NotBefore int
+
+	// SSL证书的内容
+	SSLContent string
+
+	// SSL证书的Id
+	SSLId string
+
+	// SSL证书的名字
+	SSLName string
+
+	// SSL证书来源，SSL证书来源，0代表证书来自于ULB平台，1代表证书来自于USSL平台
+	SSLSource int
+
+	// SSL证书类型，暂时只有 Pem 一种类型
+	SSLType string
+
+	// USSL证书平台的编号,只有当SSLSource为1时才出现
+	USSLId string
+}
+
+/*
+SSLRelation - SSL证书绑定到的对象
+*/
+type SSLRelation struct {
+
+	// 是否为监听器默认SSL证书
+	IsDefault bool
+
+	// 监听器的ID
+	ListenerId string
+
+	// 监听器的名称
+	ListenerName string
+
+	// 负载均衡实例的ID
+	LoadBalancerId string
+
+	// 负载均衡实例的名称
+	LoadBalancerName string
+}
+
+/*
+SSLInfo - SSL返回信息
+*/
+type SSLInfo struct {
+
+	// SSL证书的创建时间
+	CreateTime int
+
+	// USSL证书平台的域名,只有当SSLSource为1时才出现
+	Domains string
+
+	// SSL证书的HASH值
+	HashValue string
+
+	// 证书过期时间,只有当SSLSource为1时才出现
+	NotAfter int
+
+	// 证书颁发时间,只有当SSLSource为1时才出现
+	NotBefore int
+
+	// SSL绑定ULB和ALB的关系
+	Relations []SSLRelation
+
 	// SSL证书的内容
 	SSLContent string
 
@@ -162,6 +270,48 @@ type SecurityPolicy struct {
 }
 
 /*
+SecurityPolicyRelation - 关联的监听
+*/
+type SecurityPolicyRelation struct {
+
+	// 监听器的ID
+	ListenerId string
+
+	// 监听器的名称
+	ListenerName string
+
+	// 监听端口
+	ListenerPort int
+
+	// 负载均衡实例的ID
+	LoadBalancerId string
+}
+
+/*
+SecurityPolicyInfo - 安全策略信息
+*/
+type SecurityPolicyInfo struct {
+
+	// 关联的监听
+	Relations []SecurityPolicyRelation
+
+	// 加密套件
+	SSLCiphers []string
+
+	// 安全策略ID
+	SecurityPolicyId string
+
+	// 安全策略名称
+	SecurityPolicyName string
+
+	// 安全策略类型 0：预定义 1：自定义
+	SecurityPolicyType int
+
+	// TLS最低版本
+	TLSVersion string
+}
+
+/*
 TLSAndCiphers -
 */
 type TLSAndCiphers struct {
@@ -204,57 +354,6 @@ type PolicyBackendSet struct {
 
 	// "UNI"或者为空
 	SubResourceType string
-}
-
-/*
-ULBBackendSet - DescribeULB
-*/
-type ULBBackendSet struct {
-
-	// 后端资源实例的Id
-	BackendId string
-
-	// 后端提供服务的实例启用与否，枚举值：0 禁用 1 启用
-	Enabled int
-
-	// 是否为backup，只有当vserver的Backup属性为1时才会有此字段，说明：0：主rs1：备rs
-	IsBackup int
-
-	// 后端提供服务的端口
-	Port int
-
-	// 后端提供服务的内网IP
-	PrivateIP string
-
-	// 资源实例的资源Id
-	ResourceId string
-
-	// 资源实例的资源名称
-	ResourceName string
-
-	// 资源实例的类型
-	ResourceType string
-
-	// 后端提供服务的实例运行状态，枚举值：0健康检查健康状态 1 健康检查异常
-	Status int
-
-	// 资源绑定的虚拟网卡实例的资源Id
-	SubResourceId string
-
-	// 资源绑定的虚拟网卡实例的资源名称
-	SubResourceName string
-
-	// 资源绑定的虚拟网卡实例的类型
-	SubResourceType string
-
-	// 后端提供服务的资源所在的子网的ID
-	SubnetId string
-
-	// 后端服务器所在的VPC
-	VPCId string
-
-	// 后端RS权重（在加权轮询算法下有效）
-	Weight int
 }
 
 /*
@@ -312,6 +411,57 @@ type ULBPolicySet struct {
 }
 
 /*
+ULBBackendSet - DescribeULB
+*/
+type ULBBackendSet struct {
+
+	// 后端资源实例的Id
+	BackendId string
+
+	// 后端提供服务的实例启用与否，枚举值：0 禁用 1 启用
+	Enabled int
+
+	// 是否为backup，只有当vserver的Backup属性为1时才会有此字段，说明：0：主rs1：备rs
+	IsBackup int
+
+	// 后端提供服务的端口
+	Port int
+
+	// 后端提供服务的内网IP
+	PrivateIP string
+
+	// 资源实例的资源Id
+	ResourceId string
+
+	// 资源实例的资源名称
+	ResourceName string
+
+	// 资源实例的类型
+	ResourceType string
+
+	// 后端提供服务的实例运行状态，枚举值：0健康检查健康状态 1 健康检查异常
+	Status int
+
+	// 资源绑定的虚拟网卡实例的资源Id
+	SubResourceId string
+
+	// 资源绑定的虚拟网卡实例的资源名称
+	SubResourceName string
+
+	// 资源绑定的虚拟网卡实例的类型
+	SubResourceType string
+
+	// 后端提供服务的资源所在的子网的ID
+	SubnetId string
+
+	// 后端服务器所在的VPC
+	VPCId string
+
+	// 后端RS权重（在加权轮询算法下有效）
+	Weight int
+}
+
+/*
 LoggerSet - ulb日志信息
 */
 type LoggerSet struct {
@@ -324,27 +474,6 @@ type LoggerSet struct {
 
 	// bucket的token名称
 	TokenName string
-}
-
-/*
-ULBIPSet - DescribeULB
-*/
-type ULBIPSet struct {
-
-	// 弹性IP的带宽值（暂未对外开放）
-	Bandwidth int
-
-	// 弹性IP的带宽类型，枚举值：1 表示是共享带宽，0 普通带宽类型（暂未对外开放）
-	BandwidthType int
-
-	// 弹性IP地址
-	EIP string
-
-	// 弹性IP的ID
-	EIPId string
-
-	// 弹性IP的运营商信息，枚举值为：  Bgp：BGP IP International：国际IP
-	OperatorName string
 }
 
 /*
@@ -423,6 +552,27 @@ type ULBVServerSet struct {
 }
 
 /*
+ULBIPSet - DescribeULB
+*/
+type ULBIPSet struct {
+
+	// 弹性IP的带宽值（暂未对外开放）
+	Bandwidth int
+
+	// 弹性IP的带宽类型，枚举值：1 表示是共享带宽，0 普通带宽类型（暂未对外开放）
+	BandwidthType int
+
+	// 弹性IP地址
+	EIP string
+
+	// 弹性IP的ID
+	EIPId string
+
+	// 弹性IP的运营商信息，枚举值为：  Bgp：BGP IP International：国际IP
+	OperatorName string
+}
+
+/*
 FirewallSet - ulb防火墙信息
 */
 type FirewallSet struct {
@@ -483,6 +633,9 @@ type ULBSet struct {
 
 	// ULB的详细信息列表（废弃）
 	Resource []string `deprecated:"true"`
+
+	// ULB后向代理IP，仅当有代理IP时返回否
+	SnatIps []string
 
 	// ULB 为 InnerMode 时，ULB 所属的子网ID，默认为空
 	SubnetId string
@@ -550,6 +703,9 @@ type ULBSimpleSet struct {
 	// 负载均衡的备注
 	Remark string
 
+	// ULB后向代理IP，仅当有代理IP时返回否
+	SnatIps []string
+
 	// ULB 为 InnerMode 时，ULB 所属的子网ID
 	SubnetId string
 
@@ -567,4 +723,22 @@ type ULBSimpleSet struct {
 
 	// ulb下vserver数量
 	VServerCount int
+
+	// WAF功能状态，枚举类型：Unavailable：无法创建WAF；NoWAF：未绑定WAF；Intranet：内网回源Waf；Extranet：外网回源Waf
+	WAFMode string
+}
+
+/*
+BackendMsg - ulb修rs状态时返回的信息
+*/
+type BackendMsg struct {
+
+	// rs的资源ID
+	BackendId string
+
+	// 修改rs返回的消息
+	SubMessage string
+
+	// 修改rs的返回值
+	SubRetCode int
 }

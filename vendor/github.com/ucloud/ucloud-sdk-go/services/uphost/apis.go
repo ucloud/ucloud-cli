@@ -10,6 +10,36 @@ import (
 // UPHost API Schema
 
 /*
+CreatePHostParamNetworkInterfaceEIP is request schema for complex param
+*/
+type CreatePHostParamNetworkInterfaceEIP struct {
+
+	// 【若绑定EIP，此参数必填】弹性IP的外网带宽, 单位为Mbps. 共享带宽模式必须指定0M带宽, 非共享带宽模式必须指定非0Mbps带宽. 各地域非共享带宽的带宽范围如下： 流量计费[1-300]，带宽计费[1-800]
+	Bandwidth *string `required:"false"`
+
+	// 当前EIP代金券id。请通过DescribeCoupon接口查询，或登录用户中心查看。
+	CouponId *string `required:"false"`
+
+	// 【若绑定EIP，此参数必填】弹性IP的线路。枚举值: 国际: International BGP: Bgp 各地域允许的线路参数如下: cn-sh1: Bgp cn-sh2: Bgp cn-gd: Bgp cn-bj1: Bgp cn-bj2: Bgp hk: International us-ca: International th-bkk: International kr-seoul:International us-ws:International ge-fra:International sg:International tw-kh:International.其他海外线路均为 International
+	OperatorName *string `required:"false"`
+
+	// 弹性IP的计费模式. 枚举值: "Traffic", 流量计费; "Bandwidth", 带宽计费; "ShareBandwidth",共享带宽模式. "Free":免费带宽模式,默认为 "Bandwidth"
+	PayMode *string `required:"false"`
+
+	// 绑定的共享带宽Id，仅当PayMode为ShareBandwidth时有效
+	ShareBandwidthId *string `required:"false"`
+}
+
+/*
+CreatePHostParamNetworkInterface is request schema for complex param
+*/
+type CreatePHostParamNetworkInterface struct {
+
+	//
+	EIP *CreatePHostParamNetworkInterfaceEIP `required:"false"`
+}
+
+/*
 CreatePHostParamDisks is request schema for complex param
 */
 type CreatePHostParamDisks struct {
@@ -40,7 +70,10 @@ type CreatePHostRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
-	// 计费模式，枚举值为：year, 按年付费； month,按月付费；默认为按月付费
+	// 短期促销活动时所需参数
+	ActivityId *int `required:"false"`
+
+	// 计费模式，枚举值为：Year, 按年付费； Month,按月付费；默认按月付费
 	ChargeType *string `required:"false"`
 
 	// 网络环境，可选千兆：1G ，万兆：10G， 默认1G。智能网卡可以选择25G。
@@ -61,17 +94,23 @@ type CreatePHostRequest struct {
 	// 物理机名称，默认为phost
 	Name *string `required:"false"`
 
+	//
+	NetworkInterface []CreatePHostParamNetworkInterface `required:"false"`
+
 	// 密码（密码需使用base64进行编码）
 	Password *string `required:"true"`
 
 	// 购买时长，1-10个月或1-10年；默认值为1。月付时，此参数传0，代表购买至月末，1代表整月。
 	Quantity *string `required:"false"`
 
-	// Raid配置，默认Raid10  支持:Raid0、Raid1、Raid5、Raid10，NoRaid
+	// 本地盘和裸金属1.0需要的参数。Raid配置，默认Raid10  支持:Raid0、Raid1、Raid5、Raid10，NoRaid
 	Raid *string `required:"false"`
 
 	// 物理机备注，默认为空
 	Remark *string `required:"false"`
+
+	// 短期促销活动时所需参数
+	RuleId *int `required:"false"`
 
 	// 防火墙ID，默认：Web推荐防火墙。如何查询SecurityGroupId请参见 [DescribeFirewall](api/unet-api/describe_firewall.html)。
 	SecurityGroupId *string `required:"false"`
@@ -206,6 +245,9 @@ type DescribeBaremetalMachineTypeRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
+	// 请求版本。仅支持v2，不传或传其他值表示请求旧版本
+	APIVersion *string `required:"false"`
+
 	// 具体机型。若不填写，则返回全部机型
 	Type *string `required:"false"`
 }
@@ -214,8 +256,8 @@ type DescribeBaremetalMachineTypeRequest struct {
 type DescribeBaremetalMachineTypeResponse struct {
 	response.CommonBase
 
-	// 机型列表，模型：PHostCloudMachineTypeSet
-	MachineTypes []PHostCloudMachineTypeSet
+	// 机型列表，模型：PHostCloudMachineTypeSetV2,仅在入参Version=v2时返回
+	MachineTypes []PHostCloudMachineTypeSetV2
 }
 
 // NewDescribeBaremetalMachineTypeRequest will create request of DescribeBaremetalMachineType action.
@@ -333,6 +375,9 @@ type DescribePHostImageRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
+	// 机器的网络集群，MachineType传是必须传，默认25G
+	Cluster *string `required:"false"`
+
 	// 镜像ID
 	ImageId []string `required:"false"`
 
@@ -399,10 +444,13 @@ type DescribePHostMachineTypeRequest struct {
 	// ProjectId *string `required:"false"`
 
 	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
-	// Region *string `required:"true"`
+	// Region *string `required:"false"`
 
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
-	// Zone *string `required:"true"`
+	// Zone *string `required:"false"`
+
+	// 请求版本。仅支持v2，不传或传其他值表示请求旧版本
+	APIVersion *string `required:"false"`
 
 	// 具体机型。若不填写，则返回全部机型
 	Type *string `required:"false"`
@@ -412,8 +460,8 @@ type DescribePHostMachineTypeRequest struct {
 type DescribePHostMachineTypeResponse struct {
 	response.CommonBase
 
-	// 机型列表，模型：PHostMachineTypeSet
-	MachineTypes []PHostMachineTypeSet
+	// 机型列表，模型：PHostCloudMachineTypeSetV2,仅在入参Version=v2时返回
+	MachineTypes []PHostCloudMachineTypeSetV2
 }
 
 // NewDescribePHostMachineTypeRequest will create request of DescribePHostMachineType action.

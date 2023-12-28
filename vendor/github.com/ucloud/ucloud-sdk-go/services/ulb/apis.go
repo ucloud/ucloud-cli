@@ -9,6 +9,98 @@ import (
 
 // ULB API Schema
 
+/*
+AddTargetsParamTargets is request schema for complex param
+*/
+type AddTargetsParamTargets struct {
+
+	// 服务节点是否启用。默认值true
+	Enabled *bool `required:"false"`
+
+	// 服务节点是否为备节点。默认值false
+	IsBackup *bool `required:"false"`
+
+	// 服务节点的端口。限定取值：[1-65535]，默认值80
+	Port *int `required:"false"`
+
+	// 服务节点的IP。在IP类型时，必传
+	ResourceIP *string `required:"false"`
+
+	// 服务节点的资源ID。在非IP类型时，必传
+	ResourceId *string `required:"false"`
+
+	// 服务节点的类型。限定枚举值："UHost" / "UNI"/"UPM"/"IP"，默认值："UHost"；非IP类型，如果该资源有多个IP，将只能添加主IP；非IP类型，展示时，会显示相关资源信息，IP类型只展示IP信息。在相关资源被删除时，非IP类型会把相关资源从lb中剔除，IP类型不保证这个逻辑
+	ResourceType *string `required:"false"`
+
+	// 服务节点的子网资源ID。在IP类型时，必传
+	SubnetId *string `required:"false"`
+
+	// 服务节点的VPC资源ID。在IP类型时，必传
+	VPCId *string `required:"false"`
+
+	// 服务节点的权重。限定取值：[1-100]，默认值1；仅在加权轮询算法时有效
+	Weight *int `required:"false"`
+}
+
+// AddTargetsRequest is request schema for AddTargets action
+type AddTargetsRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	//
+	Targets []AddTargetsParamTargets `required:"false"`
+}
+
+// AddTargetsResponse is response schema for AddTargets action
+type AddTargetsResponse struct {
+	response.CommonBase
+
+	// 服务节点信息
+	Targets []TargetSet
+}
+
+// NewAddTargetsRequest will create request of AddTargets action.
+func (c *ULBClient) NewAddTargetsRequest() *AddTargetsRequest {
+	req := &AddTargetsRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: AddTargets
+
+给应用型负载均衡监听器添加后端服务节点
+*/
+func (c *ULBClient) AddTargets(req *AddTargetsRequest) (*AddTargetsResponse, error) {
+	var err error
+	var res AddTargetsResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("AddTargets", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // AllocateBackendRequest is request schema for AllocateBackend action
 type AllocateBackendRequest struct {
 	request.CommonBase
@@ -28,22 +120,22 @@ type AllocateBackendRequest struct {
 	// 所添加的后端资源服务端口，取值范围[1-65535]，默认80
 	Port *int `required:"false"`
 
-	// 所添加的后端服务器的资源实例IP，当ResourceType 为 UHybrid 时有效，且必填
+	// 所添加的后端服务器的资源实例IP，当ResourceType 为 UHybrid 或 IP时有效，且必填；与ResourceId二选一必填
 	ResourceIP *string `required:"false"`
 
-	// 所添加的后端资源的资源ID
-	ResourceId *string `required:"true"`
+	// 所添加的后端资源的资源ID；与ResourceIP二选一必填
+	ResourceId *string `required:"false"`
 
-	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UNI -> 虚拟网卡；UPM -> 物理云主机； UDHost -> 私有专区主机；UDocker -> 容器；UHybrid->混合云主机；CUBE->Cube，USDP->智能大数据平台；默认值为UHost。报文转发模式不支持UDocker、UHybrid、CUBE
+	// 所添加的后端资源的类型，枚举值：UHost -> 云主机；UNI -> 虚拟网卡；UPM -> 物理云主机；UHybrid->混合云主机；CUBE->Cube， IP->IP类型；默认值为UHost。报文转发模式不支持UHybrid、CUBE、IP
 	ResourceType *string `required:"true"`
 
-	// 所添加的后端服务器所在的子网，当ResourceType 为 UHybrid 时有效，且必填
+	// 所添加的后端服务器所在的子网，当ResourceType 为 UHybrid 或 IP 时有效，且必填
 	SubnetId *string `required:"false"`
 
-	// 负载均衡实例的ID
+	// 传统型负载均衡实例的ID
 	ULBId *string `required:"true"`
 
-	// 所添加的后端服务器所在的vpc，当ResourceType 为 UHybrid 时有效，且必填
+	// 所添加的后端服务器所在的vpc，当ResourceType 为 UHybrid 或 IP 时有效，且必填
 	VPCId *string `required:"false"`
 
 	// VServer实例的ID
@@ -57,7 +149,7 @@ type AllocateBackendRequest struct {
 type AllocateBackendResponse struct {
 	response.CommonBase
 
-	// 所添加的后端资源在ULB中的对象ID，（为ULB系统中使用，与资源自身ID无关），可用于 UpdateBackendAttribute/UpdateBackendAttributeBatch/ReleaseBackend
+	// 所添加的后端资源在CLB中的对象ID，（为CLB系统中使用，与资源自身ID无关），可用于 UpdateBackendAttribute/UpdateBackendAttributeBatch/ReleaseBackend
 	BackendId string
 }
 
@@ -76,7 +168,7 @@ func (c *ULBClient) NewAllocateBackendRequest() *AllocateBackendRequest {
 /*
 API: AllocateBackend
 
-添加ULB后端资源实例
+添加CLB后端资源实例
 */
 func (c *ULBClient) AllocateBackend(req *AllocateBackendRequest) (*AllocateBackendResponse, error) {
 	var err error
@@ -131,8 +223,6 @@ func (c *ULBClient) NewAllocateBackendBatchRequest() *AllocateBackendBatchReques
 
 /*
 API: AllocateBackendBatch
-
-
 */
 func (c *ULBClient) AllocateBackendBatch(req *AllocateBackendBatchRequest) (*AllocateBackendBatchResponse, error) {
 	var err error
@@ -152,16 +242,16 @@ func (c *ULBClient) AllocateBackendBatch(req *AllocateBackendBatchRequest) (*All
 type BindSSLRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// SSL证书的Id
 	SSLId *string `required:"true"`
 
-	// 所绑定ULB实例ID
+	// 所绑定CLB实例ID
 	ULBId *string `required:"true"`
 
 	// 所绑定VServer实例ID
@@ -188,7 +278,7 @@ func (c *ULBClient) NewBindSSLRequest() *BindSSLRequest {
 /*
 API: BindSSL
 
-将SSL证书绑定到VServer
+将SSL证书绑定到传统型负载均衡VServer
 */
 func (c *ULBClient) BindSSL(req *BindSSLRequest) (*BindSSLResponse, error) {
 	var err error
@@ -204,32 +294,243 @@ func (c *ULBClient) BindSSL(req *BindSSLRequest) (*BindSSLResponse, error) {
 	return &res, nil
 }
 
+/*
+CreateListenerParamStickinessConfig is request schema for complex param
+*/
+type CreateListenerParamStickinessConfig struct {
+
+	// （应用型专用）自定义Cookie。当StickinessType取值"UserDefined"时有效；限定字符长度：[0-255]
+	CookieName *string `required:"false"`
+
+	// 是否开启会话保持功能。应用型负载均衡实例基于Cookie实现；默认值为：false
+	Enabled *bool `required:"false"`
+
+	// （应用型专用）Cookie处理方式。限定枚举值："ServerInsert" / "UserDefined"；默认值为：“ServerInsert”
+	Type *string `required:"false"`
+}
+
+/*
+CreateListenerParamHealthCheckConfig is request schema for complex param
+*/
+type CreateListenerParamHealthCheckConfig struct {
+
+	// （应用型专用）HTTP检查域名
+	Domain *string `required:"false"`
+
+	// 是否开启健康检查功能。暂时不支持关闭。默认值为：true
+	Enabled *bool `required:"false"`
+
+	// （应用型专用）HTTP检查路径
+	Path *string `required:"false"`
+
+	// 健康检查方式。应用型限定取值：“Port”/"HTTP"，默认值：“Port”
+	Type *string `required:"false"`
+}
+
+// CreateListenerRequest is request schema for CreateListener action
+type CreateListenerRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// （应用型专用）服务器默认证书ID。仅HTTPS监听支持，且必填；暂时只支持最大长度为1
+	Certificates []string `required:"false"`
+
+	// （应用型专用）是否开启数据压缩功能。目前只支持使用gzip对特定文件类型进行压缩。默认值为：false
+	CompressionEnabled *bool `required:"false"`
+
+	// （应用型专用）是否开启HTTP/2特性。仅HTTPS监听支持开启；默认值为：false
+	HTTP2Enabled *bool `required:"false"`
+
+	//
+	HealthCheckConfig *CreateListenerParamHealthCheckConfig `required:"false"`
+
+	// 连接空闲超时时间。单位：秒。应用型限定取值：[1-86400]；默认值60
+	IdleTimeout *int `required:"false"`
+
+	// 监听器的监听端口。应用型限定取值：[1-65535]，默认值80
+	ListenerPort *int `required:"false"`
+
+	// 监听协议。应用型限定取值：“HTTP”/"HTTPS"，默认值“HTTP”
+	ListenerProtocol *string `required:"false"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 监听器的名称。限定字符长度：[1-255]；限定特殊字符，仅支持：“-”，“_”，“.”；默认值：listener
+	Name *string `required:"false"`
+
+	// （应用型专用）是否开启HTTP重定向到HTTPS。仅HTTP监听支持开启；默认值为：false
+	RedirectEnabled *bool `required:"false"`
+
+	// （应用型专用）重定向端口。限定取值：[1-65535]，默认值443
+	RedirectPort *int `required:"false"`
+
+	// 监听器的备注信息。限定字符长度：[0-255]
+	Remark *string `required:"false"`
+
+	// 负载均衡算法。应用型限定取值："Roundrobin"/"Source"/"WeightRoundrobin"/" Leastconn"/"Backup"，默认值"Roundrobin"
+	Scheduler *string `required:"false"`
+
+	// （应用型专用）安全策略组ID。仅HTTPS监听支持绑定；默认值“Default”，表示绑定原生策略
+	SecurityPolicyId *string `required:"false"`
+
+	//
+	StickinessConfig *CreateListenerParamStickinessConfig `required:"false"`
+}
+
+// CreateListenerResponse is response schema for CreateListener action
+type CreateListenerResponse struct {
+	response.CommonBase
+
+	// 监听器的ID
+	ListenerId string
+}
+
+// NewCreateListenerRequest will create request of CreateListener action.
+func (c *ULBClient) NewCreateListenerRequest() *CreateListenerRequest {
+	req := &CreateListenerRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateListener
+
+创建一个应用型负载均衡的监听器
+*/
+func (c *ULBClient) CreateListener(req *CreateListenerRequest) (*CreateListenerResponse, error) {
+	var err error
+	var res CreateListenerResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateListener", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// CreateLoadBalancerRequest is request schema for CreateLoadBalancer action
+type CreateLoadBalancerRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 付费模式。限定枚举值："Year" / "Month"/"Day"/"Dynamic"，默认值为：“Month”
+	ChargeType *string `required:"false"`
+
+	// 代金券code
+	CouponId *string `required:"false"`
+
+	// 负载均衡实例的IP协议。限定枚举值："IPv4" / "IPv6"/"DualStack"，默认值为：“IPv4”
+	IPVersion *string `required:"false"`
+
+	// 负载均衡实例的名称。默认值：lb；特殊字符仅支持：“-”，“_”，“.”；限定字符长度：[1-255]
+	Name *string `required:"false"`
+
+	// 购买的时长, 默认: 1; 0-> 购买至月末(0只在月付费有效，其余付费模式传0，实际收费按一个周期计费)
+	Quantity *int `required:"false"`
+
+	// 负载均衡实例的备注信息。限定字符长度：[0-255]
+	Remark *string `required:"false"`
+
+	// 负载均衡实例所属的子网资源ID。负载均衡实例的内网VIP和SNAT场景的源IP限定在该子网内；指定子网不影响添加后端服务节点时的范围，依旧是整个VPC下支持的资源
+	SubnetId *string `required:"true"`
+
+	// 负载均衡实例所属的业务组ID。默认值为“Default”； 传空则为Default业务组
+	Tag *string `required:"false"`
+
+	// 负载均衡实例的类型。限定枚举值："Application" / "Network"，默认值："Application"
+	Type *string `required:"false"`
+
+	// 负载均衡实例所属的VPC资源ID
+	VPCId *string `required:"true"`
+}
+
+// CreateLoadBalancerResponse is response schema for CreateLoadBalancer action
+type CreateLoadBalancerResponse struct {
+	response.CommonBase
+
+	// 负载均衡实例的ID
+	LoadBalancerId string
+}
+
+// NewCreateLoadBalancerRequest will create request of CreateLoadBalancer action.
+func (c *ULBClient) NewCreateLoadBalancerRequest() *CreateLoadBalancerRequest {
+	req := &CreateLoadBalancerRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateLoadBalancer
+
+创建一个应用型负载均衡实例
+*/
+func (c *ULBClient) CreateLoadBalancer(req *CreateLoadBalancerRequest) (*CreateLoadBalancerResponse, error) {
+	var err error
+	var res CreateLoadBalancerResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateLoadBalancer", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // CreatePolicyRequest is request schema for CreatePolicy action
 type CreatePolicyRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 内容转发策略应用的后端资源实例的ID，来源于 AllocateBackend 返回的 BackendId
+	// 内容转发策略应用的传统型负载均衡后端资源实例的ID，来源于 AllocateBackend 返回的 BackendId
 	BackendId []string `required:"true"`
+
+	// 内容转发规则中域名的匹配方式，默认与原本一致。枚举值：Regular，正则；Wildcard，泛域名
+	DomainMatchMode *string `required:"false"`
 
 	// 内容转发匹配字段
 	Match *string `required:"true"`
 
-	// 策略优先级，1-9999
+	// 策略优先级，1-9999；只针对路径规则生效
 	PolicyPriority *int `required:"false"`
 
 	// 内容转发匹配字段的类型
 	Type *string `required:"false"`
 
-	// 需要添加内容转发策略的负载均衡实例ID
+	// 需要添加内容转发策略的传统型负载均衡实例ID
 	ULBId *string `required:"true"`
 
-	// 需要添加内容转发策略的VServer实例ID
+	// 需要添加内容转发策略的传统型负载均衡VServer实例ID
 	VServerId *string `required:"true"`
 }
 
@@ -256,7 +557,7 @@ func (c *ULBClient) NewCreatePolicyRequest() *CreatePolicyRequest {
 /*
 API: CreatePolicy
 
-创建VServer内容转发策略
+传统型负载均衡创建VServer内容转发策略
 */
 func (c *ULBClient) CreatePolicy(req *CreatePolicyRequest) (*CreatePolicyResponse, error) {
 	var err error
@@ -462,7 +763,7 @@ type CreateULBRequest struct {
 	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// ULB 所属的业务组ID，如果不传则使用默认的业务组
+	// CLB 所属的业务组ID，如果不传则使用默认的业务组
 	BusinessId *string `required:"false"`
 
 	// 付费方式, 枚举值为: Year, 按年付费; Month, 按月付费; Dynamic, 按时付费
@@ -471,13 +772,13 @@ type CreateULBRequest struct {
 	// 防火墙ID，如果不传，则默认不绑定防火墙
 	FirewallId *string `required:"false"`
 
-	// 创建的ULB是否为内网模式
+	// 创建的CLB是否为内网模式
 	InnerMode *string `required:"false"`
 
-	// ULB 监听器类型，外网ULB默认RequestProxy，内网ULB默认PacketsTransmit。枚举值：RequestProxy，请求代理； PacketsTransmit ，报文转发。
+	// CLB 监听器类型，外网CLB默认RequestProxy，内网ULB默认PacketsTransmit。枚举值：RequestProxy，请求代理； PacketsTransmit ，报文转发。
 	ListenType *string `required:"false"`
 
-	// 创建的ULB是否为外网模式，默认即为外网模式
+	// 创建的CLB是否为外网模式，默认即为外网模式
 	OuterMode *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -486,7 +787,7 @@ type CreateULBRequest struct {
 	// 备注
 	Remark *string `required:"false"`
 
-	// ULB 所属的子网ID，如果不传则随机选择一个。
+	// CLB 所属的子网ID，如果不传则随机选择一个。
 	SubnetId *string `required:"false"`
 
 	// 业务组
@@ -495,7 +796,7 @@ type CreateULBRequest struct {
 	// 负载均衡的名字，默认值为“ULB”
 	ULBName *string `required:"false"`
 
-	// ULB所在的VPC的ID, 如果不传则使用默认的VPC
+	// CLB所在的VPC的ID。 如果不传则使用默认的VPC，若不传且无默认VPC则接口报错
 	VPCId *string `required:"false"`
 }
 
@@ -506,7 +807,7 @@ type CreateULBResponse struct {
 	// IPv6地址Id
 	IPv6AddressId string
 
-	// 负载均衡实例的Id
+	// 传统型负载均衡实例的Id
 	ULBId string
 }
 
@@ -525,7 +826,7 @@ func (c *ULBClient) NewCreateULBRequest() *CreateULBRequest {
 /*
 API: CreateULB
 
-创建负载均衡实例，可以选择内网或者外网
+创建传统型负载均衡负载均衡实例，可以选择内网或者外网
 */
 func (c *ULBClient) CreateULB(req *CreateULBRequest) (*CreateULBResponse, error) {
 	var err error
@@ -599,7 +900,7 @@ type CreateVServerRequest struct {
 	// 安全策略组ID，默认值'Default'
 	SecurityPolicyId *string `required:"false"`
 
-	// 负载均衡实例ID
+	// 传统型负载均衡实例ID
 	ULBId *string `required:"true"`
 
 	// VServer实例名称，默认为"VServer"
@@ -629,7 +930,7 @@ func (c *ULBClient) NewCreateVServerRequest() *CreateVServerRequest {
 /*
 API: CreateVServer
 
-创建VServer实例，定义监听的协议和端口以及负载均衡算法
+创建CLB的VServer实例，定义监听的协议和端口以及负载均衡算法
 */
 func (c *ULBClient) CreateVServer(req *CreateVServerRequest) (*CreateVServerResponse, error) {
 	var err error
@@ -645,23 +946,129 @@ func (c *ULBClient) CreateVServer(req *CreateVServerRequest) (*CreateVServerResp
 	return &res, nil
 }
 
+// DeleteListenerRequest is request schema for DeleteListener action
+type DeleteListenerRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 应用型负载均衡监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 应用型负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 是否关闭相关监听器的重定向功能。默认为false，即有其他监听器重定向到本监听器，则删除失败。为true时，会先关闭相关监听器的重定向功能，再删除本监听器。默认值为：false
+	RelatedRedirectDisabled *bool `required:"true"`
+}
+
+// DeleteListenerResponse is response schema for DeleteListener action
+type DeleteListenerResponse struct {
+	response.CommonBase
+}
+
+// NewDeleteListenerRequest will create request of DeleteListener action.
+func (c *ULBClient) NewDeleteListenerRequest() *DeleteListenerRequest {
+	req := &DeleteListenerRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteListener
+
+删除一个应用型负载均衡监听器
+*/
+func (c *ULBClient) DeleteListener(req *DeleteListenerRequest) (*DeleteListenerResponse, error) {
+	var err error
+	var res DeleteListenerResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteListener", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DeleteLoadBalancerRequest is request schema for DeleteLoadBalancer action
+type DeleteLoadBalancerRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 应用型负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+}
+
+// DeleteLoadBalancerResponse is response schema for DeleteLoadBalancer action
+type DeleteLoadBalancerResponse struct {
+	response.CommonBase
+}
+
+// NewDeleteLoadBalancerRequest will create request of DeleteLoadBalancer action.
+func (c *ULBClient) NewDeleteLoadBalancerRequest() *DeleteLoadBalancerRequest {
+	req := &DeleteLoadBalancerRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteLoadBalancer
+
+删除一个应用型负载均衡实例
+*/
+func (c *ULBClient) DeleteLoadBalancer(req *DeleteLoadBalancerRequest) (*DeleteLoadBalancerResponse, error) {
+	var err error
+	var res DeleteLoadBalancerResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteLoadBalancer", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DeletePolicyRequest is request schema for DeletePolicy action
 type DeletePolicyRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 【该字段已废弃，请谨慎使用】
 	GroupId *string `required:"false" deprecated:"true"`
 
-	// 内容转发策略ID
+	// CLB的内容转发策略ID
 	PolicyId *string `required:"true"`
 
-	// VServer 资源ID
+	// CLB的VServer 资源ID
 	VServerId *string `required:"false"`
 }
 
@@ -685,7 +1092,7 @@ func (c *ULBClient) NewDeletePolicyRequest() *DeletePolicyRequest {
 /*
 API: DeletePolicy
 
-删除内容转发策略
+删除传统型负载均衡的内容转发策略
 */
 func (c *ULBClient) DeletePolicy(req *DeletePolicyRequest) (*DeletePolicyResponse, error) {
 	var err error
@@ -741,6 +1148,62 @@ func (c *ULBClient) DeletePolicyGroup(req *DeletePolicyGroupRequest) (*DeletePol
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DeletePolicyGroup", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DeleteRuleRequest is request schema for DeleteRule action
+type DeleteRuleRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 应用型负载均衡监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 应用型负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 应用型负载均衡的转发规则的ID
+	RuleId *string `required:"true"`
+}
+
+// DeleteRuleResponse is response schema for DeleteRule action
+type DeleteRuleResponse struct {
+	response.CommonBase
+}
+
+// NewDeleteRuleRequest will create request of DeleteRule action.
+func (c *ULBClient) NewDeleteRuleRequest() *DeleteRuleRequest {
+	req := &DeleteRuleRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DeleteRule
+
+删除应用型负载均衡监听器的一条转发规则
+*/
+func (c *ULBClient) DeleteRule(req *DeleteRuleRequest) (*DeleteRuleResponse, error) {
+	var err error
+	var res DeleteRuleResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DeleteRule", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -852,16 +1315,16 @@ func (c *ULBClient) DeleteSecurityPolicy(req *DeleteSecurityPolicyRequest) (*Del
 type DeleteULBRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 删除ulb时是否释放绑定的EIP，false标识只解绑EIP，true表示会释放绑定的EIP，默认是false。Anycast IP 此参数无效
+	// 删除clb时是否释放绑定的EIP，false标识只解绑EIP，true表示会释放绑定的EIP，默认是false。Anycast IP 此参数无效
 	ReleaseEip *bool `required:"false"`
 
-	// 负载均衡实例的ID
+	// 传统型负载均衡实例的ID
 	ULBId *string `required:"true"`
 }
 
@@ -885,7 +1348,7 @@ func (c *ULBClient) NewDeleteULBRequest() *DeleteULBRequest {
 /*
 API: DeleteULB
 
-删除负载均衡实例
+删除传统型负载均衡实例
 */
 func (c *ULBClient) DeleteULB(req *DeleteULBRequest) (*DeleteULBResponse, error) {
 	var err error
@@ -905,16 +1368,16 @@ func (c *ULBClient) DeleteULB(req *DeleteULBRequest) (*DeleteULBResponse, error)
 type DeleteVServerRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 负载均衡实例的ID
+	// 传统型负载均衡实例的ID
 	ULBId *string `required:"true"`
 
-	// VServer实例的ID
+	// CLB下的VServer实例的ID
 	VServerId *string `required:"true"`
 }
 
@@ -938,7 +1401,7 @@ func (c *ULBClient) NewDeleteVServerRequest() *DeleteVServerRequest {
 /*
 API: DeleteVServer
 
-删除VServer实例
+删除CLB的VServer实例
 */
 func (c *ULBClient) DeleteVServer(req *DeleteVServerRequest) (*DeleteVServerResponse, error) {
 	var err error
@@ -1056,7 +1519,7 @@ func (c *ULBClient) NewDescribeSSLRequest() *DescribeSSLRequest {
 /*
 API: DescribeSSL
 
-获取SSL证书信息
+获取SSL证书信息，仅能获取SSL证书与传统型负载均衡监听器的绑定关系
 */
 func (c *ULBClient) DescribeSSL(req *DescribeSSLRequest) (*DescribeSSLResponse, error) {
 	var err error
@@ -1065,6 +1528,68 @@ func (c *ULBClient) DescribeSSL(req *DescribeSSLRequest) (*DescribeSSLResponse, 
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribeSSL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeSSLV2Request is request schema for DescribeSSLV2 action
+type DescribeSSLV2Request struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 数据分页值，默认为20
+	Limit *int `required:"false"`
+
+	// 数据偏移量，默认值为0
+	Offset *int `required:"false"`
+
+	// SSL证书的Id
+	SSLId *string `required:"false"`
+}
+
+// DescribeSSLV2Response is response schema for DescribeSSLV2 action
+type DescribeSSLV2Response struct {
+	response.CommonBase
+
+	// SSL证书详细信息，具体结构见SSLInfo
+	DataSet []SSLInfo
+
+	// 满足条件的SSL证书总数
+	TotalCount int
+}
+
+// NewDescribeSSLV2Request will create request of DescribeSSLV2 action.
+func (c *ULBClient) NewDescribeSSLV2Request() *DescribeSSLV2Request {
+	req := &DescribeSSLV2Request{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeSSLV2
+
+获取SSL证书信息，该接口可以同时获取SSL与传统型和应用型负载均衡监听器的绑定关系
+*/
+func (c *ULBClient) DescribeSSLV2(req *DescribeSSLV2Request) (*DescribeSSLV2Response, error) {
+	var err error
+	var res DescribeSSLV2Response
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeSSLV2", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1118,7 +1643,7 @@ func (c *ULBClient) NewDescribeSecurityPoliciesRequest() *DescribeSecurityPolici
 /*
 API: DescribeSecurityPolicies
 
-获取安全策略的信息
+获取安全策略的信息，绑定关系仅能获取安全策略与传统型负载均衡监听器的绑定关系
 */
 func (c *ULBClient) DescribeSecurityPolicies(req *DescribeSecurityPoliciesRequest) (*DescribeSecurityPoliciesResponse, error) {
 	var err error
@@ -1127,6 +1652,68 @@ func (c *ULBClient) DescribeSecurityPolicies(req *DescribeSecurityPoliciesReques
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribeSecurityPolicies", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeSecurityPoliciesV2Request is request schema for DescribeSecurityPoliciesV2 action
+type DescribeSecurityPoliciesV2Request struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 数据分页值
+	Limit *int `required:"false"`
+
+	// 数据偏移量
+	Offset *int `required:"false"`
+
+	// 安全策略ID
+	SecurityPolicyId *string `required:"false"`
+}
+
+// DescribeSecurityPoliciesV2Response is response schema for DescribeSecurityPoliciesV2 action
+type DescribeSecurityPoliciesV2Response struct {
+	response.CommonBase
+
+	// 安全策略列表，每项参数详见SecurityPolicyInfo
+	DataSet []SecurityPolicyInfo
+
+	// 满足条件的安全策略总数
+	TotalCount int
+}
+
+// NewDescribeSecurityPoliciesV2Request will create request of DescribeSecurityPoliciesV2 action.
+func (c *ULBClient) NewDescribeSecurityPoliciesV2Request() *DescribeSecurityPoliciesV2Request {
+	req := &DescribeSecurityPoliciesV2Request{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeSecurityPoliciesV2
+
+获取安全策略的信息，可以同时获取安全策略与传统型和应用性负载均衡监听器的绑定关系
+*/
+func (c *ULBClient) DescribeSecurityPoliciesV2(req *DescribeSecurityPoliciesV2Request) (*DescribeSecurityPoliciesV2Response, error) {
+	var err error
+	var res DescribeSecurityPoliciesV2Response
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeSecurityPoliciesV2", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1195,7 +1782,7 @@ type DescribeULBRequest struct {
 	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// ULB所属的业务组ID
+	// CLB所属的业务组ID
 	BusinessId *string `required:"false"`
 
 	// 数据分页值，默认为20
@@ -1204,13 +1791,13 @@ type DescribeULBRequest struct {
 	// 数据偏移量，默认为0
 	Offset *int `required:"false"`
 
-	// ULB所属的子网ID
+	// CLB所属的子网ID
 	SubnetId *string `required:"false"`
 
-	// 负载均衡实例的Id。 若指定则返回指定的负载均衡实例的信息； 若不指定则返回当前数据中心中所有的负载均衡实例的信息
+	// 传统型负载均衡实例的Id。 若指定则返回指定的传统型负载均衡实例的信息； 若不指定则返回当前数据中心中所有的传统型负载均衡实例的信息
 	ULBId *string `required:"false"`
 
-	// ULB所属的VPC
+	// CLB所属的VPC
 	VPCId *string `required:"false"`
 }
 
@@ -1218,10 +1805,10 @@ type DescribeULBRequest struct {
 type DescribeULBResponse struct {
 	response.CommonBase
 
-	// ULB列表，每项参数详见 ULBSet
+	// CLB列表，每项参数详见 ULBSet
 	DataSet []ULBSet
 
-	// 满足条件的ULB总数
+	// 满足条件的CLB总数
 	TotalCount int
 }
 
@@ -1240,7 +1827,7 @@ func (c *ULBClient) NewDescribeULBRequest() *DescribeULBRequest {
 /*
 API: DescribeULB
 
-获取ULB详细信息
+获取CLB详细信息
 */
 func (c *ULBClient) DescribeULB(req *DescribeULBRequest) (*DescribeULBResponse, error) {
 	var err error
@@ -1260,13 +1847,13 @@ func (c *ULBClient) DescribeULB(req *DescribeULBRequest) (*DescribeULBResponse, 
 type DescribeULBSimpleRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// ULB所属的业务组ID
+	// CLB所属的业务组ID
 	BusinessId *string `required:"false"`
 
 	// 数据分页值，默认为10000
@@ -1275,13 +1862,13 @@ type DescribeULBSimpleRequest struct {
 	// 数据偏移量，默认为0
 	Offset *int `required:"false"`
 
-	// ULB所属的子网ID
+	// CLB所属的子网ID
 	SubnetId *string `required:"false"`
 
-	// 负载均衡实例的Id。 若指定则返回指定的负载均衡实例的信息； 若不指定则返回当前数据中心中所有的负载均衡实例的信息
+	// 传统型负载均衡实例的Id。 若指定则返回指定的传统型负载均衡实例的信息； 若不指定则返回当前数据中心中所有的传统型负载均衡实例的信息
 	ULBId *string `required:"false"`
 
-	// ULB所属的VPC
+	// CLB所属的VPC
 	VPCId *string `required:"false"`
 }
 
@@ -1289,10 +1876,10 @@ type DescribeULBSimpleRequest struct {
 type DescribeULBSimpleResponse struct {
 	response.CommonBase
 
-	// ULB列表，每项参数详见 ULBSimpleSet
+	// CLB列表，每项参数详见 ULBSimpleSet
 	DataSet []ULBSimpleSet
 
-	// 满足条件的ULB总数
+	// 满足条件的CLB总数
 	TotalCount int
 }
 
@@ -1311,7 +1898,7 @@ func (c *ULBClient) NewDescribeULBSimpleRequest() *DescribeULBSimpleRequest {
 /*
 API: DescribeULBSimple
 
-获取ULB信息
+获取CLB信息
 */
 func (c *ULBClient) DescribeULBSimple(req *DescribeULBSimpleRequest) (*DescribeULBSimpleResponse, error) {
 	var err error
@@ -1343,10 +1930,10 @@ type DescribeVServerRequest struct {
 	// 数据偏移量
 	Offset *int `required:"false"`
 
-	// 负载均衡实例的Id
+	// 传统型负载均衡实例的Id
 	ULBId *string `required:"false"`
 
-	// VServer实例的Id；若指定则返回指定的VServer实例的信息； 若不指定则返回当前负载均衡实例下所有VServer的信息
+	// CLB下的VServer实例的Id；若指定则返回指定的VServer实例的信息； 若不指定则返回当前传统型负载均衡实例下所有VServer的信息
 	VServerId *string `required:"false"`
 }
 
@@ -1376,7 +1963,7 @@ func (c *ULBClient) NewDescribeVServerRequest() *DescribeVServerRequest {
 /*
 API: DescribeVServer
 
-获取ULB下的VServer的详细信息
+获取CLB下的VServer的详细信息
 */
 func (c *ULBClient) DescribeVServer(req *DescribeVServerRequest) (*DescribeVServerResponse, error) {
 	var err error
@@ -1396,16 +1983,16 @@ func (c *ULBClient) DescribeVServer(req *DescribeVServerRequest) (*DescribeVServ
 type ReleaseBackendRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 后端资源实例的ID(ULB后端ID，非资源自身ID)
+	// 后端资源实例的ID(CLB后端ID，非资源自身ID)
 	BackendId *string `required:"true"`
 
-	// 负载均衡实例的ID
+	// 传统型负载均衡实例的ID
 	ULBId *string `required:"true"`
 }
 
@@ -1429,7 +2016,7 @@ func (c *ULBClient) NewReleaseBackendRequest() *ReleaseBackendRequest {
 /*
 API: ReleaseBackend
 
-从VServer释放后端资源实例
+从CLB的VServer释放后端资源实例
 */
 func (c *ULBClient) ReleaseBackend(req *ReleaseBackendRequest) (*ReleaseBackendResponse, error) {
 	var err error
@@ -1438,6 +2025,62 @@ func (c *ULBClient) ReleaseBackend(req *ReleaseBackendRequest) (*ReleaseBackendR
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("ReleaseBackend", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// RemoveTargetsRequest is request schema for RemoveTargets action
+type RemoveTargetsRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 服务节点的标识ID。不超过20个；
+	Ids []string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+}
+
+// RemoveTargetsResponse is response schema for RemoveTargets action
+type RemoveTargetsResponse struct {
+	response.CommonBase
+}
+
+// NewRemoveTargetsRequest will create request of RemoveTargets action.
+func (c *ULBClient) NewRemoveTargetsRequest() *RemoveTargetsRequest {
+	req := &RemoveTargetsRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: RemoveTargets
+
+从应用型负载均衡监听器删除后端服务节点
+*/
+func (c *ULBClient) RemoveTargets(req *RemoveTargetsRequest) (*RemoveTargetsResponse, error) {
+	var err error
+	var res RemoveTargetsResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("RemoveTargets", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1479,7 +2122,7 @@ func (c *ULBClient) NewUnBindSecurityPolicyRequest() *UnBindSecurityPolicyReques
 /*
 API: UnBindSecurityPolicy
 
-批量解绑安全策略
+批量解绑安全策略，会同时解绑与传统型和应用型负载均衡监听器的绑定关系
 */
 func (c *ULBClient) UnBindSecurityPolicy(req *UnBindSecurityPolicyRequest) (*UnBindSecurityPolicyResponse, error) {
 	var err error
@@ -1499,19 +2142,19 @@ func (c *ULBClient) UnBindSecurityPolicy(req *UnBindSecurityPolicyRequest) (*UnB
 type UnbindSSLRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// SSL证书的Id
 	SSLId *string `required:"true"`
 
-	// 所绑定ULB实例ID
+	// 所绑定CLB实例ID
 	ULBId *string `required:"true"`
 
-	// 所绑定VServer实例ID
+	// CLB所绑定VServer实例ID
 	VServerId *string `required:"true"`
 }
 
@@ -1535,7 +2178,7 @@ func (c *ULBClient) NewUnbindSSLRequest() *UnbindSSLRequest {
 /*
 API: UnbindSSL
 
-从VServer解绑SSL证书
+从CLB下的VServer解绑SSL证书
 */
 func (c *ULBClient) UnbindSSL(req *UnbindSSLRequest) (*UnbindSSLResponse, error) {
 	var err error
@@ -1561,7 +2204,7 @@ type UpdateBackendAttributeRequest struct {
 	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 后端资源实例的ID(ULB后端ID，非资源自身ID)
+	// 后端资源实例的ID(CLB后端ID，非资源自身ID)
 	BackendId *string `required:"true"`
 
 	// 后端实例状态开关
@@ -1573,7 +2216,7 @@ type UpdateBackendAttributeRequest struct {
 	// 后端资源服务端口，取值范围[1-65535]
 	Port *int `required:"false"`
 
-	// 负载均衡资源ID
+	// 传统型负载均衡资源ID
 	ULBId *string `required:"true"`
 
 	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[1-100]，默认为1
@@ -1600,7 +2243,7 @@ func (c *ULBClient) NewUpdateBackendAttributeRequest() *UpdateBackendAttributeRe
 /*
 API: UpdateBackendAttribute
 
-更新ULB后端资源实例(服务节点)属性
+更新CLB后端资源实例(服务节点)属性
 */
 func (c *ULBClient) UpdateBackendAttribute(req *UpdateBackendAttributeRequest) (*UpdateBackendAttributeResponse, error) {
 	var err error
@@ -1616,32 +2259,314 @@ func (c *ULBClient) UpdateBackendAttribute(req *UpdateBackendAttributeRequest) (
 	return &res, nil
 }
 
+/*
+UpdateBackendBatchParamAttributes is request schema for complex param
+*/
+type UpdateBackendBatchParamAttributes struct {
+
+	// 后端资源实例的ID(ULB后端ID，非资源自身ID)
+	BackendId *string `required:"true"`
+
+	// 后端实例状态开关
+	Enabled *int `required:"false"`
+
+	// 是否为backup 0：主rs 1：备rs 默认为0
+	IsBackup *int `required:"false"`
+
+	// 后端资源服务端口，取值范围[1-65535]
+	Port *int `required:"false"`
+
+	// 所添加的后端RS权重（在加权轮询算法下有效），取值范围[0-100]，默认为1
+	Weight *int `required:"false"`
+}
+
+// UpdateBackendBatchRequest is request schema for UpdateBackendBatch action
+type UpdateBackendBatchRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	//
+	Attributes []UpdateBackendBatchParamAttributes `required:"false"`
+
+	// 负载均衡资源ID
+	ULBId *string `required:"true"`
+}
+
+// UpdateBackendBatchResponse is response schema for UpdateBackendBatch action
+type UpdateBackendBatchResponse struct {
+	response.CommonBase
+
+	// 返回ulb对每个rs的修改是否成功
+	BackendSet []BackendMsg
+}
+
+// NewUpdateBackendBatchRequest will create request of UpdateBackendBatch action.
+func (c *ULBClient) NewUpdateBackendBatchRequest() *UpdateBackendBatchRequest {
+	req := &UpdateBackendBatchRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateBackendBatch
+
+批量更新ULB后端资源实例(服务节点)属性
+*/
+func (c *ULBClient) UpdateBackendBatch(req *UpdateBackendBatchRequest) (*UpdateBackendBatchResponse, error) {
+	var err error
+	var res UpdateBackendBatchResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateBackendBatch", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+/*
+UpdateListenerAttributeParamHealthCheckConfig is request schema for complex param
+*/
+type UpdateListenerAttributeParamHealthCheckConfig struct {
+
+	// （应用型专用）HTTP检查域名
+	Domain *string `required:"false"`
+
+	// 是否开启健康检查功能。暂时不支持关闭；默认值为：true
+	Enabled *bool `required:"false"`
+
+	// （应用型专用）HTTP检查路径
+	Path *string `required:"false"`
+
+	// 健康检查方式。应用型限定取值：“Port”/"HTTP"；默认值：“Port”
+	Type *string `required:"false"`
+}
+
+/*
+UpdateListenerAttributeParamStickinessConfig is request schema for complex param
+*/
+type UpdateListenerAttributeParamStickinessConfig struct {
+
+	// （应用型专用）自定义Cookie。当StickinessType取值"UserDefined"时有效；限定字符长度：[0-255]
+	CookieName *string `required:"false"`
+
+	// 是否开启会话保持功能。应用型负载均衡实例基于Cookie实现，网络型负载均衡则基于源IP，保证在对应的空闲超时时间内，同一个源IP送到同一个服务节点。默认值为：false
+	Enabled *bool `required:"false"`
+
+	// （应用型专用）Cookie处理方式。限定枚举值："ServerInsert" / "UserDefined"，默认值为：“ServerInsert”
+	Type *string `required:"false"`
+}
+
+// UpdateListenerAttributeRequest is request schema for UpdateListenerAttribute action
+type UpdateListenerAttributeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// （应用型专用）服务器默认证书ID。仅HTTPS监听支持
+	Certificates []string `required:"false"`
+
+	// （应用型专用）是否开启数据压缩功能。目前只支持使用gzip对特定文件类型进行压缩
+	CompressionEnabled *bool `required:"false"`
+
+	// （应用型专用）是否开启HTTP/2特性。仅HTTPS监听支持开启
+	HTTP2Enabled *bool `required:"false"`
+
+	//
+	HealthCheckConfig *UpdateListenerAttributeParamHealthCheckConfig `required:"false"`
+
+	// 连接空闲超时时间。单位：秒。应用型限定取值：[1-86400]
+	IdleTimeout *int `required:"false"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 监听器的名称。限定字符长度：[1-255]；限定特殊字符，仅支持：-_.
+	Name *string `required:"false"`
+
+	// （应用型专用）是否开启HTTP重定向到HTTPS。仅HTTP监听支持开启
+	RedirectEnabled *bool `required:"false"`
+
+	// （应用型专用）重定向端口。限定取值：[1-65535]
+	RedirectPort *int `required:"false"`
+
+	// 监听器的备注信息。限定字符长度：[0-255]
+	Remark *string `required:"false"`
+
+	// 负载均衡算法。应用型限定取值："Roundrobin"/"Source"/"WeightRoundrobin"/" Leastconn"/"Backup"
+	Scheduler *string `required:"false"`
+
+	// （应用型专用）安全策略组ID。仅HTTPS监听支持绑定。“Default”，表示绑定原生策略
+	SecurityPolicyId *string `required:"false"`
+
+	//
+	StickinessConfig *UpdateListenerAttributeParamStickinessConfig `required:"false"`
+}
+
+// UpdateListenerAttributeResponse is response schema for UpdateListenerAttribute action
+type UpdateListenerAttributeResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateListenerAttributeRequest will create request of UpdateListenerAttribute action.
+func (c *ULBClient) NewUpdateListenerAttributeRequest() *UpdateListenerAttributeRequest {
+	req := &UpdateListenerAttributeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateListenerAttribute
+
+更新一个应用型负载均衡监听器的属性
+*/
+func (c *ULBClient) UpdateListenerAttribute(req *UpdateListenerAttributeRequest) (*UpdateListenerAttributeResponse, error) {
+	var err error
+	var res UpdateListenerAttributeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateListenerAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+/*
+UpdateLoadBalancerAttributeParamAccessLogConfig is request schema for complex param
+*/
+type UpdateLoadBalancerAttributeParamAccessLogConfig struct {
+
+	// （应用型专用）是否开启访问日志记录功能
+	Enabled *bool `required:"false"`
+
+	// （应用型专用）用于存储访问日志的bucket
+	US3BucketName *string `required:"false"`
+
+	// （应用型专用）上传访问日志到bucket所需的token
+	US3TokenId *string `required:"false"`
+}
+
+// UpdateLoadBalancerAttributeRequest is request schema for UpdateLoadBalancerAttribute action
+type UpdateLoadBalancerAttributeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	//
+	AccessLogConfig *UpdateLoadBalancerAttributeParamAccessLogConfig `required:"false"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 负载均衡实例的名称，不传则默认不修改
+	Name *string `required:"false"`
+
+	// 负载均衡实例的备注信息，不传则默认不修改，限定字符长度：[0-255]
+	Remark *string `required:"false"`
+
+	// 负载均衡实例所属的业务组ID，不传则默认不修改
+	Tag *string `required:"false"`
+}
+
+// UpdateLoadBalancerAttributeResponse is response schema for UpdateLoadBalancerAttribute action
+type UpdateLoadBalancerAttributeResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateLoadBalancerAttributeRequest will create request of UpdateLoadBalancerAttribute action.
+func (c *ULBClient) NewUpdateLoadBalancerAttributeRequest() *UpdateLoadBalancerAttributeRequest {
+	req := &UpdateLoadBalancerAttributeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateLoadBalancerAttribute
+
+更新一个应用型负载均衡实例的属性
+*/
+func (c *ULBClient) UpdateLoadBalancerAttribute(req *UpdateLoadBalancerAttributeRequest) (*UpdateLoadBalancerAttributeResponse, error) {
+	var err error
+	var res UpdateLoadBalancerAttributeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateLoadBalancerAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // UpdatePolicyRequest is request schema for UpdatePolicy action
 type UpdatePolicyRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 内容转发策略应用的后端资源实例的ID，来源于 AllocateBackend 返回的 BackendId，不传表示更新转发节点为空
+	// 内容转发策略应用的后端资源实例的ID（CLB的后端节点Id），来源于 AllocateBackend 返回的 BackendId，不传表示更新转发节点为空
 	BackendId []string `required:"false"`
+
+	// 内容转发规则中域名的匹配方式，默认与原本一致。枚举值：Regular，正则；Wildcard，泛域名
+	DomainMatchMode *string `required:"false"`
 
 	// 内容转发匹配字段
 	Match *string `required:"true"`
 
-	// 转发规则的ID，当Type为Default时，可以不传或为空
+	// 传统型负载均衡转发规则的ID，当Type为Default时，可以不传或为空
 	PolicyId *string `required:"false"`
+
+	// 策略优先级，1-9999；只针对路径规则生效
+	PolicyPriority *int `required:"false"`
 
 	// 内容转发匹配字段的类型，枚举值：Domain -> 域名转发规则；Path -> 路径转发规则；Default -> 默认转发规则，不传默认值Domain
 	Type *string `required:"false"`
 
-	// 需要添加内容转发策略的负载均衡实例ID
+	// 需要添加内容转发策略的传统型负载均衡实例ID
 	ULBId *string `required:"true"`
 
-	// 需要添加内容转发策略的VServer实例ID，只支持请求代理模式下，HTTP或HTTPS协议的VServer
+	// 需要添加内容转发策略的VServer实例ID，只支持请求代理模式下，HTTP或HTTPS协议的CLB下的VServer
 	VServerId *string `required:"true"`
 }
 
@@ -1668,7 +2593,7 @@ func (c *ULBClient) NewUpdatePolicyRequest() *UpdatePolicyRequest {
 /*
 API: UpdatePolicy
 
-更新内容转发规则，包括转发规则后的服务节点
+更新传统型负载均衡内容转发规则，包括转发规则后的服务节点
 */
 func (c *ULBClient) UpdatePolicy(req *UpdatePolicyRequest) (*UpdatePolicyResponse, error) {
 	var err error
@@ -1734,6 +2659,140 @@ func (c *ULBClient) UpdatePolicyGroupAttribute(req *UpdatePolicyGroupAttributeRe
 	return &res, nil
 }
 
+/*
+UpdateRuleAttributeParamRuleActionsForwardConfigTargets is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleActionsForwardConfigTargets struct {
+
+	// 转发的后端服务节点的标识ID。限定在监听器的服务节点池里；数组长度可以是0；转发服务节点配置的数组长度不为0时，Id必填
+	Id *string `required:"false"`
+
+	// 转发的后端服务节点的权重。仅监听器负载均衡算法是加权轮询是有效
+	Weight *int `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleActionsForwardConfig is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleActionsForwardConfig struct {
+
+	//
+	Targets []UpdateRuleAttributeParamRuleActionsForwardConfigTargets `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleConditionsPathConfig is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleConditionsPathConfig struct {
+
+	// 取值。暂时只支持数组长度为1；取值需符合相关条件；修改路径匹配时必填
+	Values []string `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleConditionsHostConfig is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleConditionsHostConfig struct {
+
+	// 匹配方式。限定枚举值："Regular"/"Wildcard"，默认值："Regular"
+	MatchMode *string `required:"false"`
+
+	// 取值。暂时只支持数组长度为1；取值需符合相关匹配方式的条件；修改域名匹配时必填
+	Values []string `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleActions is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleActions struct {
+
+	//
+	ForwardConfig *UpdateRuleAttributeParamRuleActionsForwardConfig `required:"false"`
+
+	// 动作类型。限定枚举值："Forward"；RuleActions数组长度不为0时必填
+	Type *string `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleConditions is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleConditions struct {
+
+	//
+	HostConfig *UpdateRuleAttributeParamRuleConditionsHostConfig `required:"false"`
+
+	//
+	PathConfig *UpdateRuleAttributeParamRuleConditionsPathConfig `required:"false"`
+
+	// 匹配条件类型。限定枚举值："Host"/"Path"；RuleConditions数组长度不为0时必填
+	Type *string `required:"false"`
+}
+
+// UpdateRuleAttributeRequest is request schema for UpdateRuleAttribute action
+type UpdateRuleAttributeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 当转发的服务节点为空时，规则是否忽略。默认转发规则不可更改
+	Pass *bool `required:"false"`
+
+	//
+	RuleActions []UpdateRuleAttributeParamRuleActions `required:"false"`
+
+	//
+	RuleConditions []UpdateRuleAttributeParamRuleConditions `required:"false"`
+
+	// 转发规则的ID
+	RuleId *string `required:"true"`
+}
+
+// UpdateRuleAttributeResponse is response schema for UpdateRuleAttribute action
+type UpdateRuleAttributeResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateRuleAttributeRequest will create request of UpdateRuleAttribute action.
+func (c *ULBClient) NewUpdateRuleAttributeRequest() *UpdateRuleAttributeRequest {
+	req := &UpdateRuleAttributeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateRuleAttribute
+
+更新应用型负载均衡监听器的一条转发规则的属性
+*/
+func (c *ULBClient) UpdateRuleAttribute(req *UpdateRuleAttributeRequest) (*UpdateRuleAttributeResponse, error) {
+	var err error
+	var res UpdateRuleAttributeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateRuleAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // UpdateSSLAttributeRequest is request schema for UpdateSSLAttribute action
 type UpdateSSLAttributeRequest struct {
 	request.CommonBase
@@ -1780,6 +2839,65 @@ func (c *ULBClient) UpdateSSLAttribute(req *UpdateSSLAttributeRequest) (*UpdateS
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("UpdateSSLAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// UpdateSSLBindingRequest is request schema for UpdateSSLBinding action
+type UpdateSSLBindingRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 所操作监听器实例ID（仅ListenerId传参时，将更换该监听器所有原证书为OldSSLId的绑定关系；LoadBalancerId和ListenerId都不传参则将更新该项目下所有原证书为OldSSLId的绑定关系；若LoadBalancerId与ListenerId皆有传参，则会强校验ULB与Vsserver的所属关系，将更换该ulb下vserver所绑定的OldSSLId为NewSSLId）（监听器指VServer或Listener）
+	ListenerId *string `required:"false"`
+
+	// 所操作LB实例ID（仅LoadBalancerId传参时，将更换该LB所有原证书为OldSSLId的绑定关系；LoadBalancerId和ListenerId都不传参则将更新该项目下所有原证书为OldSSLId的绑定关系）（LB指CLB或ALB）
+	LoadBalancerId *string `required:"false"`
+
+	// 监听器实例需要绑定的新的证书
+	NewSSLId *string `required:"true"`
+
+	// 监听器实例绑定的旧的证书
+	OldSSLId *string `required:"true"`
+}
+
+// UpdateSSLBindingResponse is response schema for UpdateSSLBinding action
+type UpdateSSLBindingResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateSSLBindingRequest will create request of UpdateSSLBinding action.
+func (c *ULBClient) NewUpdateSSLBindingRequest() *UpdateSSLBindingRequest {
+	req := &UpdateSSLBindingRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateSSLBinding
+
+将传统型或应用型负载均衡监听器绑定的证书更换为另一个证书，
+*/
+func (c *ULBClient) UpdateSSLBinding(req *UpdateSSLBindingRequest) (*UpdateSSLBindingResponse, error) {
+	var err error
+	var res UpdateSSLBindingResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateSSLBinding", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1846,26 +2964,115 @@ func (c *ULBClient) UpdateSecurityPolicy(req *UpdateSecurityPolicyRequest) (*Upd
 	return &res, nil
 }
 
+/*
+UpdateTargetsAttributeParamTargets is request schema for complex param
+*/
+type UpdateTargetsAttributeParamTargets struct {
+
+	// 服务节点是否启用。默认值true；要更新的Targets数组长度至少为1，不超过20个
+	Enabled *bool `required:"false"`
+
+	// 服务节点的标识ID。限定枚举值："UHost" / "UNI"/"UPM"/"IP"；要更新的Targets数组长度至少为1，不超过20个
+	Id *string `required:"false"`
+
+	// 服务节点是否为备节点。默认值false；要更新的Targets数组长度至少为1，不超过20个
+	IsBackup *bool `required:"false"`
+
+	// 服务节点的权重。限定取值：[1-100]，默认值1；仅在加权轮询算法时有效；要更新的Targets数组长度至少为1，不超过20个
+	Weight *int `required:"false"`
+}
+
+// UpdateTargetsAttributeRequest is request schema for UpdateTargetsAttribute action
+type UpdateTargetsAttributeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	//
+	Targets []UpdateTargetsAttributeParamTargets `required:"false"`
+}
+
+// UpdateTargetsAttributeResponse is response schema for UpdateTargetsAttribute action
+type UpdateTargetsAttributeResponse struct {
+	response.CommonBase
+}
+
+// NewUpdateTargetsAttributeRequest will create request of UpdateTargetsAttribute action.
+func (c *ULBClient) NewUpdateTargetsAttributeRequest() *UpdateTargetsAttributeRequest {
+	req := &UpdateTargetsAttributeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: UpdateTargetsAttribute
+
+更新应用型负载均衡监听器后端服务节点的属性
+*/
+func (c *ULBClient) UpdateTargetsAttribute(req *UpdateTargetsAttributeRequest) (*UpdateTargetsAttributeResponse, error) {
+	var err error
+	var res UpdateTargetsAttributeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("UpdateTargetsAttribute", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // UpdateULBAttributeRequest is request schema for UpdateULBAttribute action
 type UpdateULBAttributeRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"true"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// 名字
+	// 设置用于存储ulb日志的bucket
+	BucketName *string `required:"false"`
+
+	// 日志开关，1代表开启日志，0代表关闭日志，传1时必须同时传BucketName，TokenName与TokenId二选一
+	EnableLog *int `required:"false"`
+
+	// 是否开启WAF。枚举类型：Yes，No，默认值为No
+	IsWAFOn *string `required:"false"`
+
+	// 名字，不传则默认不修改
 	Name *string `required:"false"`
 
-	// 备注
+	// 备注，不传则默认不修改
 	Remark *string `required:"false"`
 
-	// 业务
+	// 业务，不传则默认不修改
 	Tag *string `required:"false"`
 
-	// ULB资源ID
+	// 用于指定上传到bucket所需的token，与TokenName选填其一即可
+	TokenId *string `required:"false"`
+
+	// 用于指定上传到bucket所需的token，与TokenId选填其一即可
+	TokenName *string `required:"false"`
+
+	// CLB资源ID
 	ULBId *string `required:"true"`
 }
 
@@ -1889,7 +3096,7 @@ func (c *ULBClient) NewUpdateULBAttributeRequest() *UpdateULBAttributeRequest {
 /*
 API: UpdateULBAttribute
 
-更新ULB名字业务组备注等属性字段
+更新CLB名字业务组备注等属性字段
 */
 func (c *ULBClient) UpdateULBAttribute(req *UpdateULBAttributeRequest) (*UpdateULBAttributeResponse, error) {
 	var err error
@@ -1957,10 +3164,10 @@ type UpdateVServerAttributeRequest struct {
 	// 安全策略组ID
 	SecurityPolicyId *string `required:"false"`
 
-	// 负载均衡实例ID
+	// 传统型负载均衡实例ID
 	ULBId *string `required:"true"`
 
-	// VServer实例ID
+	// 传统型负载均衡VServer实例ID
 	VServerId *string `required:"true"`
 
 	// VServer实例名称，若无此字段则不做修改
@@ -1987,7 +3194,7 @@ func (c *ULBClient) NewUpdateVServerAttributeRequest() *UpdateVServerAttributeRe
 /*
 API: UpdateVServerAttribute
 
-更新VServer实例属性
+更新传统型负载均衡VServer实例属性
 */
 func (c *ULBClient) UpdateVServerAttribute(req *UpdateVServerAttributeRequest) (*UpdateVServerAttributeResponse, error) {
 	var err error

@@ -96,11 +96,20 @@ type LineDetail struct {
 }
 
 /*
-UGAALine - UGAA加速线路
+UGAALine - PathX线路参数
 */
 type UGAALine struct {
 
-	// 子线路信息
+	// 加速国家区域国旗代码
+	FlagUnicodeFrom string
+
+	// 源站所在国家区域国旗代码
+	FlagUnicodeTo string
+
+	// 后付费线路上限带宽与保底带宽的固定比例，正整数
+	GuaranteedBandwidthProportion int
+
+	// 线路接入点信息
 	LineDetail []LineDetail
 
 	// 线路源
@@ -109,7 +118,7 @@ type UGAALine struct {
 	// 线路源中文名称
 	LineFromName string
 
-	// 线路计费Id
+	// 线路ID，可用于创建加速线路资源
 	LineId string
 
 	// 线路目的
@@ -118,8 +127,20 @@ type UGAALine struct {
 	// 线路目的中文名称
 	LineToName string
 
-	// 线路可售最大带宽
+	// 预付费线路可售最大带宽
 	MaxBandwidth int
+
+	// 后付费线路最大可售带宽
+	PostPaidMaxBandwidth int
+
+	// 加速国家区域所属地区代码
+	RegionCategoryFrom string
+
+	// 源站所在国家区域所属地区代码
+	RegionCategoryTo string
+
+	// true:支持SD-WAN线路；false:不支持SD-WAN线路
+	SupportPublicNetwork bool
 }
 
 /*
@@ -210,18 +231,6 @@ type SrcAreaInfo struct {
 }
 
 /*
-AccelerationAreaInfos - 加速大区信息
-*/
-type AccelerationAreaInfos struct {
-
-	// 加速区code
-	AccelerationArea string
-
-	// 加速节点信息
-	AccelerationNodes []SrcAreaInfo
-}
-
-/*
 ForwardTask - 全球统一接入转发端口任务信息
 */
 type ForwardTask struct {
@@ -246,6 +255,18 @@ type OutPublicIpInfo struct {
 
 	// 线路回源节点EIP
 	IP string
+}
+
+/*
+AccelerationAreaInfos - 加速大区信息
+*/
+type AccelerationAreaInfos struct {
+
+	// 加速区code
+	AccelerationArea string
+
+	// 加速节点信息
+	AccelerationNodes []SrcAreaInfo
 }
 
 /*
@@ -387,6 +408,27 @@ type UGAL4Forwarder struct {
 }
 
 /*
+UGAL7Forwarder - UGA实例 7层转发器信息
+*/
+type UGAL7Forwarder struct {
+
+	// 接入端口
+	Port int
+
+	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"]。TCP和UDP代表四层转发，其余为七层转发
+	Protocol string
+
+	// RSPort，源站监听端口
+	RSPort int
+
+	// 证书ID
+	SSLId string
+
+	// 证书名称
+	SSLName string
+}
+
+/*
 UPathSet - uga关联的upath信息
 */
 type UPathSet struct {
@@ -414,27 +456,6 @@ type UPathSet struct {
 
 	// UPath名字
 	UPathName string
-}
-
-/*
-UGAL7Forwarder - UGA实例 7层转发器信息
-*/
-type UGAL7Forwarder struct {
-
-	// 接入端口
-	Port int
-
-	// 转发协议，枚举值["TCP"，"UDP"，"HTTPHTTP"，"HTTPSHTTP"，"HTTPSHTTPS"]。TCP和UDP代表四层转发，其余为七层转发
-	Protocol string
-
-	// RSPort，源站监听端口
-	RSPort int
-
-	// 证书ID
-	SSLId string
-
-	// 证书名称
-	SSLName string
 }
 
 /*

@@ -16,11 +16,17 @@ type Client interface {
 
 // HttpClient used to send a real request via http to server
 type HttpClient struct {
+	transport http.RoundTripper
 }
 
 // NewHttpClient will create a new HttpClient instance
 func NewHttpClient() HttpClient {
 	return HttpClient{}
+}
+
+// NewHttpClientWithTransport will create a new HttpClient with specified transport
+func NewHttpClientWithTransport(transport http.RoundTripper) HttpClient {
+	return HttpClient{transport: transport}
 }
 
 // Send will send a real http request to remote server
@@ -49,6 +55,9 @@ func (c *HttpClient) buildHTTPClient(timeout time.Duration) (*http.Client, error
 	httpClient := http.Client{}
 	if timeout != 0 {
 		httpClient = http.Client{Timeout: timeout}
+	}
+	if c.transport != nil {
+		httpClient.Transport = c.transport
 	}
 	return &httpClient, nil
 }
