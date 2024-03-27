@@ -3,7 +3,7 @@ GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 
 .PHONY : install
 install:
-	go build -i -v -mod=vendor -o out/ucloud main.go
+	go build -v -mod=vendor -o out/ucloud main.go
 	cp out/ucloud /usr/local/bin
 
 .PHONY : build-darwin-amd64
