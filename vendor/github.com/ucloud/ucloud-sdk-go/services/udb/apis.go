@@ -643,17 +643,17 @@ type CreateUDBInstanceRequest struct {
 	// 磁盘空间(GB), 暂时支持20G - 32T
 	DiskSpace *int `required:"true"`
 
-	// 是否创建使用ipv6 资源， 默认为false， 或者不填， 创建ipv6为true
-	EnableIpV6 *bool `required:"false"`
-
 	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例 "HA": 高可用版UDB实例 默认是"Normal"
 	InstanceMode *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
 	InstanceType *string `required:"false" deprecated:"true"`
 
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 内存限制(MB)，目前支持以下几档 2000M/4000M/ 6000M/8000M/12000M/16000M/ 24000M/32000M/48000M/ 64000M/96000M/128000M/192000M/256000M/320000M
-	MemoryLimit *int `required:"true"`
+	MemoryLimit *int `required:"false"`
 
 	// 实例名称，至少6位
 	Name *string `required:"true"`
@@ -669,6 +669,9 @@ type CreateUDBInstanceRequest struct {
 
 	// SSD类型，可选值为"SATA"、“NVMe”，默认为“SATA”
 	SSDType *string `required:"false"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *string `required:"false"`
 
 	// 子网ID
 	SubnetId *string `required:"false"`
@@ -750,6 +753,9 @@ type CreateUDBInstanceByRecoveryRequest struct {
 	// 是否创建使用ipv6 资源， 默认为false， 或者不填， 创建ipv6为true
 	EnableIpV6 *bool `required:"false"`
 
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 实例名称，至少6位
 	Name *string `required:"true"`
 
@@ -758,6 +764,9 @@ type CreateUDBInstanceByRecoveryRequest struct {
 
 	// 恢复到某个时间点的时间戳(UTC时间格式，默认单位秒)
 	RecoveryTime *int `required:"true"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *int `required:"false"`
 
 	// 源实例的Id
 	SrcDBId *string `required:"true"`
@@ -1088,6 +1097,9 @@ type CreateUDBSlaveRequest struct {
 	// 是否锁主库，默认为true
 	IsLock *bool `required:"false"`
 
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 内存限制(MB)，目前支持以下几档 2000M/4000M/ 6000M/8000M/12000M/16000M/ 24000M/32000M/48000M/ 64000M/96000M/128000M/192000M/256000M/320000M
 	MemoryLimit *int `required:"false"`
 
@@ -1105,6 +1117,9 @@ type CreateUDBSlaveRequest struct {
 
 	// 仅对主为SSD型实例有效。 可选值"SATA","NVMe"
 	SSDType *string `required:"false"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *int `required:"false"`
 
 	// master实例的DBId,该值可以通过DescribeUDBInstance获取
 	SrcId *string `required:"true"`
@@ -1999,6 +2014,12 @@ type DescribeUDBInstancePriceRequest struct {
 	// 实例的部署类型。可选值为：Normal: 普通单点实例，Slave: 从库实例，HA: 高可用部署实例，默认是Normal
 	InstanceMode *string `required:"false"`
 
+	// UDB数据库机型: "SATA_SSD": "SSD机型" , "PCIE_SSD": "SSD高性能机型" , "Normal_Volume": "标准大容量机型", "SATA_SSD_Volume": "SSD大容量机型" , "PCIE_SSD_Volume": "SSD高性能大容量机型", "NVMe_SSD": "快杰机型"
+	InstanceType *string `required:"false"`
+
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 内存限制(MB)，单位为MB.目前支持：2000-96000
 	MemoryLimit *int `required:"true"`
 
@@ -2007,6 +2028,9 @@ type DescribeUDBInstancePriceRequest struct {
 
 	// SSD类型，可选值为"SATA"、“NVMe”. 默认为“SATA”
 	SSDType *string `required:"false"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *int `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
 	UseSSD *bool `required:"false" deprecated:"true"`
@@ -2120,6 +2144,9 @@ type DescribeUDBInstanceUpgradePriceRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
+	// CPU核数 快杰SQLServer升降级必传
+	CPU *int `required:"false"`
+
 	// 实例的Id
 	DBId *string `required:"true"`
 
@@ -2129,6 +2156,9 @@ type DescribeUDBInstanceUpgradePriceRequest struct {
 	// "SATA_SSD", "NVMe_SSD"
 	InstanceType *string `required:"false"`
 
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 内存限制(MB)
 	MemoryLimit *int `required:"true"`
 
@@ -2137,6 +2167,9 @@ type DescribeUDBInstanceUpgradePriceRequest struct {
 
 	// "SATA", "NVMe"
 	SSDType *string `required:"false"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *int `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
 	UseSSD *bool `required:"false" deprecated:"true"`
@@ -2872,6 +2905,118 @@ func (c *UDBClient) GetUDBClientConnNum(req *GetUDBClientConnNumRequest) (*GetUD
 	return &res, nil
 }
 
+// GetUDBInstanceSSLCertURLRequest is request schema for GetUDBInstanceSSLCertURL action
+type GetUDBInstanceSSLCertURLRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 实例ID
+	DBId *string `required:"true"`
+
+	// URL的过期时间，该值最小默认1小时，最大7天。（单位/秒）
+	ExpireTime *int `required:"false"`
+}
+
+// GetUDBInstanceSSLCertURLResponse is response schema for GetUDBInstanceSSLCertURL action
+type GetUDBInstanceSSLCertURLResponse struct {
+	response.CommonBase
+
+	// 内网链接
+	InnerUrl string
+
+	// 外网链接
+	InternetUrl string
+}
+
+// NewGetUDBInstanceSSLCertURLRequest will create request of GetUDBInstanceSSLCertURL action.
+func (c *UDBClient) NewGetUDBInstanceSSLCertURLRequest() *GetUDBInstanceSSLCertURLRequest {
+	req := &GetUDBInstanceSSLCertURLRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: GetUDBInstanceSSLCertURL
+
+获取SSL证书下载地址
+*/
+func (c *UDBClient) GetUDBInstanceSSLCertURL(req *GetUDBInstanceSSLCertURLRequest) (*GetUDBInstanceSSLCertURLResponse, error) {
+	var err error
+	var res GetUDBInstanceSSLCertURLResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("GetUDBInstanceSSLCertURL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// ListUDBUserTablesRequest is request schema for ListUDBUserTables action
+type ListUDBUserTablesRequest struct {
+	request.CommonBase
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// udb实例的ID
+	DBId *string `required:"true"`
+}
+
+// ListUDBUserTablesResponse is response schema for ListUDBUserTables action
+type ListUDBUserTablesResponse struct {
+	response.CommonBase
+
+	// 用户库表的集合
+	Tables []UDBDatabaseData
+}
+
+// NewListUDBUserTablesRequest will create request of ListUDBUserTables action.
+func (c *UDBClient) NewListUDBUserTablesRequest() *ListUDBUserTablesRequest {
+	req := &ListUDBUserTablesRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ListUDBUserTables
+
+查看udb实例所有的用户表集合 （只包括引擎为innodb和myisam的表）
+*/
+func (c *UDBClient) ListUDBUserTables(req *ListUDBUserTablesRequest) (*ListUDBUserTablesResponse, error) {
+	var err error
+	var res ListUDBUserTablesResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ListUDBUserTables", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ModifyUDBInstanceNameRequest is request schema for ModifyUDBInstanceName action
 type ModifyUDBInstanceNameRequest struct {
 	request.CommonBase
@@ -3043,6 +3188,65 @@ func (c *UDBClient) ModifyUDBInstanceRemarkName(req *ModifyUDBInstanceRemarkName
 	return &res, nil
 }
 
+// ModifyUDBInstanceSSLRequest is request schema for ModifyUDBInstanceSSL action
+type ModifyUDBInstanceSSLRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 实例ID
+	DBId *string `required:"true"`
+
+	// 是否开启SSL 1->关闭 2->开启
+	EnableSSL *int `required:"true"`
+
+	// SSL证书有效时间，1-5年，默认为1年
+	ValidTime *int `required:"false"`
+}
+
+// ModifyUDBInstanceSSLResponse is response schema for ModifyUDBInstanceSSL action
+type ModifyUDBInstanceSSLResponse struct {
+	response.CommonBase
+}
+
+// NewModifyUDBInstanceSSLRequest will create request of ModifyUDBInstanceSSL action.
+func (c *UDBClient) NewModifyUDBInstanceSSLRequest() *ModifyUDBInstanceSSLRequest {
+	req := &ModifyUDBInstanceSSLRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ModifyUDBInstanceSSL
+
+调整SSL的信息
+*/
+func (c *UDBClient) ModifyUDBInstanceSSL(req *ModifyUDBInstanceSSLRequest) (*ModifyUDBInstanceSSLResponse, error) {
+	var err error
+	var res ModifyUDBInstanceSSLResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ModifyUDBInstanceSSL", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // PromoteUDBInstanceToHARequest is request schema for PromoteUDBInstanceToHA action
 type PromoteUDBInstanceToHARequest struct {
 	request.CommonBase
@@ -3180,11 +3384,17 @@ type ResizeUDBInstanceRequest struct {
 	// UDB数据库机型: "Normal": "标准机型" ,  "SATA_SSD": "SSD机型" , "PCIE_SSD": "SSD高性能机型" ,  "Normal_Volume": "标准大容量机型",  "SATA_SSD_Volume": "SSD大容量机型" ,  "PCIE_SSD_Volume": "SSD高性能大容量机型"，“NVMe_SSD”：“快杰机型”
 	InstanceType *string `required:"false"`
 
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType *string `required:"false"`
+
 	// 内存限制(MB)，目前支持以下几档 2000M/4000M/ 6000M/8000M/ 12000M/16000M/ 24000M/32000M/ 48000M/64000M/96000M/128000M/192000M/256000M/320000M。
 	MemoryLimit *int `required:"true"`
 
 	// SSD类型，可选值为"SATA"、“NVMe”
 	SSDType *string `required:"false"`
+
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType *string `required:"false"`
 
 	// DB关闭状态下升降级，升降级后是否启动DB，默认为false
 	StartAfterUpgrade *bool `required:"false"`

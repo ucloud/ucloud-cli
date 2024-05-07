@@ -100,9 +100,6 @@ type UDBSlaveInstanceSet struct {
 	// DB实例过期时间，采用UTC计时时间戳
 	ExpiredTime int
 
-	// 获取该实例的IPv6地址
-	IPv6Address string
-
 	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例;"HA": 高可用版UDB实例
 	InstanceMode string
 
@@ -114,6 +111,9 @@ type UDBSlaveInstanceSet struct {
 
 	// DB实例日志文件大小，单位GB
 	LogFileSize float64
+
+	// 规格类型ID,当SpecificationType为1时有效
+	MachineType string
 
 	// 内存限制(MB)，默认根据配置机型
 	MemoryLimit int
@@ -139,10 +139,13 @@ type UDBSlaveInstanceSet struct {
 	// SSD类型，SATA/PCI-E
 	SSDType string
 
+	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
+	SpecificationType string
+
 	// 对mysql的slave而言是master的DBId，对master则为空， 对mongodb则是副本集id
 	SrcDBId string
 
-	// DB状态标记 Init：初始化中，Fail：安装失败，Starting：启动中，Running：运行，Shutdown：关闭中，Shutoff：已关闭，Delete：已删除，Upgrading：升级中，Promoting：提升为独库进行中，Recovering：恢复中，Recover fail：恢复失败,Remakeing:重做中,RemakeFail:重做失败
+	// DB状态标记 Init：初始化中，Fail：安装失败，Starting：启动中，Running：运行，Shutdown：关闭中，Shutoff：已关闭，Delete：已删除，Upgrading：升级中，Promoting：提升为独库进行中，Recovering：恢复中，Recover fail：恢复失败,Remakeing:重做中,RemakeFail:重做失败, MajorVersionUpgrading:小版本升级中，MajorVersionUpgradeWaitForSwitch:高可用等待切换，MajorVersionUpgradeFail
 	State string
 
 	// 子网ID
@@ -205,8 +208,14 @@ type UDBInstanceSet struct {
 	// 备份策略，一天内备份时间间隔，单位小时，默认24小时
 	BackupDuration int
 
+	// 默认的备份方式，nobackup表示不备份， snapshot 表示使用快照备份，logic 表示使用逻辑备份，xtrabackup表示使用物理备份。
+	BackupMethod string
+
 	// 跨可用区高可用备库所在可用区
 	BackupZone string
+
+	// CPU核数
+	CPU int
 
 	// 0区分大小写, 1不分区
 	CaseSensitivityParam int
@@ -244,6 +253,9 @@ type UDBInstanceSet struct {
 	// DB实例磁盘已使用空间，单位GB
 	DiskUsedSize float64
 
+	// mysql是否开启了SSL；1->未开启  2->开启
+	EnableSSL int
+
 	// DB实例过期时间，采用UTC计时时间戳
 	ExpiredTime int
 
@@ -261,6 +273,9 @@ type UDBInstanceSet struct {
 
 	// DB实例日志文件大小，单位GB
 	LogFileSize float64
+
+	// 数据库机型规格
+	MachineType string
 
 	// 内存限制(MB)，默认根据配置机型
 	MemoryLimit int
@@ -283,10 +298,16 @@ type UDBInstanceSet struct {
 	// SSD类型，SATA/PCI-E/NVMe
 	SSDType string
 
+	// SSL到期时间
+	SSLExpirationTime int
+
+	// 是否使用可选cpu类型规格
+	SpecificationType int
+
 	// 对mysql的slave而言是master的DBId，对master则为空， 对mongodb则是副本集id
 	SrcDBId string
 
-	// DB状态标记 Init：初始化中，Fail：安装失败，Starting：启动中，Running：运行，Shutdown：关闭中，Shutoff：已关闭，Delete：已删除，Upgrading：升级中，Promoting：提升为独库进行中，Recovering：恢复中，Recover fail：恢复失败, Remakeing:重做中,RemakeFail:重做失败，VersionUpgrading:小版本升级中，VersionUpgradeWaitForSwitch:高可用等待切换，VersionUpgradeFail：小版本升级失败
+	// DB状态标记 Init：初始化中，Fail：安装失败，Starting：启动中，Running：运行，Shutdown：关闭中，Shutoff：已关闭，Delete：已删除，Upgrading：升级中，Promoting：提升为独库进行中，Recovering：恢复中，Recover fail：恢复失败, Remakeing:重做中,RemakeFail:重做失败，VersionUpgrading:小版本升级中，VersionUpgradeWaitForSwitch:高可用等待切换，VersionUpgradeFail：小版本升级失败，UpdatingSSL：修改SSL中，UpdateSSLFail：修改SSL失败,MajorVersionUpgrading:小版本升级中，MajorVersionUpgradeWaitForSwitch:高可用等待切换，MajorVersionUpgradeFail
 	State string
 
 	// 子网ID
@@ -486,4 +507,31 @@ type ConnNumMap struct {
 
 	// 该Ip连接数
 	Num int
+}
+
+/*
+TableData - 用户表详情
+*/
+type TableData struct {
+
+	// 表所属的库名称
+	DBName string
+
+	// 表的引擎（innodb, myisam）
+	Engine string
+
+	// 表名称
+	TableName string
+}
+
+/*
+UDBDatabaseData - 某个库的详细信息
+*/
+type UDBDatabaseData struct {
+
+	// 数据库名称
+	DBName string
+
+	// 该库所有的表集合
+	TableDataSet []TableData
 }

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
@@ -283,7 +284,7 @@ func NewCmdUDBDelete(out io.Writer) *cobra.Command {
 			}
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
-				any, err := describeUdbByID(id)
+				any, err := describeUdbByID(id, nil)
 				if err != nil {
 					base.HandleError(err)
 					continue
@@ -484,7 +485,7 @@ func NewCmdUDBResize(out io.Writer) *cobra.Command {
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
 				req.DBId = &id
-				any, err := describeUdbByID(id)
+				any, err := describeUdbByID(id, nil)
 				if err != nil {
 					base.HandleError(err)
 					continue
@@ -616,7 +617,7 @@ func NewCmdUDBRestore(out io.Writer) *cobra.Command {
 			req.RecoveryTime = sdk.Int(int(t.Unix()))
 			req.SrcDBId = sdk.String(base.PickResourceID(*req.SrcDBId))
 			if diskType == "" {
-				any, err := describeUdbByID(*req.SrcDBId)
+				any, err := describeUdbByID(*req.SrcDBId, nil)
 				if err != nil {
 					base.HandleError(err)
 					return
@@ -777,7 +778,7 @@ func NewCmdUDBPromoteToHA(out io.Writer) *cobra.Command {
 					continue
 				}
 				poller.Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{status.UDB_TOBE_SWITCH, status.UDB_FAIL})
-				any, err := describeUdbByID(id)
+				any, err := describeUdbByID(id, nil)
 				if err != nil {
 					fmt.Fprintf(out, "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
 					continue
@@ -882,8 +883,11 @@ func getUDBList(states []string, dbType, project, region, zone string) ([]udb.UD
 	return list, nil
 }
 
-func describeUdbByID(udbID string) (interface{}, error) {
+func describeUdbByID(udbID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeUDBInstanceRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.DBId = sdk.String(udbID)
 	resp, err := base.BizClient.DescribeUDBInstance(req)
 	if err != nil {

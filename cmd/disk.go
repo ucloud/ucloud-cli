@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-sdk-go/private/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/services/udisk"
@@ -340,7 +341,7 @@ func NewCmdDiskDetach(out io.Writer) *cobra.Command {
 }
 
 func detachUdisk(async bool, udiskID string, out io.Writer) error {
-	any, err := describeUdiskByID(udiskID)
+	any, err := describeUdiskByID(udiskID, nil)
 	if err != nil {
 		return err
 	}
@@ -579,7 +580,7 @@ func NewCmdDiskRestore(out io.Writer) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, snapshotID := range *snapshotIDs {
 				snapshotID = base.PickResourceID(snapshotID)
-				any, err := describeSnapshotByID(snapshotID)
+				any, err := describeSnapshotByID(snapshotID, nil)
 				if err != nil {
 					base.HandleError(err)
 					continue
@@ -739,8 +740,11 @@ func getDiskList(states []string, project, region, zone string) []string {
 	return list
 }
 
-func describeUdiskByID(udiskID string) (interface{}, error) {
+func describeUdiskByID(udiskID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeUDiskRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.UDiskId = sdk.String(udiskID)
 	req.Limit = sdk.Int(50)
 	resp, err := base.BizClient.DescribeUDisk(req)
@@ -774,8 +778,11 @@ func getSnapshotList(states []string, project, region, zone string) []string {
 	return list
 }
 
-func describeSnapshotByID(snapshotID string) (interface{}, error) {
+func describeSnapshotByID(snapshotID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeSnapshotRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.SnapshotIds = append(req.SnapshotIds, snapshotID)
 	req.Limit = sdk.Int(50)
 	resp, err := base.BizClient.DescribeSnapshot(req)

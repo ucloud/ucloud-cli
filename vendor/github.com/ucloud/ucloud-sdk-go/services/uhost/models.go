@@ -27,21 +27,6 @@ type KeyPair struct {
 }
 
 /*
-Collection - CPU和内存可支持的规格
-*/
-type Collection struct {
-
-	// CPU规格
-	Cpu int
-
-	// 内存规格
-	Memory []int
-
-	// CPU和内存规格只能在列出来的CPU平台支持
-	MinimalCpuPlatform []string
-}
-
-/*
 FeatureModes - 可以支持的模式类别
 */
 type FeatureModes struct {
@@ -93,42 +78,18 @@ type BootDiskInfo struct {
 }
 
 /*
-MachineSizes - GPU、CPU和内存信息
+Collection - CPU和内存可支持的规格
 */
-type MachineSizes struct {
+type Collection struct {
 
-	// CPU和内存可支持的规格
-	Collection []Collection
+	// CPU规格
+	Cpu int
 
-	// Gpu为GPU可支持的规格即GPU颗数，非GPU机型，Gpu为0
-	Gpu int
-}
+	// 内存规格
+	Memory []int
 
-/*
-CpuPlatforms - CPU平台信息
-*/
-type CpuPlatforms struct {
-
-	// 返回AMD的CPU平台信息，例如：AMD: ['Amd/Epyc2']
-	Amd []string
-
-	// 返回Arm的CPU平台信息，例如：Ampere: ['Ampere/Altra']
-	Ampere []string
-
-	// 返回Intel的CPU平台信息，例如：Intel: ['Intel/CascadeLake','Intel/CascadelakeR','Intel/IceLake']
-	Intel []string
-}
-
-/*
-Performance - GPU的性能指标
-*/
-type Performance struct {
-
-	// 交互展示参数，可忽略
-	Rate int
-
-	// 值，单位是TFlops
-	Value float64
+	// CPU和内存规格只能在列出来的CPU平台支持
+	MinimalCpuPlatform []string
 }
 
 /*
@@ -168,6 +129,45 @@ type Disks struct {
 
 	// 磁盘介质类别信息，磁盘主要分类如下：云盘|cloudDisk、普通本地盘|normalLocalDisk和SSD本地盘|ssdLocalDisk。
 	Name string
+}
+
+/*
+CpuPlatforms - CPU平台信息
+*/
+type CpuPlatforms struct {
+
+	// 返回AMD的CPU平台信息，例如：AMD: ['Amd/Epyc2']
+	Amd []string
+
+	// 返回Arm的CPU平台信息，例如：Ampere: ['Ampere/Altra']
+	Ampere []string
+
+	// 返回Intel的CPU平台信息，例如：Intel: ['Intel/CascadeLake','Intel/CascadelakeR','Intel/IceLake']
+	Intel []string
+}
+
+/*
+Performance - GPU的性能指标
+*/
+type Performance struct {
+
+	// 交互展示参数，可忽略
+	Rate int
+
+	// 值，单位是TFlops
+	Value float64
+}
+
+/*
+MachineSizes - GPU、CPU和内存信息
+*/
+type MachineSizes struct {
+
+	// CPU和内存可支持的规格
+	Collection []Collection
+
+	// Gpu为GPU可支持的规格即GPU颗数，非GPU机型，Gpu为0
+	Gpu int
 }
 
 /*
@@ -214,7 +214,7 @@ type UHostImageSet struct {
 	// 创建时间，格式为Unix时间戳
 	CreateTime int
 
-	// 特殊状态标识， 目前包含NetEnhnced（网络增强1.0）, NetEnhanced_Ultra（网络增强2.0）, HotPlug(热升级), GPU（GPU镜像）,CloudInit, IPv6（支持IPv6网络）,RssdAttachable（支持RSSD云盘）,Vgpu_AMD（支持AMD的vgpu）,Vgpu_NVIDIA（支持NVIDIA的vgpu）,Aarch64_Type（支持arm64架构）
+	// 特殊状态标识，目前包含NetEnhnced（网络增强1.0）, NetEnhanced_Ultra（网络增强2.0）, NetEnhanced_Extreme（网络增强3.0）, HotPlug(热升级), GPU（GPU镜像）,CloudInit, IPv6（支持IPv6网络）,RssdAttachable（支持RSSD云盘）,Vgpu_AMD（支持AMD的vgpu）,Vgpu_NVIDIA（支持NVIDIA的vgpu）,Aarch64_Type（支持arm64架构）
 	Features []string
 
 	// 行业镜像类型（仅行业镜像将返回这个值）
@@ -300,15 +300,27 @@ type IsolationGroup struct {
 }
 
 /*
-UHostKeyPair - 主机密钥信息
+SpotAttribute - 竞价实例属性
 */
-type UHostKeyPair struct {
+type SpotAttribute struct {
 
-	// 密钥对ID
-	KeyPairId string
+	// 回收时间
+	RecycleTime int
+}
 
-	// 主机密钥对状态，Normal 正常，Deleted 删除
-	KeyPairState string
+/*
+UDSetUDHostAttribute - 私有专区对应的宿主机属性
+*/
+type UDSetUDHostAttribute struct {
+
+	// 是否绑定私有专区宿主机
+	HostBinding bool
+
+	// 私有专区宿主机
+	UDHostId string
+
+	// 私有专区
+	UDSetId string
 }
 
 /*
@@ -345,12 +357,15 @@ type UHostDiskSet struct {
 }
 
 /*
-SpotAttribute - 竞价实例属性
+UHostKeyPair - 主机密钥信息
 */
-type SpotAttribute struct {
+type UHostKeyPair struct {
 
-	// 回收时间
-	RecycleTime int
+	// 密钥对ID
+	KeyPairId string
+
+	// 主机密钥对状态，Normal 正常，Deleted 删除
+	KeyPairState string
 }
 
 /*
@@ -390,21 +405,6 @@ type UHostIPSet struct {
 
 	// 当前EIP的权重。权重最大的为当前的出口IP。
 	Weight int
-}
-
-/*
-UDSetUDHostAttribute - 私有专区对应的宿主机属性
-*/
-type UDSetUDHostAttribute struct {
-
-	// 是否绑定私有专区宿主机
-	HostBinding bool
-
-	// 私有专区宿主机
-	UDHostId string
-
-	// 私有专区
-	UDSetId string
 }
 
 /*
