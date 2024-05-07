@@ -19,6 +19,7 @@ import (
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
@@ -335,11 +336,12 @@ var RegionLabel = map[string]string{
 
 // Poller 轮询器
 type Poller struct {
-	stateFields   []string
-	DescribeFunc  func(string, string, string, string) (interface{}, error)
-	Out           io.Writer
-	Timeout       time.Duration
-	SdescribeFunc func(string) (interface{}, error)
+	stateFields                   []string
+	DescribeFunc                  func(string, string, string, string) (interface{}, error)
+	Out                           io.Writer
+	Timeout                       time.Duration
+	SdescribeFunc                 func(string, *request.CommonBase) (interface{}, error)
+	SdescribeWithCommonConfigFunc func(string) (interface{}, error)
 }
 
 type pollResult struct {
@@ -349,12 +351,12 @@ type pollResult struct {
 }
 
 // Sspoll 简化版, 支持并发
-func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block) *pollResult {
+func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block, commonBase *request.CommonBase) *pollResult {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
 		Refresh: func() (interface{}, string, error) {
-			inst, err := p.SdescribeFunc(resourceID)
+			inst, err := p.SdescribeFunc(resourceID, commonBase)
 			if err != nil {
 				return nil, "", err
 			}
@@ -423,7 +425,7 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
 		Refresh: func() (interface{}, string, error) {
-			inst, err := p.SdescribeFunc(resourceID)
+			inst, err := p.SdescribeFunc(resourceID, nil)
 			if err != nil {
 				return nil, "", err
 			}
@@ -543,7 +545,7 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 }
 
 // NewSpoller simple
-func NewSpoller(describeFunc func(string) (interface{}, error), out io.Writer) *Poller {
+func NewSpoller(describeFunc func(string, *request.CommonBase) (interface{}, error), out io.Writer) *Poller {
 	return &Poller{
 		SdescribeFunc: describeFunc,
 		Out:           out,

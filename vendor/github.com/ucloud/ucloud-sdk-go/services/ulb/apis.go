@@ -623,6 +623,140 @@ func (c *ULBClient) CreatePolicyGroup(req *CreatePolicyGroupRequest) (*CreatePol
 	return &res, nil
 }
 
+/*
+CreateRuleParamRuleActionsForwardConfigTargets is request schema for complex param
+*/
+type CreateRuleParamRuleActionsForwardConfigTargets struct {
+
+	// 转发的后端服务节点的标识ID。限定在监听器的服务节点池里；数组长度可以是0；转发服务节点配置的数组长度不为0时，Id必填
+	Id *string `required:"false"`
+
+	// 转发的后端服务节点的权重。仅监听器负载均衡算法是加权轮询是有效
+	Weight *int `required:"false"`
+}
+
+/*
+CreateRuleParamRuleActionsForwardConfig is request schema for complex param
+*/
+type CreateRuleParamRuleActionsForwardConfig struct {
+
+	//
+	Targets []CreateRuleParamRuleActionsForwardConfigTargets `required:"false"`
+}
+
+/*
+CreateRuleParamRuleConditionsPathConfig is request schema for complex param
+*/
+type CreateRuleParamRuleConditionsPathConfig struct {
+
+	// 取值。暂时只支持数组长度为1；取值需符合相关条件；路径匹配时必填
+	Values []string `required:"false"`
+}
+
+/*
+CreateRuleParamRuleConditionsHostConfig is request schema for complex param
+*/
+type CreateRuleParamRuleConditionsHostConfig struct {
+
+	// 匹配方式。限定枚举值："Regular"/"Wildcard"，默认值："Regular"
+	MatchMode *string `required:"false"`
+
+	// 取值。暂时只支持数组长度为1；取值需符合相关匹配方式的条件；域名匹配时必填
+	Values []string `required:"false"`
+}
+
+/*
+CreateRuleParamRuleActions is request schema for complex param
+*/
+type CreateRuleParamRuleActions struct {
+
+	//
+	ForwardConfig *CreateRuleParamRuleActionsForwardConfig `required:"false"`
+
+	// 动作类型。限定枚举值："Forward"；RuleActions暂支持长度为1
+	Type *string `required:"true"`
+}
+
+/*
+CreateRuleParamRuleConditions is request schema for complex param
+*/
+type CreateRuleParamRuleConditions struct {
+
+	//
+	HostConfig *CreateRuleParamRuleConditionsHostConfig `required:"false"`
+
+	//
+	PathConfig *CreateRuleParamRuleConditionsPathConfig `required:"false"`
+
+	// 匹配条件类型。限定枚举值："Host"/"Path"
+	Type *string `required:"true"`
+}
+
+// CreateRuleRequest is request schema for CreateRule action
+type CreateRuleRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 当转发的服务节点为空时，规则是否忽略。默认值true
+	Pass *bool `required:"false"`
+
+	//
+	RuleActions []CreateRuleParamRuleActions `required:"false"`
+
+	//
+	RuleConditions []CreateRuleParamRuleConditions `required:"false"`
+}
+
+// CreateRuleResponse is response schema for CreateRule action
+type CreateRuleResponse struct {
+	response.CommonBase
+
+	// 转发规则的ID
+	RuleId string
+}
+
+// NewCreateRuleRequest will create request of CreateRule action.
+func (c *ULBClient) NewCreateRuleRequest() *CreateRuleRequest {
+	req := &CreateRuleRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateRule
+
+给应用型负载均衡监听器创建一条转发规则
+*/
+func (c *ULBClient) CreateRule(req *CreateRuleRequest) (*CreateRuleResponse, error) {
+	var err error
+	var res CreateRuleResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateRule", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // CreateSSLRequest is request schema for CreateSSL action
 type CreateSSLRequest struct {
 	request.CommonBase
@@ -1417,6 +1551,145 @@ func (c *ULBClient) DeleteVServer(req *DeleteVServerRequest) (*DeleteVServerResp
 	return &res, nil
 }
 
+// DescribeListenersRequest is request schema for DescribeListeners action
+type DescribeListenersRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 数据分页值，默认为100
+	Limit *int `required:"false"`
+
+	// 应用型负载均衡监听器的ID。若指定ListenerId，则忽略LoadBalancerId。ListenId和LoadBalancerId必选其一
+	ListenerId *string `required:"false"`
+
+	// 应用型负载均衡实例的ID。未指定ListenId，则描述指定的LoadBalancerId下的所有监听器。
+	LoadBalancerId *string `required:"false"`
+
+	// 数据偏移量，默认为0
+	Offset *int `required:"false"`
+}
+
+// DescribeListenersResponse is response schema for DescribeListeners action
+type DescribeListenersResponse struct {
+	response.CommonBase
+
+	// 负载均衡监听器信息
+	Listeners []Listener
+
+	// 满足条件的负载均衡监听器总数
+	TotalCount int
+}
+
+// NewDescribeListenersRequest will create request of DescribeListeners action.
+func (c *ULBClient) NewDescribeListenersRequest() *DescribeListenersRequest {
+	req := &DescribeListenersRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeListeners
+
+描述一个指定的监听器或者一个应用型负载均衡实例下的所有监听器
+*/
+func (c *ULBClient) DescribeListeners(req *DescribeListenersRequest) (*DescribeListenersResponse, error) {
+	var err error
+	var res DescribeListenersResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeListeners", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeLoadBalancersRequest is request schema for DescribeLoadBalancers action
+type DescribeLoadBalancersRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 数据分页值，默认为100
+	Limit *string `required:"false"`
+
+	// 负载均衡实例的ID。必须是同一类型的实例，若指定了实例ID，将忽略除Type外的其他过滤条件
+	LoadBalancerIds []string `required:"false"`
+
+	// 数据偏移量，默认为0
+	Offset *string `required:"false"`
+
+	// 是否获取监听器和后端服务节点的详细信息。默认值：false
+	ShowDetail *bool `required:"false"`
+
+	// 限定所在的子网
+	SubnetId *string `required:"false"`
+
+	// 负载均衡实例的类型。限定枚举值："Application" / "Network"，默认值："Application"
+	Type *string `required:"false"`
+
+	// 限定所在的VPC
+	VPCId *string `required:"false"`
+}
+
+// DescribeLoadBalancersResponse is response schema for DescribeLoadBalancers action
+type DescribeLoadBalancersResponse struct {
+	response.CommonBase
+
+	// 负载均衡实例信息
+	LoadBalancers []LoadBalancer
+
+	// 满足条件的负载均衡实例总数
+	TotalCount int
+}
+
+// NewDescribeLoadBalancersRequest will create request of DescribeLoadBalancers action.
+func (c *ULBClient) NewDescribeLoadBalancersRequest() *DescribeLoadBalancersRequest {
+	req := &DescribeLoadBalancersRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeLoadBalancers
+
+描述特定条件下的应用型负载均衡实例或者全部的应用型负载均衡实例
+*/
+func (c *ULBClient) DescribeLoadBalancers(req *DescribeLoadBalancersRequest) (*DescribeLoadBalancersResponse, error) {
+	var err error
+	var res DescribeLoadBalancersResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeLoadBalancers", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // DescribePolicyGroupRequest is request schema for DescribePolicyGroup action
 type DescribePolicyGroupRequest struct {
 	request.CommonBase
@@ -1466,6 +1739,65 @@ func (c *ULBClient) DescribePolicyGroup(req *DescribePolicyGroupRequest) (*Descr
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribePolicyGroup", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribeRulesRequest is request schema for DescribeRules action
+type DescribeRulesRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 监听器的ID
+	ListenerId *string `required:"true"`
+
+	// 应用型负载均衡实例的ID
+	LoadBalancerId *string `required:"true"`
+
+	// 应用型负载均衡转发规则的ID。指定RuleId，则只描述该规则
+	RuleId *string `required:"false"`
+}
+
+// DescribeRulesResponse is response schema for DescribeRules action
+type DescribeRulesResponse struct {
+	response.CommonBase
+
+	// 转发规则信息
+	Rules []Rule
+}
+
+// NewDescribeRulesRequest will create request of DescribeRules action.
+func (c *ULBClient) NewDescribeRulesRequest() *DescribeRulesRequest {
+	req := &DescribeRulesRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribeRules
+
+描述一条指定的转发规则或者一个应用型负载均衡监听器下的所有转发规则
+*/
+func (c *ULBClient) DescribeRules(req *DescribeRulesRequest) (*DescribeRulesResponse, error) {
+	var err error
+	var res DescribeRulesResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribeRules", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -2672,15 +3004,6 @@ type UpdateRuleAttributeParamRuleActionsForwardConfigTargets struct {
 }
 
 /*
-UpdateRuleAttributeParamRuleActionsForwardConfig is request schema for complex param
-*/
-type UpdateRuleAttributeParamRuleActionsForwardConfig struct {
-
-	//
-	Targets []UpdateRuleAttributeParamRuleActionsForwardConfigTargets `required:"false"`
-}
-
-/*
 UpdateRuleAttributeParamRuleConditionsPathConfig is request schema for complex param
 */
 type UpdateRuleAttributeParamRuleConditionsPathConfig struct {
@@ -2702,15 +3025,12 @@ type UpdateRuleAttributeParamRuleConditionsHostConfig struct {
 }
 
 /*
-UpdateRuleAttributeParamRuleActions is request schema for complex param
+UpdateRuleAttributeParamRuleActionsForwardConfig is request schema for complex param
 */
-type UpdateRuleAttributeParamRuleActions struct {
+type UpdateRuleAttributeParamRuleActionsForwardConfig struct {
 
 	//
-	ForwardConfig *UpdateRuleAttributeParamRuleActionsForwardConfig `required:"false"`
-
-	// 动作类型。限定枚举值："Forward"；RuleActions数组长度不为0时必填
-	Type *string `required:"false"`
+	Targets []UpdateRuleAttributeParamRuleActionsForwardConfigTargets `required:"false"`
 }
 
 /*
@@ -2725,6 +3045,18 @@ type UpdateRuleAttributeParamRuleConditions struct {
 	PathConfig *UpdateRuleAttributeParamRuleConditionsPathConfig `required:"false"`
 
 	// 匹配条件类型。限定枚举值："Host"/"Path"；RuleConditions数组长度不为0时必填
+	Type *string `required:"false"`
+}
+
+/*
+UpdateRuleAttributeParamRuleActions is request schema for complex param
+*/
+type UpdateRuleAttributeParamRuleActions struct {
+
+	//
+	ForwardConfig *UpdateRuleAttributeParamRuleActionsForwardConfig `required:"false"`
+
+	// 动作类型。限定枚举值："Forward"；RuleActions数组长度不为0时必填
 	Type *string `required:"false"`
 }
 

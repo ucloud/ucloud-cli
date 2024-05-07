@@ -89,6 +89,21 @@ func (d *document) Append(b *Block) {
 	d.blocks = append(d.blocks, b)
 }
 
+func (d *document) GetLastBlock() *Block {
+	d.mux.Lock()
+	defer d.mux.Unlock()
+	if len(d.blocks) == 0 {
+		return nil
+	}
+	return d.blocks[len(d.blocks)-1]
+}
+
+func (d *document) GetBlockCount() int {
+	d.mux.Lock()
+	defer d.mux.Unlock()
+	return len(d.blocks)
+}
+
 func newDocument(out io.Writer) *document {
 	doc := &document{
 		out:             out,

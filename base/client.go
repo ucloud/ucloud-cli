@@ -8,6 +8,7 @@ import (
 	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
 	"github.com/ucloud/ucloud-sdk-go/services/pathx"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	"github.com/ucloud/ucloud-sdk-go/services/ucompshare"
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
 	"github.com/ucloud/ucloud-sdk-go/services/udisk"
 	"github.com/ucloud/ucloud-sdk-go/services/udpn"
@@ -51,6 +52,7 @@ type Client struct {
 	PrivateUDBClient
 	PrivateUMemClient PrivateUMemClient
 	PrivatePathxClient
+	ucompshare.UCompShareClient
 }
 
 // NewClient will return a aggregate client
@@ -90,6 +92,7 @@ func NewClient(config *sdk.Config, credConfig *CredentialConfig) *Client {
 		pudbClient     = *pudb.NewClient(config, credential)
 		pumemClient    = *pumem.NewClient(config, credential)
 		ppathxClient   = *ppathx.NewClient(config, credential)
+		ulhostClient   = *ucompshare.NewClient(config, credential)
 	)
 
 	uaccountClient.Client.AddRequestHandler(handler)
@@ -137,6 +140,9 @@ func NewClient(config *sdk.Config, credConfig *CredentialConfig) *Client {
 	ppathxClient.Client.AddRequestHandler(handler)
 	ppathxClient.Client.AddHttpRequestHandler(injectCredHeader)
 
+	ulhostClient.Client.AddRequestHandler(handler)
+	ulhostClient.Client.AddHttpRequestHandler(injectCredHeader)
+
 	return &Client{
 		uaccountClient,
 		uhostClient,
@@ -153,5 +159,6 @@ func NewClient(config *sdk.Config, credConfig *CredentialConfig) *Client {
 		pudbClient,
 		pumemClient,
 		ppathxClient,
+		ulhostClient,
 	}
 }

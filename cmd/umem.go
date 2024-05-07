@@ -339,7 +339,7 @@ func restartRedis(creq request.Common) (bool, []string) {
 	}
 	poller := base.NewSpoller(describeRedisByID, base.Cxt.GetWriter())
 	text := fmt.Sprintf("redis[%s] is restarting", *req.GroupId)
-	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block)
+	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block, nil)
 	if ret.Err != nil {
 		block.Append(base.ParseError(err))
 		logs = append(logs, ret.Err.Error())
@@ -568,7 +568,7 @@ func restartMemcache(creq request.Common) (bool, []string) {
 	}
 	poller := base.NewSpoller(describeMemcacheByID, base.Cxt.GetWriter())
 	text := fmt.Sprintf("memcache[%s] is restarting", *req.GroupId)
-	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block)
+	ret := poller.Sspoll(*req.GroupId, text, []string{status.UMEM_RUNNING, status.UMEM_FAIL}, block, nil)
 	if ret.Err != nil {
 		block.Append(base.ParseError(err))
 		logs = append(logs, ret.Err.Error())
@@ -579,8 +579,11 @@ func restartMemcache(creq request.Common) (bool, []string) {
 	return ret.Done, logs
 }
 
-func describeMemcacheByID(memcacheID string) (interface{}, error) {
+func describeMemcacheByID(memcacheID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeUMemRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.Protocol = sdk.String("memcache")
 	req.ResourceId = &memcacheID
 
@@ -593,8 +596,11 @@ func describeMemcacheByID(memcacheID string) (interface{}, error) {
 	}
 	return &resp.DataSet[0], nil
 }
-func describeRedisByID(redisID string) (interface{}, error) {
+func describeRedisByID(redisID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeUMemRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.Protocol = sdk.String("redis")
 	req.ResourceId = &redisID
 

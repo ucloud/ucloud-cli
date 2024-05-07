@@ -579,7 +579,7 @@ func createUhost(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.Updat
 	if async {
 		block.Append(text)
 	} else {
-		uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block)
+		uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
 	}
 
 	if bindEipID != "" {
@@ -720,7 +720,7 @@ func deleteUHost(creq request.Common) (bool, []string) {
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
 	logs := []string{}
-	hostIns, err := sdescribeUHostByID(*req.UHostId)
+	hostIns, err := sdescribeUHostByID(*req.UHostId, nil)
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("describe uhost[%s] failed: %s", *req.UHostId, base.ParseError(err)))
 		return false, logs
@@ -828,7 +828,7 @@ func stopUhostInsV2(req *uhost.StopUHostInstanceRequest, async bool, block *ux.B
 	if async {
 		block.Append(text)
 	} else {
-		uhostSpoller.Sspoll(resp.UHostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block)
+		uhostSpoller.Sspoll(resp.UHostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block, nil)
 	}
 }
 
@@ -1163,8 +1163,11 @@ func describeUHostByID(uhostID, projectID, region, zone string) (interface{}, er
 	return &resp.UHostSet[0], nil
 }
 
-func sdescribeUHostByID(uhostID string) (interface{}, error) {
+func sdescribeUHostByID(uhostID string, commonBase *request.CommonBase) (interface{}, error) {
 	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	if commonBase != nil {
+		req.CommonBase = *commonBase
+	}
 	req.UHostIds = []string{uhostID}
 
 	resp, err := base.BizClient.DescribeUHostInstance(req)

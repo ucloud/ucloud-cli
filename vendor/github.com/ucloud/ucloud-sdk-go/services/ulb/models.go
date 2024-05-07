@@ -54,6 +54,357 @@ type BackendSet struct {
 }
 
 /*
+ForwardTargetSet - 转发的后端服务节点
+*/
+type ForwardTargetSet struct {
+
+	// 服务节点的标识ID
+	Id string
+
+	// 权重。仅监听器负载均衡算法是加权轮询是有效；取值范围[1-100]，默认值为1
+	Weight int
+}
+
+/*
+PathConfigSet - 路径相关配置
+*/
+type PathConfigSet struct {
+
+	// 取值。暂时只支持数组长度为1； 取值需符合相关匹配方式的条件
+	Values []string
+}
+
+/*
+HostConfigSet - 域名相关配置
+*/
+type HostConfigSet struct {
+
+	// 匹配方式。限定枚举值：Regular-正则，Wildcard-泛域名； 默认值：Regular
+	MatchMode string
+
+	// 取值。暂时只支持数组长度为1； 取值需符合相关匹配方式的条件
+	Values []string
+}
+
+/*
+ForwardConfigSet - 转发服务节点相关配置
+*/
+type ForwardConfigSet struct {
+
+	// 转发的后端服务节点。限定在监听器的服务节点池里；数组长度可以为0。具体结构详见 ForwardTargetSet
+	Targets []ForwardTargetSet
+}
+
+/*
+RuleCondition - 转发规则匹配条件
+*/
+type RuleCondition struct {
+
+	// 域名相关配置。Type为Host时必填。具体结构详见 HostConfigSet
+	HostConfig HostConfigSet
+
+	// 路径相关配置。Type为Path时必填。具体结构详见 PathConfigSet
+	PathConfig PathConfigSet
+
+	// 匹配条件类型。限定枚举值：Host，Path
+	Type string
+}
+
+/*
+RuleAction - 转发动作
+*/
+type RuleAction struct {
+
+	// 转发服务节点相关配置。 具体结构详见 ForwardConfigSet
+	ForwardConfig ForwardConfigSet
+
+	// 动作类型。限定枚举值：Forward
+	Type string
+}
+
+/*
+StickinessConfigSet - 会话保持相关配置
+*/
+type StickinessConfigSet struct {
+
+	// （应用型专用）自定义Cookie。当StickinessType取值"UserDefined"时有效
+	CookieName string
+
+	// 是否开启会话保持功能。应用型负载均衡实例基于Cookie实现
+	Enabled bool
+
+	// （应用型专用）Cookie处理方式。限定枚举值： ServerInsert -> 自动生成KEY；UserDefined -> 用户自定义KEY
+	Type string
+}
+
+/*
+HealthCheckConfigSet - 健康检查相关配置
+*/
+type HealthCheckConfigSet struct {
+
+	// （应用型专用）HTTP检查域名。 当Type为HTTP时，此字段有意义，代表HTTP检查域名
+	Domain string
+
+	// 是否开启健康检查功能。暂时不支持关闭。 默认值为：true
+	Enabled bool
+
+	// （应用型专用）HTTP检查路径。当Type为HTTP时，此字段有意义，代表HTTP检查路径
+	Path string
+
+	// 健康检查方式。应用型限定取值： Port -> 端口检查；HTTP -> HTTP检查； 默认值：Port
+	Type string
+}
+
+/*
+Rule - （应用型专用）转发规则信息
+*/
+type Rule struct {
+
+	// 是否为默认转发规则
+	IsDefault bool
+
+	// 当转发的服务节点为空时，规则是否忽略
+	Pass bool
+
+	// 转发动作。具体规则详见RuleAction
+	RuleActions []RuleAction
+
+	// 转发规则匹配条件。具体结构详见 RuleCondition
+	RuleConditions []RuleCondition
+
+	// 转发规则的ID
+	RuleId string
+}
+
+/*
+Certificate - （应用型专用）服务器证书信息
+*/
+type Certificate struct {
+
+	// 是否为默认证书
+	IsDefault bool
+
+	// 证书ID
+	SSLId string
+}
+
+/*
+Target - 服务节点信息
+*/
+type Target struct {
+
+	// 服务节点是否启用
+	Enabled bool
+
+	// 服务节点的标识ID。为ALB/NLB中使用，与资源自身ID无关，可用于UpdateTargetsAttribute/RemoveTargets
+	Id string
+
+	// 服务节点是否为备节点
+	IsBackup bool
+
+	// 服务节点的端口
+	Port int
+
+	// 服务节点的IP
+	ResourceIP string
+
+	// 服务节点的资源ID
+	ResourceId string
+
+	// 服务节点的资源名称
+	ResourceName string
+
+	// 服务节点的类型。限定枚举值：UHost -> 云主机，UNI -> 虚拟网卡，UPM -> 物理云主机，IP ->  IP类型； 默认值："UHost"； 非IP类型，如果该资源有多个IP，将只能添加主IP； 非IP类型，展示时，会显示相关资源信息，IP类型只展示IP信息。 在相关资源被删除时，非IP类型会把相关资源从lb中剔除，IP类型不保证这个逻辑
+	ResourceType string
+
+	// 服务节点的健康检查状态。限定枚举值：Healthy -> 健康，Unhealthy -> 不健康
+	State string
+
+	// 服务节点的子网资源ID
+	SubnetId string
+
+	// 服务节点的VPC资源ID
+	VPCId string
+
+	// 服务节点的权重。仅在加权轮询算法时有效
+	Weight int
+}
+
+/*
+Listener - 负载均衡监听器信息
+*/
+type Listener struct {
+
+	// （应用型专用）服务器默认证书ID。仅HTTPS监听支持。具体接口详见 Certificate
+	Certificates []Certificate
+
+	// （应用型专用）是否开启数据压缩功能。目前只支持使用gzip对特定文件类型进行压缩
+	CompressionEnabled bool
+
+	// （应用型专用）是否开启HTTP/2特性。仅HTTPS监听支持开启
+	HTTP2Enabled bool
+
+	// 健康检查相关配置。具体结构详见 HealthCheckConfigSet
+	HealthCheckConfig HealthCheckConfigSet
+
+	// 连接空闲超时时间。单位：秒
+	IdleTimeout int
+
+	// 监听器的ID
+	ListenerId string
+
+	// 监听器的监听端口
+	ListenerPort int
+
+	// 监听协议。应用型限定取值： HTTP、HTTPS
+	ListenerProtocol string
+
+	// 监听器的名称
+	Name string
+
+	// （应用型专用）是否开启HTTP重定向到HTTPS。仅HTTP监听支持开启
+	RedirectEnabled bool
+
+	// （应用型专用）重定向端口
+	RedirectPort int
+
+	// 监听器的备注信息
+	Remark string
+
+	// （应用型专用）转发规则信息
+	Rules []Rule
+
+	// 负载均衡算法。应用型限定取值：Roundrobin -> 轮询;Source -> 源地址； WeightRoundrobin -> 加权轮询; Leastconn -> 最小连接数；Backup ->主备模式
+	Scheduler string
+
+	// （应用型专用）安全策略组ID。仅HTTPS监听支持绑定；Default -> 原生策略
+	SecurityPolicyId string
+
+	// listener健康状态。限定枚举值：Healthy -> 健康，Unhealthy -> 不健康，PartialHealth -> 部分健康，None -> 无节点状态
+	State string
+
+	// 会话保持相关配置。具体结构详见 StickinessConfigSet
+	StickinessConfig StickinessConfigSet
+
+	// 添加的服务节点信息。具体结构详见 Target
+	Targets []Target
+}
+
+/*
+IPInfo - 绑定的IP信息
+*/
+type IPInfo struct {
+
+	// 网络模式。 限定枚举值：Internet -> 互联网，Intranet -> 内联网
+	AddressType string
+
+	// 带宽值。单位M
+	Bandwidth int
+
+	// 带宽类型。限定枚举值：1 -> 共享带宽，0 -> 普通带宽类型
+	BandwidthType int
+
+	// IP地址
+	IP string
+
+	// IP协议版本
+	IPVersion string
+
+	// 唯一标识ID
+	Id string
+
+	// 外网IP的运营商信息。枚举值为：Telecom -> 电信，Unicom -> 联通，International -> 国际IP，Bgp -> BGP，Duplet -> 双线（电信+联通双线路），BGPPro -> 精品BGP，China-mobile -> 中国移动，Anycast -> AnycastEIP
+	OperatorName string
+}
+
+/*
+AccessLogConfigSet - （应用型专用）访问日志相关配置
+*/
+type AccessLogConfigSet struct {
+
+	// （应用型专用）是否开启访问日志记录功能
+	Enabled bool
+
+	// （应用型专用）用于存储访问日志的bucket
+	US3BucketName string
+
+	// （应用型专用）上传访问日志到bucket所需的token
+	US3TokenId string
+}
+
+/*
+FirewallSet - ulb防火墙信息
+*/
+type FirewallSet struct {
+
+	// 防火墙ID
+	FirewallId string
+
+	// 防火墙名称
+	FirewallName string
+}
+
+/*
+LoadBalancer - 负载均衡实例信息
+*/
+type LoadBalancer struct {
+
+	// （应用型专用）访问日志相关配置
+	AccessLogConfig AccessLogConfigSet
+
+	// 是否开启自动续费
+	AutoRenewEnabled bool
+
+	// 付费模式
+	ChargeType string
+
+	// 负载均衡实例创建时间。格式为Unix Timestamp
+	CreateTime int
+
+	// 防火墙信息
+	Firewall FirewallSet
+
+	// 绑定的IP信息。具体结构详见 IPInfo
+	IPInfos []IPInfo
+
+	// 负载均衡实例支持的IP协议版本
+	IPVersion string
+
+	// 监听器信息。当ShowDetail为false时，为空
+	Listeners []Listener
+
+	// 负载均衡实例的ID
+	LoadBalancerId string
+
+	// 负载均衡实例的名称
+	Name string
+
+	// 有效期（计费）。格式为Unix Timestamp
+	PurchaseValue int
+
+	// 负载均衡实例的备注信息
+	Remark string
+
+	// 应用型实例的代理IP或网络型FULLNAT模式下snat所用的IP
+	SnatIPs []string
+
+	// lb状态：Normal-正常；Arrears-欠费停服
+	Status string
+
+	// 负载均衡实例所属的子网资源ID。负载均衡实例的内网VIP和SNAT场景的源IP限定在该子网内；指定子网不影响添加后端服务节点时的范围，依旧是整个VPC下支持的资源
+	SubnetId string
+
+	// 负载均衡实例所属的业务组ID
+	Tag string
+
+	// 负载均衡实例的类型。限定枚举值：Application -> 应用型，Network -> 网络型
+	Type string
+
+	// 负载均衡实例所属的VPC资源ID
+	VPCId string
+}
+
+/*
 UlbPolicyBackendSet - DescribePolicyGroup
 */
 type UlbPolicyBackendSet struct {
@@ -357,27 +708,6 @@ type PolicyBackendSet struct {
 }
 
 /*
-BindSecurityPolicy - VServer绑定的安全策略组信息
-*/
-type BindSecurityPolicy struct {
-
-	// 加密套件
-	SSLCiphers []string
-
-	// 安全策略组ID
-	SecurityPolicyId string
-
-	// 安全策略组名称
-	SecurityPolicyName string
-
-	// 安全策略类型 0：预定义 1：自定义
-	SecurityPolicyType int
-
-	// TLS最低版本
-	TLSVersion string
-}
-
-/*
 ULBPolicySet - 内容转发详细列表
 */
 type ULBPolicySet struct {
@@ -408,6 +738,27 @@ type ULBPolicySet struct {
 
 	// 所属VServerId
 	VServerId string
+}
+
+/*
+BindSecurityPolicy - VServer绑定的安全策略组信息
+*/
+type BindSecurityPolicy struct {
+
+	// 加密套件
+	SSLCiphers []string
+
+	// 安全策略组ID
+	SecurityPolicyId string
+
+	// 安全策略组名称
+	SecurityPolicyName string
+
+	// 安全策略类型 0：预定义 1：自定义
+	SecurityPolicyType int
+
+	// TLS最低版本
+	TLSVersion string
 }
 
 /*
@@ -462,18 +813,24 @@ type ULBBackendSet struct {
 }
 
 /*
-LoggerSet - ulb日志信息
+ULBIPSet - DescribeULB
 */
-type LoggerSet struct {
+type ULBIPSet struct {
 
-	// ulb日志上传的bucket
-	BucketName string
+	// 弹性IP的带宽值（暂未对外开放）
+	Bandwidth int
 
-	// 上传到bucket使用的token的tokenid
-	TokenID string
+	// 弹性IP的带宽类型，枚举值：1 表示是共享带宽，0 普通带宽类型（暂未对外开放）
+	BandwidthType int
 
-	// bucket的token名称
-	TokenName string
+	// 弹性IP地址
+	EIP string
+
+	// 弹性IP的ID
+	EIPId string
+
+	// 弹性IP的运营商信息，枚举值为：  Bgp：BGP IP International：国际IP
+	OperatorName string
 }
 
 /*
@@ -552,36 +909,18 @@ type ULBVServerSet struct {
 }
 
 /*
-ULBIPSet - DescribeULB
+LoggerSet - ulb日志信息
 */
-type ULBIPSet struct {
+type LoggerSet struct {
 
-	// 弹性IP的带宽值（暂未对外开放）
-	Bandwidth int
+	// ulb日志上传的bucket
+	BucketName string
 
-	// 弹性IP的带宽类型，枚举值：1 表示是共享带宽，0 普通带宽类型（暂未对外开放）
-	BandwidthType int
+	// 上传到bucket使用的token的tokenid
+	TokenID string
 
-	// 弹性IP地址
-	EIP string
-
-	// 弹性IP的ID
-	EIPId string
-
-	// 弹性IP的运营商信息，枚举值为：  Bgp：BGP IP International：国际IP
-	OperatorName string
-}
-
-/*
-FirewallSet - ulb防火墙信息
-*/
-type FirewallSet struct {
-
-	// 防火墙ID
-	FirewallId string
-
-	// 防火墙名称
-	FirewallName string
+	// bucket的token名称
+	TokenName string
 }
 
 /*
