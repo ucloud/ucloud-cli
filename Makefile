@@ -1,4 +1,4 @@
-export VERSION=0.1.46
+export VERSION=0.1.47
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 
 .PHONY : install
