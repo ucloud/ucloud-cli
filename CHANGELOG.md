@@ -1,3 +1,7 @@
+## 0.1.47 (2024-05-08)
+
+* support repeating generic api call
+
 ## 0.1.46 (2023-12-28)
 
 * update ucloud go sdk version
