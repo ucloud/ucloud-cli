@@ -1,3 +1,11 @@
+## 0.1.49 (2024-05-09)
+
+* fix cli version config
+
+## 0.1.48 (2024-05-09)
+
+* update golang version to 1.19
+
 ## 0.1.47 (2024-05-08)
 
 * support repeating generic api call
