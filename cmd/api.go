@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -50,7 +49,7 @@ func NewCmdAPI(out io.Writer) *cobra.Command {
 		Short: "Call API",
 		Long:  "Call API",
 		Run: func(c *cobra.Command, args []string) {
-			if slices.Contains(args, "--help") {
+			if containHelp(args) {
 				fmt.Fprintln(out, HelpInfo)
 				return
 			}
@@ -250,4 +249,13 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 	wg.Wait()
 	refresh.Do(fmt.Sprintf("finally, total:%d, success:%d, fail:%d", repeats, success.Load(), repeats-int(success.Load())))
 	return nil
+}
+
+func containHelp(args []string) bool {
+	for _, arg := range args {
+		if arg == "--help" {
+			return true
+		}
+	}
+	return false
 }
