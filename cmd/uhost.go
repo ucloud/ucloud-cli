@@ -358,6 +358,7 @@ func NewCmdUHostCreate() *cobra.Command {
 					secGroupList = append(secGroupList, uhost.CreateUHostInstanceParamSecGroupId{Id: sdk.String(secGroupId), Priority: sdk.Int(1 + idx)})
 				}
 				req.SecGroupId = secGroupList
+				req.SecurityMode = sdk.String("SecGroup")
 			}
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
