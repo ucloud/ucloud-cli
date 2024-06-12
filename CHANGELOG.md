@@ -1,3 +1,7 @@
+## 0.2.0 (2024-06-12)
+
+* ssh key pair and security group support for creating uhost 
+
 ## 0.1.49 (2024-05-09)
 
 * fix cli version config
