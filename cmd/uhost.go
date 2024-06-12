@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -38,6 +39,8 @@ import (
 )
 
 const _RetCodeRegionNoPermission = 230
+
+const _MaxBoundSecGroupCount = 5
 
 var uhostSpoller = base.NewSpoller(sdescribeUHostByID, base.Cxt.GetWriter())
 
@@ -302,6 +305,10 @@ func NewCmdUHostCreate() *cobra.Command {
 	var userData string
 	var userDataImageFlag bool
 	var userDataBase64 string
+	var firewallId string
+	var secGroupIds []string
+	var keyPairId string
+	var password string
 
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	eipReq := uhost.CreateUHostInstanceParamNetworkInterfaceEIP{}
@@ -329,11 +336,33 @@ func NewCmdUHostCreate() *cobra.Command {
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			*req.Memory *= 1024
-			req.LoginMode = sdk.String("Password")
+			if len(password) > 0 {
+				req.LoginMode = sdk.String("Password")
+				req.KeyPairId = nil
+				req.Password = sdk.String(password)
+			} else if len(keyPairId) > 0 {
+				req.LoginMode = sdk.String("KeyPair")
+				req.KeyPairId = sdk.String(keyPairId)
+				req.Password = nil
+			} else {
+				return fmt.Errorf("password or key-pair-id is required")
+			}
+			if len(firewallId) > 0 {
+				req.SecurityGroupId = sdk.String(firewallId)
+			} else if len(secGroupIds) > 0 {
+				if len(secGroupIds) > _MaxBoundSecGroupCount {
+					return fmt.Errorf("security group count should not be more than 5")
+				}
+				secGroupList := make([]uhost.CreateUHostInstanceParamSecGroupId, 0)
+				for idx, secGroupId := range secGroupIds {
+					secGroupList = append(secGroupList, uhost.CreateUHostInstanceParamSecGroupId{Id: sdk.String(secGroupId), Priority: sdk.Int(1 + idx)})
+				}
+				req.SecGroupId = secGroupList
+				req.SecurityMode = sdk.String("SecGroup")
+			}
 			req.ImageId = sdk.String(base.PickResourceID(*req.ImageId))
 			req.VPCId = sdk.String(base.PickResourceID(*req.VPCId))
 			req.SubnetId = sdk.String(base.PickResourceID(*req.SubnetId))
-			req.SecurityGroupId = sdk.String(base.PickResourceID(*req.SecurityGroupId))
 			req.IsolationGroup = sdk.String(base.PickResourceID(*req.IsolationGroup))
 			if *req.Disks[1].Type == "NONE" || *req.Disks[1].Type == "" {
 				req.Disks = req.Disks[:1]
@@ -446,7 +475,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	flags.SortFlags = false
 	req.CPU = flags.Int("cpu", 4, "Required. The count of CPU cores. Optional parameters: {1, 2, 4, 8, 12, 16, 24, 32, 64}")
 	req.Memory = flags.Int("memory-gb", 8, "Required. Memory size. Unit: GB. Range: [1, 512], multiple of 2")
-	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&password, "password", "", "Optional. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&keyPairId, "key-pair-id", "", "Optional. Resource ID of ssh key pair. See 'ucloud api --Action DescribeUHostKeyPairs' Where both password and key-pair-id are set, the key-pair-id is ignored")
 	req.ImageId = flags.String("image-id", "", "Required. The ID of image. see 'ucloud image list'")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
 	flags.IntVar(&count, "count", 1, "Optional. Number of uhost to create.")
@@ -480,7 +510,8 @@ func NewCmdUHostCreate() *cobra.Command {
 	req.Disks[1].Type = flags.String("data-disk-type", "CLOUD_SSD", "Optional. Accept values: 'LOCAL_NORMAL','LOCAL_SSD','CLOUD_NORMAL',CLOUD_SSD','CLOUD_RSSD','EXCLUSIVE_LOCAL_DISK' and 'NONE'. 'LOCAL_NORMAL', Ordinary local disk; 'CLOUD_NORMAL', Ordinary cloud disk; 'LOCAL_SSD',local ssd disk; 'CLOUD_SSD',cloud ssd disk; 'CLOUD_RSSD', coud rssd disk; 'EXCLUSIVE_LOCAL_DISK',big data. The disk only supports a limited combination. 'NONE', create uhost without data disk. More details https://docs.ucloud.cn/api/uhost-api/disk_type")
 	req.Disks[1].Size = flags.Int("data-disk-size-gb", 20, "Optional. Disk size. Unit GB")
 	req.Disks[1].BackupType = flags.String("data-disk-backup-type", "NONE", "Optional. Enumeration value, 'NONE' or 'DATAARK'. DataArk supports real-time backup, which can restore the disk back to any moment within the last 12 hours. (Normal Local Disk and Normal Cloud Disk Only)")
-	req.SecurityGroupId = flags.String("firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
+	flags.StringVar(&firewallId, "firewall-id", "", "Optional. Firewall Id, default: Web recommended firewall. see 'ucloud firewall list'.")
+	flags.StringSliceVar(&secGroupIds, "security-group-id", nil, "Optional. Security Group Id. Before using security group function, please confirm the account has such permission. When both firewall-id and security-group-id are set, the security-group-id will be ignored")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.IsolationGroup = flags.String("isolation-group", "", "Optional. Resource ID of isolation group. see 'ucloud uhost isolation-group list")
 	req.GpuType = flags.String("gpu-type", "", "Optional. The type of GPU instance. Required if defined the `machine-type` as 'G'. Accept values: 'K80', 'P40', 'V100'. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details.")
@@ -524,7 +555,6 @@ func NewCmdUHostCreate() *cobra.Command {
 
 	cmd.MarkFlagRequired("cpu")
 	cmd.MarkFlagRequired("memory-gb")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("image-id")
 
 	return cmd
@@ -1211,12 +1241,28 @@ func getUhostList(states []string, project, region, zone string) []string {
 func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	var uhostID *string
 	var async *bool
+
+	var password string
+	var keyPairId string
+
 	req := base.BizClient.NewCreateUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "clone",
 		Short: "Create an uhost with the same configuration as another uhost, excluding bound eip and udisk",
 		Long:  "Create an uhost with the same configuration as another uhost, excluding bound eip and udisk",
 		Run: func(com *cobra.Command, args []string) {
+			if len(password) > 0 {
+				req.LoginMode = sdk.String("Password")
+				req.KeyPairId = nil
+				req.Password = sdk.String(password)
+			} else if len(keyPairId) > 0 {
+				req.LoginMode = sdk.String("KeyPair")
+				req.KeyPairId = sdk.String(keyPairId)
+				req.Password = nil
+			} else {
+				base.Cxt.PrintErr(errors.New("password or key-pair-id is required"))
+				return
+			}
 			*uhostID = base.PickResourceID(*uhostID)
 			queryReq := base.BizClient.NewDescribeUHostInstanceRequest()
 			queryReq.ProjectId = req.ProjectId
@@ -1230,6 +1276,10 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 			}
 			if len(queryResp.UHostSet) < 1 {
 				base.Cxt.PrintErr(fmt.Errorf("uhost[%s] not exist", *uhostID))
+				return
+			}
+			if queryResp.UHostSet[0].SecGroupInstance == true {
+				base.Cxt.PrintErr(fmt.Errorf("uhost[%s] is in security groups, it is not allowed to clone", *uhostID))
 				return
 			}
 			queryFirewallReq := base.BizClient.NewDescribeFirewallRequest()
@@ -1275,7 +1325,6 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 				req.Disks = append(req.Disks, item)
 			}
 			req.Tag = &uhostIns.Tag
-			req.LoginMode = sdk.String("Password")
 			resp, err := base.BizClient.CreateUHostInstance(req)
 			if err != nil {
 				base.HandleError(err)
@@ -1298,7 +1347,9 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	uhostID = flags.String("uhost-id", "", "Required. Resource ID of the uhost to clone from")
-	req.Password = flags.String("password", "", "Required. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&password, "password", "", "Optional. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&keyPairId, "key-pair-id", "", "Optional. Resource ID of ssh key pair. See 'ucloud api --Action DescribeUHostKeyPairs' Where both password and key-pair-id are set, the key-pair-id is ignored")
+
 	req.Name = flags.String("name", "", "Optional. Name of the uhost to clone")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
@@ -1308,7 +1359,6 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
-	cmd.MarkFlagRequired("password")
 	return cmd
 }
 
@@ -1443,6 +1493,7 @@ func checkAndCloseUhost(yes, async bool, uhostID, project, region, zone string, 
 // NewCmdUhostReinstallOS ucloud uhost reinstall-os
 func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	var isReserveDataDisk, yes, async *bool
+	var password, keyPairId string
 	req := base.BizClient.NewReinstallUHostInstanceRequest()
 	cmd := &cobra.Command{
 		Use:   "reinstall-os",
@@ -1455,7 +1506,18 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 				req.ReserveDisk = sdk.String("No")
 			}
 			req.UHostId = sdk.String(base.PickResourceID(*req.UHostId))
-			req.Password = sdk.String(sdk.StringValue(req.Password))
+			if len(password) > 0 {
+				req.LoginMode = sdk.String("Password")
+				req.KeyPairId = nil
+				req.Password = sdk.String(password)
+			} else if len(keyPairId) > 0 {
+				req.LoginMode = sdk.String("KeyPair")
+				req.KeyPairId = sdk.String(keyPairId)
+				req.Password = nil
+			} else {
+				base.Cxt.PrintErr(fmt.Errorf("password or key-pair-id is required"))
+				return
+			}
 
 			any, err := describeUHostByID(*req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
 			if err != nil {
@@ -1515,7 +1577,8 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	req.UHostId = flags.String("uhost-id", "", "Required. Resource ID of the uhost to reinstall operating system")
-	req.Password = flags.String("password", "", "Required. Password of the administrator")
+	flags.StringVar(&password, "password", "", "Optional. Password of the uhost user(root/ubuntu)")
+	flags.StringVar(&keyPairId, "key-pair-id", "", "Optional. Resource ID of ssh key pair. See 'ucloud api --Action DescribeUHostKeyPairs' Where both password and key-pair-id are set, the key-pair-id is ignored")
 	req.ImageId = flags.String("image-id", "", "Optional. Resource ID the image to install. See 'ucloud image list'. Default is original image of the uhost")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
@@ -1527,7 +1590,6 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
-	cmd.MarkFlagRequired("password")
 	return cmd
 }
 
