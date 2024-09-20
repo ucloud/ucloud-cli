@@ -122,6 +122,9 @@ type AllocateShareBandwidthRequest struct {
 
 	// 【该字段已废弃，请谨慎使用】
 	ShareBandwidthGuarantee *int `required:"false" deprecated:"true"`
+
+	// 业务组名称, 默认为 "Default"
+	Tag *string `required:"false"`
 }
 
 // AllocateShareBandwidthResponse is response schema for AllocateShareBandwidth action
@@ -356,7 +359,7 @@ type CreateFirewallRequest struct {
 	// 防火墙描述，默认为空
 	Remark *string `required:"false"`
 
-	// 防火墙规则，例如：TCP|22|192.168.1.1/22|DROP|LOW|禁用22端口，第一个参数代表协议：第二个参数代表端口号，第三个参数为ip，第四个参数为ACCEPT（接受）和DROP（拒绝），第五个参数优先级：HIGH（高），MEDIUM（中），LOW（低），第六个参数为该条规则的自定义备注,bj1不支持添加备注
+	// 防火墙规则，例如：TCP|22|192.168.1.1/22|DROP|LOW|禁用22端口，第一个参数代表协议：第二个参数代表端口号，第三个参数为ip，第四个参数为ACCEPT（接受）和DROP（拒绝），第五个参数优先级：HIGH（高），MEDIUM（中），LOW（低），第六个参数为该条规则的自定义备注，备注最大长度64
 	Rule []string `required:"true"`
 
 	// 防火墙业务组，默认为Default
@@ -565,14 +568,20 @@ func (c *UNetClient) DescribeBandwidthPackage(req *DescribeBandwidthPackageReque
 type DescribeBandwidthUsageRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
+
+	// 统计开始时间
+	BeginTime *int `required:"false"`
 
 	// 弹性IP的资源Id. 如果为空, 则返回当前 Region中符合条件的所有EIP的带宽用量, n为自然数
 	EIPIds []string `required:"false"`
+
+	// 统计结束时间
+	EndTime *int `required:"false"`
 
 	// 返回数据分页值, 取值范围为 [0,10000000] 之间的整数, 默认为20
 	Limit *int `required:"false"`
@@ -817,6 +826,74 @@ func (c *UNetClient) DescribeFirewallResource(req *DescribeFirewallResourceReque
 	reqCopier := *req
 
 	err = c.Client.InvokeAction("DescribeFirewallResource", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
+// DescribePrivateIPRequest is request schema for DescribePrivateIP action
+type DescribePrivateIPRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"true"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// 获取信息数量 ，默认20；不允许为0
+	Limit *int `required:"false"`
+
+	// 虚拟网卡的资源ID;  ObjectId为空时，则获取项目下所有的虚拟网卡主辅IP信息
+	ObjectId *string `required:"false"`
+
+	// 列表起始位置偏移量，默认为0
+	Offset *int `required:"false"`
+
+	// 子网的ID
+	SubnetId *string `required:"false"`
+
+	// VPC的ID
+	VPCId *string `required:"false"`
+}
+
+// DescribePrivateIPResponse is response schema for DescribePrivateIP action
+type DescribePrivateIPResponse struct {
+	response.CommonBase
+
+	// 辅助IP的详细信息
+	DataSet []DescribeSecondaryIPDataSet
+
+	// 返回资源数量
+	TotalCount int
+}
+
+// NewDescribePrivateIPRequest will create request of DescribePrivateIP action.
+func (c *UNetClient) NewDescribePrivateIPRequest() *DescribePrivateIPRequest {
+	req := &DescribePrivateIPRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: DescribePrivateIP
+
+获取资源绑定的内网IP信息
+*/
+func (c *UNetClient) DescribePrivateIP(req *DescribePrivateIPRequest) (*DescribePrivateIPResponse, error) {
+	var err error
+	var res DescribePrivateIPResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("DescribePrivateIP", &reqCopier, &res)
 	if err != nil {
 		return &res, err
 	}
@@ -1904,16 +1981,16 @@ func (c *UNetClient) UpdateEIPAttribute(req *UpdateEIPAttributeRequest) (*Update
 type UpdateFirewallRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
 	// 防火墙资源ID
 	FWId *string `required:"true"`
 
-	// 防火墙规则，例如：TCP|22|192.168.1.1/22|DROP|LOW|禁用22端口，第一个参数代表协议：第二个参数代表端口号，第三个参数为ip，第四个参数为ACCEPT（接受）和DROP（拒绝），第五个参数优先级：HIGH（高），MEDIUM（中），LOW（低），第六个参数为该条规则的自定义备注
+	// 防火墙规则，例如：TCP|22|192.168.1.1/22|DROP|LOW|禁用22端口，第一个参数代表协议：第二个参数代表端口号，第三个参数为ip，第四个参数为ACCEPT（接受）和DROP（拒绝），第五个参数优先级：HIGH（高），MEDIUM（中），LOW（低），第六个参数为该条规则的自定义备注, 备注最大长度64
 	Rule []string `required:"true"`
 }
 

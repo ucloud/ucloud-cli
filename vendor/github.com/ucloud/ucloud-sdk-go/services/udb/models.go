@@ -48,6 +48,18 @@ type UDBBackupSet struct {
 }
 
 /*
+UFileDataSet - 增加ufile的描述
+*/
+type UFileDataSet struct {
+
+	// bucket名称
+	Bucket string
+
+	// Ufile的令牌tokenid
+	TokenID string
+}
+
+/*
 UDBSlaveInstanceSet - DescribeUDBSlaveInstance
 */
 type UDBSlaveInstanceSet struct {
@@ -140,7 +152,7 @@ type UDBSlaveInstanceSet struct {
 	SSDType string
 
 	// 实例计算规格类型，0或不传代表使用内存方式购买，1代表使用内存-cpu可选配比方式购买，需要填写MachineType
-	SpecificationType string
+	SpecificationType int
 
 	// 对mysql的slave而言是master的DBId，对master则为空， 对mongodb则是副本集id
 	SrcDBId string
@@ -171,18 +183,6 @@ type UDBSlaveInstanceSet struct {
 
 	// 可用区
 	Zone string
-}
-
-/*
-UFileDataSet - 增加ufile的描述
-*/
-type UFileDataSet struct {
-
-	// bucket名称
-	Bucket string
-
-	// Ufile的令牌tokenid
-	TokenID string
 }
 
 /*
@@ -507,6 +507,30 @@ type ConnNumMap struct {
 
 	// 该Ip连接数
 	Num int
+}
+
+/*
+MachineType - mysql数据库机型
+*/
+type MachineType struct {
+
+	// 规格cpu核数
+	Cpu int
+
+	// 计算规格描述，格式为"nCmG"，表示n核mG内存实例
+	Description string
+
+	// 内存/cpu配比
+	Group string
+
+	// 计算规格id, 目前支持CPU和内存比1:2、1:4、1:8三类配比规格;规格的格式为："机型.配比.CPU核数规格"；机型支持o和n两种机型，分别代表快杰NVMe和SSD云盘机型；配比映射关系如下:2m代表CPU内存配比1比2，4m代表CPU内存配比1比4，8m代表CPU内存配比1比8，CPU核数规格射关系如下：small代表1C，medium代表2C，xlarge代表4C，2xlarge代表8C，4xlarge代表16C，8xlarge代表32C，16xlarge代表64C，例如 "o.mysql4m.medium"表示创建快杰NVMe机型2C8G的实例，"o.mysql8m.4xlarge"表示创建快杰NVMe机型16C128G的实例
+	ID string
+
+	// 规格内存大小，单位（GB）
+	Memory int
+
+	// 内部云主机机型，可选"o/n"
+	Os string
 }
 
 /*

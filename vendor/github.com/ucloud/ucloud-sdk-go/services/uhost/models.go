@@ -27,6 +27,21 @@ type KeyPair struct {
 }
 
 /*
+Collection - CPU和内存可支持的规格
+*/
+type Collection struct {
+
+	// CPU规格
+	Cpu int
+
+	// 内存规格
+	Memory []int
+
+	// CPU和内存规格只能在列出来的CPU平台支持
+	MinimalCpuPlatform []string
+}
+
+/*
 FeatureModes - 可以支持的模式类别
 */
 type FeatureModes struct {
@@ -78,18 +93,15 @@ type BootDiskInfo struct {
 }
 
 /*
-Collection - CPU和内存可支持的规格
+MachineSizes - GPU、CPU和内存信息
 */
-type Collection struct {
+type MachineSizes struct {
 
-	// CPU规格
-	Cpu int
+	// CPU和内存可支持的规格
+	Collection []Collection
 
-	// 内存规格
-	Memory []int
-
-	// CPU和内存规格只能在列出来的CPU平台支持
-	MinimalCpuPlatform []string
+	// Gpu为GPU可支持的规格即GPU颗数，非GPU机型，Gpu为0
+	Gpu int
 }
 
 /*
@@ -114,6 +126,18 @@ type Features struct {
 
 	// 可支持的特性名称。目前支持的特性网络增强|NetCapability、热升级|Hotplug
 	Name string
+}
+
+/*
+Performance - GPU的性能指标
+*/
+type Performance struct {
+
+	// 交互展示参数，可忽略
+	Rate int
+
+	// 值，单位是TFlops
+	Value float64
 }
 
 /*
@@ -144,30 +168,6 @@ type CpuPlatforms struct {
 
 	// 返回Intel的CPU平台信息，例如：Intel: ['Intel/CascadeLake','Intel/CascadelakeR','Intel/IceLake']
 	Intel []string
-}
-
-/*
-Performance - GPU的性能指标
-*/
-type Performance struct {
-
-	// 交互展示参数，可忽略
-	Rate int
-
-	// 值，单位是TFlops
-	Value float64
-}
-
-/*
-MachineSizes - GPU、CPU和内存信息
-*/
-type MachineSizes struct {
-
-	// CPU和内存可支持的规格
-	Collection []Collection
-
-	// Gpu为GPU可支持的规格即GPU颗数，非GPU机型，Gpu为0
-	Gpu int
 }
 
 /*
@@ -214,10 +214,13 @@ type UHostImageSet struct {
 	// 创建时间，格式为Unix时间戳
 	CreateTime int
 
+	// 关联的云盘数据盘快照Id列表
+	DataSnapshotIds []string
+
 	// 特殊状态标识，目前包含NetEnhnced（网络增强1.0）, NetEnhanced_Ultra（网络增强2.0）, NetEnhanced_Extreme（网络增强3.0）, HotPlug(热升级), GPU（GPU镜像）,CloudInit, IPv6（支持IPv6网络）,RssdAttachable（支持RSSD云盘）,Vgpu_AMD（支持AMD的vgpu）,Vgpu_NVIDIA（支持NVIDIA的vgpu）,Aarch64_Type（支持arm64架构）
 	Features []string
 
-	// 行业镜像类型（仅行业镜像将返回这个值）
+	// 镜像归属,枚举值:["gpu","app","uhost"]。"gpu": 对gpu进行处理过的行业镜像；"app"：轻量云主机专用的镜像；"uhost"：云主机镜像市场的行业镜像
 	FuncType string
 
 	// 镜像描述
@@ -240,6 +243,9 @@ type UHostImageSet struct {
 
 	// 介绍链接（仅行业镜像将返回这个值）
 	Links string
+
+	// 系统EOL的时间，格式：YYYY/MM/DD
+	MaintainEol string
 
 	// 默认值为空'''。当CentOS 7.3/7.4/7.5等镜像会标记为“Broadwell”
 	MinimalCPU string
@@ -300,15 +306,6 @@ type IsolationGroup struct {
 }
 
 /*
-SpotAttribute - 竞价实例属性
-*/
-type SpotAttribute struct {
-
-	// 回收时间
-	RecycleTime int
-}
-
-/*
 UDSetUDHostAttribute - 私有专区对应的宿主机属性
 */
 type UDSetUDHostAttribute struct {
@@ -357,18 +354,6 @@ type UHostDiskSet struct {
 }
 
 /*
-UHostKeyPair - 主机密钥信息
-*/
-type UHostKeyPair struct {
-
-	// 密钥对ID
-	KeyPairId string
-
-	// 主机密钥对状态，Normal 正常，Deleted 删除
-	KeyPairState string
-}
-
-/*
 UHostIPSet - DescribeUHostInstance
 */
 type UHostIPSet struct {
@@ -405,6 +390,27 @@ type UHostIPSet struct {
 
 	// 当前EIP的权重。权重最大的为当前的出口IP。
 	Weight int
+}
+
+/*
+UHostKeyPair - 主机密钥信息
+*/
+type UHostKeyPair struct {
+
+	// 密钥对ID
+	KeyPairId string
+
+	// 主机密钥对状态，Normal 正常，Deleted 删除
+	KeyPairState string
+}
+
+/*
+SpotAttribute - 竞价实例属性
+*/
+type SpotAttribute struct {
+
+	// 回收时间
+	RecycleTime int
 }
 
 /*
