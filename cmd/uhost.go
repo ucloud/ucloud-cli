@@ -614,6 +614,7 @@ func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updat
 		req.MaxCount = sdk.Int(1)
 	}
 	req.MaxCount = sdk.Int(count)
+
 	resp, err := base.BizClient.CreateUHostInstance(req)
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
@@ -638,6 +639,7 @@ func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updat
 	for i, uhostID := range resp.UHostIds {
 		block = ux.NewBlock()
 		ux.Doc.Append(block)
+
 		text := fmt.Sprintf("the uhost[%s]", uhostID)
 		if len(req.Disks) > 1 {
 			text = fmt.Sprintf("%s which attached a data disk", text)
@@ -658,6 +660,7 @@ func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updat
 		if len(bindEipIDs) > i {
 			bindEipID = bindEipIDs[i]
 		}
+
 		if bindEipID != "" {
 			eip := base.PickResourceID(bindEipID)
 			logs = append(logs, fmt.Sprintf("bind eip: %s", eip))
