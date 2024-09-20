@@ -415,8 +415,23 @@ func NewCmdUHostCreate() *cobra.Command {
 			wg := &sync.WaitGroup{}
 			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
+			batchRename, err := regexp.Match(`[%d,%d]`, []byte(*req.Name))
+			if err != nil || !batchRename {
+				batchRename = false
+			}
+			if batchRename {
+				var actualRequest uhost.CreateUHostInstanceRequest
+				actualRequest = *req
+				if len(bindEipIDs) > 0 {
+					if len(bindEipIDs) != count {
+						return fmt.Errorf("bind-eip count should be equal to uhost count")
+					}
+					actualRequest.NetworkInterface = nil
+				}
+				wg.Add(1 - count)
+				createMultipleUhostWrapper(&actualRequest, count, updateEIPReq, bindEipIDs, async, make(chan bool, 1), wg, tokens)
 
-			if count <= 5 {
+			} else if count <= 5 {
 				for i := 0; i < count; i++ {
 					bindEipID := ""
 					if len(bindEipIDs) > i {
@@ -560,6 +575,23 @@ func NewCmdUHostCreate() *cobra.Command {
 	return cmd
 }
 
+// createMultipleUhostWrapper 处理UI和并发控制
+func createMultipleUhostWrapper(req *uhost.CreateUHostInstanceRequest, count int, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipIDs []string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}) {
+	//控制并发数量
+	tokens <- struct{}{}
+	defer func() {
+		<-tokens
+		//设置延时，使报错能渲染出来
+		time.Sleep(time.Second / 5)
+		wg.Done()
+	}()
+
+	success, logs := createMultipleUhost(req, count, updateEIPReq, bindEipIDs, async)
+	retCh <- success
+	logs = append(logs, fmt.Sprintf("result:%t", success))
+	base.LogInfo(logs...)
+}
+
 // createUhostWrapper 处理UI和并发控制
 func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipID string, async bool, retCh chan<- bool, wg *sync.WaitGroup, tokens chan struct{}, idx int) {
 	//控制并发数量
@@ -575,6 +607,90 @@ func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, updateEIPReq *une
 	retCh <- success
 	logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
 	base.LogInfo(logs...)
+}
+
+func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipIDs []string, async bool) (bool, []string) {
+	resp, err := base.BizClient.CreateUHostInstance(req)
+	block := ux.NewBlock()
+	ux.Doc.Append(block)
+	logs := []string{"=================================================="}
+	logs = append(logs, fmt.Sprintf("api:CreateUHostInstance, request:%v", base.ToQueryMap(req)))
+	if err != nil {
+		logs = append(logs, fmt.Sprintf("err:%v", err))
+		block.Append(base.ParseError(err))
+		return false, logs
+	}
+	if len(bindEipIDs) > 0 && len(bindEipIDs) != count {
+		block.Append(fmt.Sprintf("expect eip count %d, accept %d", count, len(bindEipIDs)))
+		return false, logs
+	}
+
+	logs = append(logs, fmt.Sprintf("resp:%#v", resp))
+	if req.MaxCount == nil {
+		req.MaxCount = sdk.Int(1)
+	}
+	req.MaxCount = sdk.Int(count)
+	if len(resp.UHostIds) != *req.MaxCount {
+		block.Append(fmt.Sprintf("expect uhost count %d, accept %d", count, len(resp.UHostIds)))
+		return false, logs
+	}
+	for i, uhostID := range resp.UHostIds {
+		text := fmt.Sprintf("the uhost[%s]", uhostID)
+		if len(req.Disks) > 1 {
+			text = fmt.Sprintf("%s which attached a data disk", text)
+			if len(req.NetworkInterface) > 0 {
+				text = fmt.Sprintf("%s and binded an eip", text)
+			}
+		} else if len(req.NetworkInterface) > 0 {
+			text = fmt.Sprintf("%s which binded an eip", text)
+		}
+		text = fmt.Sprintf("%s is initializing", text)
+
+		if async {
+			block.Append(text)
+		} else {
+			uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
+		}
+		bindEipID := bindEipIDs[i]
+		if bindEipID != "" {
+			eip := base.PickResourceID(bindEipID)
+			logs = append(logs, fmt.Sprintf("bind eip: %s", eip))
+			eipLogs, err := sbindEIP(sdk.String(uhostID), sdk.String("uhost"), &eip, req.ProjectId, req.Region)
+			logs = append(logs, eipLogs...)
+			if err != nil {
+				block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] failed: %v", eip, uhostID, err))
+				return false, logs
+			}
+			block.Append(fmt.Sprintf("bind eip[%s] with uhost[%s] successfully", eip, uhostID))
+		} else if len(req.NetworkInterface) > 0 {
+			ipSet, err := getEIPByUHostId(uhostID)
+			if err != nil {
+				block.Append(err.Error())
+				return false, logs
+			}
+			block.Append(fmt.Sprintf("IP:%s  Line:%s", ipSet.IP, ipSet.Type))
+			if *updateEIPReq.Name != "" || *updateEIPReq.Remark != "" {
+				var message string
+				if *updateEIPReq.Name != "" && *updateEIPReq.Remark != "" {
+					message = "name and remark"
+				} else if *updateEIPReq.Name != "" {
+					message = "name"
+				} else {
+					message = "remark"
+				}
+
+				logs = append(logs, fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s]", message, ipSet.IPId, uhostID))
+				updateEIPReq.EIPId = sdk.String(ipSet.IPId)
+				_, err = base.BizClient.UpdateEIPAttribute(updateEIPReq)
+				if err != nil {
+					block.Append(fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s] got err, %s", message, ipSet.IPId, uhostID, err))
+					return false, logs
+				}
+				block.Append(fmt.Sprintf("update attribute %s of eip[%s] binded uhost[%s] successfully", message, ipSet.IPId, uhostID))
+			}
+		}
+	}
+	return true, logs
 }
 
 func createUhost(req *uhost.CreateUHostInstanceRequest, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipID string, async bool) (bool, []string) {

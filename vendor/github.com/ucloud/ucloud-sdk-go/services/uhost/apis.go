@@ -90,6 +90,9 @@ type CreateCustomImageRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
+	// 【数组】关联的云盘数据盘id列表。注意: 云盘数据盘需要开启快照服务
+	DataUDiskIds []string `required:"false"`
+
 	// 镜像描述
 	ImageDescription *string `required:"false"`
 
@@ -103,6 +106,9 @@ type CreateCustomImageRequest struct {
 // CreateCustomImageResponse is response schema for CreateCustomImage action
 type CreateCustomImageResponse struct {
 	response.CommonBase
+
+	// 云盘数据盘快照id列表
+	DataSnapshotIds []string
 
 	// 镜像Id
 	ImageId string
@@ -196,12 +202,6 @@ func (c *UHostClient) CreateIsolationGroup(req *CreateIsolationGroupRequest) (*C
 }
 
 /*
-UHostDiskCustomBackup is request schema for complex param
-*/
-type UHostDiskCustomBackup struct {
-}
-
-/*
 CreateUHostInstanceParamNetworkInterfaceIPv6 is request schema for complex param
 */
 type CreateUHostInstanceParamNetworkInterfaceIPv6 struct {
@@ -232,11 +232,41 @@ type CreateUHostInstanceParamNetworkInterfaceEIP struct {
 }
 
 /*
+UHostDiskCustomBackup is request schema for complex param
+*/
+type UHostDiskCustomBackup struct {
+}
+
+/*
+CreateUHostInstanceParamNetworkInterface is request schema for complex param
+*/
+type CreateUHostInstanceParamNetworkInterface struct {
+
+	// 申请并绑定一个教育网EIP。True为申请并绑定，False为不会申请绑定，默认False。当前只支持具有HPC特性的机型。
+	CreateCernetIp *bool `required:"false"`
+
+	//
+	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
+}
+
+/*
+CreateUHostInstanceParamVolumes is request schema for complex param
+*/
+type CreateUHostInstanceParamVolumes struct {
+
+	// 【该字段已废弃，请谨慎使用】
+	CouponId *string `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	IsBoot *string `required:"false" deprecated:"true"`
+}
+
+/*
 UHostDisk is request schema for complex param
 */
 type UHostDisk struct {
 
-	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > DATAARK，数据方舟【已下线，不再支持】 \\ > SNAPSHOT，快照 \\当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]],默认值:NONE
+	// 磁盘备份方案。枚举值：\\ > NONE，无备份 \\ > SNAPSHOT，快照 \\当前磁盘支持的备份模式参考 [[api:uhost-api:disk_type|磁盘类型]],默认值:NONE
 	BackupType *string `required:"false"`
 
 	// 云盘代金券id。不适用于系统盘/本地盘。请通过DescribeCoupon接口查询，或登录用户中心查看
@@ -262,18 +292,6 @@ type UHostDisk struct {
 }
 
 /*
-CreateUHostInstanceParamNetworkInterface is request schema for complex param
-*/
-type CreateUHostInstanceParamNetworkInterface struct {
-
-	// 申请并绑定一个教育网EIP。True为申请并绑定，False为不会申请绑定，默认False。当前只支持具有HPC特性的机型。
-	CreateCernetIp *bool `required:"false"`
-
-	//
-	EIP *CreateUHostInstanceParamNetworkInterfaceEIP `required:"false"`
-}
-
-/*
 CreateUHostInstanceParamSecGroupId is request schema for complex param
 */
 type CreateUHostInstanceParamSecGroupId struct {
@@ -290,20 +308,8 @@ CreateUHostInstanceParamFeatures is request schema for complex param
 */
 type CreateUHostInstanceParamFeatures struct {
 
-	// 弹性网卡特性。开启了弹性网卡权限位，此特性才生效，默认 false 未开启，true 开启，仅与 NetCapability Normal 兼容。
+	// 弹性网卡特性。开启了弹性网卡权限位，此特性才生效，默认 false 未开启，true 开启。
 	UNI *bool `required:"false"`
-}
-
-/*
-CreateUHostInstanceParamVolumes is request schema for complex param
-*/
-type CreateUHostInstanceParamVolumes struct {
-
-	// 【该字段已废弃，请谨慎使用】
-	CouponId *string `required:"false" deprecated:"true"`
-
-	// 【该字段已废弃，请谨慎使用】
-	IsBoot *string `required:"false" deprecated:"true"`
 }
 
 // CreateUHostInstanceRequest is request schema for CreateUHostInstance action
@@ -319,7 +325,7 @@ type CreateUHostInstanceRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
-	// 告警模板id，如果传了告警模板id，且告警模板id正确，则绑定告警模板。绑定告警模板失败只会在后台有日志，不会影响创建主机流程，也不会在前端报错。
+	// 告警模板id，如果传了告警模板id，且告警模板id正确，则绑定告警模板。绑定告警模板失败不会影响创建主机流程。
 	AlarmTemplateId *int `required:"false"`
 
 	// 数据盘是否需要自动分区挂载。当镜像支持“Cloud-init”Feature时可填写此字段。取值 >“On” 自动挂载（默认值）> “Off” 不自动挂载。
@@ -349,7 +355,7 @@ type CreateUHostInstanceRequest struct {
 	// GPU卡核心数。仅GPU机型支持此字段（可选范围与MachineType+GpuType相关）
 	GPU *int `required:"false"`
 
-	// GPU类型，枚举值["K80", "P40", "V100", "T4","T4A", "T4S","2080Ti","2080Ti-4C","1080Ti", "T4/4", "MI100", "V100S",2080","2080TiS","2080TiPro","3090","A100"]，MachineType为G时必填
+	// GPU类型，枚举值["K80", "P40", "V100", "T4","T4A", "T4S","2080Ti","2080Ti-4C","1080Ti", "T4/4", "V100S",2080","2080TiS","2080TiPro","3090","4090","A100"]。MachineType为G时必填
 	GpuType *string `required:"false"`
 
 	// 【私有专区属性】专区云主机开启宿住关联属性
@@ -382,7 +388,7 @@ type CreateUHostInstanceRequest struct {
 	// 主机登陆模式。密码（默认选项）: Password，密钥：KeyPair。
 	LoginMode *string `required:"true"`
 
-	// 云主机机型（V2.0），在本字段和字段UHostType中，仅需要其中1个字段即可。枚举值["N", "C", "G", "O", "OS", "OM", "OPRO", "OMAX", "O.BM", "O.EPC"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
+	// 云主机机型（V2.0），在本字段和字段UHostType中，仅需要其中1个字段即可。枚举值["N", "C", "G", "O", "OM", "OMEM"， "OPRO", "OPROG"]。参考[[api:uhost-api:uhost_type|云主机机型说明]]。
 	MachineType *string `required:"false"`
 
 	// 本次最大创建主机数量，取值范围是[1,100]，默认值为1。- 库存数量不足时，按库存数量创建。- 配额不足时，返回错误。- 使用隔离组时，以隔离组可用数量为准。
@@ -391,13 +397,13 @@ type CreateUHostInstanceRequest struct {
 	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围参考控制台）。默认值：8192
 	Memory *int `required:"false"`
 
-	// 最低cpu平台，枚举值["Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake", "Intel/CascadelakeR", "Intel/IceLake", "Amd/Epyc2", "Amd/Auto","Ampere/Auto","Ampere/Altra"],默认值是"Intel/Auto"。
+	// 最低cpu平台，枚举值["Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake", "Intel/CascadelakeR", "Intel/IceLake", "Intel/SapphireRapids", "Amd/Epyc2", "Amd/Auto","Ampere/Auto","Ampere/Altra"],默认值是"Intel/Auto"。
 	MinimalCpuPlatform *string `required:"false"`
 
 	// UHost实例名称。默认：UHost。请遵照[[api:uhost-api:specification|字段规范]]设定实例名称。
 	Name *string `required:"false"`
 
-	// 网络增强特性。枚举值：Normal，不开启;  Super，开启网络增强1.0； Ultra，开启网络增强2.0（详情参考官网文档）
+	// 网络增强特性。枚举值：Normal，不开启;  Super，开启网络增强1.0； Ultra，开启网络增强2.0；Extreme，开启网络增强3.0（详情参考官网文档）
 	NetCapability *string `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】
@@ -406,7 +412,7 @@ type CreateUHostInstanceRequest struct {
 	//
 	NetworkInterface []CreateUHostInstanceParamNetworkInterface `required:"false"`
 
-	// UHost密码。请遵照[[api:uhost-api:specification|字段规范]]设定密码。密码需使用base64进行编码，举例如下：# echo -n Password1 | base64UGFzc3dvcmQx。
+	// UHost密码。请遵照[[api:uhost-api:specification|字段规范]]设定密码。密码需使用base64进行编码，举例如下：# echo -n Password1 | base64 UGFzc3dvcmQx。
 	Password *string `required:"false"`
 
 	// 【数组】创建云主机时指定内网IP。若不传值，则随机分配当前子网下的IP。调用方式举例：PrivateIp.0=x.x.x.x。当前只支持一个内网IP。
@@ -744,6 +750,9 @@ type DescribeImageRequest struct {
 
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
+
+	// 镜像归属,枚举值:["gpu","app","uhost"]。"gpu": 对gpu进行处理过的行业镜像；"app"：轻量云主机专用的镜像；"uhost"：云主机镜像市场的行业镜像。FuncType传参错误会被忽略
+	FuncType *string `required:"false"`
 
 	// 镜像Id
 	ImageId *string `required:"false"`
@@ -1148,21 +1157,6 @@ func (c *UHostClient) GetAttachedDiskUpgradePrice(req *GetAttachedDiskUpgradePri
 }
 
 /*
-GetUHostInstancePriceParamVolumes is request schema for complex param
-*/
-type GetUHostInstancePriceParamVolumes struct {
-
-	// 【该字段已废弃，请谨慎使用】
-	IsBoot *string `required:"false" deprecated:"true"`
-
-	// 【该字段已废弃，请谨慎使用】
-	Size *int `required:"false" deprecated:"true"`
-
-	// 【该字段已废弃，请谨慎使用】
-	Type *string `required:"false" deprecated:"true"`
-}
-
-/*
 getUHostInstancePriceParamDisks is request schema for complex param
 */
 type getUHostInstancePriceParamDisks struct {
@@ -1178,6 +1172,21 @@ type getUHostInstancePriceParamDisks struct {
 
 	// 磁盘类型。请参考[[api:uhost-api:disk_type|磁盘类型]]。
 	Type *string `required:"true"`
+}
+
+/*
+GetUHostInstancePriceParamVolumes is request schema for complex param
+*/
+type GetUHostInstancePriceParamVolumes struct {
+
+	// 【该字段已废弃，请谨慎使用】
+	IsBoot *string `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Size *int `required:"false" deprecated:"true"`
+
+	// 【该字段已废弃，请谨慎使用】
+	Type *string `required:"false" deprecated:"true"`
 }
 
 // GetUHostInstancePriceRequest is request schema for GetUHostInstancePrice action
@@ -1501,7 +1510,7 @@ type GetUHostUpgradePriceRequest struct {
 	// 内存大小。单位：MB。范围 ：[1024, 262144]，取值为1024的倍数（可选范围参考控制台）。默认值为当前实例的内存大小。
 	Memory *int `required:"false"`
 
-	// 网卡升降级（1，表示升级，2表示降级，0表示不变）
+	// 网卡升降级（1，表示升级，2表示降级，0表示不变）。仅支持网络增强1.0和网络增强2.0的开启和关闭，不支持网络增强特性互相转换，如网络增强1.0升级到网络增强2.0是不被支持的。
 	NetCapValue *int `required:"false"`
 
 	// 【该字段已废弃，请谨慎使用】

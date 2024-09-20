@@ -646,8 +646,8 @@ type CreateUDBInstanceRequest struct {
 	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例 "HA": 高可用版UDB实例 默认是"Normal"
 	InstanceMode *string `required:"false"`
 
-	// 【该字段已废弃，请谨慎使用】
-	InstanceType *string `required:"false" deprecated:"true"`
+	// UDB数据库机型: "SATA_SSD": "SSD机型" , "PCIE_SSD": "SSD高性能机型" , "Normal_Volume": "标准大容量机型", "SATA_SSD_Volume": "SSD大容量机型" , "PCIE_SSD_Volume": "SSD高性能大容量机型", "NVMe_SSD": "快杰机型"
+	InstanceType *string `required:"false"`
 
 	// 规格类型ID,当SpecificationType为1时有效
 	MachineType *string `required:"false"`
@@ -2967,6 +2967,68 @@ func (c *UDBClient) GetUDBInstanceSSLCertURL(req *GetUDBInstanceSSLCertURLReques
 	return &res, nil
 }
 
+// ListUDBMachineTypeRequest is request schema for ListUDBMachineType action
+type ListUDBMachineTypeRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// UDB实例模式类型, 可选值如下: "Normal": 普通版UDB实例 "HA": 高可用版UDB实例 默认是"Normal"
+	InstanceMode *string `required:"false"`
+}
+
+// ListUDBMachineTypeResponse is response schema for ListUDBMachineType action
+type ListUDBMachineTypeResponse struct {
+	response.CommonBase
+
+	// 计算规格列表
+	DataSet []MachineType
+
+	// 默认计算规格
+	DefaultMachineType MachineType
+
+	// 接口返回信息
+	Message string
+}
+
+// NewListUDBMachineTypeRequest will create request of ListUDBMachineType action.
+func (c *UDBClient) NewListUDBMachineTypeRequest() *ListUDBMachineTypeRequest {
+	req := &ListUDBMachineTypeRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(true)
+	return req
+}
+
+/*
+API: ListUDBMachineType
+
+获取UDB云数据库支持的计算规格列表，暂不支持获取跨可用区实例的计算规格，目前支持的数据库品类包括：NVMe版和SSD云盘版MySQL
+*/
+func (c *UDBClient) ListUDBMachineType(req *ListUDBMachineTypeRequest) (*ListUDBMachineTypeResponse, error) {
+	var err error
+	var res ListUDBMachineTypeResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("ListUDBMachineType", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // ListUDBUserTablesRequest is request schema for ListUDBUserTables action
 type ListUDBUserTablesRequest struct {
 	request.CommonBase
@@ -3368,6 +3430,9 @@ type ResizeUDBInstanceRequest struct {
 
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
+
+	// 数据库的CPU核数（只对普通版的SQLServer有用）
+	CPU *int `required:"false"`
 
 	// 使用的代金券id
 	CouponId *string `required:"false"`

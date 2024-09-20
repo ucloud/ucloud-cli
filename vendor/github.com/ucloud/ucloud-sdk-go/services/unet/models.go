@@ -291,6 +291,36 @@ type ResourceSet struct {
 }
 
 /*
+DescribeSecondaryIPDataSet - 描述内网IP的具体信息
+*/
+type DescribeSecondaryIPDataSet struct {
+
+	// 外网IP
+	EIP string
+
+	// EIP资源ID
+	EIPId string
+
+	// 内网IP
+	PrivateIP string
+
+	// 内网IP类型；枚举值：PrimaryIP：主内网IP，SecondaryIP：辅助内网IP
+	PrivateIPType string
+
+	// 资源ID
+	ResourceID string
+
+	// 资源名称
+	ResourceName string
+
+	// 子网ID
+	SubnetID string
+
+	// VPCID
+	VPCID string
+}
+
+/*
 EIPSetData - describeShareBandwidth
 */
 type EIPSetData struct {

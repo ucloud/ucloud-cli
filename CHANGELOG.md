@@ -1,3 +1,7 @@
+## 0.3.0 (2024-09-20)
+
+* support naming in batch on creating uhost 
+
 ## 0.2.0 (2024-06-12)
 
 * ssh key pair and security group support for creating uhost 

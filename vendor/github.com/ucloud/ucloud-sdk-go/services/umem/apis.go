@@ -139,6 +139,68 @@ func (c *UMemClient) CheckURedisAllowance(req *CheckURedisAllowanceRequest) (*Ch
 	return &res, nil
 }
 
+// CreateScanHotBigKeysRequest is request schema for CreateScanHotBigKeys action
+type CreateScanHotBigKeysRequest struct {
+	request.CommonBase
+
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
+
+	// 资源id
+	GroupId *string `required:"true"`
+
+	// 是否要重试任务，如果是的话，TaskId必填
+	IsRetry *bool `required:"false"`
+
+	// 要重试的任务id
+	TaskId *string `required:"false"`
+
+	// 任务类型。"ScanBigKeys"：扫大key，"ScanHotKeys"：扫热key
+	Type *string `required:"true"`
+}
+
+// CreateScanHotBigKeysResponse is response schema for CreateScanHotBigKeys action
+type CreateScanHotBigKeysResponse struct {
+	response.CommonBase
+}
+
+// NewCreateScanHotBigKeysRequest will create request of CreateScanHotBigKeys action.
+func (c *UMemClient) NewCreateScanHotBigKeysRequest() *CreateScanHotBigKeysRequest {
+	req := &CreateScanHotBigKeysRequest{}
+
+	// setup request with client config
+	c.Client.SetupRequest(req)
+
+	// setup retryable with default retry policy (retry for non-create action and common error)
+	req.SetRetryable(false)
+	return req
+}
+
+/*
+API: CreateScanHotBigKeys
+
+创建执行扫大key和热key的任务
+*/
+func (c *UMemClient) CreateScanHotBigKeys(req *CreateScanHotBigKeysRequest) (*CreateScanHotBigKeysResponse, error) {
+	var err error
+	var res CreateScanHotBigKeysResponse
+
+	reqCopier := *req
+
+	err = c.Client.InvokeAction("CreateScanHotBigKeys", &reqCopier, &res)
+	if err != nil {
+		return &res, err
+	}
+
+	return &res, nil
+}
+
 // CreateUMemBackupRequest is request schema for CreateUMemBackup action
 type CreateUMemBackupRequest struct {
 	request.CommonBase
@@ -217,7 +279,7 @@ type CreateUMemSpaceRequest struct {
 	// Year , Month, Dynamic 默认: Month
 	ChargeType *string `required:"false"`
 
-	// 是否是cluster模式（参数为cluster创建redis cluster，其他参数或者不传该参数仍然创建老版本分布式）
+	// 【待废弃】是否是cluster模式（参数为cluster创建redis cluster，其他参数或者不传该参数仍然创建老版本分布式）
 	ClusterMode *string `required:"false"`
 
 	// 使用的代金券id
@@ -232,10 +294,16 @@ type CreateUMemSpaceRequest struct {
 	// URedis密码。请遵照[[api:uhost-api:specification|字段规范]]设定密码。密码需使用base64进行编码，举例如下：# echo -n Password1 | base64UGFzc3dvcmQx。
 	Password *string `required:"false"`
 
+	// 分片端口, 默认为 6379
+	Port *int `required:"false"`
+
 	// 协议:memcache, redis (默认redis).注意:redis无single类型
 	Protocol *string `required:"false"`
 
-	// 分布式代理CPU核数
+	// 代理端口, 默认为 6379
+	ProxyPort *int `required:"false"`
+
+	// 分布式代理CPU核数，不填或者传0时默认不创建代理
 	ProxySize *int `required:"false"`
 
 	// 购买时长 默认: 1
@@ -250,11 +318,14 @@ type CreateUMemSpaceRequest struct {
 	// 子网ID
 	SubnetId *string `required:"false"`
 
-	//
+	// 业务组名称
 	Tag *string `required:"false"`
 
 	// 空间类型:single(无热备),double(热备)(默认: double)
 	Type *string `required:"false"`
+
+	// 是否创建负载均衡型分布式代理，true时表示创建负载均衡型代理
+	UlbMode *bool `required:"false"`
 
 	// VPC的ID
 	VPCId *string `required:"false"`
@@ -465,6 +536,9 @@ type CreateURedisGroupRequest struct {
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"true"`
 
+	// 回档的AOF文件ID
+	AOFID *string `required:"false"`
+
 	// 是否自动备份,enable或disable，默认disable
 	AutoBackup *string `required:"false"`
 
@@ -501,8 +575,17 @@ type CreateURedisGroupRequest struct {
 	// 初始化密码,需要 base64 编码
 	Password *string `required:"false"`
 
+	// 端口
+	Port *int `required:"false"`
+
 	// 购买时长，默认为1
 	Quantity *int `required:"false"`
+
+	// 如果是通过回档创建实例，需要传回档实例的GroupId
+	RollbackGroupId *string `required:"false"`
+
+	// 回档时间点
+	RollbackTime *int `required:"false"`
 
 	// 每个节点的内存大小,单位GB,默认1GB,目前仅支持1/2/4/8/16/32,六种
 	Size *int `required:"false"`
@@ -1134,6 +1217,9 @@ type DescribeUMemPriceRequest struct {
 
 	// 空间类型:single(无热备),double(热备)(默认: double)
 	Type *string `required:"true"`
+
+	// umem分布式代理类型，默认false，true为负载均衡型代理
+	UlbMode *string `required:"false"`
 }
 
 // DescribeUMemPriceResponse is response schema for DescribeUMemPrice action
@@ -1255,6 +1341,24 @@ type DescribeUMemUpgradePriceRequest struct {
 
 	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
+
+	// 进行容量调整分片的分片ID(性能增强型不需要传入)
+	BlockIds []string `required:"false"`
+
+	// 进行容量调整的分片的目标容量,单位 GB(性能增强型不需要传入)
+	BlockSize []int `required:"false"`
+
+	// 是否为性能增强型。默认为false，或者不填，true为性能增强型。
+	HighPerformance *string `required:"false"`
+
+	// 如果是拆分按钮查询价格就填 true, 否则就填 false,默认为 false
+	IsSplit *string `required:"false"`
+
+	// 代理升级后CPU核数
+	NewCPU *int `required:"false"`
+
+	// 代理id
+	ProxyId *string `required:"false"`
 
 	// 购买UMem大小,单位:GB
 	Size *int `required:"true"`
@@ -1445,6 +1549,15 @@ func (c *UMemClient) DescribeUMemcachePrice(req *DescribeUMemcachePriceRequest) 
 type DescribeUMemcacheUpgradePriceRequest struct {
 	request.CommonBase
 
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Region *string `required:"true"`
+
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"false"`
+
 	// 需要升级的空间的GroupId,请参考DescribeUMemcacheGroup接口
 	GroupId *string `required:"true"`
 
@@ -1456,8 +1569,14 @@ type DescribeUMemcacheUpgradePriceRequest struct {
 type DescribeUMemcacheUpgradePriceResponse struct {
 	response.CommonBase
 
-	// 价格，单位：元
-	Price float64
+	// 列表价格
+	ListPrice int
+
+	// 原价
+	OriginalPrice int
+
+	// 价格
+	Price int
 }
 
 // NewDescribeUMemcacheUpgradePriceRequest will create request of DescribeUMemcacheUpgradePrice action.
@@ -1897,14 +2016,20 @@ func (c *UMemClient) DescribeURedisSlowlog(req *DescribeURedisSlowlogRequest) (*
 type DescribeURedisUpgradePriceRequest struct {
 	request.CommonBase
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
+	// ProjectId *string `required:"false"`
+
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Zone *string `required:"false"`
 
 	// 要升级的空间的GroupId,请参考DescribeURedisGroup接口
 	GroupId *string `required:"true"`
+
+	// 查询高性能Redis， 默认为false， 或者不填， 查询高性能为true
+	HighPerformance *bool `required:"false"`
 
 	// 购买uredis大小,单位:GB,范围是[1-32]
 	Size *int `required:"true"`
@@ -1917,7 +2042,10 @@ type DescribeURedisUpgradePriceRequest struct {
 type DescribeURedisUpgradePriceResponse struct {
 	response.CommonBase
 
-	// 扩容差价，单位: 元，保留小数点后两位有效数字
+	// 原价
+	OriginalPrice int
+
+	// 价格
 	Price float64
 }
 
@@ -2595,16 +2723,16 @@ func (c *UMemClient) ResizeUMemSpace(req *ResizeUMemSpaceRequest) (*ResizeUMemSp
 type ResizeURedisGroupRequest struct {
 	request.CommonBase
 
-	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](../summary/get_project_list.html)
+	// [公共参数] 项目ID。不填写为默认项目，子帐号必须填写。 请参考[GetProjectList接口](https://docs.ucloud.cn/api/summary/get_project_list)
 	// ProjectId *string `required:"false"`
 
-	// [公共参数] 地域。 参见 [地域和可用区列表](../summary/regionlist.html)
+	// [公共参数] 地域。 参见 [地域和可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
 	// Region *string `required:"true"`
 
-	// [公共参数] 可用区。参见 [可用区列表](../summary/regionlist.html)
-	// Zone *string `required:"false"`
+	// [公共参数] 可用区。参见 [可用区列表](https://docs.ucloud.cn/api/summary/regionlist)
+	// Zone *string `required:"true"`
 
-	//
+	// 计费类型
 	ChargeType *string `required:"false"`
 
 	// 代金券ID 请参考DescribeCoupon接口
@@ -2613,8 +2741,14 @@ type ResizeURedisGroupRequest struct {
 	// 组ID
 	GroupId *string `required:"true"`
 
+	// 高性能Redis， 默认为false， 或者不填， 高性能为true
+	HighPerformance *bool `required:"false"`
+
 	// 内存大小, 单位:GB (需要大于原size,且小于等于32) 目前仅支持1/2/4/8/16/32 G 六种容量规格
 	Size *int `required:"true"`
+
+	// 任务执行时间戳，默认为0或者不传时，为立即执行，传入时间需满足未来一天范围
+	StartTime *int `required:"false"`
 
 	// 空间类型:single(无热备),double(热备)(默认: double)
 	Type *string `required:"false"`
