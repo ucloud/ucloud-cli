@@ -415,7 +415,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			wg := &sync.WaitGroup{}
 			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
-			batchRename, err := regexp.Match(`\[\d,\d\]`, []byte(*req.Name))
+			batchRename, err := regexp.Match(`\[\d+,\d+\]`, []byte(*req.Name))
 			if err != nil || !batchRename {
 				batchRename = false
 			}
