@@ -415,7 +415,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			wg := &sync.WaitGroup{}
 			tokens := make(chan struct{}, concurrent)
 			wg.Add(count)
-			batchRename, err := regexp.Match(`[%d,%d]`, []byte(*req.Name))
+			batchRename, err := regexp.Match(`\[\d,\d\]`, []byte(*req.Name))
 			if err != nil || !batchRename {
 				batchRename = false
 			}
@@ -610,6 +610,10 @@ func createUhostWrapper(req *uhost.CreateUHostInstanceRequest, updateEIPReq *une
 }
 
 func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updateEIPReq *unet.UpdateEIPAttributeRequest, bindEipIDs []string, async bool) (bool, []string) {
+	if req.MaxCount == nil {
+		req.MaxCount = sdk.Int(1)
+	}
+	req.MaxCount = sdk.Int(count)
 	resp, err := base.BizClient.CreateUHostInstance(req)
 	block := ux.NewBlock()
 	ux.Doc.Append(block)
@@ -626,15 +630,14 @@ func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updat
 	}
 
 	logs = append(logs, fmt.Sprintf("resp:%#v", resp))
-	if req.MaxCount == nil {
-		req.MaxCount = sdk.Int(1)
-	}
-	req.MaxCount = sdk.Int(count)
+
 	if len(resp.UHostIds) != *req.MaxCount {
 		block.Append(fmt.Sprintf("expect uhost count %d, accept %d", count, len(resp.UHostIds)))
 		return false, logs
 	}
 	for i, uhostID := range resp.UHostIds {
+		block = ux.NewBlock()
+		ux.Doc.Append(block)
 		text := fmt.Sprintf("the uhost[%s]", uhostID)
 		if len(req.Disks) > 1 {
 			text = fmt.Sprintf("%s which attached a data disk", text)
@@ -649,9 +652,12 @@ func createMultipleUhost(req *uhost.CreateUHostInstanceRequest, count int, updat
 		if async {
 			block.Append(text)
 		} else {
-			uhostSpoller.Sspoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
+			uhostSpoller.Sspoll(uhostID, text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
 		}
-		bindEipID := bindEipIDs[i]
+		bindEipID := ""
+		if len(bindEipIDs) > i {
+			bindEipID = bindEipIDs[i]
+		}
 		if bindEipID != "" {
 			eip := base.PickResourceID(bindEipID)
 			logs = append(logs, fmt.Sprintf("bind eip: %s", eip))
