@@ -6,7 +6,6 @@ var (
 	BrandNameLower    = "ucloud"
 	BrandAPIURL       = "https://api.ucloud.cn/"
 	BrandUmountURL    = "https://docs.ucloud.cn/storage_cdn/udisk/userguide/umount"
-	BrandLogURL       = "https://das-rpt.ucloud.cn/log"
 	BrandAuthURL      = "https://accountv2.ucloud.cn/authentication"
 	BrandAccountURL   = "https://accountv2.ucloud.cn"
 	BrandRegisterURL  = "https://passport.ucloud.cn/#register"

@@ -1,12 +1,9 @@
 package base
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -15,21 +12,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
 )
-
-// DefaultDasURL location of das server
-var DefaultDasURL string
-
-func init() {
-	DefaultDasURL = fmt.Sprintf("%s", BrandLogURL)
-}
 
 // Logger 日志
 var logger *log.Logger
 var mu sync.Mutex
 var out = Cxt.GetWriter()
-var tracer = Tracer{DefaultDasURL}
 
 func initConfigDir() {
 	if _, err := os.Stat(GetLogFileDir()); os.IsNotExist(err) {
@@ -160,7 +148,6 @@ func UploadLogs(logs []string, level string, goID int64) {
 		line := fmt.Sprintf("time=%s level=%s goroutine_id=%d msg=%s", time.Now().Format(time.RFC3339Nano), level, goID, log)
 		lines = append(lines, line)
 	}
-	tracer.Send(lines)
 }
 
 // LogRotateHook rotate log file
@@ -269,31 +256,4 @@ func (t Tracer) wrapLogs(log []string) ([]byte, error) {
 		return nil, fmt.Errorf("cannot to marshal log: %s", err)
 	}
 	return marshaled, nil
-}
-
-// Send logs to server
-func (t Tracer) Send(logs []string) error {
-	body, err := t.wrapLogs(logs)
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(body); i++ {
-		body[i] = ^body[i]
-	}
-
-	client := &http.Client{}
-	ua := fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, UserAgent)
-	req, err := http.NewRequest("POST", t.DasUrl, bytes.NewReader(body))
-	req.Header.Add("Origin", "https://sdk.ucloud.cn")
-	req.Header.Add("User-Agent", ua)
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("send logs failed: status %d %s", resp.StatusCode, resp.Status)
-	}
-
-	return nil
 }

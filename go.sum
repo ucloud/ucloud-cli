@@ -49,8 +49,6 @@ github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DM
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
-github.com/ucloud/ucloud-sdk-go v0.22.17 h1:EFn+GxVKS5Tj8hIPie3qL6Zgk25fmWcHqJ06K8wl+Qo=
-github.com/ucloud/ucloud-sdk-go v0.22.17/go.mod h1:dyLmFHmUfgb4RZKYQP9IArlvQ2pxzFthfhwxRzOEPIw=
 github.com/ucloud/ucloud-sdk-go v0.22.25 h1:ceKeH7WFnpUt9nJSubn+mnxS1iKGrk/Q+HLwa0iYwmQ=
 github.com/ucloud/ucloud-sdk-go v0.22.25/go.mod h1:dyLmFHmUfgb4RZKYQP9IArlvQ2pxzFthfhwxRzOEPIw=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
