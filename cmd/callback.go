@@ -34,7 +34,11 @@ const callbackSuccessHTML = `<!DOCTYPE html>
 </html>`
 
 // startCallbackServer 在给定 listener 上起一个临时 HTTP server，只处理 GET /authorization。
-// 结果通过返回的 channel（缓冲1）投递；首个回调投递后触发 server 关闭（sync.Once 保证只投递一次）。
+// 结果通过返回的 channel（缓冲1）投递，sync.Once 保证只投递一次。投递规则：
+//   - error 参数（如 access_denied）→ 回 400 并投递错误（中止登录）；
+//   - code + state 匹配 → 回成功页并投递 code；
+//   - 缺 code 或 state 不匹配（本地探针/陈旧标签页等噪音请求）→ 仅回 400、不投递，
+//     继续等待真正的回调（上层 loginCallbackTimeout 兜底）。
 func startCallbackServer(ln net.Listener, expectState string) (*http.Server, <-chan callbackResult) {
 	ch := make(chan callbackResult, 1)
 	var once sync.Once
@@ -43,32 +47,33 @@ func startCallbackServer(ln net.Listener, expectState string) (*http.Server, <-c
 	mux := http.NewServeMux()
 	mux.HandleFunc("/authorization", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		var res callbackResult
 
 		if e := q.Get("error"); e != "" {
+			var err error
 			if e == "access_denied" {
-				res.err = fmt.Errorf("authorization was denied in the browser. Run 'ucloud auth login' to try again")
+				err = fmt.Errorf("authorization was denied in the browser. Run 'ucloud auth login' to try again")
 			} else {
-				res.err = fmt.Errorf("oauth server returned error %q. Run 'ucloud auth login' to try again", e)
+				err = fmt.Errorf("oauth server returned error %q. Run 'ucloud auth login' to try again", e)
 			}
-		} else if code := q.Get("code"); code == "" {
-			res.err = fmt.Errorf("callback carried no authorization code. Run 'ucloud auth login' to try again")
-		} else if q.Get("state") != expectState {
-			res.err = fmt.Errorf("state mismatch: the callback likely comes from a previous login attempt. Run 'ucloud auth login' again")
-		} else {
-			res.code = code
-		}
-
-		if res.err != nil {
 			http.Error(w, "Login failed. Return to the terminal for details.", http.StatusBadRequest)
-		} else {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, callbackSuccessHTML)
+			once.Do(func() {
+				ch <- callbackResult{err: err}
+			})
+			return
 		}
 
+		code := q.Get("code")
+		if code == "" || q.Get("state") != expectState {
+			// 噪音请求：不消耗 once，登录继续等待真正的回调
+			http.Error(w, "Login failed. Return to the terminal for details.", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, callbackSuccessHTML)
 		once.Do(func() {
-			ch <- res
+			ch <- callbackResult{code: code}
 		})
 	})
 	srv.Handler = mux

@@ -247,7 +247,7 @@ func translateOAuthError(code, desc string) error {
 	case "access_denied":
 		return fmt.Errorf("authorization was denied. Run 'ucloud auth login' to try again")
 	default:
-		return fmt.Errorf("oauth server rejected the request: %s (%s). Run 'ucloud auth login' to start over", code, desc)
+		return fmt.Errorf("oauth server rejected the request: %s (%s). Run 'ucloud auth login' to start over", code, Redact(desc))
 	}
 }
 

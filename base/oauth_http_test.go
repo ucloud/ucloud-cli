@@ -54,6 +54,17 @@ func TestExchangeToken(t *testing.T) {
 			t.Errorf("invalid_grant should translate to actionable message, got %v", err)
 		}
 	})
+	t.Run("default error redacts description", func(t *testing.T) {
+		s := tokenServer(t, 400, `{"error":"invalid_request","error_description":"authorization: Bearer sk-secret-token-123"}`, nil)
+		defer s.Close()
+		_, err := ExchangeToken(s.URL, "http://localhost:8723/authorization", "c")
+		if err == nil || !strings.Contains(err.Error(), "rejected the request") {
+			t.Fatalf("default branch should surface rejection, got %v", err)
+		}
+		if strings.Contains(err.Error(), "sk-secret-token-123") {
+			t.Errorf("error_description must be redacted, got %v", err)
+		}
+	})
 	t.Run("server 5xx", func(t *testing.T) {
 		s := tokenServer(t, 500, `oops`, nil)
 		defer s.Close()

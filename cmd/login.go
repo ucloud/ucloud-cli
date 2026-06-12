@@ -141,7 +141,7 @@ func runLogin(noBrowser bool) {
 		}
 	}
 	if err := base.AggConfigListIns.UpdateAggConfig(cfg); err != nil {
-		base.HandleError(err)
+		fmt.Printf("Warning: saving default region/project failed (%v). Set them later: ucloud config update --profile %s --region <region> --zone <zone> --project-id <id>\n", err, cfg.Profile)
 	}
 
 	// ⑥ 输出 email + 过期时间（id_token 仅解析不落盘）
