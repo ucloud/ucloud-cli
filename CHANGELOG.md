@@ -1,3 +1,14 @@
+## 0.3.1 (2026-06-11)
+
+* OAuth browser login: `ucloud auth login` / `ucloud auth logout` (RFC 8252 loopback auto-capture, `--no-browser` fallback)
+* automatic token lifecycle: proactive refresh before expiry, reactive refresh-and-replay on auth failure (RetCode 174), flock-serialized rotation safe for concurrent processes
+* atomic temp+rename writes for config/credential files
+* `auth_mode` picks exactly one credential mechanism per profile; AK/SK profiles unchanged
+* fix: `config update --base-url` no longer validates against the old gateway
+* fix: login validates an existing project_id against the logged-in account
+* fix: `init` on an OAuth profile persists the switch back to AK/SK
+* token redaction across all log sinks; panic output redacted
+
 ## 0.3.0 (2024-09-20)
 
 * support naming in batch on creating uhost 

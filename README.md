@@ -181,6 +181,81 @@ For more information, run:
 $ ucloud config --help
 ```
 
+## Authentication
+
+The UCloud CLI supports two ways to authenticate. Pick one based on how you use the CLI:
+
+| You are | Use |
+| --- | --- |
+| A human at an interactive terminal | OAuth browser login: `ucloud auth login` (recommended) |
+| Scripts, CI/CD or other unattended automation | AK/SK profile: `ucloud init` or `ucloud config` |
+
+### Log in via browser (OAuth)
+
+```
+$ ucloud auth login
+```
+
+What happens:
+
+1. The CLI starts a temporary local callback server on an ephemeral 127.0.0.1 port and opens your browser at the UCloud authorization page. If the browser does not open, copy the printed URL and open it manually.
+2. You log in and approve. The browser is redirected to `http://localhost:<port>/authorization`, where the CLI captures the authorization code automatically and shows a "Login successful" page — no copy-paste needed. Just close the tab and return to the terminal.
+3. The CLI exchanges the code for tokens and saves them. If the profile has no region/zone/project configured yet, it also fetches and configures the defaults:
+
+```
+Configured default region:cn-bj2 zone:cn-bj2-02
+Configured default project:org-xxxxxx Default
+Logged in as you@example.com, token valid until 18:30
+```
+
+### Manual fallback (no browser on this machine)
+
+For SSH sessions or headless machines, pass `--no-browser`:
+
+```
+$ ucloud auth login --no-browser
+```
+
+The CLI prints the authorization URL instead of opening a browser. Open it on any device, log in and approve. The browser will then be redirected to a `http://localhost:<port>/authorization?...` page that **cannot open — this is expected**. Copy the FULL URL from the address bar and paste it back into the terminal.
+
+The same paste prompt is also used as a fallback in the default mode: if the automatic capture does not receive the callback within 3 minutes, the CLI prints "Automatic capture timed out. Paste the callback URL here as a fallback:" and waits for the pasted URL.
+
+### Token storage and lifetime
+
+- Tokens are stored in `~/.ucloud/credential.json` with file mode 0600.
+- The access token is valid for about 1 hour and is renewed silently via the refresh token — no action needed from you. Renewal happens on use: when you run a command, the CLI refreshes the token if it is about to expire, and also recovers automatically if the gateway rejects a token mid-command. There is no background daemon.
+- The refresh token is currently valid for 7 days and is replaced with a fresh one on every renewal, so any use of the CLI within that window keeps you logged in indefinitely. After 7 days without use, the next command asks you to run `ucloud auth login` again.
+- You stay logged in until the refresh token expires on the server side, or until you run `ucloud auth logout`. Logout only removes the locally stored tokens of the current profile; it does not touch any stored AK/SK keys. Logging out of the UCloud web console does not affect CLI sessions.
+
+### One profile, one auth method
+
+- Each profile uses exactly one auth method at a time, shown in the `AuthMode` column of `ucloud config list` (`oauth` for browser login, empty for AK/SK signing).
+- Running `ucloud auth login` switches the current profile to OAuth. Existing AK/SK keys are kept stored but no longer used for signing.
+- Running `ucloud init` on an OAuth profile asks for confirmation before switching the profile back to AK/SK.
+- Passing both `--public-key` and `--private-key` flags on a command always takes precedence: that invocation uses AK/SK signing regardless of the profile's auth mode.
+
+### Proxies
+
+OAuth token requests honor the standard `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` environment variables.
+
+### Limitations
+
+- **OAuth login is per machine.** Do not copy or share `~/.ucloud` across machines: the refresh token rotates on every renewal, so a renewal on one machine logs the other machine out. For multi-machine or shared setups, use an AK/SK profile.
+- **Downgrading drops tokens.** Older ucloud-cli versions do not know the token fields and silently drop them when rewriting the config files. After downgrading, run `ucloud auth login` again.
+
+### Troubleshooting
+
+| Symptom / message | What to do |
+| --- | --- |
+| `authorization code or refresh token expired or already used (each code works only once)` | Each authorization code works only once and expires quickly. Run `ucloud auth login` again and complete the flow promptly. |
+| `state mismatch: the pasted URL likely comes from a previous login attempt` | You pasted a callback URL from an earlier attempt. Run `ucloud auth login` again and paste the URL from THIS attempt. |
+| `Login expired for profile '<name>'` | The refresh token is no longer valid. Run `ucloud auth login` again. |
+| `cannot reach oauth server ... (check network or proxy settings)` | Network or proxy issue. Check connectivity and your `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` settings. |
+| `'ucloud auth login' requires an interactive terminal` | You are in CI or piping stdin. OAuth login is for interactive humans; use an AK/SK profile instead. |
+| Browser did not open | Copy the URL printed in the terminal and open it manually, or use `--no-browser`. |
+| (manual mode) browser shows the localhost page cannot open | Expected — the CLI is not listening in manual mode. Copy the full URL from the address bar and paste it into the terminal. |
+| (manual mode) the localhost page shows unexpected content from another local program | Harmless — something else happens to listen on that port. Only the URL in the address bar matters; copy and paste it. |
+
 ## For example
 
 I want to create a uhost in Nigeria (region: air-nigeria) and bind a public IP, and then configure GlobalSSH to accelerate efficiency of SSH service beyond China mainland.
