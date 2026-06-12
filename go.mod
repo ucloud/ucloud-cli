@@ -4,6 +4,8 @@ go 1.19
 
 require (
 	github.com/fatih/color v1.13.0
+	github.com/gofrs/flock v0.8.1
+	github.com/mattn/go-isatty v0.0.14
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0
 	github.com/spf13/cobra v0.0.3
@@ -18,7 +20,6 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect

@@ -201,6 +201,21 @@ func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
 	return "", "", errNoDefaultProject
 }
 
+// fetchProjectListWithConfig 用指定 profile 的凭证拉取完整项目列表（含默认标记）
+func fetchProjectListWithConfig(cfg *base.AggConfig) ([]uaccount.ProjectListInfo, error) {
+	bc, err := base.GetBizClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	req := bc.NewGetProjectListRequest()
+	resp, err := bc.GetProjectList(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.ProjectSet, nil
+}
+
 func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
 	bc, err := base.GetBizClient(cfg)
 	if err != nil {

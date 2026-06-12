@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -583,6 +584,36 @@ func WriteJSONFile(list interface{}, filePath string) error {
 		return err
 	}
 	return nil
+}
+
+// WriteJSONFileAtomic 原子写 json 文件：同目录临时文件 + Sync + Rename（D3；对照 botocore#3213 损坏事故）
+func WriteJSONFileAtomic(list interface{}, filePath string) error {
+	byts, err := json.Marshal(list)
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(filePath)
+	tmp, err := ioutil.TempFile(dir, "."+filepath.Base(filePath)+".tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name()) // rename 成功后此句为 no-op
+	if err := tmp.Chmod(LocalFileMode); err != nil {
+		tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(byts); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), filePath)
 }
 
 // GetFileList 补全文件名

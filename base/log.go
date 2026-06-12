@@ -49,16 +49,34 @@ func initLog() error {
 	return nil
 }
 
-func logCmd() {
-	args := make([]string, len(os.Args))
-	copy(args, os.Args)
+// redactCmdArgs 脱敏命令行参数：flag 值遮蔽（名单含 oauth 敏感词）+ 整体过 Redact 兜底
+func redactCmdArgs(osArgs []string) []string {
+	args := make([]string, len(osArgs))
+	copy(args, osArgs)
 	for idx, arg := range args {
-		for _, word := range []string{"password", "private-key", "public-key"} {
+		for _, word := range []string{"password", "private-key", "public-key", "code", "token", "authorization"} {
 			if strings.Contains(arg, word) && idx <= len(args)-2 {
 				args[idx+1] = strings.Repeat("*", 8)
 			}
 		}
 	}
+	for idx := range args {
+		args[idx] = Redact(args[idx])
+	}
+	return args
+}
+
+// redactLogLines 日志出口统一脱敏（Phase 3 扩面：错误包装/调试输出经 Log* 的部分）
+func redactLogLines(logs []string) []string {
+	out := make([]string, len(logs))
+	for i, line := range logs {
+		out[i] = Redact(line)
+	}
+	return out
+}
+
+func logCmd() {
+	args := redactCmdArgs(os.Args)
 	LogInfo(fmt.Sprintf("command: %s", strings.Join(args, " ")))
 }
 
@@ -83,6 +101,7 @@ func LogInfo(logs ...string) {
 	if ok {
 		return
 	}
+	logs = redactLogLines(logs)
 	mu.Lock()
 	defer mu.Unlock()
 	goID := curGoroutineID()
@@ -100,6 +119,7 @@ func LogPrint(logs ...string) {
 	if ok {
 		return
 	}
+	logs = redactLogLines(logs)
 	mu.Lock()
 	defer mu.Unlock()
 	goID := curGoroutineID()
@@ -118,6 +138,7 @@ func LogWarn(logs ...string) {
 	if ok {
 		return
 	}
+	logs = redactLogLines(logs)
 	mu.Lock()
 	defer mu.Unlock()
 	goID := curGoroutineID()
@@ -136,6 +157,7 @@ func LogError(logs ...string) {
 	if ok {
 		return
 	}
+	logs = redactLogLines(logs)
 	mu.Lock()
 	defer mu.Unlock()
 	goID := curGoroutineID()
