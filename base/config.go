@@ -35,6 +35,36 @@ const DefaultMaxRetryTimes = 3
 // DefaultProfile name of default profile
 const DefaultProfile = "default"
 
+// 两个可被 profile 覆盖的默认服务域，并列以体现 api 网关与 oauth 域的对称：
+//   - 业务 API 网关（api.ucloud.cn）：承载全部云资源 RPC，AK/SK 签名或 Bearer。
+//   - OAuth 授权服务（oauth2.ucloud.cn）：承载浏览器登录的 /authorize 与 /token。
+const (
+	// DefaultBaseURL location of api server
+	DefaultBaseURL = "https://api.ucloud.cn/"
+
+	// defaultOAuthBaseURL 内置默认 OAuth 域名（profile 的 oauth_base_url 可覆盖，见 GetOAuthBaseURL）
+	defaultOAuthBaseURL = "https://oauth2.ucloud.cn"
+)
+
+// OAuth 协议常量与 loopback 回调常量
+const (
+	oauthAuthorizePath = "/authorize"
+	oauthTokenPath     = "/token"
+	oauthScope         = "openid email offline_access full_access"
+
+	// OAuth 客户端凭据（public client：secret 嵌入二进制为知情裁定，同 gcloud/gh）
+	oauthClientID     = "WP77AwxvUgWt2JqaRCKn"
+	oauthClientSecret = "mksUQLod9VaUKMt3wESdgteTFCgVasiUwLSPqq5e"
+
+	// LoopbackListenHost 本地回调 server 的监听地址（回环 IP，导出供 cmd/callback.go 复用）。
+	// loopbackRedirectHost redirect_uri 里的 host 必须是字面量 localhost——后端拒 127.0.0.1 形式的 redirect_uri。
+	// 两者指向同一回环地址，但写法必须如此区分。
+	LoopbackListenHost   = "127.0.0.1"
+	loopbackRedirectHost = "localhost"
+	// OAuthRedirectPath redirect_uri 与回调 server mux 共用的路径，必须一致（导出供 cmd/callback.go 复用）。
+	OAuthRedirectPath = "/authorization"
+)
+
 // Version 版本号
 const Version = "0.3.1"
 
