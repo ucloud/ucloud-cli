@@ -533,95 +533,71 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// memcacheCreateParams holds the shared flag values for memcache create commands.
-type memcacheCreateParams struct {
-	name      string
-	size      int
-	region    string
-	zone      string
-	projectID string
-	chargeType string
-	quantity   int
-	group     string
-	vpcID     string
-	subnetID  string
-}
-
 // NewCmdMemcacheCreate ucloud memcache create
 func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
-	var p memcacheCreateParams
+	req := base.BizClient.NewCreateUMemcacheGroupRequest()
+	var region, zone, projectID string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create memcache instance",
 		Long:  "Create memcache instance",
 		Run: func(c *cobra.Command, args []string) {
-			if p.size > 32 || p.size < 1 {
+			if *req.Size > 32 || *req.Size < 1 {
 				fmt.Fprintln(out, "size-gb should be between 1 and 32")
 				return
 			}
-			if err := fillDefaultVPCAndSubnet(&p.vpcID, &p.subnetID, p.projectID, p.region, p.zone); err != nil {
+			if err := fillDefaultVPCAndSubnet(req.VPCId, req.SubnetId, *req.ProjectId, *req.Region, *req.Zone); err != nil {
 				fmt.Fprintln(out, err)
 				return
 			}
-			createMemcache(out, &p)
+			resp, err := base.BizClient.CreateUMemcacheGroup(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			fmt.Fprintf(out, "memcache[%s] created\n", resp.GroupId)
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.StringVar(&p.name, "name", "", "Required. Name of memcache instance to create")
-	flags.IntVar(&p.size, "size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
-	flags.StringVar(&p.vpcID, "vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
-	flags.StringVar(&p.subnetID, "subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
-	p.region = base.ConfigIns.Region
-	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	p.zone = base.ConfigIns.Zone
-	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	p.projectID = base.ConfigIns.ProjectID
-	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
-	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
-	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
-	flags.StringVar(&p.group, "group", "", "Optional. Business group")
+	req.Name = flags.String("name", "", "Required. Name of memcache instance to create")
+	req.Size = flags.Int("size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
+	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
+	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
+	region = base.ConfigIns.Region
+	flags.StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	zone = base.ConfigIns.Zone
+	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	projectID = base.ConfigIns.ProjectID
+	flags.StringVar(&projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	req.ChargeType = flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
+	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
+	req.Tag = flags.String("group", "", "Optional. Business group")
+
+	// Set region/zone/projectID to request after flag parsing
+	req.Region = &region
+	req.Zone = &zone
+	req.ProjectId = &projectID
 
 	flags.SetFlagValues("size-gb", "1", "2", "4", "8", "16", "32")
 	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
 	flags.SetFlagValuesFunc("vpc-id", func() []string {
-		return getAllVPCIdNames(p.projectID, p.region)
+		return getAllVPCIdNames(projectID, region)
 	})
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
-		return getAllSubnetIDNames(p.vpcID, p.projectID, p.region)
+		return getAllSubnetIDNames(*req.VPCId, projectID, region)
 	})
 	flags.SetFlagValuesFunc("region", getRegionList)
 	flags.SetFlagValuesFunc("zone", func() []string {
-		return getZoneList(p.region)
+		return getZoneList(region)
 	})
 	flags.SetFlagValuesFunc("project-id", getProjectList)
 
 	cmd.MarkFlagRequired("name")
 
 	return cmd
-}
-
-func createMemcache(out io.Writer, p *memcacheCreateParams) {
-	req := base.BizClient.NewCreateUMemcacheGroupRequest()
-	req.Region = &p.region
-	req.Zone = &p.zone
-	req.ProjectId = &p.projectID
-	req.Name = &p.name
-	req.Size = &p.size
-	req.VPCId = &p.vpcID
-	req.SubnetId = &p.subnetID
-	req.ChargeType = &p.chargeType
-	req.Quantity = &p.quantity
-	req.Tag = &p.group
-
-	resp, err := base.BizClient.CreateUMemcacheGroup(req)
-	if err != nil {
-		base.HandleError(err)
-		return
-	}
-	fmt.Fprintf(out, "memcache[%s] created\n", resp.GroupId)
 }
 
 // NewCmdMemcacheDelete ucloud memcache delete
