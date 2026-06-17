@@ -32,9 +32,6 @@ const DefaultTimeoutSec = 15
 // DefaultMaxRetryTimes default timeout for requesting api, 15s
 const DefaultMaxRetryTimes = 3
 
-// DefaultBaseURL location of api server
-const DefaultBaseURL = "https://api.ucloud.cn/"
-
 // DefaultProfile name of default profile
 const DefaultProfile = "default"
 

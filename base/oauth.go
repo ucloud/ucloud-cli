@@ -20,19 +20,10 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-// OAuth 常量（spec D2：client_secret 嵌入二进制为知情裁定，同 gcloud/gh）。
-const (
-	defaultOAuthBaseURL = "https://oauth2.ucloud.cn"
-	oauthClientID       = "WP77AwxvUgWt2JqaRCKn"
-	oauthClientSecret   = "mksUQLod9VaUKMt3wESdgteTFCgVasiUwLSPqq5e"
-	oauthRedirectPath   = "/authorization"
-	oauthScope          = "openid email offline_access full_access"
-)
-
 // BuildLoopbackRedirectURI 按后端规则拼 loopback redirect_uri：host 必须是字面量 localhost
 // （127.0.0.1 会被后端拒），端口为内核分配的临时端口（>=1024）。
 func BuildLoopbackRedirectURI(port int) string {
-	return fmt.Sprintf("http://localhost:%d%s", port, oauthRedirectPath)
+	return fmt.Sprintf("http://%s:%d%s", loopbackRedirectHost, port, OAuthRedirectPath)
 }
 
 // AuthModeOAuth auth_mode 取值：OAuth 浏览器登录。空串/其他值一律视为 AK/SK 签名模式。
@@ -66,7 +57,7 @@ func BuildAuthorizeURL(oauthBase, redirectURI, state string) string {
 	v.Set("redirect_uri", redirectURI)
 	v.Set("scope", oauthScope)
 	v.Set("state", state)
-	return fmt.Sprintf("%s/authorize?%s", oauthBase, v.Encode())
+	return fmt.Sprintf("%s%s?%s", oauthBase, oauthAuthorizePath, v.Encode())
 }
 
 // SanitizeCallbackInput 容忍前后空白/引号/终端折行引入的内部空白与换行（D7 输入容错）
@@ -82,7 +73,7 @@ func SanitizeCallbackInput(input string) string {
 	}, s)
 }
 
-const callbackFormatHint = "expected format: http://localhost/authorization?code=xxx&state=yyy"
+const callbackFormatHint = "expected format: http://" + loopbackRedirectHost + OAuthRedirectPath + "?code=xxx&state=yyy"
 
 // ParseCallbackURL 校验 state 并提取 code（流程步骤③）
 func ParseCallbackURL(input, expectState string) (string, error) {
@@ -210,7 +201,7 @@ type TokenResponse struct {
 var oauthHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func requestToken(oauthBase string, form url.Values) (*TokenResponse, error) {
-	endpoint := strings.TrimSuffix(oauthBase, "/") + "/token"
+	endpoint := strings.TrimSuffix(oauthBase, "/") + oauthTokenPath
 	resp, err := oauthHTTPClient.PostForm(endpoint, form)
 	if err != nil {
 		return nil, fmt.Errorf("cannot reach oauth server %s (check network or proxy settings): %v", endpoint, err)
