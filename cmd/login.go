@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -53,6 +54,7 @@ func NewCmdAuth() *cobra.Command {
 // NewCmdLogin ucloud auth login
 func NewCmdLogin() *cobra.Command {
 	var noBrowser bool
+	var oauthBaseURL string
 	cmd := &cobra.Command{
 		Use:     "login",
 		Short:   "Log in to UCloud via browser (OAuth)",
@@ -60,15 +62,26 @@ func NewCmdLogin() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Example: "ucloud auth login\nucloud auth login --no-browser",
 		Run: func(cmd *cobra.Command, args []string) {
-			runLogin(noBrowser)
+			runLogin(noBrowser, oauthBaseURL)
 		},
 	}
 	cmd.Flags().BoolVar(&noBrowser, "no-browser", false, "Print the authorization URL instead of opening a browser (for headless/SSH environments)")
+	cmd.Flags().StringVar(&oauthBaseURL, "oauth-base-url", "", "Override the OAuth authorization server URL (for non-default environments; persisted to the profile)")
 	cmd.SetHelpTemplate(oauthHelpTmpl)
 	return cmd
 }
 
-func runLogin(noBrowser bool) {
+// resolveLoginOAuthBase 决定登录使用的 OAuth 域：--oauth-base-url flag 最优先，
+// 给定时写回 cfg.OAuthBaseURL 以便登录成功后随 profile 持久化（后续刷新沿用）；
+// 未给定则回退到 profile 配置或内置默认（GetOAuthBaseURL）。
+func resolveLoginOAuthBase(cfg *base.AggConfig, flagVal string) (string, error) {
+	if flagVal != "" {
+		cfg.OAuthBaseURL = strings.TrimSuffix(flagVal, "/")
+	}
+	return base.GetOAuthBaseURL(cfg)
+}
+
+func runLogin(noBrowser bool, oauthBaseURL string) {
 	// AP-1：非 TTY fail-fast
 	if !base.IsStdinTTY() {
 		fmt.Fprintln(os.Stderr, "'ucloud auth login' requires an interactive terminal. For automation/CI, use an AK/SK profile: ucloud config --profile <name> --public-key <pub> --private-key <pri>")
@@ -76,7 +89,7 @@ func runLogin(noBrowser bool) {
 	}
 
 	cfg := base.ConfigIns
-	oauthBase, err := base.GetOAuthBaseURL(cfg)
+	oauthBase, err := resolveLoginOAuthBase(cfg, oauthBaseURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

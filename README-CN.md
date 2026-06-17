@@ -211,6 +211,8 @@ CLI 会打印授权 URL 而不是打开浏览器。在任意设备上打开该 U
 
 默认模式下同样存在这条粘贴回退路径：如果自动捕获在 3 分钟内没有收到回调，CLI 会打印 "Automatic capture timed out. Paste the callback URL here as a fallback:" 并等待粘贴回调 URL。
 
+针对非默认环境，可加 `--oauth-base-url <url>` 覆盖 OAuth 授权服务器地址。该参数在无任何已有配置时即可使用，并会保存到 profile，后续 token 刷新会沿用它。
+
 ### Token 存储与有效期
 
 - Token 存储在 `~/.ucloud/credential.json`，文件权限 0600。

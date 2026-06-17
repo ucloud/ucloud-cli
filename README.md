@@ -220,6 +220,8 @@ The CLI prints the authorization URL instead of opening a browser. Open it on an
 
 The same paste prompt is also used as a fallback in the default mode: if the automatic capture does not receive the callback within 3 minutes, the CLI prints "Automatic capture timed out. Paste the callback URL here as a fallback:" and waits for the pasted URL.
 
+For non-default environments, pass `--oauth-base-url <url>` to override the OAuth authorization server URL. It works with no prior config and is saved to the profile, so later token refreshes reuse it.
+
 ### Token storage and lifetime
 
 - Tokens are stored in `~/.ucloud/credential.json` with file mode 0600.
