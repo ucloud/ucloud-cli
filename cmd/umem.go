@@ -213,7 +213,7 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 
 	flags.StringVar(&p.name, "name", "", "Required. Name of the redis to create. Range of the name length is [6,63]")
 	flags.StringVar(&redisType, "type", "", "Required. Type of the redis. Accept values:'master-replica','distributed'")
-	flags.IntVar(&p.size, "size-gb", 1, "Optional. Memory size. Default value 1GB(for master-replica redis type) or block-cnt*1GB(for distributed redis type). Unit GB")
+	flags.IntVar(&p.size, "size-gb", 2, "Optional. Memory size. Default value 2GB. Unit GB")
 	flags.StringVar(&p.version, "version", "6.0", "Optional. Version of redis. Accept values: '4.0', '5.0', '6.0', '7.0'")
 	flags.StringVar(&p.vpcID, "vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	flags.StringVar(&p.subnetID, "subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
@@ -338,7 +338,7 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
-				if strings.HasPrefix(id, "uredis") || strings.HasPrefix(id, "uhredis") {
+				if strings.HasPrefix(id, "uredis") || strings.HasPrefix(id, "uhredis") || strings.HasPrefix(id, "uregionredis") {
 					deleteMasterReplicaRedis(out, &p, id)
 				} else if strings.HasPrefix(id, "udredis") {
 					deleteDistributedRedis(out, &p, id)
