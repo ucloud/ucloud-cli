@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -180,9 +181,17 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 		Short: "Create redis instance",
 		Long:  "Create redis instance",
 		Run: func(c *cobra.Command, args []string) {
-			if l := len(p.name); l < 6 || l > 63 {
+			// Validate name，support Chinese name
+			if l := utf8.RuneCountInString(p.name); l < 6 || l > 63 {
 				fmt.Fprintln(out, "length of name should be between 6 and 63")
 				return
+			}
+			// Validate password
+			if p.password != "" {
+				if l := len(p.password); l < 6 || l > 36 {
+					fmt.Fprintln(out, "length of password should be between 6 and 36")
+					return
+				}
 			}
 			if err := fillDefaultVPCAndSubnet(&p.vpcID, &p.subnetID, p.projectID, p.region, p.zone); err != nil {
 				fmt.Fprintln(out, err)
@@ -202,24 +211,21 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.StringVar(&p.name, "name", "", "Required. Name of the redis to create.")
+	flags.StringVar(&p.name, "name", "", "Required. Name of the redis to create. Range of the name length is [6,63]")
 	flags.StringVar(&redisType, "type", "", "Required. Type of the redis. Accept values:'master-replica','distributed'")
 	flags.IntVar(&p.size, "size-gb", 1, "Optional. Memory size. Default value 1GB(for master-replica redis type) or block-cnt*1GB(for distributed redis type). Unit GB")
 	flags.StringVar(&p.version, "version", "6.0", "Optional. Version of redis. Accept values: '4.0', '5.0', '6.0', '7.0'")
 	flags.StringVar(&p.vpcID, "vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
 	flags.StringVar(&p.subnetID, "subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
-	flags.StringVar(&p.password, "password", "", "Optional. Password of redis to create. Range of the password length is [6,63] and the password can only contain letters and numbers")
+	flags.StringVar(&p.password, "password", "", "Optional. Password of redis to create. Range of the password length is [6,36] and the password can only contain letters and numbers")
 
 	//distributed optional params
 	flags.IntVar(&p.blockCnt, "block-cnt", 2, "Optional. Block count. Default value 2(for distributed redis type).")
 	flags.IntVar(&p.proxySize, "proxy-size", 2, "Optional. Proxy size. Default value 2(for distributed redis type) Unit Core")
 
-	p.region = base.ConfigIns.Region
-	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	p.zone = base.ConfigIns.Zone
-	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	p.projectID = base.ConfigIns.ProjectID
-	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	bindRegionS(&p.region, flags)
+	bindZoneS(&p.zone, &p.region, flags)
+	bindProjectIDS(&p.projectID, flags)
 	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.StringVar(&p.group, "group", "", "Optional. Business group")
@@ -227,11 +233,6 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags.SetFlagValues("version", "4.0", "5.0", "6.0", "7.0")
 	flags.SetFlagValues("type", "master-replica", "distributed")
 	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("zone", func() []string {
-		return getZoneList(p.region)
-	})
-	flags.SetFlagValuesFunc("project-id", getProjectList)
 	flags.SetFlagValuesFunc("vpc-id", func() []string {
 		return getAllVPCIdNames(p.projectID, p.region)
 	})
@@ -278,19 +279,28 @@ func createDistributedRedis(out io.Writer, p *redisCreateParams) {
 	req.ProjectId = &p.projectID
 	req.Name = &p.name
 	req.Protocol = sdk.String("redis")
-	req.ProxySize = &p.proxySize
+
+	// Validate block-cnt
 	if p.blockCnt <= 0 {
 		fmt.Fprintln(out, "block-cnt should be greater than 0")
 		return
 	}
-	req.BlockCnt = &p.blockCnt
 
-	size := p.size
-	if size < p.blockCnt || size%p.blockCnt != 0 {
-		size = p.blockCnt
+	// Validate size is divisible by block-cnt
+	if p.size%p.blockCnt != 0 {
+		fmt.Fprintf(out, "size-gb(%d) should be divisible by block-cnt(%d)\n", p.size, p.blockCnt)
+		return
 	}
 
-	req.Size = &size
+	// Validate proxy-size is a multiple of 2
+	if p.proxySize%2 != 0 {
+		fmt.Fprintf(out, "proxy-size(%d) should be a multiple of 2\n", p.proxySize)
+		return
+	}
+
+	req.BlockCnt = &p.blockCnt
+	req.ProxySize = &p.proxySize
+	req.Size = &p.size
 	req.Version = &p.version
 	req.VPCId = &p.vpcID
 	req.SubnetId = &p.subnetID
@@ -343,23 +353,15 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
-	p.region = base.ConfigIns.Region
-	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	p.zone = base.ConfigIns.Zone
-	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	p.projectID = base.ConfigIns.ProjectID
-	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	bindRegionS(&p.region, flags)
+	bindZoneS(&p.zone, &p.region, flags)
+	bindProjectIDS(&p.projectID, flags)
 
 	cmd.MarkFlagRequired("umem-id")
 
 	flags.SetFlagValuesFunc("umem-id", func() []string {
 		return getRedisIDList(p.projectID, p.region)
 	})
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("zone", func() []string {
-		return getZoneList(p.region)
-	})
-	flags.SetFlagValuesFunc("project-id", getProjectList)
 
 	return cmd
 }
@@ -566,12 +568,9 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req.Size = flags.Int("size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
-	region = base.ConfigIns.Region
-	flags.StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	zone = base.ConfigIns.Zone
-	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	projectID = base.ConfigIns.ProjectID
-	flags.StringVar(&projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	bindRegionS(&region, flags)
+	bindZoneS(&zone, &region, flags)
+	bindProjectIDS(&projectID, flags)
 	req.ChargeType = flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.Tag = flags.String("group", "", "Optional. Business group")
@@ -589,11 +588,6 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, projectID, region)
 	})
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("zone", func() []string {
-		return getZoneList(region)
-	})
-	flags.SetFlagValuesFunc("project-id", getProjectList)
 
 	cmd.MarkFlagRequired("name")
 
