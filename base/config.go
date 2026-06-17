@@ -107,6 +107,7 @@ type GlobalFlag struct {
 	PublicKey     string
 	PrivateKey    string
 	BaseURL       string
+	OAuthBaseURL  string
 	Timeout       int
 	MaxRetryTimes int
 }
@@ -882,6 +883,9 @@ func InitConfig() {
 func mergeConfigIns(ins *AggConfig) {
 	if Global.BaseURL != "" {
 		ins.BaseURL = Global.BaseURL
+	}
+	if Global.OAuthBaseURL != "" {
+		ins.OAuthBaseURL = Global.OAuthBaseURL
 	}
 	if Global.Timeout != 0 {
 		ins.Timeout = Global.Timeout

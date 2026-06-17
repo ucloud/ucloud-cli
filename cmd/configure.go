@@ -422,6 +422,7 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", base.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&cfg.OAuthBaseURL, "oauth-base-url", "", "Optional. Set OAuth authorization server URL. For instance 'https://oauth2.ucloud.cn'")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
 	cfg.MaxRetryTimes = flags.Int("max-retry-times", base.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
@@ -475,6 +476,10 @@ func NewCmdConfigUpdate() *cobra.Command {
 			//打到新网关而不是旧的(可能已不可用的)网关，避免旧base-url坏掉后无法改回的死锁
 			if cfg.BaseURL != "" {
 				cacheConfig.BaseURL = cfg.BaseURL
+			}
+
+			if cfg.OAuthBaseURL != "" {
+				cacheConfig.OAuthBaseURL = cfg.OAuthBaseURL
 			}
 
 			if timeout != "" {
@@ -560,6 +565,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&cfg.OAuthBaseURL, "oauth-base-url", "", "Optional. Set OAuth authorization server URL. For instance 'https://oauth2.ucloud.cn'")
 	flags.StringVar(&timeout, "timeout-sec", "", "Optional. Set default timeout for requesting API. Unit: seconds")
 	flags.StringVar(&maxRetries, "max-retry-times", "", "Optional. Set default max retry times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
