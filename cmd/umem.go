@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/umem"
+	"github.com/ucloud/ucloud-sdk-go/services/vpc"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
@@ -152,51 +153,47 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+// redisCreateParams holds the shared flag values for redis create commands.
+type redisCreateParams struct {
+	name       string
+	password   string
+	size       int
+	region     string
+	zone       string
+	projectID  string
+	chargeType string
+	quantity   int
+	group      string
+	vpcID      string
+	subnetID   string
+	version    string
+	blockCnt   int
+	proxySize  int
+}
+
 // NewCmdRedisCreate ucloud redis create
 func NewCmdRedisCreate(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewCreateURedisGroupRequest()
-	req.HighAvailability = sdk.String("enable")
-	var redisType, password string
+	var redisType string
+	var p redisCreateParams
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create redis instance",
 		Long:  "Create redis instance",
 		Run: func(c *cobra.Command, args []string) {
-			if l := len(*req.Name); l < 6 || l > 63 {
+			if l := len(p.name); l < 6 || l > 63 {
 				fmt.Fprintln(out, "length of name should be between 6 and 63")
 				return
 			}
-			if password != "" {
-				req.Password = &password
+			if err := fillDefaultVPCAndSubnet(&p.vpcID, &p.subnetID, p.projectID, p.region, p.zone); err != nil {
+				fmt.Fprintln(out, err)
+				return
 			}
-			if redisType == "master-replica" {
-				resp, err := base.BizClient.CreateURedisGroup(req)
-				if err != nil {
-					base.HandleError(err)
-					return
-				}
-				fmt.Printf("redis[%s] created\n", resp.GroupId)
-			} else if redisType == "distributed" {
-				dreq := base.BizClient.NewCreateUMemSpaceRequest()
-				dreq.Region = req.Region
-				dreq.Zone = req.Zone
-				dreq.ProjectId = req.ProjectId
-				dreq.Name = req.Name
-				dreq.Size = req.Size
-				if *req.Size == 1 {
-					dreq.Size = sdk.Int(16)
-				}
-				dreq.ChargeType = req.ChargeType
-				dreq.Quantity = req.Quantity
-				dreq.Tag = req.Tag
-				dreq.Password = req.Password
-				resp, err := base.BizClient.CreateUMemSpace(dreq)
-				if err != nil {
-					base.HandleError(err)
-					return
-				}
-				fmt.Printf("redis[%s] created\n", resp.SpaceId)
-			} else {
+			switch redisType {
+			case "master-replica":
+				createMasterReplicaRedis(out, &p)
+			case "distributed":
+				createDistributedRedis(out, &p)
+			default:
 				fmt.Printf("unknow redis type[%s], it's should be 'master-replica' or 'distributed'\n", redisType)
 			}
 		},
@@ -205,28 +202,41 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.Name = flags.String("name", "", "Required. Name of the redis to create. Range of the password length is [6,63] and the password can only contain letters and numbers")
+	flags.StringVar(&p.name, "name", "", "Required. Name of the redis to create.")
 	flags.StringVar(&redisType, "type", "", "Required. Type of the redis. Accept values:'master-replica','distributed'")
-	req.Size = flags.Int("size-gb", 1, "Optional. Memory size. Default value 1GB(for master-replica redis type) or 16GB(for distributed redis type). Unit GB")
-	req.Version = flags.String("version", "3.2", "Optional. Version of redis")
-	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
-	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
-	flags.StringVar(&password, "password", "", "Optional. Password of redis to create")
+	flags.IntVar(&p.size, "size-gb", 1, "Optional. Memory size. Default value 1GB(for master-replica redis type) or block-cnt*1GB(for distributed redis type). Unit GB")
+	flags.StringVar(&p.version, "version", "6.0", "Optional. Version of redis. Accept values: '4.0', '5.0', '6.0', '7.0'")
+	flags.StringVar(&p.vpcID, "vpc-id", "", "Optional. VPC ID. This field is required under VPC2.0. See 'ucloud vpc list'")
+	flags.StringVar(&p.subnetID, "subnet-id", "", "Optional. Subnet ID. This field is required under VPC2.0. See 'ucloud subnet list'")
+	flags.StringVar(&p.password, "password", "", "Optional. Password of redis to create. Range of the password length is [6,63] and the password can only contain letters and numbers")
 
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
-	bindGroup(req, flags)
-	bindChargeType(req, flags)
-	bindQuantity(req, flags)
+	//distributed optional params
+	flags.IntVar(&p.blockCnt, "block-cnt", 2, "Optional. Block count. Default value 2(for distributed redis type).")
+	flags.IntVar(&p.proxySize, "proxy-size", 2, "Optional. Proxy size. Default value 2(for distributed redis type) Unit Core")
 
-	flags.SetFlagValues("version", "3.0", "3.2", "4.0")
+	p.region = base.ConfigIns.Region
+	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	p.zone = base.ConfigIns.Zone
+	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	p.projectID = base.ConfigIns.ProjectID
+	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
+	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
+	flags.StringVar(&p.group, "group", "", "Optional. Business group")
+
+	flags.SetFlagValues("version", "4.0", "5.0", "6.0", "7.0")
 	flags.SetFlagValues("type", "master-replica", "distributed")
+	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(p.region)
+	})
+	flags.SetFlagValuesFunc("project-id", getProjectList)
 	flags.SetFlagValuesFunc("vpc-id", func() []string {
-		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+		return getAllVPCIdNames(p.projectID, p.region)
 	})
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
-		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
+		return getAllSubnetIDNames(p.vpcID, p.projectID, p.region)
 	})
 
 	cmd.MarkFlagRequired("name")
@@ -235,10 +245,81 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+func createMasterReplicaRedis(out io.Writer, p *redisCreateParams) {
+	req := base.BizClient.NewCreateURedisGroupRequest()
+	req.Region = &p.region
+	req.Zone = &p.zone
+	req.ProjectId = &p.projectID
+	req.Name = &p.name
+	req.HighAvailability = sdk.String("enable")
+	req.Size = &p.size
+	req.Version = &p.version
+	req.VPCId = &p.vpcID
+	req.SubnetId = &p.subnetID
+	req.ChargeType = &p.chargeType
+	req.Quantity = &p.quantity
+	req.Tag = &p.group
+	if p.password != "" {
+		req.Password = &p.password
+	}
+
+	resp, err := base.BizClient.CreateURedisGroup(req)
+	if err != nil {
+		base.HandleError(err)
+		return
+	}
+	fmt.Fprintf(out, "redis[%s] created\n", resp.GroupId)
+}
+
+func createDistributedRedis(out io.Writer, p *redisCreateParams) {
+	req := base.BizClient.NewCreateUMemSpaceRequest()
+	req.Region = &p.region
+	req.Zone = &p.zone
+	req.ProjectId = &p.projectID
+	req.Name = &p.name
+	req.Protocol = sdk.String("redis")
+	req.ProxySize = &p.proxySize
+	if p.blockCnt <= 0 {
+		fmt.Fprintln(out, "block-cnt should be greater than 0")
+		return
+	}
+	req.BlockCnt = &p.blockCnt
+
+	size := p.size
+	if size < p.blockCnt || size%p.blockCnt != 0 {
+		size = p.blockCnt
+	}
+
+	req.Size = &size
+	req.Version = &p.version
+	req.VPCId = &p.vpcID
+	req.SubnetId = &p.subnetID
+	req.ChargeType = &p.chargeType
+	req.Quantity = &p.quantity
+	req.Tag = &p.group
+	if p.password != "" {
+		req.Password = &p.password
+	}
+
+	resp, err := base.BizClient.CreateUMemSpace(req)
+	if err != nil {
+		base.HandleError(err)
+		return
+	}
+	fmt.Fprintf(out, "redis[%s] created\n", resp.SpaceId)
+}
+
+// redisDeleteParams holds the shared flag values for redis delete commands.
+type redisDeleteParams struct {
+	region    string
+	zone      string
+	projectID string
+}
+
 // NewCmdRedisDelete ucloud redis delete
 func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	var idNames []string
-	req := base.BizClient.NewDeleteURedisGroupRequest()
+	var p redisDeleteParams
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete redis instances",
@@ -247,26 +328,13 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			for _, idname := range idNames {
 				id := base.PickResourceID(idname)
-				if strings.HasPrefix(id, "uredis") {
-					req.GroupId = &id
-					_, err := base.BizClient.DeleteURedisGroup(req)
-					if err != nil {
-						base.HandleError(err)
-						continue
-					}
-				} else if strings.HasPrefix(id, "umem") {
-					_req := base.BizClient.NewDeleteUMemSpaceRequest()
-					_req.Region = req.Region
-					_req.Zone = req.Zone
-					_req.ProjectId = req.ProjectId
-					_req.SpaceId = &id
-					_, err := base.BizClient.DeleteUMemSpace(_req)
-					if err != nil {
-						base.HandleError(err)
-						continue
-					}
+				if strings.HasPrefix(id, "uredis") || strings.HasPrefix(id, "uhredis") {
+					deleteMasterReplicaRedis(out, &p, id)
+				} else if strings.HasPrefix(id, "udredis") {
+					deleteDistributedRedis(out, &p, id)
+				} else {
+					fmt.Fprintf(out, "redis[%s] unknown id prefix, skip\n", idname)
 				}
-				fmt.Fprintf(out, "redis[%s] deleted\n", idname)
 			}
 		},
 	}
@@ -274,18 +342,54 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis intances to delete")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
+	p.region = base.ConfigIns.Region
+	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	p.zone = base.ConfigIns.Zone
+	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	p.projectID = base.ConfigIns.ProjectID
+	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 
 	cmd.MarkFlagRequired("umem-id")
 
 	flags.SetFlagValuesFunc("umem-id", func() []string {
-		return getRedisIDList(*req.ProjectId, *req.Region)
+		return getRedisIDList(p.projectID, p.region)
 	})
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(p.region)
+	})
+	flags.SetFlagValuesFunc("project-id", getProjectList)
 
 	return cmd
+}
+
+func deleteMasterReplicaRedis(out io.Writer, p *redisDeleteParams, id string) {
+	req := base.BizClient.NewDeleteURedisGroupRequest()
+	req.Region = &p.region
+	req.Zone = &p.zone
+	req.ProjectId = &p.projectID
+	req.GroupId = &id
+	_, err := base.BizClient.DeleteURedisGroup(req)
+	if err != nil {
+		base.HandleError(err)
+		return
+	}
+	fmt.Fprintf(out, "redis[%s] deleted\n", id)
+}
+
+func deleteDistributedRedis(out io.Writer, p *redisDeleteParams, id string) {
+	req := base.BizClient.NewDeleteUMemSpaceRequest()
+	req.Region = &p.region
+	req.Zone = &p.zone
+	req.ProjectId = &p.projectID
+	req.SpaceId = &id
+	_, err := base.BizClient.DeleteUMemSpace(req)
+	if err != nil {
+		base.HandleError(err)
+		return
+	}
+	fmt.Fprintf(out, "redis[%s] deleted\n", id)
 }
 
 // NewCmdRedisRestart ucloud redis restart
@@ -429,52 +533,95 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
+// memcacheCreateParams holds the shared flag values for memcache create commands.
+type memcacheCreateParams struct {
+	name      string
+	size      int
+	region    string
+	zone      string
+	projectID string
+	chargeType string
+	quantity   int
+	group     string
+	vpcID     string
+	subnetID  string
+}
+
 // NewCmdMemcacheCreate ucloud memcache create
 func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewCreateUMemcacheGroupRequest()
+	var p memcacheCreateParams
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create memcache instance",
 		Long:  "Create memcache instance",
 		Run: func(c *cobra.Command, args []string) {
-			if *req.Size > 32 || *req.Size < 1 {
+			if p.size > 32 || p.size < 1 {
 				fmt.Fprintln(out, "size-gb should be between 1 and 32")
 				return
 			}
-			resp, err := base.BizClient.CreateUMemcacheGroup(req)
-			if err != nil {
-				base.HandleError(err)
+			if err := fillDefaultVPCAndSubnet(&p.vpcID, &p.subnetID, p.projectID, p.region, p.zone); err != nil {
+				fmt.Fprintln(out, err)
 				return
 			}
-			fmt.Fprintf(out, "memcache[%s] created\n", resp.GroupId)
+			createMemcache(out, &p)
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	req.Name = flags.String("name", "", "Required. Name of memcache instance to create")
-	req.Size = flags.Int("size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
-	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
-	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindChargeType(req, flags)
-	bindQuantity(req, flags)
-	bindGroup(req, flags)
+	flags.StringVar(&p.name, "name", "", "Required. Name of memcache instance to create")
+	flags.IntVar(&p.size, "size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
+	flags.StringVar(&p.vpcID, "vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
+	flags.StringVar(&p.subnetID, "subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
+	p.region = base.ConfigIns.Region
+	flags.StringVar(&p.region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	p.zone = base.ConfigIns.Zone
+	flags.StringVar(&p.zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	p.projectID = base.ConfigIns.ProjectID
+	flags.StringVar(&p.projectID, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
+	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
+	flags.StringVar(&p.group, "group", "", "Optional. Business group")
 
 	flags.SetFlagValues("size-gb", "1", "2", "4", "8", "16", "32")
+	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
 	flags.SetFlagValuesFunc("vpc-id", func() []string {
-		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+		return getAllVPCIdNames(p.projectID, p.region)
 	})
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
-		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
+		return getAllSubnetIDNames(p.vpcID, p.projectID, p.region)
 	})
+	flags.SetFlagValuesFunc("region", getRegionList)
+	flags.SetFlagValuesFunc("zone", func() []string {
+		return getZoneList(p.region)
+	})
+	flags.SetFlagValuesFunc("project-id", getProjectList)
 
 	cmd.MarkFlagRequired("name")
 
 	return cmd
+}
+
+func createMemcache(out io.Writer, p *memcacheCreateParams) {
+	req := base.BizClient.NewCreateUMemcacheGroupRequest()
+	req.Region = &p.region
+	req.Zone = &p.zone
+	req.ProjectId = &p.projectID
+	req.Name = &p.name
+	req.Size = &p.size
+	req.VPCId = &p.vpcID
+	req.SubnetId = &p.subnetID
+	req.ChargeType = &p.chargeType
+	req.Quantity = &p.quantity
+	req.Tag = &p.group
+
+	resp, err := base.BizClient.CreateUMemcacheGroup(req)
+	if err != nil {
+		base.HandleError(err)
+		return
+	}
+	fmt.Fprintf(out, "memcache[%s] created\n", resp.GroupId)
 }
 
 // NewCmdMemcacheDelete ucloud memcache delete
@@ -612,6 +759,59 @@ func describeRedisByID(redisID string, commonBase *request.CommonBase) (interfac
 		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", redisID))
 	}
 	return &resp.DataSet[0], nil
+}
+
+func fillDefaultVPCAndSubnet(vpcID, subnetID *string, projectID, region, zone string) error {
+	if *vpcID != "" && *subnetID != "" {
+		return nil
+	}
+	vpcs, err := getAllVPCIns(projectID, region)
+	if err != nil {
+		return fmt.Errorf("failed to get vpc list: %s", err)
+	}
+	if len(vpcs) == 0 {
+		return fmt.Errorf("no vpc found in region[%s], please specify --vpc-id and --subnet-id", region)
+	}
+
+	// Find the default VPC
+	var defaultVPC *vpc.VPCInfo
+	for i := range vpcs {
+		if vpcs[i].VPCType == "DefaultVPC" {
+			defaultVPC = &vpcs[i]
+			break
+		}
+	}
+	// Fallback to the first VPC if no DefaultVPC found
+	if defaultVPC == nil {
+		defaultVPC = &vpcs[0]
+	}
+
+	if *vpcID == "" {
+		*vpcID = defaultVPC.VPCId
+	}
+
+	if *subnetID == "" {
+		subnets, err := getAllSubnets(*vpcID, projectID, region)
+		if err != nil {
+			return fmt.Errorf("failed to get subnet list: %s", err)
+		}
+		if len(subnets) == 0 {
+			return fmt.Errorf("no subnet found in vpc[%s], please specify --subnet-id", *vpcID)
+		}
+		// Filter subnets by zone if specified
+		if zone != "" {
+			for _, sn := range subnets {
+				if sn.Zone == zone {
+					*subnetID = sn.SubnetId
+					return nil
+				}
+			}
+		}
+		// Fallback to the first subnet
+		*subnetID = subnets[0].SubnetId
+	}
+
+	return nil
 }
 
 func getMemcacheIDList(project, region string) []string {
