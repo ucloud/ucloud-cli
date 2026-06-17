@@ -172,6 +172,83 @@ $ ucloud config update --profile xxx --region cn-sh2
 $ ucloud config --help
 ```
 
+## 认证方式
+
+UCloud CLI 支持两种认证方式，请根据使用场景选择：
+
+| 使用场景 | 推荐方式 |
+| --- | --- |
+| 交互终端上的人类用户 | OAuth 浏览器登录：`ucloud auth login`（推荐） |
+| 脚本、CI/CD 等无人值守自动化 | AK/SK profile：`ucloud init` 或 `ucloud config` |
+
+### 浏览器登录（OAuth）
+
+```
+$ ucloud auth login
+```
+
+执行过程：
+
+1. CLI 在 127.0.0.1 的临时端口上启动一个本地回调 server，并打开浏览器访问 UCloud 授权页。如果浏览器没有自动打开，复制终端打印的 URL 手动打开即可。
+2. 在浏览器中登录并授权后，浏览器会跳转到 `http://localhost:<port>/authorization`，CLI 自动捕获授权码并展示「登录成功」页面——全程无需复制粘贴，关闭页面回到终端即可。
+3. CLI 用授权码换取 token 并保存。如果当前 profile 还没有配置 region/zone/project，会自动获取并配置默认值：
+
+```
+Configured default region:cn-bj2 zone:cn-bj2-02
+Configured default project:org-xxxxxx Default
+Logged in as you@example.com, token valid until 18:30
+```
+
+### 手工回退（本机无浏览器）
+
+SSH 会话或无图形界面的机器，请加 `--no-browser`：
+
+```
+$ ucloud auth login --no-browser
+```
+
+CLI 会打印授权 URL 而不是打开浏览器。在任意设备上打开该 URL，登录并授权后，浏览器会跳转到一个**无法打开的** `http://localhost:<port>/authorization?...` 页面——**这是预期行为**。把地址栏中的完整 URL 复制下来，粘贴回终端即可。
+
+默认模式下同样存在这条粘贴回退路径：如果自动捕获在 3 分钟内没有收到回调，CLI 会打印 "Automatic capture timed out. Paste the callback URL here as a fallback:" 并等待粘贴回调 URL。
+
+针对非默认环境，可加 `--oauth-base-url <url>` 覆盖 OAuth 授权服务器地址。该参数在无任何已有配置时即可使用，并会保存到 profile，后续 token 刷新会沿用它。
+
+### Token 存储与有效期
+
+- Token 存储在 `~/.ucloud/credential.json`，文件权限 0600。
+- access token 有效期约 1 小时，到期后通过 refresh token 静默续期，全程无感知。续期发生在使用时：运行命令时 CLI 会先检查并刷新临期 token；若网关在命令执行中拒绝 token，也会自动刷新并重试。没有后台常驻进程。
+- refresh token 当前有效期为 7 天，且每次续期都会轮换出新的 7 天有效期——只要 7 天内用过一次 CLI，登录态就一直延续；连续 7 天未使用后，下次命令会提示重新执行 `ucloud auth login`。
+- 登录态会一直保持，直到 refresh token 在服务端过期，或执行 `ucloud auth logout`。logout 只删除当前 profile 的本地 token，不会动已存储的 AK/SK。退出 UCloud 网页控制台不影响 CLI 登录态。
+
+### 一个 profile 只用一种认证方式
+
+- 每个 profile 同一时刻只使用一种认证方式，可在 `ucloud config list` 的 `AuthMode` 列查看（`oauth` 为浏览器登录，空值为 AK/SK 签名）。
+- 执行 `ucloud auth login` 会把当前 profile 切换到 OAuth 模式；已有的 AK/SK 仍保留在配置中，但不再参与签名。
+- 在 OAuth 模式的 profile 上执行 `ucloud init`，会先要求确认，确认后才切回 AK/SK。
+- 命令行同时传入 `--public-key` 和 `--private-key` 时始终优先生效：该次调用使用 AK/SK 签名，与 profile 的认证模式无关。
+
+### 代理
+
+OAuth token 请求遵循标准的 `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` 环境变量。
+
+### 使用限制
+
+- **OAuth 登录按机器隔离。** 不要在多台机器之间拷贝或共享 `~/.ucloud`：refresh token 每次续期都会轮换，一台机器续期会把另一台「挤」下线。多机或共享场景请使用 AK/SK profile。
+- **降级会丢失 token。** 旧版本 ucloud-cli 不认识 token 字段，重写配置文件时会静默丢弃它们。降级后请重新执行 `ucloud auth login`。
+
+### 故障排查
+
+| 现象 / 报错 | 处理方法 |
+| --- | --- |
+| `authorization code or refresh token expired or already used (each code works only once)` | 每个授权码只能使用一次且很快过期。重新执行 `ucloud auth login` 并尽快完成流程。 |
+| `state mismatch: the pasted URL likely comes from a previous login attempt` | 粘贴的是上一次登录尝试的回调 URL。重新执行 `ucloud auth login`，并粘贴本次的 URL。 |
+| `Login expired for profile '<name>'` | refresh token 已失效。重新执行 `ucloud auth login`。 |
+| `cannot reach oauth server ... (check network or proxy settings)` | 网络或代理问题。检查网络连通性以及 `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` 设置。 |
+| `'ucloud auth login' requires an interactive terminal` | 当前处于 CI 或管道（非交互）环境。OAuth 登录面向交互人类用户，自动化场景请改用 AK/SK profile。 |
+| 浏览器没有自动打开 | 复制终端打印的 URL 手动打开，或改用 `--no-browser`。 |
+| （手工模式）浏览器提示 localhost 页面无法打开 | 预期行为——手工模式下 CLI 并未监听该端口。复制地址栏中的完整 URL 粘贴回终端即可。 |
+| （手工模式）localhost 页面显示了其他本地程序的内容 | 无害——恰好有其他程序监听了该端口。只有地址栏里的 URL 有用，复制粘贴即可。 |
+
 ## 举例说明
 
 用UCloud CLI在尼日利亚创建数据中心创建一台主机并绑定一个外网IP，然后配置GlobalSSH加速，加速中国大陆到目的主机的SSH登陆

@@ -32,14 +32,41 @@ const DefaultTimeoutSec = 15
 // DefaultMaxRetryTimes default timeout for requesting api, 15s
 const DefaultMaxRetryTimes = 3
 
-// DefaultBaseURL location of api server
-const DefaultBaseURL = "https://api.ucloud.cn/"
-
 // DefaultProfile name of default profile
 const DefaultProfile = "default"
 
+// 两个可被 profile 覆盖的默认服务域，并列以体现 api 网关与 oauth 域的对称：
+//   - 业务 API 网关（api.ucloud.cn）：承载全部云资源 RPC，AK/SK 签名或 Bearer。
+//   - OAuth 授权服务（oauth2.ucloud.cn）：承载浏览器登录的 /authorize 与 /token。
+const (
+	// DefaultBaseURL location of api server
+	DefaultBaseURL = "https://api.ucloud.cn/"
+
+	// defaultOAuthBaseURL 内置默认 OAuth 域名（profile 的 oauth_base_url 可覆盖，见 GetOAuthBaseURL）
+	defaultOAuthBaseURL = "https://oauth2.ucloud.cn"
+)
+
+// OAuth 协议常量与 loopback 回调常量
+const (
+	oauthAuthorizePath = "/authorize"
+	oauthTokenPath     = "/token"
+	oauthScope         = "openid email offline_access full_access"
+
+	// OAuth 客户端凭据（public client：secret 嵌入二进制为知情裁定，同 gcloud/gh）
+	oauthClientID     = "WP77AwxvUgWt2JqaRCKn"
+	oauthClientSecret = "mksUQLod9VaUKMt3wESdgteTFCgVasiUwLSPqq5e"
+
+	// LoopbackListenHost 本地回调 server 的监听地址（回环 IP，导出供 cmd/callback.go 复用）。
+	// loopbackRedirectHost redirect_uri 里的 host 必须是字面量 localhost——后端拒 127.0.0.1 形式的 redirect_uri。
+	// 两者指向同一回环地址，但写法必须如此区分。
+	LoopbackListenHost   = "127.0.0.1"
+	loopbackRedirectHost = "localhost"
+	// OAuthRedirectPath redirect_uri 与回调 server mux 共用的路径，必须一致（导出供 cmd/callback.go 复用）。
+	OAuthRedirectPath = "/authorization"
+)
+
 // Version 版本号
-const Version = "0.3.0"
+const Version = "0.3.1"
 
 var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 
@@ -95,6 +122,7 @@ type CLIConfig struct {
 	Active         bool   `json:"active"` //是否生效
 	MaxRetryTimes  *int   `json:"max_retry_times"`
 	AgreeUploadLog bool   `json:"agree_upload_log"`
+	OAuthBaseURL   string `json:"oauth_base_url,omitempty"`
 }
 
 // CredentialConfig credential element
@@ -104,6 +132,11 @@ type CredentialConfig struct {
 	Cookie     string `json:"cookie"`
 	CSRFToken  string `json:"csrf_token"`
 	Profile    string `json:"profile"`
+
+	AuthMode     string `json:"auth_mode,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	ExpiresAt    int64  `json:"expires_at,omitempty"`
 }
 
 // AggConfig 聚合配置 config+credential
@@ -121,6 +154,11 @@ type AggConfig struct {
 	CSRFToken      string `json:"csrf_token"`
 	MaxRetryTimes  *int   `json:"max_retry_times"`
 	AgreeUploadLog bool   `json:"agree_upload_log"`
+	AuthMode       string `json:"auth_mode,omitempty"`
+	AccessToken    string `json:"access_token,omitempty"`
+	RefreshToken   string `json:"refresh_token,omitempty"`
+	ExpiresAt      int64  `json:"expires_at,omitempty"`
+	OAuthBaseURL   string `json:"oauth_base_url,omitempty"`
 }
 
 // ConfigPublicKey 输入公钥
@@ -213,6 +251,7 @@ func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
 	target.Active = p.Active
 	target.MaxRetryTimes = p.MaxRetryTimes
 	target.AgreeUploadLog = p.AgreeUploadLog
+	target.OAuthBaseURL = p.OAuthBaseURL
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -221,22 +260,26 @@ func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
 	target.PublicKey = p.PublicKey
 	target.Cookie = p.Cookie
 	target.CSRFToken = p.CSRFToken
+	target.AuthMode = p.AuthMode
+	target.AccessToken = p.AccessToken
+	target.RefreshToken = p.RefreshToken
+	target.ExpiresAt = p.ExpiresAt
 }
 
 // AggConfigManager 配置管理
 type AggConfigManager struct {
 	activeProfile string
 	configs       map[string]*AggConfig
-	configFile    *os.File
-	credFile      *os.File
+	configPath    string
+	credPath      string
 }
 
 // NewAggConfigManager create instance
-func NewAggConfigManager(cfgFile, credFile *os.File) (*AggConfigManager, error) {
+func NewAggConfigManager(configPath, credPath string) (*AggConfigManager, error) {
 	manager := &AggConfigManager{
 		configs:    make(map[string]*AggConfig),
-		configFile: cfgFile,
-		credFile:   credFile,
+		configPath: configPath,
+		credPath:   credPath,
 	}
 
 	err := manager.Load()
@@ -278,7 +321,8 @@ func (p *AggConfigManager) Append(config *AggConfig) error {
 
 // UpdateAggConfig  update AggConfig append if not exist
 func (p *AggConfigManager) UpdateAggConfig(config *AggConfig) error {
-	if _, ok := p.configs[config.Profile]; !ok {
+	existing, ok := p.configs[config.Profile]
+	if !ok {
 		return p.Append(config)
 	}
 
@@ -287,6 +331,12 @@ func (p *AggConfigManager) UpdateAggConfig(config *AggConfig) error {
 			ac.Active = false
 		}
 		p.activeProfile = config.Profile
+	}
+	// 调用方传入的可能不是 map 内条目本身（如 --profile 回退默认配置的场景）：
+	// 以传入值为准覆盖 map 条目，否则 Save 会把旧数据落盘、静默丢弃调用方的修改。
+	// 保留 map 指针不变，已持有该指针的别名（如 oauth 刷新写回）继续有效。
+	if existing != config {
+		*existing = *config
 	}
 	return p.Save()
 }
@@ -338,6 +388,11 @@ func (p *AggConfigManager) Load() error {
 			Active:         config.Active,
 			MaxRetryTimes:  config.MaxRetryTimes,
 			AgreeUploadLog: config.AgreeUploadLog,
+			AuthMode:       cred.AuthMode,
+			AccessToken:    cred.AccessToken,
+			RefreshToken:   cred.RefreshToken,
+			ExpiresAt:      cred.ExpiresAt,
+			OAuthBaseURL:   config.OAuthBaseURL,
 		}
 	}
 
@@ -478,8 +533,8 @@ func (p *AggConfigManager) Save() error {
 		aggConfig.copyToCredentialConfig(credConfig)
 		credcs = append(credcs, credConfig)
 	}
-	aerr := WriteJSONFile(clics, p.configFile.Name())
-	berr := WriteJSONFile(credcs, p.credFile.Name())
+	aerr := WriteJSONFileAtomic(clics, p.configPath)
+	berr := WriteJSONFileAtomic(credcs, p.credPath)
 
 	if aerr != nil && berr != nil {
 		return fmt.Errorf("save cli config failed: %v | save credentail failed: %v", aerr, berr)
@@ -557,8 +612,11 @@ func (p *AggConfigManager) GetActiveAggConfigName() string {
 
 func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
 	var configs []CLIConfig
-	rawConfig, err := ioutil.ReadAll(p.configFile)
+	rawConfig, err := ioutil.ReadFile(p.configPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if len(rawConfig) == 0 {
@@ -580,8 +638,11 @@ func (p *AggConfigManager) parseCLIConfigs() ([]CLIConfig, error) {
 
 func (p *AggConfigManager) parseCredentials() ([]CredentialConfig, error) {
 	var credentials []CredentialConfig
-	rawCred, err := ioutil.ReadAll(p.credFile)
+	rawCred, err := ioutil.ReadFile(p.credPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -602,6 +663,8 @@ func ListAggConfig(json bool) {
 	for idx, ac := range aggConfigs {
 		aggConfigs[idx].PrivateKey = MosaicString(ac.PrivateKey, 8, 5)
 		aggConfigs[idx].PublicKey = MosaicString(ac.PublicKey, 8, 5)
+		aggConfigs[idx].AccessToken = MosaicString(ac.AccessToken, 8, 5)
+		aggConfigs[idx].RefreshToken = MosaicString(ac.RefreshToken, 8, 5)
 	}
 	if json {
 		err := PrintJSON(aggConfigs, os.Stdout)
@@ -609,7 +672,7 @@ func ListAggConfig(json bool) {
 			HandleError(err)
 		}
 	} else {
-		PrintTable(aggConfigs, []string{"Profile", "Active", "ProjectID", "Region", "Zone", "BaseURL", "Timeout", "PublicKey", "PrivateKey", "MaxRetryTimes", "AgreeUploadLog"})
+		PrintTable(aggConfigs, []string{"Profile", "Active", "AuthMode", "ProjectID", "Region", "Zone", "BaseURL", "Timeout", "PublicKey", "PrivateKey", "MaxRetryTimes", "AgreeUploadLog"})
 	}
 }
 
@@ -731,26 +794,21 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		MaxRetries: *ac.MaxRetryTimes,
 	}
 	AuthCredential = &CredentialConfig{
-		PublicKey:  ac.PublicKey,
-		PrivateKey: ac.PrivateKey,
-		Cookie:     ac.Cookie,
-		CSRFToken:  ac.CSRFToken,
+		PublicKey:    ac.PublicKey,
+		PrivateKey:   ac.PrivateKey,
+		Cookie:       ac.Cookie,
+		CSRFToken:    ac.CSRFToken,
+		AuthMode:     ac.AuthMode,
+		AccessToken:  ac.AccessToken,
+		RefreshToken: ac.RefreshToken,
+		ExpiresAt:    ac.ExpiresAt,
 	}
-	return NewClient(ClientConfig, AuthCredential), err
+	return NewClient(ClientConfig, AuthCredential, ac), err
 }
 
 func InitConfigInCloudShell() error {
-	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
-	if err != nil {
-		return err
-	}
-	credFile, err := os.OpenFile(CredentialFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
-	if err != nil {
-		return err
-	}
-
-	data, err := ioutil.ReadAll(credFile)
-	if err != nil {
+	data, err := ioutil.ReadFile(CredentialFilePath)
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	if len(data) > 0 {
@@ -772,8 +830,8 @@ func InitConfigInCloudShell() error {
 		return err
 	}
 
-	AggConfigM.credFile = credFile
-	AggConfigM.configFile = configFile
+	AggConfigM.credPath = CredentialFilePath
+	AggConfigM.configPath = ConfigFilePath
 	ins, err := AggConfigM.GetActiveAggConfig()
 	if err != nil {
 		return err
@@ -789,16 +847,8 @@ func InitConfigInCloudShell() error {
 
 // InitConfig 初始化配置
 func InitConfig() {
-	configFile, err := os.OpenFile(ConfigFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
-	if err != nil && !os.IsNotExist(err) {
-		HandleError(err)
-	}
-	credFile, err := os.OpenFile(CredentialFilePath, os.O_CREATE|os.O_RDONLY, LocalFileMode)
-	if err != nil && !os.IsNotExist(err) {
-		HandleError(err)
-	}
-
-	AggConfigListIns, err = NewAggConfigManager(configFile, credFile)
+	var err error
+	AggConfigListIns, err = NewAggConfigManager(ConfigFilePath, CredentialFilePath)
 	if err != nil {
 		LogError(err.Error())
 		return
@@ -843,6 +893,7 @@ func mergeConfigIns(ins *AggConfig) {
 	if Global.PublicKey != "" && Global.PrivateKey != "" {
 		ins.PrivateKey = Global.PrivateKey
 		ins.PublicKey = Global.PublicKey
+		ins.AuthMode = "" // flag 显式给了 AK/SK：走签名，抑制 Bearer 注入（D5）
 	}
 }
 

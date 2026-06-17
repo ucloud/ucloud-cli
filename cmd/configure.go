@@ -37,8 +37,7 @@ const helloUcloud = `
   | | | |  __/ | | (_) | | |_| | \__/\ | (_) | |_| | (_| |
   \_| |_/\___|_|_|\___/   \___/ \____/_|\___/ \__,_|\__,_|
 
-If you want add or modify your configurations, run 'ucloud config add/update'
-`
+If you want add or modify your configurations, run 'ucloud config add/update'`
 
 // NewCmdInit ucloud init
 func NewCmdInit() *cobra.Command {
@@ -47,7 +46,22 @@ func NewCmdInit() *cobra.Command {
 		Short: "Initialize UCloud CLI options",
 		Long:  `Initialize UCloud CLI options such as private-key,public-key,default region,zone and project.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			fromOAuth := base.ConfigIns.AuthMode == base.AuthModeOAuth
+			if fromOAuth {
+				ok := base.Confirm(false, fmt.Sprintf("Profile '%s' currently uses OAuth login (auth_mode=oauth). Continue with AK/SK setup and switch this profile to key-based auth? (y/n):", base.ConfigIns.Profile))
+				if !ok {
+					return
+				}
+				clearOAuthState(base.ConfigIns)
+			}
+
 			if base.ConfigIns.PrivateKey != "" && base.ConfigIns.PublicKey != "" {
+				if fromOAuth {
+					if err := switchProfileToAKSK(base.ConfigIns); err != nil {
+						base.HandleError(err)
+						return
+					}
+				}
 				printHello()
 				return
 			}
@@ -92,7 +106,7 @@ func NewCmdInit() *cobra.Command {
 			fmt.Printf("Active profile name:%s\n", base.ConfigIns.Profile)
 			fmt.Println("You can change the default settings by running 'ucloud config update'")
 			base.ConfigIns.ConfigUploadLog()
-			err = base.AggConfigListIns.Append(base.ConfigIns)
+			err = saveInitProfile(base.ConfigIns)
 			if err != nil {
 				base.HandleError(fmt.Errorf("Error: %v", err))
 			} else {
@@ -102,6 +116,26 @@ func NewCmdInit() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+// saveInitProfile 持久化 init 完整配置流程的结果；profile 已存在时（OAuth-only profile
+// 切回 AK/SK 的场景）覆盖保存——依赖 ConfigIns 即 manager map 内的同一指针（InitConfig 保证）
+func saveInitProfile(cfg *base.AggConfig) error {
+	return base.AggConfigListIns.UpdateAggConfig(cfg)
+}
+
+// clearOAuthState 清除 profile 的 oauth 状态（口径与 'ucloud auth logout' 一致），不落盘
+func clearOAuthState(cfg *base.AggConfig) {
+	cfg.AuthMode = ""
+	cfg.AccessToken = ""
+	cfg.RefreshToken = ""
+	cfg.ExpiresAt = 0
+}
+
+// switchProfileToAKSK 把 OAuth profile 切回 AK/SK：清除 oauth 状态并落盘
+func switchProfileToAKSK(cfg *base.AggConfig) error {
+	clearOAuthState(cfg)
+	return base.AggConfigListIns.UpdateAggConfig(cfg)
 }
 
 func printHello() {
@@ -437,32 +471,11 @@ func NewCmdConfigUpdate() *cobra.Command {
 				base.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			}
 
-			//如有设置Region和Zone，确保设置的Region和Zone真实存在
-			if cfg.Region != "" {
-				cacheConfig.Region = cfg.Region
+			//先应用连接类参数(base-url/timeout-sec/max-retry-times)，确保接下来的远程校验
+			//打到新网关而不是旧的(可能已不可用的)网关，避免旧base-url坏掉后无法改回的死锁
+			if cfg.BaseURL != "" {
+				cacheConfig.BaseURL = cfg.BaseURL
 			}
-			if cfg.Zone != "" {
-				cacheConfig.Zone = cfg.Zone
-			}
-
-			region, zone, err := getReasonableRegionZone(cacheConfig)
-			if err != nil {
-				base.HandleError(err)
-				return
-			}
-
-			cacheConfig.Region = region
-			cacheConfig.Zone = zone
-
-			if cfg.ProjectID != "" {
-				cacheConfig.ProjectID = base.PickResourceID(cfg.ProjectID)
-			}
-
-			project, err := getReasonableProject(cacheConfig)
-			if err != nil {
-				base.HandleError(err)
-			}
-			cacheConfig.ProjectID = project
 
 			if timeout != "" {
 				seconds, err := strconv.Atoi(timeout)
@@ -492,9 +505,32 @@ func NewCmdConfigUpdate() *cobra.Command {
 				return
 			}
 
-			if cfg.BaseURL != "" {
-				cacheConfig.BaseURL = cfg.BaseURL
+			//如有设置Region和Zone，确保设置的Region和Zone真实存在
+			if cfg.Region != "" {
+				cacheConfig.Region = cfg.Region
 			}
+			if cfg.Zone != "" {
+				cacheConfig.Zone = cfg.Zone
+			}
+
+			region, zone, err := getReasonableRegionZone(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+
+			cacheConfig.Region = region
+			cacheConfig.Zone = zone
+
+			if cfg.ProjectID != "" {
+				cacheConfig.ProjectID = base.PickResourceID(cfg.ProjectID)
+			}
+
+			project, err := getReasonableProject(cacheConfig)
+			if err != nil {
+				base.HandleError(err)
+			}
+			cacheConfig.ProjectID = project
 
 			if active == "true" {
 				cacheConfig.Active = true

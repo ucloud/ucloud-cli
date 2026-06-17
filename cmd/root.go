@@ -107,6 +107,7 @@ Use "{{.CommandPath}} --help" for details.{{end}}
 func addChildren(root *cobra.Command) {
 	out := base.Cxt.GetWriter()
 	root.AddCommand(NewCmdInit())
+	root.AddCommand(NewCmdAuth())
 	root.AddCommand(NewCmdDoc(out))
 	root.AddCommand(NewCmdConfig())
 	root.AddCommand(NewCmdRegion(out))
@@ -131,7 +132,7 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdAPI(out))
 	root.AddCommand(NewCmdSignature())
 	for _, c := range root.Commands() {
-		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" {
+		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" && c.Name() != "auth" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
 			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
 			c.PersistentFlags().StringVar(&global.BaseURL, "base-url", "", "Set base-url to override the base-url in local config file")
@@ -144,6 +145,13 @@ func addChildren(root *cobra.Command) {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	// Phase 3 脱敏扩面：panic 路径兜底，避免 panic 消息（可能含 token/header）原样落到 stderr
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintln(os.Stderr, base.Redact(fmt.Sprintf("panic: %v", r)))
+			os.Exit(1)
+		}
+	}()
 	cmd := NewCmdRoot()
 	if base.InCloudShell {
 		err := base.InitConfigInCloudShell()
@@ -156,7 +164,7 @@ func Execute() {
 	mode := os.Getenv("UCLOUD_CLI_DEBUG")
 	if mode == "on" || global.Debug {
 		base.ClientConfig.LogLevel = log.DebugLevel
-		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential)
+		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential, base.ConfigIns)
 	}
 
 	addChildren(cmd)
@@ -236,17 +244,64 @@ func initialize(cmd *cobra.Command) {
 		base.ClientConfig.Zone = zone
 	}
 
-	if (cmd.Name() != "config" && cmd.Name() != "init" && cmd.Name() != "version") && (cmd.Parent() != nil && cmd.Parent().Name() != "config") {
-		if base.InCloudShell {
-			return
-		}
-		if base.ConfigIns.PrivateKey == "" {
-			base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
-			os.Exit(0)
-		}
-		if base.ConfigIns.PublicKey == "" {
-			base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
-			os.Exit(0)
-		}
+	if isAuthSkippedCmd(cmd) {
+		return
 	}
+	if base.InCloudShell {
+		return
+	}
+
+	if base.ConfigIns.AuthMode == base.AuthModeOAuth {
+		// AP-1：oauth 凭据缺失/失效 → stderr + 非零退出（不复制下方 aksk 路径的 exit 0 反模式）
+		isTTY := base.IsStdinTTY()
+		if msg, ok := base.CheckOAuthRunnable(base.ConfigIns, isTTY); !ok {
+			fmt.Fprintln(os.Stderr, msg)
+			os.Exit(1)
+		}
+		if err := base.EnsureFreshToken(base.ConfigIns, base.AggConfigListIns); err != nil {
+			fmt.Fprintln(os.Stderr, base.OAuthRefreshFailedHint(base.ConfigIns.Profile, isTTY, err))
+			os.Exit(1)
+		}
+		// 刷新可能换了 token，重建 client 让新 Bearer 生效。
+		// GetBizClient 会重建 ClientConfig 并硬编码 FatalLevel，若 Execute 已按
+		// UCLOUD_CLI_DEBUG 设了 DebugLevel，需在重建后恢复（SDK logger 在
+		// NewClient 时捕获 LogLevel，必须再 rebuild 一次才生效）。
+		debugOn := base.ClientConfig.LogLevel == log.DebugLevel
+		bc, err := base.GetBizClient(base.ConfigIns)
+		if err != nil {
+			base.HandleError(err)
+		} else {
+			base.BizClient = bc
+		}
+		if debugOn {
+			base.ClientConfig.LogLevel = log.DebugLevel
+			base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential, base.ConfigIns)
+		}
+		return
+	}
+
+	// 既有 AK/SK 检查，原样保留（CRITICAL 回归约束：行为与文案零变化）
+	if base.ConfigIns.PrivateKey == "" {
+		base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
+		os.Exit(0)
+	}
+	if base.ConfigIns.PublicKey == "" {
+		base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
+		os.Exit(0)
+	}
+}
+
+// isAuthSkippedCmd 启动凭据检查跳过清单（D7：login/logout/help/version/config/init）
+func isAuthSkippedCmd(cmd *cobra.Command) bool {
+	if cmd.Parent() == nil {
+		return true // root 命令本身（--version/--config/help），与历史行为一致
+	}
+	switch cmd.Name() {
+	case "config", "init", "version", "login", "logout", "help", "auth":
+		return true
+	}
+	if cmd.Parent() != nil && (cmd.Parent().Name() == "config" || cmd.Parent().Name() == "auth") {
+		return true
+	}
+	return false
 }
