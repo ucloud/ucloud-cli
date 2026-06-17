@@ -78,7 +78,11 @@ func resolveLoginOAuthBase(cfg *base.AggConfig, flagVal string) (string, error) 
 	if flagVal != "" {
 		cfg.OAuthBaseURL = strings.TrimSuffix(flagVal, "/")
 	}
-	return base.GetOAuthBaseURL(cfg)
+	oauthBase, err := base.GetOAuthBaseURL(cfg)
+	if err == nil && cfg.OAuthBaseURL == "" {
+		cfg.OAuthBaseURL = oauthBase
+	}
+	return oauthBase, err
 }
 
 func runLogin(noBrowser bool, oauthBaseURL string) {

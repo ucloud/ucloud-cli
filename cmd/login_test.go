@@ -38,7 +38,7 @@ func TestResolveLoginOAuthBase(t *testing.T) {
 		t.Errorf("flag empty, cfg preset: cfg.OAuthBaseURL = %q, want unchanged", cfg.OAuthBaseURL)
 	}
 
-	// case 3: flag 为空，cfg 为空 → 返回内置默认（与 GetOAuthBaseURL 对空 cfg 的结果一致）
+	// case 3: flag 为空，cfg 为空 → 返回内置默认，并写回 cfg 以便随 profile 显式落盘
 	cfg = &base.AggConfig{}
 	got, err = resolveLoginOAuthBase(cfg, "")
 	if err != nil {
@@ -50,6 +50,9 @@ func TestResolveLoginOAuthBase(t *testing.T) {
 	}
 	if got != want {
 		t.Errorf("flag empty, cfg empty: got = %q, want built-in default %q", got, want)
+	}
+	if cfg.OAuthBaseURL != want {
+		t.Errorf("flag empty, cfg empty: cfg.OAuthBaseURL = %q, want it set to built-in default %q for explicit persist", cfg.OAuthBaseURL, want)
 	}
 }
 
