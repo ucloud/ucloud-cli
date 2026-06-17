@@ -95,6 +95,7 @@ func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 	cmd.AddCommand(NewCmdUDBResetPassword(out))
 	cmd.AddCommand(NewCmdUDBCreateSlave(out))
 	cmd.AddCommand(NewCmdUDBPromoteSlave(out))
+	cmd.AddCommand(NewCmdUDBListMachineType(out))
 	// cmd.AddCommand(NewCmdUDBPromoteToHA(out))
 
 	return cmd
@@ -160,6 +161,60 @@ func listParamTemplates(dbVersion, project, region, zone string) []string {
 		list = append(list, fmt.Sprintf("%d/%s", int(id), name))
 	}
 	return list
+}
+
+// MachineTypeRow 计算规格表格行
+type MachineTypeRow struct {
+	ID          string
+	Description string
+	Cpu         int
+	Memory      int
+	Group       string
+}
+
+// NewCmdUDBListMachineType ucloud mysql db list-machine-type
+func NewCmdUDBListMachineType(out io.Writer) *cobra.Command {
+	var region, zone, projectID, mode string
+	cmd := &cobra.Command{
+		Use:   "list-machine-type",
+		Short: "List available MySQL machine types",
+		Long:  "List available MySQL machine types via ListUDBMachineType API",
+		Run: func(c *cobra.Command, args []string) {
+			req := base.BizClient.NewListUDBMachineTypeRequest()
+			req.Region = &region
+			req.Zone = &zone
+			req.ProjectId = &projectID
+			if mode != "" {
+				req.InstanceMode = &mode
+			}
+			resp, err := base.BizClient.ListUDBMachineType(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			var rows []MachineTypeRow
+			for _, mt := range resp.DataSet {
+				rows = append(rows, MachineTypeRow{
+					ID:          mt.ID,
+					Description: mt.Description,
+					Cpu:         mt.Cpu,
+					Memory:      mt.Memory,
+					Group:       mt.Group,
+				})
+			}
+			base.PrintList(rows, out)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	bindRegionS(&region, flags)
+	bindZoneS(&zone, &region, flags)
+	bindProjectIDS(&projectID, flags)
+	flags.StringVar(&mode, "mode", "", "Optional. Instance mode: Normal / HA")
+	flags.SetFlagValues("mode", "Normal", "HA")
+
+	return cmd
 }
 
 // NewCmdMysqlCreate ucloud mysql create
@@ -326,7 +381,7 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&name, "name", "", "Required. Instance name, at least 6 characters")
 	flags.StringVar(&password, "password", "", "Required. Admin password")
 	flags.StringVar(&version, "version", "", "Required. DB version. Options: mysql-5.7, mysql-8.0, mysql-8.4, percona-5.7")
-	flags.StringVar(&machineType, "machine-type", "", "Required. Machine type ID, e.g. o.mysql2m.xlarge for 4C8G. See ListUDBMachineType API")
+	flags.StringVar(&machineType, "machine-type", "", "Required. Machine type ID, e.g. o.mysql2m.xlarge for 4C8G. See 'ucloud mysql db list-machine-type'")
 
 	// Optional flags
 	bindRegionS(&region, flags)
