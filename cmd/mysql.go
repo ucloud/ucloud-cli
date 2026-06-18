@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
@@ -31,8 +32,32 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
-var dbVersionList = []string{"mysql-5.1", "mysql-5.5", "mysql-5.6", "mysql-5.7", "percona-5.5", "percona-5.6", "percona-5.7", "mariadb-10.0"}
+var dbVersionList = []string{"mysql-5.7", "mysql-8.0", "mysql-8.4", "percona-5.7"}
 var dbDiskTypeList = []string{"normal", "sata_ssd", "pcie_ssd"}
+var dbStorageClassList = []string{"CLOUD_RSSD"}
+var dbSpecClassList = []string{"O", "O2"}
+var dbMachineTypeList = []string{
+	"o.mysql2m.small",    // 1C2G
+	"o.mysql2m.medium",   // 2C4G
+	"o.mysql2m.xlarge",   // 4C8G
+	"o.mysql2m.2xlarge",  // 8C16G
+	"o.mysql2m.4xlarge",  // 16C32G
+	"o.mysql2m.8xlarge",  // 32C64G
+	"o.mysql2m.12xlarge", // 48C96G
+	"o.mysql2m.16xlarge", // 64C128G
+	"o.mysql4m.medium",   // 2C8G
+	"o.mysql4m.xlarge",   // 4C16G
+	"o.mysql4m.2xlarge",  // 8C32G
+	"o.mysql4m.4xlarge",  // 16C64G
+	"o.mysql4m.8xlarge",  // 32C128G
+	"o.mysql4m.16xlarge", // 64C256G
+	"o.mysql8m.medium",   // 2C16G
+	"o.mysql8m.xlarge",   // 4C32G
+	"o.mysql8m.2xlarge",  // 8C64G
+	"o.mysql8m.4xlarge",  // 16C128G
+	"o.mysql8m.8xlarge",  // 32C256G
+	"o.mysql8m.16xlarge", // 64C512G
+}
 
 var poller = base.NewSpoller(describeUdbByID, base.Cxt.GetWriter())
 
@@ -70,112 +95,363 @@ func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 	cmd.AddCommand(NewCmdUDBResetPassword(out))
 	cmd.AddCommand(NewCmdUDBCreateSlave(out))
 	cmd.AddCommand(NewCmdUDBPromoteSlave(out))
+	cmd.AddCommand(NewCmdUDBListMachineType(out))
 	// cmd.AddCommand(NewCmdUDBPromoteToHA(out))
+
+	return cmd
+}
+
+// getDefaultParamGroupID 通过 ListUDBParamTemplate 获取指定 DB 版本的默认配置模板 ID
+// ListUDBParamTemplate请求体 不传TemplateType即为获取默认参数模板
+func getDefaultParamGroupID(dbVersion, project, region, zone string) (int, error) {
+	params := map[string]interface{}{
+		"Action":    "ListUDBParamTemplate",
+		"Region":    region,
+		"Zone":      zone,
+		"ProjectId": project,
+		"DBVersion": dbVersion,
+	}
+	req := base.BizClient.UAccountClient.NewGenericRequest()
+	if err := req.SetPayload(params); err != nil {
+		return 0, fmt.Errorf("set payload: %w", err)
+	}
+	resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
+	if err != nil {
+		return 0, fmt.Errorf("call ListUDBParamTemplate: %w", err)
+	}
+	dataSet, ok := resp.GetPayload()["DataSet"].([]interface{})
+	if !ok || len(dataSet) == 0 {
+		return 0, fmt.Errorf("no param template found for version %s in %s/%s", dbVersion, region, zone)
+	}
+	// 取第一个默认模板
+	m, _ := dataSet[0].(map[string]interface{})
+	id, _ := m["Id"].(float64)
+	return int(id), nil
+}
+
+// listParamTemplates 通过 ListUDBParamTemplate 获取指定版本的参数模板列表，用于自动补全
+func listParamTemplates(dbVersion, project, region, zone string) []string {
+	params := map[string]interface{}{
+		"Action":    "ListUDBParamTemplate",
+		"Region":    region,
+		"Zone":      zone,
+		"ProjectId": project,
+		"DBVersion": dbVersion,
+	}
+	req := base.BizClient.UAccountClient.NewGenericRequest()
+	if err := req.SetPayload(params); err != nil {
+		return nil
+	}
+	resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
+	if err != nil {
+		return nil
+	}
+	dataSet, ok := resp.GetPayload()["DataSet"].([]interface{})
+	if !ok {
+		return nil
+	}
+	var list []string
+	for _, item := range dataSet {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id, _ := m["Id"].(float64)
+		name, _ := m["Name"].(string)
+		list = append(list, fmt.Sprintf("%d/%s", int(id), name))
+	}
+	return list
+}
+
+// MachineTypeRow 计算规格表格行
+type MachineTypeRow struct {
+	ID          string
+	Description string
+	Cpu         int
+	Memory      int
+	Group       string
+}
+
+// NewCmdUDBListMachineType ucloud mysql db list-machine-type
+func NewCmdUDBListMachineType(out io.Writer) *cobra.Command {
+	var region, zone, projectID, mode string
+	cmd := &cobra.Command{
+		Use:   "list-machine-type",
+		Short: "List available MySQL machine types",
+		Long:  "List available MySQL machine types via ListUDBMachineType API",
+		Run: func(c *cobra.Command, args []string) {
+			req := base.BizClient.NewListUDBMachineTypeRequest()
+			req.Region = &region
+			req.Zone = &zone
+			req.ProjectId = &projectID
+			if mode != "" {
+				req.InstanceMode = &mode
+			}
+			resp, err := base.BizClient.ListUDBMachineType(req)
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			var rows []MachineTypeRow
+			for _, mt := range resp.DataSet {
+				rows = append(rows, MachineTypeRow{
+					ID:          mt.ID,
+					Description: mt.Description,
+					Cpu:         mt.Cpu,
+					Memory:      mt.Memory,
+					Group:       mt.Group,
+				})
+			}
+			base.PrintList(rows, out)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	bindRegionS(&region, flags)
+	bindZoneS(&zone, &region, flags)
+	bindProjectIDS(&projectID, flags)
+	flags.StringVar(&mode, "mode", "", "Optional. Instance mode: Normal / HA")
+	flags.SetFlagValues("mode", "Normal", "HA")
 
 	return cmd
 }
 
 // NewCmdMysqlCreate ucloud mysql create
 func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
-	var confID, diskType string
+	var region, zone, projectID string
+	var confID string
 	var backupID int
 	var async bool
-	req := base.BizClient.NewCreateUDBInstanceRequest()
+	var labels []string
+	var name, password, version, machineType, storageClass, specClass string
+	var port, diskSpace int
+	var chargeType string
+	var quantity int
+	var mode, vpcID, subnetID, backupZone string
+	var backupCount, backupTime, backupDuration int
+	var disableSemisync bool
+	var tag, dbSubVersion, alarmTemplateID, backupURL string
+	var caseSensitivity, semisyncFlag int
+	var couponID string
+
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create MySQL instance on UCloud platform",
 		Long:  "Create MySQL instance on UCloud platform",
 		Run: func(c *cobra.Command, args []string) {
-			confID = base.PickResourceID(confID)
-			id, err := strconv.Atoi(confID)
-			if err != nil {
-				base.HandleError(err)
+			if len(name) < 6 {
+				base.HandleError(fmt.Errorf("name must be at least 6 characters"))
 				return
 			}
-			req.ParamGroupId = &id
-			if len(*req.Name) < 6 {
-				fmt.Fprintln(out, "Error, length of name shoud be larger than 5")
+			if diskSpace < 20 || diskSpace > 32000 {
+				base.HandleError(fmt.Errorf("disk-size-gb must be between 20 and 32000"))
 				return
 			}
-			if *req.DiskSpace > 3000 || *req.DiskSpace < 20 {
-				fmt.Fprintln(out, "Error, disk-size-gb should be between 20 and 3000")
-				return
+
+			// ParamGroupId: 用户传了就用，没传则自动获取默认模板
+			var paramGroupID int
+			if c.Flags().Changed("param-group-id") {
+				confID = base.PickResourceID(confID)
+				id, err := strconv.Atoi(confID)
+				if err != nil {
+					base.HandleError(fmt.Errorf("invalid param-group-id: %w", err))
+					return
+				}
+				paramGroupID = id
+			} else {
+				id, err := getDefaultParamGroupID(version, projectID, region, zone)
+				if err != nil {
+					base.HandleError(err)
+					return
+				}
+				paramGroupID = id
 			}
-			if *req.MemoryLimit < 1 || *req.MemoryLimit > 128 {
-				fmt.Fprintln(out, "Error, memory-size-gb should be between 1 and 128")
-				return
+
+			params := map[string]interface{}{
+				"Action":             "CreateUDBMySQLInstance",
+				"Region":             region,
+				"Zone":               zone,
+				"Name":               name,
+				"AdminPassword":      password,
+				"DBTypeId":           version,
+				"Port":               port,
+				"DiskSpace":          diskSpace,
+				"ParamGroupId":       paramGroupID,
+				"MachineType":        machineType,
+				"StorageClass":       storageClass,
+				"SpecificationClass": specClass,
+				"ChargeType":         chargeType,
+				"Quantity":           quantity,
+				"InstanceMode":       mode,
+				"BackupCount":        backupCount,
+				"BackupTime":         backupTime,
+				"BackupDuration":     backupDuration,
+				"DisableSemisync":    disableSemisync,
+				"SemisyncFlag":       semisyncFlag,
 			}
-			if backupID != -1 {
-				req.BackupId = &backupID
+			if projectID != "" {
+				params["ProjectId"] = projectID
 			}
-			*req.MemoryLimit = *req.MemoryLimit * 1000
-			switch diskType {
-			case "normal":
-				req.UseSSD = sdk.Bool(false)
-			case "sata_ssd":
-				req.UseSSD = sdk.Bool(true)
-				req.SSDType = sdk.String("SATA")
-			case "pcie_ssd":
-				req.UseSSD = sdk.Bool(true)
-				req.SSDType = sdk.String("PCI-E")
-			default:
-				if diskType != "" {
-					req.UseSSD = sdk.Bool(true)
-					req.SSDType = sdk.String(diskType)
+
+			// 以下为可选参数，仅在用户显式指定时下发
+			if c.Flags().Changed("vpc-id") {
+				params["VPCId"] = vpcID
+			}
+			if c.Flags().Changed("subnet-id") {
+				params["SubnetId"] = subnetID
+			}
+			if c.Flags().Changed("backup-zone") {
+				params["BackupZone"] = backupZone
+			}
+			if c.Flags().Changed("backup-id") {
+				params["BackupId"] = backupID
+			}
+			if c.Flags().Changed("tag") {
+				params["Tag"] = tag
+			}
+			if c.Flags().Changed("db-sub-version") {
+				params["DBSubVersion"] = dbSubVersion
+			}
+			if c.Flags().Changed("case-sensitivity") {
+				params["CaseSensitivityParam"] = caseSensitivity
+			}
+			if c.Flags().Changed("alarm-template-id") {
+				params["AlarmTemplateId"] = alarmTemplateID
+			}
+			if c.Flags().Changed("backup-url") {
+				params["BackupURL"] = backupURL
+			}
+			if c.Flags().Changed("coupon-id") {
+				params["CouponId"] = couponID
+			}
+
+			idx := 0
+			for _, l := range labels {
+				parts := strings.SplitN(l, "=", 2)
+				if len(parts) == 2 {
+					params[fmt.Sprintf("Labels.%d.Key", idx)] = parts[0]
+					params[fmt.Sprintf("Labels.%d.Value", idx)] = parts[1]
+					idx++
 				}
 			}
-			resp, err := base.BizClient.CreateUDBInstance(req)
+
+			req := base.BizClient.UAccountClient.NewGenericRequest()
+			if err := req.SetPayload(params); err != nil {
+				base.HandleError(fmt.Errorf("set payload: %w", err))
+				return
+			}
+			resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
 			if err != nil {
 				base.HandleError(err)
 				return
 			}
-			text := fmt.Sprintf("udb[%s] is initializing", resp.DBId)
+
+			dbID, _ := resp.GetPayload()["DBId"].(string)
+			if dbID == "" {
+				fmt.Fprintln(out, "Error: empty DBId in response")
+				return
+			}
 			if async {
-				fmt.Fprintf(out, "udb[%s] is initializing\n", resp.DBId)
+				fmt.Fprintf(out, "udb[%s] is initializing\n", dbID)
 			} else {
-				poller.Spoll(resp.DBId, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+				text := fmt.Sprintf("udb[%s] is initializing", dbID)
+				poller.Spoll(dbID, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
 			}
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	req.DBTypeId = flags.String("version", "", "Required. Version of udb instance")
-	req.Name = flags.String("name", "", "Required. Name of udb instance to create, at least 6 letters")
-	flags.StringVar(&confID, "conf-id", "", "Required. ConfID of configuration. see 'ucloud mysql conf list'")
-	req.AdminUser = flags.String("admin-user-name", "root", "Optional. Name of udb instance's administrator")
-	req.AdminPassword = flags.String("password", "", "Required. Password of udb instance's administrator")
-	flags.IntVar(&backupID, "backup-id", -1, "Optional. BackupID of the backup which the newly created UDB instance will recover from if specified. See 'ucloud mysql backup list'")
-	req.Port = flags.Int("port", 3306, "Optional. Port of udb instance")
-	flags.StringVar(&diskType, "disk-type", "", "Optional. Setting this flag means using SSD disk. Accept values: 'normal','sata_ssd','pcie_ssd'")
-	req.DiskSpace = flags.Int("disk-size-gb", 20, "Optional. Disk size of udb instance. From 20 to 3000 according to memory size. Unit GB")
-	req.MemoryLimit = flags.Int("memory-size-gb", 1, "Optional. Memory size of udb instance. From 1 to 128. Unit GB")
-	req.InstanceMode = flags.String("mode", "Normal", "Optional. Mode of udb instance. Normal or HA, HA means high-availability. Both the normal and high-availability versions can create master-slave synchronization for data redundancy and read/write separation. The high-availability version provides a dual-master hot standby architecture to avoid database unavailability due to downtime or hardware failure. One more thing. It does better job for master-slave synchronization and disaster recovery using the InnoDB engine")
-	req.VPCId = flags.String("vpc-id", "", "Optional. Resource ID of VPC which the UDB to create belong to. See 'ucloud vpc list'")
-	req.SubnetId = flags.String("subnet-id", "", "Optional. Resource ID of subnet that the UDB to create belong to. See 'ucloud subnet list'")
-	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish.")
-	bindChargeType(req, flags)
-	bindQuantity(req, flags)
+
+	// Required flags
+	flags.StringVar(&name, "name", "", "Required. Instance name, at least 6 characters")
+	flags.StringVar(&password, "password", "", "Required. Admin password")
+	flags.StringVar(&version, "version", "", "Required. DB version. Options: mysql-5.7, mysql-8.0, mysql-8.4, percona-5.7")
+	flags.StringVar(&machineType, "machine-type", "", "Required. Machine type ID, e.g. o.mysql2m.xlarge for 4C8G. See 'ucloud mysql db list-machine-type'")
+
+	// Optional flags
+	bindRegionS(&region, flags)
+	bindZoneS(&zone, &region, flags)
+	bindProjectIDS(&projectID, flags)
+	flags.IntVar(&port, "port", 3306, "Optional. Port, default 3306")
+	flags.IntVar(&diskSpace, "disk-size-gb", 20, "Optional. Disk size (GiB), 20-32000, default 20")
+	flags.StringVar(&storageClass, "storage-class", "CLOUD_RSSD", "Optional. Storage class: CLOUD_RSSD")
+	flags.StringVar(&specClass, "spec-class", "O", "Optional. Spec class: O(NVMe) / O2")
+
+	flags.StringVar(&confID, "param-group-id", "", "Optional. Param group ID. Auto-fetched if omitted. See 'ucloud mysql conf list'")
+	flags.StringVar(&chargeType, "charge-type", "Month", "Optional. Year / Month / Dynamic")
+	flags.IntVar(&quantity, "quantity", 1, "Optional. Purchase duration")
+	flags.IntVar(&backupID, "backup-id", -1, "Optional. Restore from backup ID")
+	flags.StringVar(&mode, "mode", "HA", "Optional. Normal / HA")
+	flags.StringVar(&vpcID, "vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
+	flags.StringVar(&subnetID, "subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
+	flags.StringVar(&backupZone, "backup-zone", "", "Optional. Backup zone for cross-AZ HA")
+	flags.IntVar(&backupCount, "backup-count", 7, "Optional. Weekly backup count, default 7")
+	flags.IntVar(&backupTime, "backup-time", 1, "Optional. Backup start hour (0-23), default 1")
+	flags.IntVar(&backupDuration, "backup-duration", 24, "Optional. Backup interval hours, default 24")
+	flags.BoolVar(&disableSemisync, "disable-semisync", false, "Optional. Enable async HA")
+	flags.StringVar(&tag, "tag", "", "Optional. Business group name")
+	flags.StringVar(&dbSubVersion, "db-sub-version", "", "Optional. MySQL minor version")
+	flags.IntVar(&caseSensitivity, "case-sensitivity", -1, "Optional. 0=case-sensitive, 1=insensitive (MySQL 8.0 only)")
+	flags.StringVar(&alarmTemplateID, "alarm-template-id", "", "Optional. Alarm template ID")
+	flags.StringVar(&backupURL, "backup-url", "", "Optional. US3 backup download URL")
+	flags.IntVar(&semisyncFlag, "semisync-flag", 0, "Optional. 1=enable semi-sync, 2=disable, 0=default(enable)")
+	flags.StringSliceVar(&labels, "label", nil, "Optional. Resource label, format: key=value, repeatable")
+	flags.StringVar(&couponID, "coupon-id", "", "Optional. Coupon ID")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for creation to finish")
 
 	flags.SetFlagValues("version", dbVersionList...)
-	flags.SetFlagValues("disk-type", dbDiskTypeList...)
+	flags.SetFlagValues("storage-class", dbStorageClassList...)
+	flags.SetFlagValues("spec-class", dbSpecClassList...)
+	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
+	flags.SetFlagValues("mode", "Normal", "HA")
+
 	flags.SetFlagValuesFunc("vpc-id", func() []string {
-		return getAllVPCIdNames(*req.ProjectId, *req.Region)
+		return getAllVPCIdNames(projectID, region)
 	})
 	flags.SetFlagValuesFunc("subnet-id", func() []string {
-		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
+		return getAllSubnetIDNames(vpcID, projectID, region)
 	})
-	flags.SetFlagValuesFunc("conf-id", func() []string {
-		return getConfIDList(*req.DBTypeId, *req.ProjectId, *req.Region, *req.Zone)
+	flags.SetFlagValuesFunc("param-group-id", func() []string {
+		return listParamTemplates(version, projectID, region, zone)
 	})
+	flags.SetFlagValues("machine-type", dbMachineTypeList...)
 
-	cmd.MarkFlagRequired("version")
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("conf-id")
+	cmd.MarkFlagRequired("version")
+	cmd.MarkFlagRequired("machine-type")
+
+	// 自定义 usage，突出必填参数
+	requiredFlags := []string{"name", "password", "version", "machine-type"}
+	cmd.SetUsageFunc(func(c *cobra.Command) error {
+		w := c.OutOrStderr()
+		fmt.Fprintln(w, "Usage:")
+		fmt.Fprintf(w, "  %s [flags]\n\n", c.CommandPath())
+		fmt.Fprintln(w, "★ Required flags (must be provided):")
+		for _, name := range requiredFlags {
+			f := c.Flags().Lookup(name)
+			if f != nil {
+				fmt.Fprintf(w, "  --%-20s %s\n", f.Name, f.Usage)
+			}
+		}
+		fmt.Fprintln(w, "\nOptional flags:")
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			for _, req := range requiredFlags {
+				if f.Name == req {
+					return
+				}
+			}
+			defVal := ""
+			if f.DefValue != "" && f.DefValue != "[]" {
+				defVal = fmt.Sprintf(" (default %s)", f.DefValue)
+			}
+			fmt.Fprintf(w, "  --%-20s %s%s\n", f.Name, f.Usage, defVal)
+		})
+		return nil
+	})
+
 	return cmd
 }
 
