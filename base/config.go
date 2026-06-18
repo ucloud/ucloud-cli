@@ -66,7 +66,7 @@ const (
 )
 
 // Version 版本号
-const Version = "0.3.1"
+const Version = "0.3.3"
 
 var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 
