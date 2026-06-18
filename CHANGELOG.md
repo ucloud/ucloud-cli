@@ -1,3 +1,12 @@
+## 0.3.3 (2026-06-18)
+
+* chore: bump `base.Version` to 0.3.3 to match the release tag
+
+## 0.3.2 (2026-06-18)
+
+* `mysql db create`: switch to the latest UDB create API and improve usability
+* expose the `mysql db list-machine-type` command
+
 ## 0.3.1 (2026-06-11)
 
 * OAuth browser login: `ucloud auth login` / `ucloud auth logout` (RFC 8252 loopback auto-capture, `--no-browser` fallback)
