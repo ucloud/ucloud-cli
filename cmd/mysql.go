@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	pflag "github.com/spf13/pflag"
+	"github.com/spf13/pflag"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
@@ -102,7 +102,7 @@ func NewCmdMysqlDB(out io.Writer) *cobra.Command {
 }
 
 // getDefaultParamGroupID 通过 ListUDBParamTemplate 获取指定 DB 版本的默认配置模板 ID
-// templateType=0 表示默认参数模板
+// ListUDBParamTemplate请求体 不传TemplateType即为获取默认参数模板
 func getDefaultParamGroupID(dbVersion, project, region, zone string) (int, error) {
 	params := map[string]interface{}{
 		"Action":    "ListUDBParamTemplate",
@@ -241,11 +241,11 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 		Long:  "Create MySQL instance on UCloud platform",
 		Run: func(c *cobra.Command, args []string) {
 			if len(name) < 6 {
-				fmt.Fprintln(out, "Error: name must be at least 6 characters")
+				base.HandleError(fmt.Errorf("name must be at least 6 characters"))
 				return
 			}
 			if diskSpace < 20 || diskSpace > 32000 {
-				fmt.Fprintln(out, "Error: disk-size-gb must be between 20 and 32000")
+				base.HandleError(fmt.Errorf("disk-size-gb must be between 20 and 32000"))
 				return
 			}
 
@@ -281,20 +281,20 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 				"MachineType":        machineType,
 				"StorageClass":       storageClass,
 				"SpecificationClass": specClass,
+				"ChargeType":         chargeType,
+				"Quantity":           quantity,
+				"InstanceMode":       mode,
+				"BackupCount":        backupCount,
+				"BackupTime":         backupTime,
+				"BackupDuration":     backupDuration,
+				"DisableSemisync":    disableSemisync,
+				"SemisyncFlag":       semisyncFlag,
 			}
 			if projectID != "" {
 				params["ProjectId"] = projectID
 			}
 
-			if c.Flags().Changed("charge-type") {
-				params["ChargeType"] = chargeType
-			}
-			if c.Flags().Changed("quantity") {
-				params["Quantity"] = quantity
-			}
-			if c.Flags().Changed("mode") {
-				params["InstanceMode"] = mode
-			}
+			// 以下为可选参数，仅在用户显式指定时下发
 			if c.Flags().Changed("vpc-id") {
 				params["VPCId"] = vpcID
 			}
@@ -304,20 +304,8 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 			if c.Flags().Changed("backup-zone") {
 				params["BackupZone"] = backupZone
 			}
-			if c.Flags().Changed("backup-count") {
-				params["BackupCount"] = backupCount
-			}
-			if c.Flags().Changed("backup-time") {
-				params["BackupTime"] = backupTime
-			}
-			if c.Flags().Changed("backup-duration") {
-				params["BackupDuration"] = backupDuration
-			}
 			if c.Flags().Changed("backup-id") {
 				params["BackupId"] = backupID
-			}
-			if c.Flags().Changed("disable-semisync") {
-				params["DisableSemisync"] = disableSemisync
 			}
 			if c.Flags().Changed("tag") {
 				params["Tag"] = tag
@@ -334,18 +322,17 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 			if c.Flags().Changed("backup-url") {
 				params["BackupURL"] = backupURL
 			}
-			if c.Flags().Changed("semisync-flag") {
-				params["SemisyncFlag"] = semisyncFlag
-			}
 			if c.Flags().Changed("coupon-id") {
 				params["CouponId"] = couponID
 			}
 
-			for i, l := range labels {
+			idx := 0
+			for _, l := range labels {
 				parts := strings.SplitN(l, "=", 2)
 				if len(parts) == 2 {
-					params[fmt.Sprintf("Labels.%d.Key", i)] = parts[0]
-					params[fmt.Sprintf("Labels.%d.Value", i)] = parts[1]
+					params[fmt.Sprintf("Labels.%d.Key", idx)] = parts[0]
+					params[fmt.Sprintf("Labels.%d.Value", idx)] = parts[1]
+					idx++
 				}
 			}
 
@@ -396,7 +383,7 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&chargeType, "charge-type", "Month", "Optional. Year / Month / Dynamic")
 	flags.IntVar(&quantity, "quantity", 1, "Optional. Purchase duration")
 	flags.IntVar(&backupID, "backup-id", -1, "Optional. Restore from backup ID")
-	flags.StringVar(&mode, "mode", "Normal", "Optional. Normal / HA")
+	flags.StringVar(&mode, "mode", "HA", "Optional. Normal / HA")
 	flags.StringVar(&vpcID, "vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
 	flags.StringVar(&subnetID, "subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
 	flags.StringVar(&backupZone, "backup-zone", "", "Optional. Backup zone for cross-AZ HA")
@@ -439,16 +426,17 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	// 自定义 usage，突出必填参数
 	requiredFlags := []string{"name", "password", "version", "machine-type"}
 	cmd.SetUsageFunc(func(c *cobra.Command) error {
-		fmt.Fprintln(out, "Usage:")
-		fmt.Fprintf(out, "  %s [flags]\n\n", c.CommandPath())
-		fmt.Fprintln(out, "★ Required flags (must be provided):")
+		w := c.OutOrStderr()
+		fmt.Fprintln(w, "Usage:")
+		fmt.Fprintf(w, "  %s [flags]\n\n", c.CommandPath())
+		fmt.Fprintln(w, "★ Required flags (must be provided):")
 		for _, name := range requiredFlags {
 			f := c.Flags().Lookup(name)
 			if f != nil {
-				fmt.Fprintf(out, "  --%-20s %s\n", f.Name, f.Usage)
+				fmt.Fprintf(w, "  --%-20s %s\n", f.Name, f.Usage)
 			}
 		}
-		fmt.Fprintln(out, "\nOptional flags:")
+		fmt.Fprintln(w, "\nOptional flags:")
 		c.Flags().VisitAll(func(f *pflag.Flag) {
 			for _, req := range requiredFlags {
 				if f.Name == req {
@@ -456,10 +444,10 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 				}
 			}
 			defVal := ""
-			if f.DefValue != "" && f.DefValue != "false" && f.DefValue != "0" && f.DefValue != "[]" {
+			if f.DefValue != "" && f.DefValue != "[]" {
 				defVal = fmt.Sprintf(" (default %s)", f.DefValue)
 			}
-			fmt.Fprintf(out, "  --%-20s %s%s\n", f.Name, f.Usage, defVal)
+			fmt.Fprintf(w, "  --%-20s %s%s\n", f.Name, f.Usage, defVal)
 		})
 		return nil
 	})
