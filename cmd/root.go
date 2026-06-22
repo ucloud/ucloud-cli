@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
@@ -57,7 +58,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.PersistentFlags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
