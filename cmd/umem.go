@@ -29,6 +29,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -147,7 +148,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 	bindLimit(req, flags)
 	req.Protocol = sdk.String("redis")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -230,13 +231,13 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.StringVar(&p.group, "group", "", "Optional. Business group")
 
-	flags.SetFlagValues("version", "4.0", "5.0", "6.0", "7.0")
-	flags.SetFlagValues("type", "master-replica", "distributed")
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetFlagValues(cmd, "version", "4.0", "5.0", "6.0", "7.0")
+	command.SetFlagValues(cmd, "type", "master-replica", "distributed")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(p.projectID, p.region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(p.vpcID, p.projectID, p.region)
 	})
 
@@ -359,7 +360,7 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("umem-id")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(p.projectID, p.region)
 	})
 
@@ -424,7 +425,7 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 	bindZone(req, flags)
 
 	cmd.MarkFlagRequired("umem-id")
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -580,12 +581,12 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req.Zone = &zone
 	req.ProjectId = &projectID
 
-	flags.SetFlagValues("size-gb", "1", "2", "4", "8", "16", "32")
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetFlagValues(cmd, "size-gb", "1", "2", "4", "8", "16", "32")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(projectID, region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, projectID, region)
 	})
 
@@ -627,7 +628,7 @@ func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("umem-id")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getMemcacheIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -663,7 +664,7 @@ func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 	bindZone(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getMemcacheIDList(*req.ProjectId, *req.Region)
 	})
 
