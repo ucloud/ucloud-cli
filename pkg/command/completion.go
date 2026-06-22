@@ -11,6 +11,16 @@ func SetCompletion(cmd *cobra.Command, name string, fn func() []string) {
 	cmd.Flags().SetFlagValuesFunc(name, fn)
 }
 
+// SetPersistentCompletion registers a dynamic completion provider for a
+// PERSISTENT flag. On the cobra fork, persistent flags live on a different
+// FlagSet than cmd.Flags() at registration time, so we must target
+// cmd.PersistentFlags(). Task C2 (drop fork → upstream cobra) swaps the body
+// to cobra's RegisterFlagCompletionFunc, which resolves persistent flags itself
+// (so SetCompletion and SetPersistentCompletion converge to the same call at C2).
+func SetPersistentCompletion(cmd *cobra.Command, name string, fn func() []string) {
+	cmd.PersistentFlags().SetFlagValuesFunc(name, fn)
+}
+
 // SetFlagValues registers a static completion candidate set for a flag.
 // Same fork-internal-now, upstream-at-C2 strategy as SetCompletion.
 func SetFlagValues(cmd *cobra.Command, name string, values ...string) {

@@ -58,7 +58,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetPersistentCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)

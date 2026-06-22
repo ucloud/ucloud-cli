@@ -307,7 +307,7 @@ func NewCmdUDBConfUpload(out io.Writer) *cobra.Command {
 	// cmd.MarkFlagRequired("db-type")
 
 	command.SetFlagValues(cmd, "db-version", dbVersionList...)
-	// flags.SetFlagValues("db-type", subtypeList...)
+	// command.SetFlagValues(cmd, "db-type", subtypeList...)
 	command.SetCompletion(cmd, "conf-file", func() []string {
 		return base.GetFileList("")
 	})
