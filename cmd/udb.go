@@ -30,6 +30,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdUDBConf ucloud udb conf
@@ -113,7 +114,7 @@ func NewCmdUDBConfList(out io.Writer) *cobra.Command {
 	req.GroupId = flags.Int("conf-id", 0, "Optional. Configuration identifier for the configuration to be described")
 	req.ClassType = sdk.String("sql")
 
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getConfIDList(*req.ClassType, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -187,7 +188,7 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 	bindProjectID(req, flags)
 
 	cmd.MarkFlagRequired("conf-id")
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getConfIDList("sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -237,8 +238,8 @@ func NewCmdUDBConfClone(out io.Writer) *cobra.Command {
 	bindProjectID(req, flags)
 	flags.StringVar(&srcConfID, "src-conf-id", "", "Optional. The ConfID of source configuration which to be cloned from")
 
-	flags.SetFlagValues("db-version", dbVersionList...)
-	flags.SetFlagValuesFunc("src-conf-id", func() []string {
+	command.SetFlagValues(cmd, "db-version", dbVersionList...)
+	command.SetCompletion(cmd, "src-conf-id", func() []string {
 		return getConfIDList("sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -305,9 +306,9 @@ func NewCmdUDBConfUpload(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("db-version")
 	// cmd.MarkFlagRequired("db-type")
 
-	flags.SetFlagValues("db-version", dbVersionList...)
+	command.SetFlagValues(cmd, "db-version", dbVersionList...)
 	// flags.SetFlagValues("db-type", subtypeList...)
-	flags.SetFlagValuesFunc("conf-file", func() []string {
+	command.SetCompletion(cmd, "conf-file", func() []string {
 		return base.GetFileList("")
 	})
 	return cmd
@@ -373,10 +374,10 @@ func NewCmdUDBConfUpdate(out io.Writer) *cobra.Command {
 	flags.StringVar(&value, "value", "", "Optional. Value of parameter")
 	flags.StringVar(&file, "file", "", "Optional. Path of file in which each parameter occupies one line with format 'key = value'")
 
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getModifiableConfIDList("", *req.ProjectId, *req.Region, *req.Zone)
 	})
-	flags.SetFlagValuesFunc("file", func() []string {
+	command.SetCompletion(cmd, "file", func() []string {
 		return base.GetFileList("")
 	})
 
@@ -416,7 +417,7 @@ func NewCmdUDBConfDelete(out io.Writer) *cobra.Command {
 	bindProjectID(req, flags)
 
 	cmd.MarkFlagRequired("conf-id")
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getModifiableConfIDList("", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -485,10 +486,10 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("conf-id")
 	cmd.MarkFlagRequired("udb-id")
 
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getModifiableConfIDList("", *req.ProjectId, *req.Region, *req.Zone)
 	})
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -530,7 +531,7 @@ func NewCmdUDBConfDownload(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("conf-id")
 
-	flags.SetFlagValuesFunc("conf-id", func() []string {
+	command.SetCompletion(cmd, "conf-id", func() []string {
 		return getConfIDList("sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
