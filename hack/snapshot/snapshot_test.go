@@ -45,6 +45,36 @@ func TestWriteBaseline(t *testing.T) {
 	}
 }
 
+const completionGoldenPath = "testdata/completion.golden"
+
+func TestWriteCompletionBaseline(t *testing.T) {
+	root := cmd.NewCmdRoot()
+	cmd.AddChildrenForSnapshot(root)
+	// Nil out BizClient so dynamic completions panic-on-invoke
+	// (SetFlagValues closures are immune; SetCompletion closures dereference it).
+	base.BizClient = nil
+	got := RenderCompletion(root)
+
+	if os.Getenv("WRITE_COMPLETION_GOLDEN") == "1" {
+		if err := os.MkdirAll(filepath.Dir(completionGoldenPath), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(completionGoldenPath, []byte(got), 0o644); err != nil {
+			t.Fatalf("write golden: %v", err)
+		}
+		t.Logf("wrote %s (%d bytes)", completionGoldenPath, len(got))
+		return
+	}
+
+	data, err := os.ReadFile(completionGoldenPath)
+	if err != nil {
+		t.Fatalf("read golden: %v — run WRITE_COMPLETION_GOLDEN=1 go test ./hack/snapshot/ -run TestWriteCompletionBaseline to generate", err)
+	}
+	if got != string(data) {
+		t.Fatalf("completion candidates do not match golden.\ngot:\n%s\nwant:\n%s", got, string(data))
+	}
+}
+
 func TestRenderStructure(t *testing.T) {
 	root := &cobra.Command{Use: "ucloud"}
 	sub := &cobra.Command{Use: "demo", Short: "d"}
