@@ -29,6 +29,13 @@ type Context struct {
 	format OutputFormat
 	biz    *base.Client
 	config *base.AggConfig
+
+	// Completion candidate providers injected by the host so that bind
+	// helpers can register dynamic completion without pkg/command importing
+	// cmd or base.
+	regionList  func() []string
+	zoneList    func(region string) []string
+	projectList func() []string
 }
 
 // Deps carries constructor arguments for NewContext.
@@ -39,17 +46,24 @@ type Deps struct {
 	Format OutputFormat
 	Biz    *base.Client
 	Config *base.AggConfig
+
+	RegionList  func() []string
+	ZoneList    func(region string) []string
+	ProjectList func() []string
 }
 
 // NewContext constructs a Context from the provided Deps.
 func NewContext(d Deps) *Context {
 	return &Context{
-		in:     d.In,
-		out:    d.Out,
-		err:    d.Err,
-		format: d.Format,
-		biz:    d.Biz,
-		config: d.Config,
+		in:          d.In,
+		out:         d.Out,
+		err:         d.Err,
+		format:      d.Format,
+		biz:         d.Biz,
+		config:      d.Config,
+		regionList:  d.RegionList,
+		zoneList:    d.ZoneList,
+		projectList: d.ProjectList,
 	}
 }
 
