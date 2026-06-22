@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdFirewall  ucloud firewall
@@ -168,7 +169,7 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	req.Tag = flags.String("group", "", "Optional. Group of the firewall to create")
 	req.Remark = flags.String("remark", "", "Optional. Remark of the firewall to create")
 	cmd.MarkFlagRequired("name")
-	flags.SetFlagValuesFunc("rules-file", func() []string {
+	command.SetCompletion(cmd, "rules-file", func() []string {
 		return base.GetFileList("")
 	})
 	return cmd
@@ -236,10 +237,10 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("rules-file", func() []string {
+	command.SetCompletion(cmd, "rules-file", func() []string {
 		return base.GetFileList("")
 	})
 
@@ -313,7 +314,7 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -353,8 +354,8 @@ func NewCmdFirewallApply() *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValues("resource-type", "uhost", "unatgw", "upm", "hadoophost", "fortresshost", "udhost", "udockhost", "dbaudit")
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetFlagValues(cmd, "resource-type", "uhost", "unatgw", "upm", "hadoophost", "fortresshost", "udhost", "udockhost", "dbaudit")
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -405,11 +406,11 @@ func NewCmdFirewallCopy() *cobra.Command {
 	req.Region = flags.String("target-region", base.ConfigIns.Region, "Optional. Copy firewall to target region")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("src-fw", func() []string {
+	command.SetCompletion(cmd, "src-fw", func() []string {
 		return getFirewallIDNames(*req.ProjectId, srcRegion)
 	})
-	flags.SetFlagValuesFunc("target-region", getRegionList)
-	flags.SetFlagValuesFunc("region", getRegionList)
+	command.SetCompletion(cmd, "target-region", getRegionList)
+	command.SetCompletion(cmd, "region", getRegionList)
 
 	cmd.MarkFlagRequired("src-fw-id")
 	cmd.MarkFlagRequired("name")
@@ -445,7 +446,7 @@ func NewCmdFirewallDelete() *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
 	cmd.MarkFlagRequired("fw-id")
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -500,7 +501,7 @@ func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	req.Offset = flags.Int("offset", 0, "Optional. Offset")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -553,7 +554,7 @@ func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
 	req.Tag = flags.String("group", "", "Group of firewall")
 	req.Remark = flags.String("remark", "", "Remark of firewall")
 
-	flags.SetFlagValuesFunc("fw-id", func() []string {
+	command.SetCompletion(cmd, "fw-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 
