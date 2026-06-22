@@ -65,8 +65,10 @@ const (
 	OAuthRedirectPath = "/authorization"
 )
 
-// Version 版本号
-const Version = "0.3.3"
+// Version 版本号。var（非 const）以便 release 构建用
+// -ldflags "-X github.com/ucloud/ucloud-cli/base.Version=<tag>" 注入；
+// 本地/dev 构建保持 "dev"。
+var Version = "dev"
 
 var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 
