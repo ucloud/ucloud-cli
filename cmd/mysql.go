@@ -30,6 +30,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 var dbVersionList = []string{"mysql-5.7", "mysql-8.0", "mysql-8.4", "percona-5.7"}
@@ -212,7 +213,7 @@ func NewCmdUDBListMachineType(out io.Writer) *cobra.Command {
 	bindZoneS(&zone, &region, flags)
 	bindProjectIDS(&projectID, flags)
 	flags.StringVar(&mode, "mode", "", "Optional. Instance mode: Normal / HA")
-	flags.SetFlagValues("mode", "Normal", "HA")
+	command.SetFlagValues(cmd, "mode", "Normal", "HA")
 
 	return cmd
 }
@@ -401,22 +402,22 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&couponID, "coupon-id", "", "Optional. Coupon ID")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for creation to finish")
 
-	flags.SetFlagValues("version", dbVersionList...)
-	flags.SetFlagValues("storage-class", dbStorageClassList...)
-	flags.SetFlagValues("spec-class", dbSpecClassList...)
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValues("mode", "Normal", "HA")
+	command.SetFlagValues(cmd, "version", dbVersionList...)
+	command.SetFlagValues(cmd, "storage-class", dbStorageClassList...)
+	command.SetFlagValues(cmd, "spec-class", dbSpecClassList...)
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetFlagValues(cmd, "mode", "Normal", "HA")
 
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(projectID, region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(vpcID, projectID, region)
 	})
-	flags.SetFlagValuesFunc("param-group-id", func() []string {
+	command.SetCompletion(cmd, "param-group-id", func() []string {
 		return listParamTemplates(version, projectID, region, zone)
 	})
-	flags.SetFlagValues("machine-type", dbMachineTypeList...)
+	command.SetFlagValues(cmd, "machine-type", dbMachineTypeList...)
 
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("password")
@@ -536,8 +537,8 @@ func NewCmdUDBList(out io.Writer) *cobra.Command {
 	req.IncludeSlaves = flags.Bool("include-slaves", false, "Optional. When specifying the udb-id, whether to display its slaves together. Accept values:true, false")
 	req.ClassType = sdk.String("sql")
 
-	flags.SetFlagValues("include-slaves", "true", "false")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "include-slaves", "true", "false")
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -594,7 +595,7 @@ func NewCmdUDBDelete(out io.Writer) *cobra.Command {
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	cmd.MarkFlagRequired("udb-id")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -629,8 +630,8 @@ func NewCmdUDBStop(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("udb-id")
 
-	flags.SetFlagValues("force", "true", "false")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "force", "true", "false")
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList([]string{status.UDB_RUNNING}, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -676,7 +677,7 @@ func NewCmdUDBStart(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("udb-id")
 
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList([]string{status.UDB_SHUTOFF}, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -720,7 +721,7 @@ func NewCmdUDBRestart(out io.Writer) *cobra.Command {
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	cmd.MarkFlagRequired("udb-id")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -824,8 +825,8 @@ func NewCmdUDBResize(out io.Writer) *cobra.Command {
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish")
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
 
-	flags.SetFlagValues("disk-type", diskTypes...)
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "disk-type", diskTypes...)
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -868,7 +869,7 @@ func NewCmdUDBResetPassword(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("password")
 
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -935,8 +936,8 @@ func NewCmdUDBRestore(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("src-udb-id")
 	cmd.MarkFlagRequired("restore-to-time")
 
-	flags.SetFlagValues("disk-type", "noraml", "ssd")
-	flags.SetFlagValuesFunc("src-udb-id", func() []string {
+	command.SetFlagValues(cmd, "disk-type", "noraml", "ssd")
+	command.SetCompletion(cmd, "src-udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -994,8 +995,8 @@ func NewCmdUDBCreateSlave(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("master-udb-id")
 	cmd.MarkFlagRequired("name")
 
-	flags.SetFlagValues("disk-type", dbDiskTypeList...)
-	flags.SetFlagValuesFunc("master-udb-id", func() []string {
+	command.SetFlagValues(cmd, "disk-type", dbDiskTypeList...)
+	command.SetCompletion(cmd, "master-udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -1092,7 +1093,7 @@ func NewCmdUDBPromoteToHA(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to be promoted as high availability mode")
 
 	cmd.MarkFlagRequired("udb-id")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "", *req.ProjectId, *req.Region, "")
 	})
 	return cmd
