@@ -27,6 +27,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdULB  ucloud ulb
@@ -112,7 +113,7 @@ func NewCmdULBList(out io.Writer) *cobra.Command {
 	req.Offset = flags.Int("offset", 0, "Optional. Offset")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -204,17 +205,17 @@ func NewCmdULBCreate(out io.Writer) *cobra.Command {
 	eipReq.Name = flags.String("create-eip-name", "", "Optional. Name of created eip to bind with the new created outer mode ulb")
 	eipReq.Remark = cmd.Flags().String("create-eip-remark", "", "Optional. Remark of your EIP.")
 
-	flags.SetFlagValues("mode", "outer", "inner")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
-	flags.SetFlagValues("create-eip-line", "BGP", "International")
-	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	flags.SetFlagValuesFunc("bind-eip", func() []string {
+	command.SetFlagValues(cmd, "mode", "outer", "inner")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
+	command.SetFlagValues(cmd, "create-eip-line", "BGP", "International")
+	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	command.SetCompletion(cmd, "bind-eip", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
 	})
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
 	})
 
@@ -253,7 +254,7 @@ func NewCmdULBDelete(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -309,7 +310,7 @@ func NewCmdULBUpdate(out io.Writer) *cobra.Command {
 	flags.StringVar(&group, "group", "", "Optional, Business group of ULB instance")
 	// bindGroup(&group, flags)
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -432,7 +433,7 @@ func NewCmdULBVServerList(out io.Writer) *cobra.Command {
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	req.VServerId = flags.String("vserver-id", "", "Optional. Resource ID of vserver to list")
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -506,9 +507,9 @@ func NewCmdULBVServerCreate(out io.Writer) *cobra.Command {
 	req.Domain = flags.String("health-check-domain", "", "Optional. Skip this flag if health-check-mode is assigned Port")
 	req.Path = flags.String("health-check-path", "", "Optional. Skip this flags if health-check-mode is assigned Port")
 
-	flags.SetFlagValues("listen-type", "RequestProxy", "PacketsTransmit")
-	flags.SetFlagValues("protocol", "HTTP", "HTTPS", "TCP", "UDP")
-	flags.SetFlagValuesFunc("lb-method", func() []string {
+	command.SetFlagValues(cmd, "listen-type", "RequestProxy", "PacketsTransmit")
+	command.SetFlagValues(cmd, "protocol", "HTTP", "HTTPS", "TCP", "UDP")
+	command.SetCompletion(cmd, "lb-method", func() []string {
 		if *req.ListenType == "RequestProxy" {
 			return []string{"Roundrobin", "Source", "WeightRoundrobin", "Leastconn"}
 		} else if *req.ListenType == "PacketsTransmit" {
@@ -516,12 +517,12 @@ func NewCmdULBVServerCreate(out io.Writer) *cobra.Command {
 		}
 		return []string{"Roundrobin", "Source", "WeightRoundrobin", "ConsistentHash", "SourcePort", "ConsistentHashPort", "Leastconn"}
 	})
-	flags.SetFlagValues("session-maintain-mode", "None", "ServerInsert", "UserDefined")
-	flags.SetFlagValues("health-check-mode", "Port", "Path")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "session-maintain-mode", "None", "ServerInsert", "UserDefined")
+	command.SetFlagValues(cmd, "health-check-mode", "Port", "Path")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("ssl-id", func() []string {
+	command.SetCompletion(cmd, "ssl-id", func() []string {
 		return getAllSSLCertIDNames(*req.ProjectId, *req.Region)
 	})
 
@@ -592,13 +593,13 @@ func NewCmdULBVServerUpdate(out io.Writer) *cobra.Command {
 	req.Domain = flags.String("health-check-domain", "", "Optional. Skip this flag if health-check-mode is assigned Port")
 	req.Path = flags.String("health-check-path", "", "Optional. Skip this flags if health-check-mode is assigned Port")
 
-	flags.SetFlagValues("lb-method", "Roundrobin", "Source", "WeightRoundrobin", "ConsistentHash", "SourcePort", "ConsistentHashPort", "Leastconn")
-	flags.SetFlagValues("session-maintain-mode", "None", "ServerInsert", "UserDefined")
-	flags.SetFlagValues("health-check-mode", "Port", "Path")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "lb-method", "Roundrobin", "Source", "WeightRoundrobin", "ConsistentHash", "SourcePort", "ConsistentHashPort", "Leastconn")
+	command.SetFlagValues(cmd, "session-maintain-mode", "None", "ServerInsert", "UserDefined")
+	command.SetFlagValues(cmd, "health-check-mode", "Port", "Path")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		ulbID := base.PickResourceID(*req.ULBId)
 		return getAllULBVServerIDNames(ulbID, *req.ProjectId, *req.Region)
 	})
@@ -644,10 +645,10 @@ func NewCmdULBVServerDelete(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("ulb-id")
 	cmd.MarkFlagRequired("vserver-id")
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		ulbID := base.PickResourceID(*req.ULBId)
 		return getAllULBVServerIDNames(ulbID, *req.ProjectId, *req.Region)
 	})
@@ -738,10 +739,10 @@ func NewCmdULBVServerListNode(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("ulb-id")
 	cmd.MarkFlagRequired("vserver-id")
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		ulbID := base.PickResourceID(*req.ULBId)
 		return getAllULBVServerIDNames(ulbID, *req.ProjectId, *req.Region)
 	})
@@ -799,12 +800,12 @@ func NewCmdULBVServerAddNode(out io.Writer) *cobra.Command {
 	enable = flags.String("backend-mode", "enable", "Optional. Enable backend node or not. Accept values: enable, disable")
 	weight = flags.Int("weight", 1, "Optional. effective for lb-method WeightRoundrobin. Rnage [0,100]")
 
-	flags.SetFlagValues("resource-type", "Uhost", "UPM", "UDHost", "UDocker")
-	flags.SetFlagValues("backend-mode", "enable", "disable")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "resource-type", "Uhost", "UPM", "UDHost", "UDocker")
+	command.SetFlagValues(cmd, "backend-mode", "enable", "disable")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		ulbID := base.PickResourceID(*req.ULBId)
 		return getAllULBVServerIDNames(ulbID, *req.ProjectId, *req.Region)
 	})
@@ -872,11 +873,11 @@ func NewCmdULBVServerUpdateNode(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValues("backend-mode", "enable", "disable")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "backend-mode", "enable", "disable")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("backend-id", func() []string {
+	command.SetCompletion(cmd, "backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, "", *req.ProjectId, *req.Region)
 	})
 
@@ -918,10 +919,10 @@ func NewCmdULBVServerDeleteNode(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("ulb-id")
 	cmd.MarkFlagRequired("backend-id")
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("backend-id", func() []string {
+	command.SetCompletion(cmd, "backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, "", *req.ProjectId, *req.Region)
 	})
 	return cmd
@@ -981,14 +982,14 @@ func NewCmdULBVServerCreatePolicy(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValues("forward-method", "Domain", "Path")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "forward-method", "Domain", "Path")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("backend-id", func() []string {
+	command.SetCompletion(cmd, "backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
 
@@ -1055,10 +1056,10 @@ func NewCmdULBVServerListPolicy(out io.Writer) *cobra.Command {
 	ulbID = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	vserverID = flags.String("vserver-id", "", "Required. Resource ID of VServer")
 
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(project, region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		ulb := base.PickResourceID(*ulbID)
 		return getAllULBVServerIDNames(ulb, project, region)
 	})
@@ -1161,21 +1162,21 @@ func NewCmdULBVServerUpdatePolicy(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("vserver-id")
 	cmd.MarkFlagRequired("policy-id")
 
-	flags.SetFlagValues("forward-method", "Domain", "Path")
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetFlagValues(cmd, "forward-method", "Domain", "Path")
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		project := base.PickResourceID(*req.ProjectId)
 		return getAllULBIDNames(project, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("backend-id", func() []string {
+	command.SetCompletion(cmd, "backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("add-backend-id", func() []string {
+	command.SetCompletion(cmd, "add-backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("remove-backend-id", func() []string {
+	command.SetCompletion(cmd, "remove-backend-id", func() []string {
 		return getAllULBVServerNodeIDNames(*req.ULBId, *req.VServerId, *req.ProjectId, *req.Region)
 	})
 
@@ -1351,7 +1352,7 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 	req.SSLId = flags.String("ssl-id", "", "Required. ResouceID of ssl certificate to describe")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
-	flags.SetFlagValuesFunc("ssl-id", func() []string {
+	command.SetCompletion(cmd, "ssl-id", func() []string {
 		return getAllSSLCertIDNames(*req.ProjectId, *req.Region)
 	})
 	cmd.MarkFlagRequired("ssl-id")
@@ -1425,16 +1426,16 @@ func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	keyPath = flags.String("private-key-file", "", "Optional. Path of private key file, *.key. Required if all-in-one-file is omitted")
 	caPath = flags.String("ca-certificate-file", "", "Optional. Path of CA certificate file, *.crt")
 	cmd.MarkFlagRequired("name")
-	flags.SetFlagValuesFunc("all-in-one-file", func() []string {
+	command.SetCompletion(cmd, "all-in-one-file", func() []string {
 		return base.GetFileList("")
 	})
-	flags.SetFlagValuesFunc("private-key-file", func() []string {
+	command.SetCompletion(cmd, "private-key-file", func() []string {
 		return base.GetFileList(".key")
 	})
-	flags.SetFlagValuesFunc("ca-certificate-file", func() []string {
+	command.SetCompletion(cmd, "ca-certificate-file", func() []string {
 		return base.GetFileList(".crt")
 	})
-	flags.SetFlagValuesFunc("site-certificate-file", func() []string {
+	command.SetCompletion(cmd, "site-certificate-file", func() []string {
 		return base.GetFileList(".crt")
 	})
 	return cmd
@@ -1467,7 +1468,7 @@ func NewCmdSSLDelete(out io.Writer) *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 	flags.StringSliceVar(&idNames, "ssl-id", nil, "Required. Resource ID of SSL Certificates to delete")
-	flags.SetFlagValuesFunc("ssl-id", func() []string {
+	command.SetCompletion(cmd, "ssl-id", func() []string {
 		return getAllSSLCertIDNames(*req.ProjectId, *req.Region)
 	})
 	return cmd
@@ -1501,13 +1502,13 @@ func NewCmdSSLBind(out io.Writer) *cobra.Command {
 	req.SSLId = flags.String("ssl-id", "", "Required. Resource ID of SSL Certificate to bind")
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer")
-	flags.SetFlagValuesFunc("ssl-id", func() []string {
+	command.SetCompletion(cmd, "ssl-id", func() []string {
 		return getAllSSLCertIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		return getAllULBIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 	})
 	cmd.MarkFlagRequired("ssl-id")
@@ -1544,10 +1545,10 @@ func NewCmdSSLUnbind(out io.Writer) *cobra.Command {
 	req.SSLId = flags.String("ssl-id", "", "Required. Resource ID of SSL Certificate to unbind")
 	req.ULBId = flags.String("ulb-id", "", "Required. Resource ID of ULB")
 	req.VServerId = flags.String("vserver-id", "", "Required. Resource ID of VServer")
-	flags.SetFlagValuesFunc("ssl-id", func() []string {
+	command.SetCompletion(cmd, "ssl-id", func() []string {
 		return getAllSSLCertIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("ulb-id", func() []string {
+	command.SetCompletion(cmd, "ulb-id", func() []string {
 		if *req.SSLId == "" {
 			return getAllULBIDNames(*req.ProjectId, *req.Region)
 		}
@@ -1561,7 +1562,7 @@ func NewCmdSSLUnbind(out io.Writer) *cobra.Command {
 		}
 		return ulbs
 	})
-	flags.SetFlagValuesFunc("vserver-id", func() []string {
+	command.SetCompletion(cmd, "vserver-id", func() []string {
 		if *req.SSLId == "" {
 			return getAllULBVServerIDNames(*req.ULBId, *req.ProjectId, *req.Region)
 		}
