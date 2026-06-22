@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
@@ -188,14 +189,14 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	flags.StringVar(&chargeType, "create-eip-charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	flags.IntVar(&quntity, "create-eip-quantity", 1, "Optional. The duration of the instance. N years/months.")
 
-	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	flags.SetFlagValues("create-eip-charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	command.SetFlagValues(cmd, "create-eip-charge-type", "Month", "Year", "Dynamic", "Trial")
 
 	bindProjectIDS(&project, flags)
 	bindRegionS(&region, flags)
 	bindZoneEmptyS(&zone, &region, flags)
 
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, project, region, zone)
 	})
 
