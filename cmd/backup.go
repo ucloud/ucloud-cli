@@ -25,6 +25,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdUDBBackup ucloud udb backup
@@ -72,7 +73,7 @@ func NewCmdUDBBackupCreate(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("name")
 
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -180,9 +181,9 @@ func NewCmdUDBBackupList(out io.Writer) *cobra.Command {
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 
-	flags.SetFlagValues("backup-type", "auto", "manual")
-	flags.SetFlagValues("db-type", dbTypeList...)
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "backup-type", "auto", "manual")
+	command.SetFlagValues(cmd, "db-type", dbTypeList...)
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -249,7 +250,7 @@ func NewCmdUDBBackupGetDownloadURL(out io.Writer) *cobra.Command {
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("backup-id")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -347,8 +348,8 @@ func NewCmdUDBLogArchiveCreate(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("log-type")
 
-	flags.SetFlagValues("log-type", "slow_query", "error")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "log-type", "slow_query", "error")
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", project, region, base.ConfigIns.Zone)
 	})
 	return cmd
@@ -448,8 +449,8 @@ func NewCmdUDBLogArchiveList(out io.Writer) *cobra.Command {
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 
-	flags.SetFlagValues("log-type", "binlog", "slow_query", "error")
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetFlagValues(cmd, "log-type", "binlog", "slow_query", "error")
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -486,7 +487,7 @@ func NewCmdUDBLogArchiveGetDownloadURL(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("archive-id")
 	cmd.MarkFlagRequired("udb-id")
 
-	flags.SetFlagValuesFunc("udb-id", func() []string {
+	command.SetCompletion(cmd, "udb-id", func() []string {
 		return getUDBIDList(nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
