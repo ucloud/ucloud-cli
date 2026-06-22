@@ -1,30 +1,83 @@
+# Merge-to-release automation
+#
+# Flow:
+#   1. A PR merges to master (or workflow_dispatch for the first guarded run).
+#   2. svu inspects the commit log since the last vX.Y.Z tag and computes
+#      the next semver based on conventional commits (feat→minor, fix→patch,
+#      breaking→major).
+#   3. If the computed next version differs from current (i.e. there are
+#      releasable commits), the job tags HEAD with the new version and pushes
+#      the tag — all in the SAME job that runs goreleaser.
+#      This avoids the "default GITHUB_TOKEN-pushed tag doesn't trigger a
+#      downstream workflow" trap: tag + release happen in one atomic job.
+#   4. goreleaser builds the binaries and creates the GitHub Release.
+#   5. If there are no new feat/fix commits, the job exits early without
+#      creating a release.
+#
+# First-launch guard:
+#   The `environment: release` line below requires manual approval via
+#   GitHub → Settings → Environments → release before any run proceeds.
+#   Once the monorepo branch has landed on master and one release has been
+#   verified, remove the `environment: release` line in a follow-up PR to
+#   enable fully automatic releases.
+
 name: Release
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [master]
+  workflow_dispatch: {}   # manual trigger for the first guarded run
+
+concurrency:
+  group: release
+  cancel-in-progress: false   # never cancel an in-flight release
 
 jobs:
   release:
-    if: contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    # FIRST-LAUNCH GUARD: requires manual approval via GitHub Environment.
+    # Remove this line after the first verified release.
+    environment: release
+    permissions:
+      contents: write   # push tags + create GitHub Releases
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # svu and goreleaser both need full tag history
 
-    - name: Set up go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19.2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
 
-    - name: Build
-      run: bash hack/github-release.sh
+      - name: Install svu
+        run: go install github.com/caarlos0/svu@latest
+        env:
+          GOPROXY: https://goproxy.cn,direct
 
-    - name: Create release
-      uses: softprops/action-gh-release@v1
-      with:
-        token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
-        files: |
-          out/*.zip
+      - name: Compute next version & tag
+        id: ver
+        run: |
+          NEXT="$("$(go env GOPATH)/bin/svu" next)"
+          CURRENT="$("$(go env GOPATH)/bin/svu" current)"
+          echo "next=$NEXT"    >> "$GITHUB_OUTPUT"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          if [ "$NEXT" != "$CURRENT" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$NEXT"
+            git push origin "$NEXT"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new feat/fix commits since $CURRENT — skipping release."
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
 
+      - uses: goreleaser/goreleaser-action@v6
+        if: steps.ver.outputs.released == 'true'
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOPROXY: https://goproxy.cn,direct
