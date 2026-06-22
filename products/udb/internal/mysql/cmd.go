@@ -55,7 +55,9 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 		Long:  "Manipulate MySQL on UCloud platform",
 	}
 	cmd.AddCommand(newMysqlDB(ctx))
-	// TODO(F8/F9): mount conf/backup/log
+	cmd.AddCommand(newUDBConf(ctx))
+	cmd.AddCommand(newUDBBackup(ctx))
+	cmd.AddCommand(newUDBLog(ctx))
 	return cmd
 }
 
