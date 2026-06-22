@@ -3,6 +3,7 @@ ucloud	use=ucloud	short=UCloud CLI v{VERSION}
   flag=config	short=	default=false	required=
   flag=signup	short=	default=false	required=
   flag=version	short=v	default=false	required=
+ucloud __schema	use=__schema	short=Print a machine-readable schema of all commands (for tools/AI)
 ucloud api	use=api	short=Call API
 ucloud auth	use=auth	short=Authenticate ucloud-cli via browser (OAuth)
 ucloud auth login	use=login	short=Log in to UCloud via browser (OAuth)

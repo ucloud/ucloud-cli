@@ -120,6 +120,22 @@ const usageTmpl = `Usage:{{if .Runnable}}
 Use "{{.CommandPath}} --help" for details.{{end}}
 `
 
+func newSchemaCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:    "__schema",
+		Short:  "Print a machine-readable schema of all commands (for tools/AI)",
+		Hidden: true,
+		Run: func(c *cobra.Command, args []string) {
+			out, err := cli.RenderSchemaJSON(c.Root())
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			fmt.Fprintln(base.Cxt.GetWriter(), out)
+		},
+	}
+}
+
 func addChildren(root *cobra.Command) {
 	out := base.Cxt.GetWriter()
 	root.AddCommand(NewCmdInit())
@@ -147,6 +163,7 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdExt())
 	root.AddCommand(NewCmdAPI(out))
 	root.AddCommand(NewCmdSignature())
+	root.AddCommand(newSchemaCmd())
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" && c.Name() != "auth" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
@@ -332,7 +349,7 @@ func isAuthSkippedCmd(cmd *cobra.Command) bool {
 		return true // root 命令本身（--version/--config/help），与历史行为一致
 	}
 	switch cmd.Name() {
-	case "config", "init", "version", "login", "logout", "help", "auth":
+	case "config", "init", "version", "login", "logout", "help", "auth", "__schema":
 		return true
 	}
 	if cmd.Parent() != nil && (cmd.Parent().Name() == "config" || cmd.Parent().Name() == "auth") {
