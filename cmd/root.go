@@ -137,6 +137,15 @@ func newSchemaCmd() *cobra.Command {
 }
 
 func addChildren(root *cobra.Command) {
+	addPlatformCommands(root)
+	addProductCommands(root, registeredProducts(), buildContext())
+	applyGlobalOverrideFlags(root)
+}
+
+// addPlatformCommands registers all built-in platform commands onto root.
+// The set and order of AddCommand calls must stay identical to preserve
+// the command-tree golden (hack/snapshot/testdata/cmdtree.golden).
+func addPlatformCommands(root *cobra.Command) {
 	out := base.Cxt.GetWriter()
 	root.AddCommand(NewCmdInit())
 	root.AddCommand(NewCmdAuth())
@@ -164,6 +173,23 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdAPI(out))
 	root.AddCommand(NewCmdSignature())
 	root.AddCommand(newSchemaCmd())
+}
+
+// addProductCommands registers product-package commands onto root.
+// Each cli.Product contributes one top-level cobra command. This runs
+// after addPlatformCommands so product commands sort after platform ones
+// when cobra.EnableCommandSorting is false.
+func addProductCommands(root *cobra.Command, products []cli.Product, ctx *cli.Context) {
+	for _, p := range products {
+		root.AddCommand(p.NewCommand(ctx))
+	}
+}
+
+// applyGlobalOverrideFlags adds the five per-invocation override flags to
+// every top-level command that is not in the exempt list. Running this after
+// both addPlatformCommands and addProductCommands ensures product commands
+// also receive the flags.
+func applyGlobalOverrideFlags(root *cobra.Command) {
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" && c.Name() != "auth" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
@@ -173,6 +199,23 @@ func addChildren(root *cobra.Command) {
 			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
 		}
 	}
+}
+
+// buildContext constructs the platform-level cli.Context from base globals
+// and the cmd-package completion providers. Safe to call both under Execute
+// (post-InitConfig) and AddChildrenForSnapshot (stubbed values).
+func buildContext() *cli.Context {
+	return cli.NewContext(cli.Deps{
+		In:          os.Stdin,
+		Out:         os.Stdout,
+		Err:         os.Stderr,
+		Format:      decideOutputFormat(os.Stdout),
+		Biz:         base.BizClient,
+		Config:      base.ConfigIns,
+		RegionList:  getRegionList,
+		ZoneList:    getZoneList,
+		ProjectList: getProjectList,
+	})
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
