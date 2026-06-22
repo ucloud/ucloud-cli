@@ -63,7 +63,7 @@ func (s *Spinner) reset() {
 	if s.output == "" {
 		return
 	}
-	fmt.Printf(ansi.CursorLeft + ansi.CursorUp(1) + ansi.EraseDown)
+	fmt.Fprintf(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
 	s.output = ""
 }
 
@@ -74,7 +74,7 @@ func (s *Spinner) render() {
 		for range s.ticker.C {
 			if runtime.GOOS == windows {
 				if !send {
-					fmt.Printf("%s...\n", s.DoingText)
+					fmt.Fprintf(s.out, "%s...\n", s.DoingText)
 					send = true
 				}
 				continue
@@ -82,7 +82,7 @@ func (s *Spinner) render() {
 			frame := nextFrame()
 			s.reset()
 			s.output = fmt.Sprintf("%s...%c\n", s.DoingText, frame)
-			fmt.Printf(s.output)
+			fmt.Fprintf(s.out, s.output)
 		}
 	}()
 }
@@ -134,5 +134,12 @@ func (r *Refresh) Do(text string) {
 func NewRefresh() *Refresh {
 	return &Refresh{
 		out: os.Stdout,
+	}
+}
+
+// NewRefreshTo create a new Refresh writing to the given writer
+func NewRefreshTo(out io.Writer) *Refresh {
+	return &Refresh{
+		out: out,
 	}
 }
