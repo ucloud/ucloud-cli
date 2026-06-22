@@ -17,15 +17,23 @@ func newCmd() *cobra.Command {
 	return cmd
 }
 
+// flagCandidates returns the registered upstream completion candidates for a flag.
+// cobra.Completion is an alias for string, so the result is a plain []string.
+func flagCandidates(t *testing.T, cmd *cobra.Command, name string) []string {
+	t.Helper()
+	fn, ok := cmd.GetFlagCompletionFunc(name)
+	if !ok || fn == nil {
+		t.Fatalf("no completion registered for flag %q", name)
+	}
+	comps, _ := fn(cmd, nil, "")
+	return comps
+}
+
 func TestSetCompletionRegisters(t *testing.T) {
 	cmd := newCmd()
 	command.SetCompletion(cmd, "f", func() []string { return []string{"a", "b"} })
 
-	fn := cmd.Flags().GetFlagValuesFunc("f")
-	if fn == nil {
-		t.Fatal("expected completion func to be registered, got nil")
-	}
-	if got := fn(); !reflect.DeepEqual(got, []string{"a", "b"}) {
+	if got := flagCandidates(t, cmd, "f"); !reflect.DeepEqual(got, []string{"a", "b"}) {
 		t.Fatalf("completion func returned %v, want [a b]", got)
 	}
 }
@@ -34,8 +42,8 @@ func TestSetFlagValuesRegisters(t *testing.T) {
 	cmd := newCmd()
 	command.SetFlagValues(cmd, "f", "x", "y")
 
-	if got := cmd.Flags().GetFlagValues("f"); !reflect.DeepEqual(got, []string{"x", "y"}) {
-		t.Fatalf("GetFlagValues returned %v, want [x y]", got)
+	if got := flagCandidates(t, cmd, "f"); !reflect.DeepEqual(got, []string{"x", "y"}) {
+		t.Fatalf("completion candidates = %v, want [x y]", got)
 	}
 }
 
@@ -52,8 +60,8 @@ func TestBindRegionDefaultAndRef(t *testing.T) {
 	if flag.DefValue != "cn-bj2" {
 		t.Fatalf("region default = %q, want cn-bj2", flag.DefValue)
 	}
-	// Completion registered.
-	if cmd.Flags().GetFlagValuesFunc("region") == nil {
+	// Completion registered (upstream).
+	if _, ok := cmd.GetFlagCompletionFunc("region"); !ok {
 		t.Fatal("region completion func not registered")
 	}
 	// Ref wiring: setting the flag must update req's region (shared storage).
@@ -110,7 +118,7 @@ func TestBindLimitOffsetChargeTypeQuantity(t *testing.T) {
 	if req.Quantity == nil || *req.Quantity != 1 {
 		t.Fatalf("quantity default not wired: %v", req.Quantity)
 	}
-	if got := cmd.Flags().GetFlagValues("charge-type"); !reflect.DeepEqual(got, []string{"Month", "Dynamic", "Year"}) {
+	if got := flagCandidates(t, cmd, "charge-type"); !reflect.DeepEqual(got, []string{"Month", "Dynamic", "Year"}) {
 		t.Fatalf("charge-type completion values = %v", got)
 	}
 }

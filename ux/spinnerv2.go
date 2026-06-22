@@ -52,7 +52,7 @@ func (s *Spin) reset() {
 	if s.output == "" {
 		return
 	}
-	fmt.Fprintf(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
+	fmt.Fprint(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
 	s.output = ""
 }
 
@@ -90,7 +90,7 @@ func (s *Spin) renderToScreen() {
 			frame := nextFrame()
 			s.reset()
 			s.output = fmt.Sprintf("%s...%c\n", s.DoingText, frame)
-			fmt.Fprintf(s.out, s.output)
+			fmt.Fprint(s.out, s.output)
 		}
 	}()
 }

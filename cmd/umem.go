@@ -710,7 +710,7 @@ func describeMemcacheByID(memcacheID string, commonBase *request.CommonBase) (in
 		return nil, err
 	}
 	if len(resp.DataSet) < 1 {
-		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", memcacheID))
+		return nil, fmt.Errorf("resource [%s] may not exist", memcacheID)
 	}
 	return &resp.DataSet[0], nil
 }
@@ -727,7 +727,7 @@ func describeRedisByID(redisID string, commonBase *request.CommonBase) (interfac
 		return nil, err
 	}
 	if len(resp.DataSet) < 1 {
-		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", redisID))
+		return nil, fmt.Errorf("resource [%s] may not exist", redisID)
 	}
 	return &resp.DataSet[0], nil
 }

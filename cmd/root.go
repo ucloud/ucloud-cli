@@ -35,6 +35,15 @@ func NewCmdRoot() *cobra.Command {
 		Short:             "UCloud CLI v" + base.Version,
 		Long:              `UCloud CLI - manage UCloud resources and developer workflow`,
 		DisableAutoGenTag: true,
+		// PersistentPreRun runs the per-invocation auth/config init for the
+		// executing command. Replaces the fork's OnInitialize(func(*cobra.Command))
+		// (upstream OnInitialize takes func() and can't receive the command). It is
+		// inherited by all subcommands (none override PersistentPreRun), so it runs
+		// before every runnable command as the old OnInitialize did. The `api`
+		// command keeps bypassing this via the direct-Run path in Execute().
+		PersistentPreRun: func(c *cobra.Command, args []string) {
+			initialize(c)
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.Version {
 				base.Cxt.Printf("ucloud cli %s\n", base.Version)
@@ -217,7 +226,6 @@ func init() {
 		}
 	}
 	cobra.EnableCommandSorting = false
-	cobra.OnInitialize(initialize)
 }
 
 func resetHelpFunc(cmd *cobra.Command) {

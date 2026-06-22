@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -74,14 +75,14 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 				ins, err := describeUHostByID(uhostID, project, region, zone)
 				if err != nil {
 					errStr := fmt.Sprintf("describe uhost %s failed: %v", uhostID, err)
-					base.HandleError(fmt.Errorf(errStr))
+					base.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
 				uhostIns, ok := ins.(*uhost.UHostInstanceSet)
 				if !ok {
 					errStr := fmt.Sprintf("uhost %s does not exist", uhostID)
-					base.HandleError(fmt.Errorf(errStr))
+					base.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
@@ -111,7 +112,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						} else {
 							errStr := "create-eip-share-bandwidth-id should not be empty when create-eip-traffic-mode is assigned 'ShareBandwidth'"
 							logs = append(logs, errStr)
-							base.HandleError(fmt.Errorf(errStr))
+							base.HandleError(errors.New(errStr))
 							return
 						}
 					}
@@ -120,12 +121,12 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					if err != nil {
 						errStr := fmt.Sprintf("allocate EIP failed: %v", err)
 						logs = append(logs, errStr)
-						base.HandleError(fmt.Errorf(errStr))
+						base.HandleError(errors.New(errStr))
 						continue
 					}
 					if len(resp.EIPSet) != 1 {
 						errStr := fmt.Sprintf("allocate EIP failed, length of eip set is not 1")
-						base.HandleError(fmt.Errorf(errStr))
+						base.HandleError(errors.New(errStr))
 						logs = append(logs, errStr)
 						continue
 					}
@@ -163,7 +164,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						if err != nil {
 							errStr := fmt.Sprintf("release eip %s failed: %v", ip.IPId, err)
 							logs = append(logs, errStr)
-							base.HandleError(fmt.Errorf(errStr))
+							base.HandleError(errors.New(errStr))
 							continue
 						}
 						releaseRet := fmt.Sprintf("released eip %s|%s", ip.IPId, ip.IP)

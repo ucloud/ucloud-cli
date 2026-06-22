@@ -1,28 +1,32 @@
 package command
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
-// SetCompletion registers a dynamic completion candidate provider for a flag.
-// INTERNALS NOTE: while on the lixiaojun629 cobra fork this delegates to the
-// fork's *pflag.FlagSet.SetFlagValuesFunc. Task C2 (drop fork → upstream cobra)
-// swaps the body to cobra's RegisterFlagCompletionFunc; the signature is stable
-// so the 305 call sites migrated in C1 are unaffected.
+// SetCompletion registers a dynamic completion candidate provider for a flag,
+// via upstream cobra's RegisterFlagCompletionFunc.
 func SetCompletion(cmd *cobra.Command, name string, fn func() []string) {
-	cmd.Flags().SetFlagValuesFunc(name, fn)
+	_ = cmd.RegisterFlagCompletionFunc(name, func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return fn(), cobra.ShellCompDirectiveNoFileComp
+	})
 }
 
 // SetPersistentCompletion registers a dynamic completion provider for a
-// PERSISTENT flag. On the cobra fork, persistent flags live on a different
-// FlagSet than cmd.Flags() at registration time, so we must target
-// cmd.PersistentFlags(). Task C2 (drop fork → upstream cobra) swaps the body
-// to cobra's RegisterFlagCompletionFunc, which resolves persistent flags itself
-// (so SetCompletion and SetPersistentCompletion converge to the same call at C2).
+// persistent flag. Upstream RegisterFlagCompletionFunc resolves persistent
+// flags itself, so this is identical to SetCompletion; kept as a distinct name
+// for call-site clarity (the profile flag in cmd/root.go is persistent).
 func SetPersistentCompletion(cmd *cobra.Command, name string, fn func() []string) {
-	cmd.PersistentFlags().SetFlagValuesFunc(name, fn)
+	_ = cmd.RegisterFlagCompletionFunc(name, func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return fn(), cobra.ShellCompDirectiveNoFileComp
+	})
 }
 
-// SetFlagValues registers a static completion candidate set for a flag.
-// Same fork-internal-now, upstream-at-C2 strategy as SetCompletion.
+// SetFlagValues registers a static completion candidate set for a flag, via
+// upstream cobra's RegisterFlagCompletionFunc.
 func SetFlagValues(cmd *cobra.Command, name string, values ...string) {
-	_ = cmd.Flags().SetFlagValues(name, values...)
+	vals := append([]string(nil), values...)
+	_ = cmd.RegisterFlagCompletionFunc(name, func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return vals, cobra.ShellCompDirectiveNoFileComp
+	})
 }
