@@ -1,0 +1,1201 @@
+ucloud	use=ucloud	short=UCloud CLI v{VERSION}
+  flag=completion	short=	default=false	required=
+  flag=config	short=	default=false	required=
+  flag=signup	short=	default=false	required=
+  flag=version	short=v	default=false	required=
+ucloud api	use=api	short=Call API
+ucloud auth	use=auth	short=Authenticate ucloud-cli via browser (OAuth)
+ucloud auth login	use=login	short=Log in to UCloud via browser (OAuth)
+  flag=no-browser	short=	default=false	required=
+  flag=oauth-base-url	short=	default=	required=
+ucloud auth logout	use=logout	short=Log out: remove local OAuth tokens of the current profile
+ucloud bw	use=bw	short=Manipulate bandwidth package and shared bandwidth
+ucloud bw pkg	use=pkg	short=List, create and delete bandwidth package instances
+ucloud bw pkg create	use=create	short=Create bandwidth package
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=eip-id	short=	default=[]	required=true
+  flag=end-time	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=start-time	short=	default=	required=true
+ucloud bw pkg delete	use=delete	short=Delete bandwidth packages
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=
+ucloud bw pkg list	use=list	short=List bandwidth packages
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud bw shared	use=shared	short=Create and manipulate shared bandwidth instances
+ucloud bw shared create	use=create	short=Create shared bandwidth instance
+  flag=bandwidth-mb	short=	default=20	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+ucloud bw shared delete	use=delete	short=Delete shared bandwidth instance
+  flag=eip-bandwidth-mb	short=	default=1	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=[]	required=true
+  flag=traffic-mode	short=	default=	required=
+ucloud bw shared list	use=list	short=List shared bandwidth instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=[]	required=
+ucloud bw shared resize	use=resize	short=Resize shared bandwidth instance's bandwidth
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=true
+ucloud config	use=config	short=add or update configurations
+  flag=active	short=	default=	required=
+  flag=agree-upload-log	short=	default=false	required=
+  flag=base-url	short=	default=	required=
+  flag=max-retry-times	short=	default=0	required=
+  flag=private-key	short=	default=	required=
+  flag=profile	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=public-key	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=timeout-sec	short=	default=0	required=
+  flag=zone	short=	default=	required=
+ucloud config add	use=add	short=add configuration
+  flag=active	short=	default=false	required=
+  flag=agree-upload-log	short=	default=false	required=
+  flag=base-url	short=	default=https://api.ucloud.cn/	required=
+  flag=max-retry-times	short=	default=3	required=
+  flag=private-key	short=	default=	required=true
+  flag=profile	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=public-key	short=	default=	required=true
+  flag=region	short=	default=	required=
+  flag=timeout-sec	short=	default=15	required=
+  flag=zone	short=	default=	required=
+ucloud config delete	use=delete	short=delete configurations by profile name
+  flag=profile	short=	default=[]	required=true
+ucloud config list	use=list	short=list all configurations
+ucloud config update	use=update	short=update configurations
+  flag=active	short=	default=	required=
+  flag=agree-upload-log	short=	default=	required=
+  flag=base-url	short=	default=	required=
+  flag=max-retry-times	short=	default=	required=
+  flag=private-key	short=	default=	required=
+  flag=profile	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=public-key	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=timeout-sec	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud eip	use=eip	short=List,allocate and release EIP
+ucloud eip allocate	use=allocate	short=Allocate EIP
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=charge-type	short=	default=Month	required=
+  flag=count	short=	default=1	required=
+  flag=group	short=	default=Default	required=
+  flag=line	short=	default=	required=
+  flag=name	short=	default=EIP	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=share-bandwidth-id	short=	default=	required=
+  flag=traffic-mode	short=	default=Bandwidth	required=
+ucloud eip bind	use=bind	short=Bind EIP with uhost
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=	required=true
+  flag=resource-type	short=	default=uhost	required=
+ucloud eip join-shared-bw	use=join-shared-bw	short=Join shared bandwidth
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=true
+ucloud eip leave-shared-bw	use=leave-shared-bw	short=Leave shared bandwidth
+  flag=bandwidth-mb	short=	default=1	required=
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=
+  flag=traffic-mode	short=	default=Bandwidth	required=
+ucloud eip list	use=list	short=List all EIP instances
+  flag=limit	short=	default=50	required=
+  flag=list-all	short=	default=false	required=
+  flag=offset	short=	default=0	required=
+  flag=page-off	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip modify-bw	use=modify-bw	short=Modify bandwith of EIP instances
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip modify-traffic-mode	use=modify-traffic-mode	short=Modify charge mode of EIP instances
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=traffic-mode	short=	default=	required=true
+ucloud eip release	use=release	short=Release EIP
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip unbind	use=unbind	short=Unbind EIP with uhost
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud ext	use=ext	short=extended commands of UCloud CLI
+ucloud ext uhost	use=uhost	short=extended uhost commands
+ucloud ext uhost switch-eip	use=switch-eip	short=Switch EIP for UHost instances
+  flag=create-eip-bandwidth-mb	short=	default=1	required=
+  flag=create-eip-charge-type	short=	default=Month	required=
+  flag=create-eip-quantity	short=	default=1	required=
+  flag=create-eip-share-bandwidth-id	short=	default=	required=
+  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
+  flag=eip-addr	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-all	short=	default=true	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=unbind-all	short=	default=true	required=
+  flag=zone	short=	default=	required=
+ucloud firewall	use=firewall	short=List and manipulate extranet firewall
+ucloud firewall add-rule	use=add-rule	short=Add rule to firewall instance
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall apply	use=apply	short=Applay firewall to ucloud service
+  flag=fw-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=true
+  flag=resource-type	short=	default=	required=true
+ucloud firewall copy	use=copy	short=Copy firewall
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-fw	short=	default=	required=
+  flag=target-region	short=	default=	required=
+ucloud firewall create	use=create	short=Create firewall
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall delete	use=delete	short=Delete firewall by resource ids or names
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall list	use=list	short=List extranet firewall
+  flag=bound-resource-id	short=	default=	required=
+  flag=bound-resource-type	short=	default=	required=
+  flag=firewall-id	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall remove-rule	use=remove-rule	short=Remove rule from firewall instance
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall resource	use=resource	short=List resources that has been applied the firewall
+  flag=fw-id	short=	default=	required=true
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall update	use=update	short=Update firewall attribute, such as name,group and remark.
+  flag=fw-id	short=	default=[]	required=true
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+ucloud gendoc	use=gendoc	short=Generate documents for all commands
+  flag=dir	short=	default=	required=true
+  flag=format	short=	default=douku	required=
+ucloud gssh	use=gssh	short=Create,list,update and delete globalssh instance
+ucloud gssh create	use=create	short=Create GlobalSSH instance
+  flag=bandwidth-package	short=	default=0	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=forward-region	short=	default=	required=
+  flag=instance-type	short=	default=	required=
+  flag=location	short=	default=	required=true
+  flag=port	short=	default=22	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=remark	short=	default=	required=
+  flag=target-ip	short=	default=<nil>	required=true
+ucloud gssh delete	use=delete	short=Delete GlobalSSH instance
+  flag=gssh-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+ucloud gssh list	use=list	short=List all GlobalSSH instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud gssh location	use=location	short=List SSH server locations and covered areas
+ucloud gssh update	use=update	short=Update GlobalSSH instance
+  flag=gssh-id	short=	default=[]	required=true
+  flag=port	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=remark	short=	default=	required=
+ucloud image	use=image	short=List and manipulate images
+ucloud image copy	use=copy	short=Copy custom images
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=source-image-id	short=	default=[]	required=true
+  flag=target-image-desc	short=	default=	required=
+  flag=target-image-name	short=	default=	required=
+  flag=target-project	short=	default=	required=
+  flag=target-region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud image create	use=create	short=Create image from an uhost instance
+  flag=async	short=a	default=false	required=
+  flag=image-desc	short=	default=	required=
+  flag=image-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud image delete	use=delete	short=Delete custom images
+  flag=image-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud image list	use=list	short=List image
+  flag=image-id	short=	default=	required=
+  flag=image-type	short=	default=Base	required=
+  flag=limit	short=	default=500	required=
+  flag=offset	short=	default=0	required=
+  flag=os-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud init	use=init	short=Initialize UCloud CLI options
+ucloud memcache	use=memcache	short=List and manipulate memcache instances
+ucloud memcache create	use=create	short=Create memcache instance
+  flag=charge-type	short=	default=Month	required=
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=1	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud memcache delete	use=delete	short=Delete memcache instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud memcache list	use=list	short=List memcache instances
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud memcache restart	use=restart	short=Restart memcache instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql	use=mysql	short=Manipulate MySQL on UCloud platform
+ucloud mysql backup	use=backup	short=List and manipulate backups of MySQL instance
+ucloud mysql backup create	use=create	short=Create backups for MySQL instance manually
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql backup delete	use=delete	short=Delete backups of MySQL instance
+  flag=backup-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql backup download	use=download	short=Display download url of backup
+  flag=backup-id	short=	default=-1	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql backup list	use=list	short=List backups of MySQL instance
+  flag=backup-id	short=	default=	required=
+  flag=backup-type	short=	default=	required=
+  flag=begin-time	short=	default=	required=
+  flag=db-type	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf	use=conf	short=List and manipulate configuration files of MySQL instances
+ucloud mysql conf apply	use=apply	short=Apply configuration for UDB instances
+  flag=async	short=a	default=false	required=
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=restart-after-apply	short=	default=true	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf clone	use=clone	short=Create configuration file by cloning existed configuration
+  flag=db-version	short=	default=	required=
+  flag=description	short=	default= 	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-conf-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql conf delete	use=delete	short=Delete configuration of udb by conf-id
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf describe	use=describe	short=Display details about a configuration file of MySQL instance
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf download	use=download	short=Download UDB configuration
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf list	use=list	short=List configuartion files of MySQL instances
+  flag=conf-id	short=	default=0	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf update	use=update	short=Update parameters of DB's configuration
+  flag=conf-id	short=	default=	required=true
+  flag=file	short=	default=	required=
+  flag=key	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=value	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf upload	use=upload	short=Create configuration file by uploading local DB configuration file
+  flag=conf-file	short=	default=	required=true
+  flag=db-version	short=	default=	required=true
+  flag=description	short=	default= 	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db	use=db	short=Manange MySQL instances
+ucloud mysql db create	use=create	short=Create MySQL instance on UCloud platform
+  flag=alarm-template-id	short=	default=	required=
+  flag=async	short=	default=false	required=
+  flag=backup-count	short=	default=7	required=
+  flag=backup-duration	short=	default=24	required=
+  flag=backup-id	short=	default=-1	required=
+  flag=backup-time	short=	default=1	required=
+  flag=backup-url	short=	default=	required=
+  flag=backup-zone	short=	default=	required=
+  flag=case-sensitivity	short=	default=-1	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=db-sub-version	short=	default=	required=
+  flag=disable-semisync	short=	default=false	required=
+  flag=disk-size-gb	short=	default=20	required=
+  flag=label	short=	default=[]	required=
+  flag=machine-type	short=	default=	required=true
+  flag=mode	short=	default=HA	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-id	short=	default=	required=
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=3306	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=semisync-flag	short=	default=0	required=
+  flag=spec-class	short=	default=O	required=
+  flag=storage-class	short=	default=CLOUD_RSSD	required=
+  flag=subnet-id	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=version	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db create-slave	use=create-slave	short=Create slave database
+  flag=async	short=	default=false	required=
+  flag=disk-type	short=	default=Normal	required=
+  flag=is-lock	short=	default=false	required=
+  flag=master-udb-id	short=	default=	required=true
+  flag=memory-size-gb	short=	default=1	required=
+  flag=name	short=	default=	required=true
+  flag=port	short=	default=3306	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db delete	use=delete	short=Delete MySQL instances by udb-id
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db list	use=list	short=List MySQL instances
+  flag=include-slaves	short=	default=false	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db list-machine-type	use=list-machine-type	short=List available MySQL machine types
+  flag=mode	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db promote-slave	use=promote-slave	short=Promote slave db to master
+  flag=is-force	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db reset-password	use=reset-password	short=Reset password of MySQL instances
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db resize	use=resize	short=Reszie MySQL instances, such as memory size, disk size and disk type
+  flag=async	short=a	default=false	required=
+  flag=disk-size-gb	short=	default=0	required=
+  flag=disk-type	short=	default=	required=
+  flag=memory-size-gb	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=start-after-upgrade	short=	default=true	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db restart	use=restart	short=Restart MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db restore	use=restore	short=Create MySQL instance and restore the newly created db to the specified DB at a specified point in time
+  flag=async	short=a	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=disk-type	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=restore-to-time	short=	default=	required=true
+  flag=src-udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db start	use=start	short=Start MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db stop	use=stop	short=Stop MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs	use=logs	short=List and manipulate logs of MySQL instance
+ucloud mysql logs archive	use=archive	short=Archive the log of mysql as a compressed file
+  flag=begin-time	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=log-type	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs delete	use=delete	short=Delete log archives(log files)
+  flag=archive-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql logs download	use=download	short=Display url of an archive(log file)
+  flag=archive-id	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs list	use=list	short=List mysql log archives(log files)
+  flag=begin-time	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=log-type	short=	default=[]	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx	use=pathx	short=Manipulate uga and upath instances
+ucloud pathx area	use=area	short=List origin area or acceleration area information
+ucloud pathx area list	use=list	short=List origin area or acceleration area information
+  flag=accel	short=	default=	required=
+  flag=no-accel	short=	default=false	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=time-range	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx create	use=create	short=Create the pathx resource and port
+  flag=accel	short=	default=	required=
+  flag=area-code	short=	default=	required=
+  flag=bandwidth	short=	default=0	required=true
+  flag=charge-type	short=	default=	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-port	short=	default=[]	required=
+  flag=port	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=TCP	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx delete	use=delete	short=Delete the pathx resource and port
+  flag=id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pathx list	use=list	short=List all the pathx resource of project
+  flag=detail	short=	default=false	required=
+  flag=id	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx modify	use=modify	short=Modify the pathx associated information. Example bandwidth or origin information or resource information
+  flag=bandwidth	short=	default=0	required=
+  flag=id	short=	default=	required=true
+  flag=name	short=	default=	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-port	short=	default=[]	required=
+  flag=port	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=TCP	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx price	use=price	short=List all the acceleration area price
+ucloud pathx price list	use=list	short=List all the pathx acceleration area price
+  flag=accel	short=	default=	required=
+  flag=area-code	short=	default=	required=true
+  flag=bandwidth	short=	default=1	required=true
+  flag=charge-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx uga	use=uga	short=Create,list,update and delete pathx uga instances
+ucloud pathx uga add-port	use=add-port	short=Add port for uga instance
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga create	use=create	short=Create uga instance
+  flag=name	short=	default=	required=true
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-location	short=	default=	required=true
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=upath-id	short=	default=[]	required=true
+ucloud pathx uga delete	use=delete	short=Delete uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=[]	required=true
+ucloud pathx uga delete-port	use=delete-port	short=Delete port for uga instance
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga describe	use=describe	short=Display detail informations about uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga list	use=list	short=list uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=	required=
+ucloud pathx upath	use=upath	short=List pathx upath instances
+ucloud pathx upath list	use=list	short=list upath instances
+  flag=project-id	short=	default=	required=
+  flag=upath-id	short=	default=	required=
+ucloud project	use=project	short=List,create,update and delete project
+ucloud project create	use=create	short=Create project
+  flag=name	short=	default=	required=true
+  flag=parent-id	short=	default=	required=
+ucloud project delete	use=delete	short=Delete project
+  flag=id	short=	default=	required=true
+ucloud project list	use=list	short=List project
+ucloud project update	use=update	short=Update project name
+  flag=id	short=	default=	required=true
+  flag=name	short=	default=	required=true
+ucloud redis	use=redis	short=List and manipulate redis instances
+ucloud redis create	use=create	short=Create redis instance
+  flag=block-cnt	short=	default=2	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=proxy-size	short=	default=2	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=2	required=
+  flag=subnet-id	short=	default=	required=
+  flag=type	short=	default=	required=true
+  flag=version	short=	default=6.0	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud redis delete	use=delete	short=Delete redis instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis list	use=list	short=List redis instances
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud redis restart	use=restart	short=Restart redis instances of master-replica type
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud region	use=region	short=List all region and zone
+ucloud signature	use=signature	short=Calculate ucloud signature
+  flag=param	short=m	default=[]	required=
+  flag=private-key	short=k	default=	required=true
+  flag=url	short=u	default=	required=
+ucloud subnet	use=subnet	short=List, create and delete subnet
+ucloud subnet create	use=create	short=Create subnet of vpc network
+  flag=group	short=	default=	required=
+  flag=name	short=	default=Subnet	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=segment	short=	default=<nil>	required=true
+  flag=vpc-id	short=	default=	required=true
+ucloud subnet delete	use=delete	short=Delete subnet
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=[]	required=true
+ucloud subnet list	use=list	short=List subnet
+  flag=group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=[]	required=
+  flag=vpc-id	short=	default=	required=
+ucloud subnet list-resource	use=list-resource	short=List resources belong to subnet
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-type	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+ucloud udisk	use=udisk	short=Read and manipulate udisk instances
+ucloud udisk attach	use=attach	short=Attach udisk instances to an uhost
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk clone	use=clone	short=Clone an udisk
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=enable-data-ark	short=	default=false	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=source-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk create	use=create	short=Create udisk instance
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Dynamic	required=
+  flag=count	short=	default=1	required=
+  flag=enable-data-ark	short=	default=false	required=
+  flag=group	short=	default=Default	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=10	required=true
+  flag=snapshot-id	short=	default=	required=
+  flag=udisk-type	short=	default=Oridinary	required=
+  flag=zone	short=	default=	required=
+ucloud udisk delete	use=delete	short=Delete udisk instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud udisk delete-snapshot	use=delete-snapshot	short=Delete snapshots
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snaphost-id	short=	default=[]	required=
+  flag=zone	short=	default=	required=
+ucloud udisk detach	use=detach	short=Detach udisk instances from an uhost
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud udisk expand	use=expand	short=Expand udisk size
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=0	required=true
+  flag=udisk-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk list	use=list	short=List udisk instance
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=	required=
+  flag=udisk-type	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud udisk list-snapshot	use=list-snapshot	short=List snaphosts
+  flag=disk-id	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snaphost-id	short=	default=[]	required=
+  flag=uhost-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud udisk restore	use=restore	short=Restore udisk from snapshot
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snapshot-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk snapshot	use=snapshot	short=Create shapshots for udisks
+  flag=async	short=a	default=false	required=
+  flag=comment	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud udpn	use=udpn	short=List and manipulate udpn instances
+ucloud udpn create	use=create	short=Create UDPN tunnel
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=charge-type	short=	default=	required=
+  flag=peer1	short=	default=	required=true
+  flag=peer2	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+ucloud udpn delete	use=delete	short=delete udpn instances
+  flag=project-id	short=	default=	required=
+  flag=udpn-id	short=	default=[]	required=true
+ucloud udpn list	use=list	short=List udpn instances
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udpn-id	short=	default=	required=
+ucloud udpn modify-bw	use=modify-bw	short=Modify bandwidth of UDPN tunnel
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udpn-id	short=	default=[]	required=true
+ucloud uhost	use=uhost	short=List,create,delete,stop,restart,poweroff or resize UHost instance
+ucloud uhost clone	use=clone	short=Create an uhost with the same configuration as another uhost, excluding bound eip and udisk
+  flag=async	short=	default=false	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost create	use=create	short=Create UHost instance
+  flag=async	short=	default=false	required=
+  flag=bind-eip	short=	default=[]	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=concurrent	short=	default=20	required=
+  flag=count	short=	default=1	required=
+  flag=cpu	short=	default=4	required=true
+  flag=create-eip-bandwidth-mb	short=	default=0	required=
+  flag=create-eip-line	short=	default=	required=
+  flag=create-eip-name	short=	default=	required=
+  flag=create-eip-remark	short=	default=	required=
+  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
+  flag=data-disk-backup-type	short=	default=NONE	required=
+  flag=data-disk-size-gb	short=	default=20	required=
+  flag=data-disk-type	short=	default=CLOUD_SSD	required=
+  flag=firewall-id	short=	default=	required=
+  flag=gpu	short=	default=0	required=
+  flag=gpu-type	short=	default=	required=
+  flag=group	short=	default=Default	required=
+  flag=hot-plug	short=	default=true	required=
+  flag=image-id	short=	default=	required=true
+  flag=isolation-group	short=	default=	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=machine-type	short=	default=N	required=
+  flag=memory-gb	short=	default=8	required=true
+  flag=minimal-cpu-platform	short=	default=	required=
+  flag=name	short=	default=UHost	required=
+  flag=net-capability	short=	default=Normal	required=
+  flag=os-disk-backup-type	short=	default=NONE	required=
+  flag=os-disk-size-gb	short=	default=20	required=
+  flag=os-disk-type	short=	default=CLOUD_SSD	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=security-group-id	short=	default=[]	required=
+  flag=shared-bw-id	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=type	short=	default=	required=
+  flag=user-data	short=	default=	required=
+  flag=user-data-base64	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uhost create-image	use=create-image	short=Create image from an uhost instance
+  flag=async	short=a	default=false	required=
+  flag=image-desc	short=	default=	required=
+  flag=image-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost delete	use=delete	short=Delete Uhost instance
+  flag=delete-cloud-disk	short=	default=true	required=
+  flag=destroy	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-eip	short=	default=true	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost isolation-group	use=isolation-group	short=List and manipulate isolation group of uhost
+ucloud uhost isolation-group create	use=create	short=Create isolation group instance
+  flag=group-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+ucloud uhost isolation-group delete	use=delete	short=Delete isolation group instances
+  flag=group-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uhost isolation-group list	use=list	short=List isolation group of uhost
+  flag=group-id	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uhost leave-isolation-group	use=leave-isolation-group	short=Detach uhost from its isolation group
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost list	use=list	short=List all UHost Instances
+  flag=all-region	short=	default=false	required=
+  flag=group	short=	default=	required=
+  flag=isolation-group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=output	short=o	default=	required=
+  flag=page-off	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=
+  flag=uhost-id-only	short=	default=false	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uhost poweroff	use=poweroff	short=Analog power off Uhost instnace
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost reinstall-os	use=reinstall-os	short=Reinstall the operating system of the UHost instance
+  flag=async	short=a	default=false	required=
+  flag=image-id	short=	default=	required=
+  flag=keep-data-disk	short=	default=false	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost reset-password	use=reset-password	short=Reset the administrator password for the UHost instances.
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost resize	use=resize	short=Resize uhost instance,such as cpu core count, memory size and disk size
+  flag=async	short=a	default=false	required=
+  flag=cpu	short=	default=0	required=
+  flag=data-disk-id	short=	default=	required=
+  flag=data-disk-size-gb	short=	default=0	required=
+  flag=memory-gb	short=	default=0	required=
+  flag=net-cap	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=system-disk-size-gb	short=	default=0	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost restart	use=restart	short=Restart uhost instance
+  flag=async	short=	default=false	required=
+  flag=disk-password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost start	use=start	short=Start Uhost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost stop	use=stop	short=Shut down uhost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud ulb	use=ulb	short=List and manipulate ULB instances
+ucloud ulb create	use=create	short=Create ULB instance
+  flag=bind-eip	short=	default=	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=create-eip-bandwidth-mb	short=	default=0	required=
+  flag=create-eip-line	short=	default=	required=
+  flag=create-eip-name	short=	default=	required=
+  flag=create-eip-remark	short=	default=	required=
+  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
+  flag=group	short=	default=Default	required=
+  flag=mode	short=	default=outer	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud ulb delete	use=delete	short=Delete ULB instances by resource ID
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=[]	required=true
+ucloud ulb list	use=list	short=List ULB instances
+  flag=group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=ulb-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud ulb ssl	use=ssl	short=List and manipulate SSL Certificates for ULB
+ucloud ulb ssl add	use=add	short=Add SSL Certificate
+  flag=all-in-one-file	short=	default=	required=
+  flag=ca-certificate-file	short=	default=	required=
+  flag=format	short=	default=Pem	required=
+  flag=name	short=	default=	required=true
+  flag=private-key-file	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=site-certificate-file	short=	default=	required=
+ucloud ulb ssl bind	use=bind	short=Bind SSL Certificate with VServer
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb ssl delete	use=delete	short=Delete SSL Certificates by resource id(ssl id)
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=[]	required=
+ucloud ulb ssl describe	use=describe	short=Display all data associated with SSL Certificate
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+ucloud ulb ssl list	use=list	short=List SSL Certificates
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=
+ucloud ulb ssl unbind	use=unbind	short=Unbind SSL Certificate with VServer
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb update	use=update	short=Update ULB instance
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=ulb-id	short=	default=[]	required=true
+ucloud ulb vserver	use=vserver	short=List and manipulate ULB Vserver instances
+ucloud ulb vserver backend	use=backend	short=List and manipulate VServer backend nodes
+ucloud ulb vserver backend add	use=add	short=Add backend nodes for ULB Vserver instance
+  flag=backend-mode	short=	default=enable	required=
+  flag=port	short=	default=80	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=true
+  flag=resource-type	short=	default=UHost	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+  flag=weight	short=	default=1	required=
+ucloud ulb vserver backend delete	use=delete	short=Delete ULB VServer backend nodes
+  flag=backend-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+ucloud ulb vserver backend list	use=list	short=List ULB VServer backend nodes
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver backend update	use=update	short=Update attributes of ULB backend nodes
+  flag=backend-id	short=	default=[]	required=true
+  flag=backend-mode	short=	default=	required=
+  flag=port	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=weight	short=	default=-1	required=
+ucloud ulb vserver create	use=create	short=Create ULB VServer instance
+  flag=client-timeout-seconds	short=	default=60	required=
+  flag=health-check-domain	short=	default=	required=
+  flag=health-check-mode	short=	default=Port	required=
+  flag=health-check-path	short=	default=	required=
+  flag=lb-method	short=	default=Roundrobin	required=
+  flag=listen-type	short=	default=RequestProxy	required=
+  flag=name	short=	default=	required=
+  flag=port	short=	default=80	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=HTTP	required=
+  flag=region	short=	default=	required=
+  flag=session-maintain-key	short=	default=	required=
+  flag=session-maintain-mode	short=	default=None	required=
+  flag=ssl-id	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+ucloud ulb vserver delete	use=delete	short=Delete ULB VServer instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=[]	required=true
+ucloud ulb vserver list	use=list	short=List ULB Vserver instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=
+ucloud ulb vserver policy	use=policy	short=List and manipulate forward policy for VServer
+ucloud ulb vserver policy add	use=add	short=Add content forward policy for VServer
+  flag=backend-id	short=	default=[]	required=true
+  flag=expression	short=	default=	required=true
+  flag=forward-method	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver policy delete	use=delete	short=Delete content forward policies of ULB VServer
+  flag=policy-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vserver-id	short=	default=	required=
+ucloud ulb vserver policy list	use=list	short=List content forward policies of the VServer instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver policy update	use=update	short=Update content forward policies of ULB VServer
+  flag=add-backend-id	short=	default=[]	required=
+  flag=backend-id	short=	default=[]	required=
+  flag=expression	short=	default=	required=
+  flag=forward-method	short=	default=	required=
+  flag=policy-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remove-backend-id	short=	default=[]	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver update	use=update	short=Update attributes of VServer instances
+  flag=client-timeout-seconds	short=	default=-1	required=
+  flag=health-check-domain	short=	default=	required=
+  flag=health-check-mode	short=	default=	required=
+  flag=health-check-path	short=	default=	required=
+  flag=lb-method	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=session-maintain-key	short=	default=	required=
+  flag=session-maintain-mode	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=[]	required=true
+ucloud uphost	use=uphost	short=List UPHost instances
+ucloud uphost list	use=list	short=List UPHost instances
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uphost-id	short=	default=[]	required=
+  flag=zone	short=	default=	required=
+ucloud vpc	use=vpc	short=List and manipulate VPC instances
+ucloud vpc create	use=create	short=Create vpc network
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=segment	short=	default=[]	required=true
+ucloud vpc create-intercome	use=create-intercome	short=Create intercome with other vpc
+  flag=dst-project-id	short=	default=	required=
+  flag=dst-region	short=	default=	required=
+  flag=dst-vpc-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+ucloud vpc delete	use=delete	short=Delete vpc network
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=[]	required=true
+ucloud vpc delete-intercome	use=delete-intercome	short=delete the vpc intercome
+  flag=dst-region	short=	default=	required=true
+  flag=dst-vpc-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+ucloud vpc list	use=list	short=List vpc
+  flag=group	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=[]	required=
+ucloud vpc list-intercome	use=list-intercome	short=list intercome 
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
