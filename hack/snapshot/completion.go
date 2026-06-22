@@ -17,12 +17,17 @@ type completionResult struct {
 }
 
 // classifyFlag invokes the completion func for the named flag and classifies it
-// as static (fixed candidate set) or dynamic (requires network/BizClient).
+// as static (fixed candidate set) or dynamic (requires network).
 //
-// Dynamic detection: SetCompletion closures dereference base.BizClient which is
-// set to nil after tree construction, causing a nil-pointer panic. We recover
-// from that panic and mark the flag dynamic. SetFlagValues closures return a
-// fixed slice and never touch BizClient, so they succeed without panicking.
+// Dynamic detection: SetCompletion closures touch the network-backing globals
+// which the test nils after tree construction, causing a nil-pointer panic.
+// Platform (cmd) closures dereference base.BizClient; product (products/udb)
+// closures go through cli.NewServiceClient, which builds an SDK client from
+// base.ClientConfig — so the test nils both (see TestWriteCompletionBaseline).
+// We recover from the panic and mark the flag dynamic. A closure may also
+// signal dynamic explicitly by returning cobra.ShellCompDirectiveError.
+// SetFlagValues closures return a fixed slice and never touch those globals, so
+// they succeed without panicking and are recorded as static.
 func classifyFlag(c *cobra.Command, flagName string) completionResult {
 	fn, ok := c.GetFlagCompletionFunc(flagName)
 	if !ok {

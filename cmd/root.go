@@ -166,7 +166,6 @@ func addPlatformCommands(root *cobra.Command) {
 	root.AddCommand(NewCmdULB())
 	root.AddCommand(NewCmdGssh())
 	root.AddCommand(NewCmdPathx())
-	root.AddCommand(NewCmdMysql())
 	root.AddCommand(NewCmdRedis())
 	root.AddCommand(NewCmdMemcache())
 	root.AddCommand(NewCmdExt())

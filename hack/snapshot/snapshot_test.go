@@ -50,9 +50,20 @@ const completionGoldenPath = "testdata/completion.golden"
 func TestWriteCompletionBaseline(t *testing.T) {
 	root := cmd.NewCmdRoot()
 	cmd.AddChildrenForSnapshot(root)
-	// Nil out BizClient so dynamic completions panic-on-invoke
-	// (SetFlagValues closures are immune; SetCompletion closures dereference it).
+	// Nil out the network-backing globals so dynamic completions panic-on-invoke
+	// (SetFlagValues closures are immune; SetCompletion closures dereference them).
+	//
+	// Platform (cmd) dynamic completions dereference base.BizClient directly, so
+	// nil-ing it makes them panic. Product (products/udb) dynamic completions go
+	// through cli.NewServiceClient → ctor(base.ClientConfig, base.BuildCredential())
+	// → SDK call, which ignores base.BizClient; nil-ing base.ClientConfig makes the
+	// SDK request build panic instead of issuing a real (non-deterministic, slow)
+	// network call. AuthCredential is nil'd alongside for symmetry. This must run
+	// AFTER AddChildrenForSnapshot, since some constructors build requests at
+	// construction time and need the non-nil stubs.
 	base.BizClient = nil
+	base.ClientConfig = nil
+	base.AuthCredential = nil
 	got := RenderCompletion(root)
 
 	if os.Getenv("WRITE_COMPLETION_GOLDEN") == "1" {
