@@ -24,6 +24,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdUDPN ucloud udpn
@@ -74,11 +75,11 @@ func NewCmdUDPNCreate(out io.Writer) *cobra.Command {
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
-	flags.SetFlagValuesFunc("project-id", getProjectList)
-	flags.SetFlagValuesFunc("peer1", getRegionList)
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "peer1", getRegionList)
 	//peer1和peer2不相等
-	flags.SetFlagValuesFunc("peer2", func() []string {
+	command.SetCompletion(cmd, "peer2", func() []string {
 		regions := getRegionList()
 		list := []string{}
 		for _, r := range regions {
@@ -142,9 +143,9 @@ func NewCmdUDPNList(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("project-id", getRegionList)
-	flags.SetFlagValuesFunc("udpn-id", func() []string {
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getRegionList)
+	command.SetCompletion(cmd, "udpn-id", func() []string {
 		return getAllUDPNIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -177,8 +178,8 @@ func NewCmdUdpnDelete(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&idNames, "udpn-id", nil, "Required. Resource ID of udpn instances to delete")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("project-id", getRegionList)
-	flags.SetFlagValuesFunc("udpn-id", func() []string {
+	command.SetCompletion(cmd, "project-id", getRegionList)
+	command.SetCompletion(cmd, "udpn-id", func() []string {
 		return getAllUDPNIdNames(*req.ProjectId, base.ConfigIns.Region)
 	})
 
@@ -215,7 +216,7 @@ func NewCmdUdpnModifyBW(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValuesFunc("udpn-id", func() []string {
+	command.SetCompletion(cmd, "udpn-id", func() []string {
 		return getAllUDPNIdNames(*req.ProjectId, *req.Region)
 	})
 
