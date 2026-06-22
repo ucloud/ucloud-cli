@@ -35,8 +35,8 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/model/status"
-	"github.com/ucloud/ucloud-cli/ux"
 	"github.com/ucloud/ucloud-cli/pkg/command"
+	"github.com/ucloud/ucloud-cli/ux"
 )
 
 const _RetCodeRegionNoPermission = 230
