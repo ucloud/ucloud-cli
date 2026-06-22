@@ -26,6 +26,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdUImage ucloud uimage
@@ -97,7 +98,7 @@ func NewCmdUImageList(out io.Writer) *cobra.Command {
 	req.ImageId = cmd.Flags().String("image-id", "", "Optional. Resource ID of image")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = cmd.Flags().Int("limit", 500, "Optional. Max count")
-	cmd.Flags().SetFlagValues("image-type", "Base", "Business", "Custom")
+	command.SetFlagValues(cmd, "image-type", "Base", "Business", "Custom")
 	return cmd
 }
 
@@ -133,7 +134,7 @@ func NewCmdUImageDelete() *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.MarkFlagRequired("image-id")
-	flags.SetFlagValuesFunc("image-id", func() []string {
+	command.SetCompletion(cmd, "image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE, status.IMAGE_COPYING, status.IMAGE_MAKING}, cli.IAMGE_CUSTOM, *req.ProjectId, *req.Region, "")
 	})
 	return cmd
@@ -181,16 +182,16 @@ func NewCmdImageCopy(out io.Writer) *cobra.Command {
 	req.TargetImageDescription = flags.String("target-image-desc", "", "Optional. Description of target image")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
-	flags.SetFlagValuesFunc("source-image-id", func() []string {
+	command.SetCompletion(cmd, "source-image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE}, cli.IAMGE_CUSTOM, *req.ProjectId, *req.Region, *req.Zone)
 	})
-	flags.SetFlagValuesFunc("project-id", getProjectList)
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("zone", func() []string {
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(*req.Region)
 	})
-	flags.SetFlagValuesFunc("target-region", getRegionList)
-	flags.SetFlagValuesFunc("target-project", getProjectList)
+	command.SetCompletion(cmd, "target-region", getRegionList)
+	command.SetCompletion(cmd, "target-project", getProjectList)
 
 	cmd.MarkFlagRequired("source-image-id")
 
