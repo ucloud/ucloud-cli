@@ -106,9 +106,9 @@ func NewCmdUDBConfList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 	req.GroupId = flags.Int("conf-id", 0, "Optional. Configuration identifier for the configuration to be described")
@@ -183,9 +183,9 @@ func NewCmdUDBConfDescribe(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&confID, "conf-id", "", "Requried. Configuration identifier for the configuration to be described")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("conf-id")
 	command.SetCompletion(cmd, "conf-id", func() []string {
@@ -233,9 +233,9 @@ func NewCmdUDBConfClone(out io.Writer) *cobra.Command {
 	req.DBTypeId = flags.String("db-version", "", fmt.Sprintf("Required. Version of DB. Accept values:%s", strings.Join(dbVersionList, ", ")))
 	req.GroupName = flags.String("name", "", "Required. Name of configuration. It's length should be between 6 and 63")
 	req.Description = flags.String("description", " ", "Optional. Description of the configuration to clone")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.StringVar(&srcConfID, "src-conf-id", "", "Optional. The ConfID of source configuration which to be cloned from")
 
 	command.SetFlagValues(cmd, "db-version", dbVersionList...)
@@ -297,9 +297,9 @@ func NewCmdUDBConfUpload(out io.Writer) *cobra.Command {
 	req.GroupName = flags.String("name", "", "Required. Name of configuration. It's length should be between 6 and 63")
 	req.Description = flags.String("description", " ", "Optional. Description of the configuration to clone")
 	// flags.StringVar(&subtype, "db-type", "", fmt.Sprintf("Optional. DB type. Accept values: %s", strings.Join(subtypeList, ", ")))
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("conf-file")
 	cmd.MarkFlagRequired("name")
@@ -365,9 +365,9 @@ func NewCmdUDBConfUpdate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	flags.StringVar(&confID, "conf-id", "", "Required. ConfID of configuration to update")
 	flags.StringVar(&key, "key", "", "Optional. Key of parameter")
@@ -412,9 +412,9 @@ func NewCmdUDBConfDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&confID, "conf-id", "", "Required. ConfID of the configuration to delete")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("conf-id")
 	command.SetCompletion(cmd, "conf-id", func() []string {
@@ -479,9 +479,9 @@ func NewCmdUDBConfApply(out io.Writer) *cobra.Command {
 	flags.BoolVar(&restart, "restart-after-apply", true, "Optional. The new configuration will take effect after DB restarts")
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("conf-id")
 	cmd.MarkFlagRequired("udb-id")
@@ -525,9 +525,9 @@ func NewCmdUDBConfDownload(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&confID, "conf-id", "", "Required. ConfID of configuration to download")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("conf-id")
 

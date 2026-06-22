@@ -509,9 +509,9 @@ func NewCmdUHostCreate() *cobra.Command {
 
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O, OS. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accept values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
@@ -852,8 +852,8 @@ func NewCmdUHostDelete() *cobra.Command {
 	flags.SortFlags = false
 
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Requried. ResourceIDs(UhostIds) of the uhost instance")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	cmd.Flags().BoolVar(&releaseEIP, "release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
@@ -1282,9 +1282,9 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(or UhostIDs) of the uhost instances")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 	req.CPU = cmd.Flags().Int("cpu", 0, "Optional. The number of virtual CPU cores. Series1 {1, 2, 4, 8, 12, 16, 24, 32}. Series2 {1,2,4,8,16}")
 	req.Memory = cmd.Flags().Int("memory-gb", 0, "Optional. memory size. Unit: GB. Range: [1, 128], multiple of 2")
 	cmd.Flags().IntVar(&bootDiskSize, "system-disk-size-gb", 0, "Optional. System disk size, unit GB. Range[20,100]. Step 10. System disk does not support shrinkage")
@@ -1756,9 +1756,9 @@ func NewCmdUhostLeaveIsolationGroup(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&uhostIds, "uhost-id", nil, "Required. Resource ID of uhosts to be detech from its isolation group")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
-	bindZone(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
+	bindZone(req, cmd)
 	cmd.MarkFlagRequired("uhost-id")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList(nil, *req.ProjectId, *req.Region, *req.Zone)
@@ -1804,8 +1804,8 @@ func NewCmdIsolationCreate(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupName = flags.String("group-name", "", "Required. Name of isolation group. Length 1~63, only English,Chinese,number and '-_.' are allowed")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Remark = flags.String("remark", "", "Optional. Remark ok isolation group")
 
 	cmd.MarkFlagRequired("group-name")
@@ -1836,8 +1836,8 @@ func NewCmdIsolationDelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&ids, "group-id", nil, "Required. Resource ID of isolation groups to be deleted")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("group-id")
 	command.SetCompletion(cmd, "group-id", func() []string {
@@ -1887,8 +1887,8 @@ func NewCmdIsolationList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupId = flags.String("group-id", "", "Optional. Resource ID of isolation group to describe")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 

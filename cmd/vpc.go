@@ -475,8 +475,8 @@ func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "subnet-id", nil, "Required. Resource ID of subent")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	cmd.MarkFlagRequired("subnet-id")
 	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames("", *req.ProjectId, *req.Region)
@@ -524,8 +524,8 @@ func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.SubnetId = flags.String("subnet-id", "", "Required. Resource ID of subnet which resources to list belong to")
 	req.ResourceType = flags.String("resource-type", "", "Optional. Resource type of resources to list. Accept values:'uhost','phost','ulb','uhadoophost','ufortresshost','unatgw','ukafka','umem','docker','udb','udw' and 'vip'")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 	cmd.MarkFlagRequired("subnet-id")

@@ -209,9 +209,9 @@ func NewCmdUDBListMachineType(out io.Writer) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	bindRegionS(&region, flags)
-	bindZoneS(&zone, &region, flags)
-	bindProjectIDS(&projectID, flags)
+	bindRegionS(&region, cmd)
+	bindZoneS(&zone, &region, cmd)
+	bindProjectIDS(&projectID, cmd)
 	flags.StringVar(&mode, "mode", "", "Optional. Instance mode: Normal / HA")
 	command.SetFlagValues(cmd, "mode", "Normal", "HA")
 
@@ -372,9 +372,9 @@ func NewCmdMysqlCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&machineType, "machine-type", "", "Required. Machine type ID, e.g. o.mysql2m.xlarge for 4C8G. See 'ucloud mysql db list-machine-type'")
 
 	// Optional flags
-	bindRegionS(&region, flags)
-	bindZoneS(&zone, &region, flags)
-	bindProjectIDS(&projectID, flags)
+	bindRegionS(&region, cmd)
+	bindZoneS(&zone, &region, cmd)
+	bindProjectIDS(&projectID, cmd)
 	flags.IntVar(&port, "port", 3306, "Optional. Port, default 3306")
 	flags.IntVar(&diskSpace, "disk-size-gb", 20, "Optional. Disk size (GiB), 20-32000, default 20")
 	flags.StringVar(&storageClass, "storage-class", "CLOUD_RSSD", "Optional. Storage class: CLOUD_RSSD")
@@ -529,9 +529,9 @@ func NewCmdUDBList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.DBId = flags.String("udb-id", "", "Optional. List the specified mysql")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 	req.IncludeSlaves = flags.Bool("include-slaves", false, "Optional. When specifying the udb-id, whether to display its slaves together. Accept values:true, false")
@@ -589,9 +589,9 @@ func NewCmdUDBDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to delete")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	cmd.MarkFlagRequired("udb-id")
@@ -622,9 +622,9 @@ func NewCmdUDBStop(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to stop")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	req.ForceToKill = flags.Bool("force", false, "Optional. Stop UDB instances by force or not")
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
@@ -670,9 +670,9 @@ func NewCmdUDBStart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to start")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	cmd.MarkFlagRequired("udb-id")
@@ -715,9 +715,9 @@ func NewCmdUDBRestart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to restart")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	cmd.MarkFlagRequired("udb-id")
@@ -815,9 +815,9 @@ func NewCmdUDBResize(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to restart")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.IntVar(&memory, "memory-size-gb", 0, "Optional. Memory size of udb instance. From 1 to 128. Unit GB")
 	flags.IntVar(&disk, "disk-size-gb", 0, "Optional. Disk size of udb instance. From 20 to 3000 according to memory size. Unit GB. Step 10GB")
 	flags.StringVar(&diskType, "disk-type", "", fmt.Sprintf("Optional. Disk type of udb instance. Accept values:%s", strings.Join(diskTypes, ", ")))
@@ -862,9 +862,9 @@ func NewCmdUDBResetPassword(out io.Writer) *cobra.Command {
 
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to reset password")
 	req.Password = flags.String("password", "", "Required. New password")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("password")
@@ -924,11 +924,11 @@ func NewCmdUDBRestore(out io.Writer) *cobra.Command {
 	req.Name = flags.String("name", "", "Required. Name of UDB instance to create")
 	req.SrcDBId = flags.String("src-udb-id", "", "Required. Resource ID of source UDB")
 	flags.StringVar(&datetime, "restore-to-time", "", "Required. The date and time to restore the DB to. Value must be a time in Universal Coordinated Time (UTC) format.Example: 2019-02-23T23:45:00Z")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.StringVar(&diskType, "disk-type", "", "Optional. Disk type. The default is to be consistent with the source database. Accept values: normal, ssd")
-	bindChargeType(req, flags)
+	bindChargeType(req, cmd)
 	bindQuantity(req, flags)
 	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish")
 
@@ -984,9 +984,9 @@ func NewCmdUDBCreateSlave(out io.Writer) *cobra.Command {
 	req.SrcId = flags.String("master-udb-id", "", "Required. Resource ID of master UDB instance")
 	req.Name = flags.String("name", "", "Required. Name of the slave DB to create")
 	req.Port = flags.Int("port", 3306, "Optional. Port of the slave db service")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	flags.StringVar(&diskType, "disk-type", "Normal", fmt.Sprintf("Optional. Setting this flag means using SSD disk. Accept values: %s", strings.Join(dbDiskTypeList, ", ")))
 	req.MemoryLimit = flags.Int("memory-size-gb", 1, "Optional. Memory size of udb instance. From 1 to 128. Unit GB")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish")
@@ -1028,9 +1028,9 @@ func NewCmdUDBPromoteSlave(out io.Writer) *cobra.Command {
 
 	flags.StringSliceVar(&ids, "udb-id", nil, "Required. Resource ID of slave db to promote")
 	req.IsForce = flags.Bool("is-force", false, "Optional. Force to promote slave db or not. If the slave db falls behind, the force promote may lose some data")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("udb-id")
 
@@ -1088,8 +1088,8 @@ func NewCmdUDBPromoteToHA(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to be promoted as high availability mode")
 
 	cmd.MarkFlagRequired("udb-id")

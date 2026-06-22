@@ -66,9 +66,9 @@ func NewCmdUDBBackupCreate(out io.Writer) *cobra.Command {
 
 	req.DBId = flags.String("udb-id", "", "Required. Resource ID of UDB instnace to backup")
 	req.BackupName = flags.String("name", "", "Required. Name of backup")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("name")
@@ -175,9 +175,9 @@ func NewCmdUDBBackupList(out io.Writer) *cobra.Command {
 	flags.StringVar(&beginTime, "begin-time", "", "Optional. Begin time of backup. For example, 2019-02-26/11:21:39")
 	flags.StringVar(&endTime, "end-time", "", "Optional. End time of backup. For example, 2019-02-26/11:31:39")
 
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 
@@ -215,9 +215,9 @@ func NewCmdUDBBackupDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.IntSliceVar(&ids, "backup-id", nil, "Required. BackupID of backups to delete")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("backup-id")
 	return cmd
@@ -244,9 +244,9 @@ func NewCmdUDBBackupGetDownloadURL(out io.Writer) *cobra.Command {
 
 	req.BackupId = flags.Int("backup-id", -1, "Required. BackupID of backup to delete")
 	req.DBId = flags.String("udb-id", "", "Required. Resource ID of udb which the backup belongs to")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("backup-id")
@@ -340,9 +340,9 @@ func NewCmdUDBLogArchiveCreate(out io.Writer) *cobra.Command {
 	flags.StringVar(&logType, "log-type", "", "Required. Type of log to package. Accept values: slow_query, error")
 	flags.StringVar(&beginTime, "begin-time", "", "Optional. Required when log-type is slow. For example 2019-01-02/15:04:05")
 	flags.StringVar(&endTime, "end-time", "", "Optional. Required when log-type is slow. For example 2019-01-02/15:04:05")
-	bindRegionS(&region, flags)
-	bindZoneS(&zone, &region, flags)
-	bindProjectIDS(&project, flags)
+	bindRegionS(&region, cmd)
+	bindZoneS(&zone, &region, cmd)
+	bindProjectIDS(&project, cmd)
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("name")
@@ -443,9 +443,9 @@ func NewCmdUDBLogArchiveList(out io.Writer) *cobra.Command {
 	req.DBId = flags.String("udb-id", "", "Optional. Resource ID of UDB instance which the listed logs belong to")
 	flags.StringVar(&beginTime, "begin-time", "", "Optional. For example 2019-01-02/15:04:05")
 	flags.StringVar(&endTime, "end-time", "", "Optional. For example 2019-01-02/15:04:05")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 
@@ -480,9 +480,9 @@ func NewCmdUDBLogArchiveGetDownloadURL(out io.Writer) *cobra.Command {
 
 	req.BackupId = flags.Int("archive-id", 0, "Required. ArchiveID of archive to download")
 	req.DBId = flags.String("udb-id", "", "Required. Resource ID of UDB which the archive belongs to")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("archive-id")
 	cmd.MarkFlagRequired("udb-id")
@@ -519,9 +519,9 @@ func NewCmdUDBLogArchiveDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.IntSliceVar(&ids, "archive-id", nil, "Optional. ArchiveID of log archives to delete")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("archive-id")
 

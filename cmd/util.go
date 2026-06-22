@@ -7,71 +7,73 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
-func bindRegion(req request.Common, flags *pflag.FlagSet) {
+func bindRegion(req request.Common, cmd *cobra.Command) {
 	var region string
-	flags.StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("region", getRegionList)
+	cmd.Flags().StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "region", getRegionList)
 	req.SetRegionRef(&region)
 }
 
-func bindRegionS(region *string, flags *pflag.FlagSet) {
+func bindRegionS(region *string, cmd *cobra.Command) {
 	*region = base.ConfigIns.Region
-	flags.StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("region", getRegionList)
+	cmd.Flags().StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "region", getRegionList)
 }
 
-func bindZone(req request.Common, flags *pflag.FlagSet) {
+func bindZone(req request.Common, cmd *cobra.Command) {
 	var zone string
-	flags.StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("zone", func() []string {
+	cmd.Flags().StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
 	req.SetZoneRef(&zone)
 }
 
-func bindZoneEmpty(req request.Common, flags *pflag.FlagSet) {
+func bindZoneEmpty(req request.Common, cmd *cobra.Command) {
 	var zone string
-	flags.StringVar(&zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("zone", func() []string {
+	cmd.Flags().StringVar(&zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
 	req.SetZoneRef(&zone)
 }
 
-func bindZoneEmptyS(zone, region *string, flags *pflag.FlagSet) {
-	flags.StringVar(zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("zone", func() []string {
+func bindZoneEmptyS(zone, region *string, cmd *cobra.Command) {
+	cmd.Flags().StringVar(zone, "zone", "", "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(*region)
 	})
 }
 
-func bindZoneS(zone, region *string, flags *pflag.FlagSet) {
+func bindZoneS(zone, region *string, cmd *cobra.Command) {
 	*zone = base.ConfigIns.Zone
-	flags.StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
-	flags.SetFlagValuesFunc("zone", func() []string {
+	cmd.Flags().StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(*region)
 	})
 }
 
-func bindProjectID(req request.Common, flags *pflag.FlagSet) {
+func bindProjectID(req request.Common, cmd *cobra.Command) {
 	var project string
-	flags.StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
-	flags.SetFlagValuesFunc("project-id", getProjectList)
+	cmd.Flags().StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	command.SetCompletion(cmd, "project-id", getProjectList)
 	req.SetProjectIdRef(&project)
 }
 
-func bindProjectIDS(project *string, flags *pflag.FlagSet) {
+func bindProjectIDS(project *string, cmd *cobra.Command) {
 	*project = base.ConfigIns.ProjectID
-	flags.StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
-	flags.SetFlagValuesFunc("project-id", getProjectList)
+	cmd.Flags().StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	command.SetCompletion(cmd, "project-id", getProjectList)
 }
 
 func bindGroup(req interface{}, flags *pflag.FlagSet) {
@@ -95,12 +97,12 @@ func bindOffset(req interface{}, flags *pflag.FlagSet) {
 	f.Set(reflect.ValueOf(offset))
 }
 
-func bindChargeType(req interface{}, flags *pflag.FlagSet) {
-	chargeType := flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
+func bindChargeType(req interface{}, cmd *cobra.Command) {
+	chargeType := cmd.Flags().String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	v := reflect.ValueOf(req).Elem()
 	f := v.FieldByName("ChargeType")
 	f.Set(reflect.ValueOf(chargeType))
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
 }
 
 func bindQuantity(req interface{}, flags *pflag.FlagSet) {

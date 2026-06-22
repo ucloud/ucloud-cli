@@ -171,9 +171,9 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 	flags := createCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(createPathxReq, flags)
-	bindRegion(createPathxReq, flags)
-	bindZone(createPathxReq, flags)
+	bindProjectID(createPathxReq, createCmd)
+	bindRegion(createPathxReq, createCmd)
+	bindZone(createPathxReq, createCmd)
 
 	createPathxReq.Bandwidth = flags.String("bandwidth", "0",
 		"Required. Shared bandwidth of the resource")
@@ -261,9 +261,9 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of pathx, and the deletion will be performed according to this")
 
-	bindProjectID(deleteUga3PortReq, flags)
-	bindRegion(deleteUga3PortReq, flags)
-	bindZone(deleteUga3PortReq, flags)
+	bindProjectID(deleteUga3PortReq, removeCmd)
+	bindRegion(deleteUga3PortReq, removeCmd)
+	bindZone(deleteUga3PortReq, removeCmd)
 
 	removeCmd.MarkFlagRequired("id")
 	yes = removeCmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
@@ -419,9 +419,9 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 	flags := modifyCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(modifyInstanceReq, flags)
-	bindRegion(modifyInstanceReq, flags)
-	bindZone(modifyInstanceReq, flags)
+	bindProjectID(modifyInstanceReq, modifyCmd)
+	bindRegion(modifyInstanceReq, modifyCmd)
+	bindZone(modifyInstanceReq, modifyCmd)
 
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of the pathx")
@@ -511,9 +511,9 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 	flags := listCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(getPathxListReq, flags)
-	bindRegion(getPathxListReq, flags)
-	bindZone(getPathxListReq, flags)
+	bindProjectID(getPathxListReq, listCmd)
+	bindRegion(getPathxListReq, listCmd)
+	bindZone(getPathxListReq, listCmd)
 
 	flags.StringVar(&instanceId, "id", "", "Required. It is the resource ID of pathx resource")
 	flags.BoolVar(&detail, "detail", false, "Optional. If it is specified,the details will be printed")
@@ -658,9 +658,9 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(priceReq, flags)
-	bindRegion(priceReq, flags)
-	bindZone(priceReq, flags)
+	bindProjectID(priceReq, cmd)
+	bindRegion(priceReq, cmd)
+	bindZone(priceReq, cmd)
 
 	priceReq.Bandwidth = flags.Int("bandwidth", 1,
 		"Required. The bandwidth of acceleration area to get price")
@@ -818,9 +818,9 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(areaGetReq, flags)
-	bindRegion(areaGetReq, flags)
-	bindZone(areaGetReq, flags)
+	bindProjectID(areaGetReq, cmd)
+	bindRegion(areaGetReq, cmd)
+	bindZone(areaGetReq, cmd)
 
 	flags.StringVar(&timeRange, "time-range", "",
 		"Optional. The default value is 1 day. Acceptable values:'Hour','Day','Week',and its value is not case sensitive")
@@ -1003,7 +1003,7 @@ func NewCmdUpathList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UPathId = flags.String("upath-id", "", "Optional. Resource ID of upath instance to list")
 
 	return cmd
@@ -1073,7 +1073,7 @@ func NewCmdUGAList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.UGAId = flags.String("uga-id", "", "Optional. Resource ID of uga instance")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 
 	return cmd
 }
@@ -1139,7 +1139,7 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("uga-id")
 	command.SetCompletion(cmd, "uga-id", func() []string {
@@ -1240,7 +1240,7 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.Name = flags.String("name", "", "Required. Name of uga instance to create")
 	req.IPList = flags.String("origin-ip", "", "Required if origin-domain is empty. IP address of origin. multiple IP address separated by ','")
 	req.Domain = flags.String("origin-domain", "", "Required if origin-ip is empty.")
@@ -1289,7 +1289,7 @@ func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	flags.StringSliceVar(&idNames, "uga-id", nil, "Required. Resource ID of uga instances to delete. Multiple resource ids separated by comma")
 
 	cmd.MarkFlagRequired("uga-id")
@@ -1342,7 +1342,7 @@ func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance to add port")
 	flags.StringVar(&protocol, "protocol", "", fmt.Sprintf("Required. accept values: %s", strings.Join(protocols, ",")))
 	flags.StringSliceVar(&ports, "port", nil, "Required. Single port or port range, separated by ',', for example 80,3000-3010")
@@ -1401,7 +1401,7 @@ func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance to delete port")
 	flags.StringVar(&protocol, "protocol", "", fmt.Sprintf("Required. accept values: %s", strings.Join(protocols, ",")))
 	flags.StringSliceVar(&ports, "port", nil, "Required. Single port or port range, separated by ',', for example 80,3000-3010")

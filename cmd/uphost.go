@@ -91,9 +91,9 @@ func NewCmdUPHostList(out io.Writer) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 	flags.StringSliceVar(&ids, "uphost-id", nil, "Optional. Resource ID of uphost instances. List those specified uphost instances")

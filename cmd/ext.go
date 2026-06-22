@@ -192,9 +192,9 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
 	command.SetFlagValues(cmd, "create-eip-charge-type", "Month", "Year", "Dynamic", "Trial")
 
-	bindProjectIDS(&project, flags)
-	bindRegionS(&region, flags)
-	bindZoneEmptyS(&zone, &region, flags)
+	bindProjectIDS(&project, cmd)
+	bindRegionS(&region, cmd)
+	bindZoneEmptyS(&zone, &region, cmd)
 
 	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, project, region, zone)

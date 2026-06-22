@@ -141,9 +141,9 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.ResourceId = flags.String("umem-id", "", "Optional. Resource ID of the redis to list")
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 	req.Protocol = sdk.String("redis")
@@ -224,9 +224,9 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags.IntVar(&p.blockCnt, "block-cnt", 2, "Optional. Block count. Default value 2(for distributed redis type).")
 	flags.IntVar(&p.proxySize, "proxy-size", 2, "Optional. Proxy size. Default value 2(for distributed redis type) Unit Core")
 
-	bindRegionS(&p.region, flags)
-	bindZoneS(&p.zone, &p.region, flags)
-	bindProjectIDS(&p.projectID, flags)
+	bindRegionS(&p.region, cmd)
+	bindZoneS(&p.zone, &p.region, cmd)
+	bindProjectIDS(&p.projectID, cmd)
 	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.StringVar(&p.group, "group", "", "Optional. Business group")
@@ -354,9 +354,9 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
-	bindRegionS(&p.region, flags)
-	bindZoneS(&p.zone, &p.region, flags)
-	bindProjectIDS(&p.projectID, flags)
+	bindRegionS(&p.region, cmd)
+	bindZoneS(&p.zone, &p.region, cmd)
+	bindProjectIDS(&p.projectID, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
 
@@ -420,9 +420,9 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to restart")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
 	command.SetCompletion(cmd, "umem-id", func() []string {
@@ -527,9 +527,9 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupId = flags.String("umem-id", "", "Optional. Resource ID of the redis to list")
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 
@@ -569,9 +569,9 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req.Size = flags.Int("size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
-	bindRegionS(&region, flags)
-	bindZoneS(&zone, &region, flags)
-	bindProjectIDS(&projectID, flags)
+	bindRegionS(&region, cmd)
+	bindZoneS(&zone, &region, cmd)
+	bindProjectIDS(&projectID, cmd)
 	req.ChargeType = flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.Tag = flags.String("group", "", "Optional. Business group")
@@ -622,9 +622,9 @@ func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of memcache intances to delete")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
 
@@ -660,9 +660,9 @@ func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of memcache to restart")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
 	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getMemcacheIDList(*req.ProjectId, *req.Region)
