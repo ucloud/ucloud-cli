@@ -1,0 +1,109 @@
+# PR Admission Gate
+#
+# Required status checks (register ALL jobs in repo Settings → Branches → branch protection):
+#   - scope-gate
+#   - check-product
+#   - test
+#   - build-matrix (6 × platform)
+#
+# Merge Queue enablement: repo Settings → Merge Queue → "Require merge queue" (Task E9).
+#
+# IMPORTANT: The `merge_group` trigger is required. Without it, required checks stay in
+# "Pending" state inside the GitHub Merge Queue and PRs can never be merged.
+
+name: PR Gate
+
+on:
+  pull_request:
+  merge_group: # REQUIRED — without this, checks stay pending in the merge queue
+
+permissions:
+  contents: read
+  pull-requests: write # for the gate bot to comment
+
+jobs:
+  scope-gate:
+    # Fast structural judgment. Only meaningful on pull_request events.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Check scope, conventional title, protected paths
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          echo "Changed files:"; echo "$FILES"
+
+          # Protected paths require platform review (cannot be auto-admitted).
+          PROTECTED='^(\.github/workflows/|hack/|products\.yaml$|go\.mod$|go\.sum$|\.goreleaser\.yaml$|\.svu\.yaml$)'
+          touches_protected=$(echo "$FILES" | grep -E "$PROTECTED" || true)
+
+          # Product scope: all changed files under a single products/<name>/ ?
+          products_touched=$(echo "$FILES" | grep -E '^products/' | sed -E 's#^products/([^/]+)/.*#\1#' | sort -u || true)
+          n_products=$(echo "$products_touched" | grep -c . || true)
+
+          # Conventional commit title check (feat|fix|refactor|build|ci|docs|test|chore|perf, optional scope).
+          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|refactor|build|ci|docs|test|chore|perf)(\([a-z0-9_-]+\))?!?: .+'; then
+            echo "::error::PR title is not a conventional commit: $PR_TITLE"
+            exit 1
+          fi
+
+          if [ -n "$touches_protected" ]; then
+            echo "::notice::PR touches protected/platform paths — requires platform review (not auto-admit)."
+          elif [ "$n_products" -gt 1 ]; then
+            echo "::error::PR touches multiple products ($products_touched) — split into per-product PRs."
+            exit 1
+          fi
+
+          echo "scope-gate passed"
+
+  check-product:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25' }
+      - run: go run ./hack/check-product
+        env: { GOPROXY: 'https://goproxy.cn,direct' }
+
+  test:
+    # NOTE: Only OFFLINE-safe packages are tested here.
+    # The `cmd` integration tests hit a live UCloud API and are excluded.
+    # Run `go test ./cmd/...` manually or in a separate protected environment with credentials.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25' }
+      - run: go build ./...
+        env: { GOPROXY: 'https://goproxy.cn,direct' }
+      - run: go vet ./...
+        env: { GOPROXY: 'https://goproxy.cn,direct' }
+      - run: go test ./pkg/... ./base/ ./hack/... ./ux/... -count=1
+        env: { GOPROXY: 'https://goproxy.cn,direct' }
+
+  build-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25' }
+      - run: go build -o /dev/null .
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOPROXY: 'https://goproxy.cn,direct'
