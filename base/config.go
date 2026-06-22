@@ -99,6 +99,7 @@ var Global GlobalFlag
 type GlobalFlag struct {
 	Debug         bool
 	JSON          bool
+	Output        string
 	Version       bool
 	Completion    bool
 	Config        bool

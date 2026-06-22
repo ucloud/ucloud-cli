@@ -16,13 +16,17 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
@@ -61,6 +65,7 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&global.Debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.JSON, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.PersistentFlags().StringVar(&global.Output, "output", "", "Output format: table, json, or yaml. Defaults to json when stdout is not a TTY, else table")
 	cmd.PersistentFlags().StringVarP(&global.Profile, "profile", "p", global.Profile, "Specifies the configuration for the operation")
 	cmd.Flags().BoolVarP(&global.Version, "version", "v", false, "Display version")
 	cmd.Flags().BoolVar(&global.Completion, "completion", false, "Turn on auto completion according to the prompt")
@@ -68,6 +73,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
 	command.SetPersistentCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetPersistentCompletion(cmd, "output", func() []string { return []string{"json", "table", "yaml"} })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
@@ -298,6 +304,26 @@ func initialize(cmd *cobra.Command) {
 		base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 		os.Exit(0)
 	}
+}
+
+// decideOutputFormat resolves the effective output format: explicit --output
+// wins; then legacy --json; otherwise JSON for non-TTY stdout, Table for TTY.
+func decideOutputFormat(out io.Writer) cli.OutputFormat {
+	switch strings.ToLower(global.Output) {
+	case "json":
+		return cli.OutputJSON
+	case "yaml":
+		return cli.OutputYAML
+	case "table":
+		return cli.OutputTable
+	}
+	if global.JSON {
+		return cli.OutputJSON
+	}
+	if ui.IsTTY(out) {
+		return cli.OutputTable
+	}
+	return cli.OutputJSON
 }
 
 // isAuthSkippedCmd 启动凭据检查跳过清单（D7：login/logout/help/version/config/init）
