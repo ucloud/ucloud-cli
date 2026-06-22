@@ -26,6 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/model/status"
 )
 
@@ -84,7 +85,7 @@ func NewCmdSharedBWCreate() *cobra.Command {
 	bindProjectID(req, flags)
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
 
 	cmd.MarkFlagRequired("name")
 
@@ -177,7 +178,7 @@ func NewCmdSharedBWResize() *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
@@ -216,11 +217,11 @@ func NewCmdSharedBWDelete() *cobra.Command {
 	req.PayMode = flags.String("traffic-mode", "", "Optional. The charge mode of joined EIPs after deleting the shared bandwidth. Accept values:Bandwidth,Traffic")
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
-	flags.SetFlagValues("traffic-mode", "Bandwidth", "Traffic")
+	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic")
 
 	cmd.MarkFlagRequired("shared-bw-id")
 
@@ -312,7 +313,7 @@ func NewCmdBandwidthPkgCreate() *cobra.Command {
 	bindRegion(req, flags)
 	bindProjectID(req, flags)
 
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_USED}, []string{status.EIP_CHARGE_BANDWIDTH})
 	})
 
