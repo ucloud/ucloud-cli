@@ -27,6 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -202,11 +203,11 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 	flags.StringVar(&protocol, "protocol", "TCP", "Its values can be TCP and UDP, but currently only supports TCP")
 
 	createCmd.MarkFlagRequired("bandwidth")
-	flags.SetFlagValues("area-code",
+	command.SetFlagValues(createCmd, "area-code",
 		"BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Hour")
-	flags.SetFlagValues("accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
-	flags.SetFlagValues("protocol", "TCP", "UDP")
+	command.SetFlagValues(createCmd, "charge-type", "Month", "Year", "Hour")
+	command.SetFlagValues(createCmd, "accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
+	command.SetFlagValues(createCmd, "protocol", "TCP", "UDP")
 	return createCmd
 }
 
@@ -266,7 +267,7 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 
 	removeCmd.MarkFlagRequired("id")
 	yes = removeCmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(removeCmd, "id", func() []string {
 		return getPathxList(*deleteUga3PortReq.ProjectId, *deleteUga3PortReq.Region, *deleteUga3PortReq.Zone)
 	})
 	return removeCmd
@@ -444,7 +445,7 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 	flags.StringVar(&protocol, "protocol", "TCP", "Its values can be TCP and UDP, but currently only supports TCP")
 
 	modifyCmd.MarkFlagRequired("id")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(modifyCmd, "id", func() []string {
 		return getPathxList(*modifyInstanceReq.ProjectId, *modifyInstanceReq.Region, *modifyInstanceReq.Zone)
 	})
 	return modifyCmd
@@ -516,7 +517,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 
 	flags.StringVar(&instanceId, "id", "", "Required. It is the resource ID of pathx resource")
 	flags.BoolVar(&detail, "detail", false, "Optional. If it is specified,the details will be printed")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(listCmd, "id", func() []string {
 		return getPathxList(*getPathxListReq.ProjectId, *getPathxListReq.Region, *getPathxListReq.Zone)
 	})
 	return listCmd
@@ -675,9 +676,9 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 
 	_ = cmd.MarkFlagRequired("bandwidth")
 	_ = cmd.MarkFlagRequired("area-code")
-	_ = flags.SetFlagValues("area-code", "BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
-	_ = flags.SetFlagValues("charge-type", "Year", "Month", "Hour")
-	_ = flags.SetFlagValues("accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
+	command.SetFlagValues(cmd, "area-code", "BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
+	command.SetFlagValues(cmd, "charge-type", "Year", "Month", "Hour")
+	command.SetFlagValues(cmd, "accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
 	return cmd
 }
 
@@ -1141,7 +1142,7 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 	bindProjectID(req, flags)
 
 	cmd.MarkFlagRequired("uga-id")
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1254,9 +1255,9 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("port")
 	cmd.MarkFlagRequired("upath-id")
 
-	flags.SetFlagValues("origin-location", "中国", "洛杉矶", "法兰克福", "中国香港", "雅加达", "孟买", "东京", "莫斯科", "新加坡", "曼谷", "中国台北", "华盛顿", "首尔")
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("upath-id", func() []string {
+	command.SetFlagValues(cmd, "origin-location", "中国", "洛杉矶", "法兰克福", "中国香港", "雅加达", "孟买", "东京", "莫斯科", "新加坡", "曼谷", "中国台北", "华盛顿", "首尔")
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "upath-id", func() []string {
 		return getUpathIDList(*req.ProjectId)
 	})
 
@@ -1292,7 +1293,7 @@ func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&idNames, "uga-id", nil, "Required. Resource ID of uga instances to delete. Multiple resource ids separated by comma")
 
 	cmd.MarkFlagRequired("uga-id")
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1350,8 +1351,8 @@ func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uga-id")
 	cmd.MarkFlagRequired("port")
 
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1409,8 +1410,8 @@ func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uga-id")
 	cmd.MarkFlagRequired("port")
 
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
