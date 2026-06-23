@@ -40,7 +40,7 @@ func (s *Spinner) Stop() {
 	s.ticker.Stop()
 	s.reset()
 	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.DoneText)
-	fmt.Fprintf(s.out, output)
+	fmt.Fprint(s.out, output)
 }
 
 // Timeout stop render
@@ -48,7 +48,7 @@ func (s *Spinner) Timeout() {
 	s.ticker.Stop()
 	s.reset()
 	output := fmt.Sprintf("%s...%s\n", s.DoingText, s.TimeoutText)
-	fmt.Fprintf(s.out, output)
+	fmt.Fprint(s.out, output)
 }
 
 // Fail stop render
@@ -56,14 +56,14 @@ func (s *Spinner) Fail(err error) {
 	s.ticker.Stop()
 	s.reset()
 	output := fmt.Sprintf("%s...fail: %v\n", s.DoingText, err)
-	fmt.Fprintf(s.out, output)
+	fmt.Fprint(s.out, output)
 }
 
 func (s *Spinner) reset() {
 	if s.output == "" {
 		return
 	}
-	fmt.Printf(ansi.CursorLeft + ansi.CursorUp(1) + ansi.EraseDown)
+	fmt.Fprint(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
 	s.output = ""
 }
 
@@ -74,7 +74,7 @@ func (s *Spinner) render() {
 		for range s.ticker.C {
 			if runtime.GOOS == windows {
 				if !send {
-					fmt.Printf("%s...\n", s.DoingText)
+					fmt.Fprintf(s.out, "%s...\n", s.DoingText)
 					send = true
 				}
 				continue
@@ -82,7 +82,7 @@ func (s *Spinner) render() {
 			frame := nextFrame()
 			s.reset()
 			s.output = fmt.Sprintf("%s...%c\n", s.DoingText, frame)
-			fmt.Printf(s.output)
+			fmt.Fprint(s.out, s.output)
 		}
 	}()
 }
@@ -123,7 +123,7 @@ type Refresh struct {
 // Do 刷新显示
 func (r *Refresh) Do(text string) {
 	if r.reset {
-		fmt.Fprintf(r.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
+		fmt.Fprint(r.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
 	} else {
 		r.reset = true
 	}
@@ -134,5 +134,12 @@ func (r *Refresh) Do(text string) {
 func NewRefresh() *Refresh {
 	return &Refresh{
 		out: os.Stdout,
+	}
+}
+
+// NewRefreshTo create a new Refresh writing to the given writer
+func NewRefreshTo(out io.Writer) *Refresh {
+	return &Refresh{
+		out: out,
 	}
 }

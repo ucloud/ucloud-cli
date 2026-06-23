@@ -1,0 +1,1124 @@
+package mysql
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	"github.com/ucloud/ucloud-sdk-go/services/udb"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+
+	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
+)
+
+var dbVersionList = []string{"mysql-5.7", "mysql-8.0", "mysql-8.4", "percona-5.7"}
+var dbDiskTypeList = []string{"normal", "sata_ssd", "pcie_ssd"}
+var dbStorageClassList = []string{"CLOUD_RSSD"}
+var dbSpecClassList = []string{"O", "O2"}
+var dbMachineTypeList = []string{
+	"o.mysql2m.small",    // 1C2G
+	"o.mysql2m.medium",   // 2C4G
+	"o.mysql2m.xlarge",   // 4C8G
+	"o.mysql2m.2xlarge",  // 8C16G
+	"o.mysql2m.4xlarge",  // 16C32G
+	"o.mysql2m.8xlarge",  // 32C64G
+	"o.mysql2m.12xlarge", // 48C96G
+	"o.mysql2m.16xlarge", // 64C128G
+	"o.mysql4m.medium",   // 2C8G
+	"o.mysql4m.xlarge",   // 4C16G
+	"o.mysql4m.2xlarge",  // 8C32G
+	"o.mysql4m.4xlarge",  // 16C64G
+	"o.mysql4m.8xlarge",  // 32C128G
+	"o.mysql4m.16xlarge", // 64C256G
+	"o.mysql8m.medium",   // 2C16G
+	"o.mysql8m.xlarge",   // 4C32G
+	"o.mysql8m.2xlarge",  // 8C64G
+	"o.mysql8m.4xlarge",  // 16C128G
+	"o.mysql8m.8xlarge",  // 32C256G
+	"o.mysql8m.16xlarge", // 64C512G
+}
+
+// NewCommand builds the `mysql` root command and mounts the `db` subtree.
+// Mirrors cmd/mysql.go NewCmdMysql + NewCmdMysqlDB.
+func NewCommand(ctx *cli.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "mysql",
+		Short: "Manipulate MySQL on UCloud platform",
+		Long:  "Manipulate MySQL on UCloud platform",
+	}
+	cmd.AddCommand(newMysqlDB(ctx))
+	cmd.AddCommand(newUDBConf(ctx))
+	cmd.AddCommand(newUDBBackup(ctx))
+	cmd.AddCommand(newUDBLog(ctx))
+	return cmd
+}
+
+// newMysqlDB ucloud mysql db
+func newMysqlDB(ctx *cli.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "db",
+		Short: "Manange MySQL instances",
+		Long:  "Manange MySQL instances",
+	}
+
+	cmd.AddCommand(newList(ctx))
+	cmd.AddCommand(newCreate(ctx))
+	cmd.AddCommand(newDelete(ctx))
+	cmd.AddCommand(newStart(ctx))
+	cmd.AddCommand(newStop(ctx))
+	cmd.AddCommand(newRestart(ctx))
+	cmd.AddCommand(newResize(ctx))
+	cmd.AddCommand(newRestore(ctx))
+	cmd.AddCommand(newResetPassword(ctx))
+	cmd.AddCommand(newCreateSlave(ctx))
+	cmd.AddCommand(newPromoteSlave(ctx))
+	cmd.AddCommand(newListMachineType(ctx))
+	// cmd.AddCommand(newPromoteToHA(ctx))
+
+	return cmd
+}
+
+// getDefaultParamGroupID 通过 ListUDBParamTemplate 获取指定 DB 版本的默认配置模板 ID
+// ListUDBParamTemplate请求体 不传TemplateType即为获取默认参数模板
+func getDefaultParamGroupID(ctx *cli.Context, dbVersion, project, region, zone string) (int, error) {
+	params := map[string]interface{}{
+		"Action":    "ListUDBParamTemplate",
+		"Region":    region,
+		"Zone":      zone,
+		"ProjectId": project,
+		"DBVersion": dbVersion,
+	}
+	client := cli.NewServiceClient(ctx, uaccount.NewClient)
+	req := client.NewGenericRequest()
+	if err := req.SetPayload(params); err != nil {
+		return 0, fmt.Errorf("set payload: %w", err)
+	}
+	resp, err := client.GenericInvoke(req)
+	if err != nil {
+		return 0, fmt.Errorf("call ListUDBParamTemplate: %w", err)
+	}
+	dataSet, ok := resp.GetPayload()["DataSet"].([]interface{})
+	if !ok || len(dataSet) == 0 {
+		return 0, fmt.Errorf("no param template found for version %s in %s/%s", dbVersion, region, zone)
+	}
+	// 取第一个默认模板
+	m, _ := dataSet[0].(map[string]interface{})
+	id, _ := m["Id"].(float64)
+	return int(id), nil
+}
+
+// listParamTemplates 通过 ListUDBParamTemplate 获取指定版本的参数模板列表，用于自动补全
+func listParamTemplates(ctx *cli.Context, dbVersion, project, region, zone string) []string {
+	params := map[string]interface{}{
+		"Action":    "ListUDBParamTemplate",
+		"Region":    region,
+		"Zone":      zone,
+		"ProjectId": project,
+		"DBVersion": dbVersion,
+	}
+	client := cli.NewServiceClient(ctx, uaccount.NewClient)
+	req := client.NewGenericRequest()
+	if err := req.SetPayload(params); err != nil {
+		return nil
+	}
+	resp, err := client.GenericInvoke(req)
+	if err != nil {
+		return nil
+	}
+	dataSet, ok := resp.GetPayload()["DataSet"].([]interface{})
+	if !ok {
+		return nil
+	}
+	var list []string
+	for _, item := range dataSet {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id, _ := m["Id"].(float64)
+		name, _ := m["Name"].(string)
+		list = append(list, fmt.Sprintf("%d/%s", int(id), name))
+	}
+	return list
+}
+
+// newListMachineType ucloud mysql db list-machine-type
+func newListMachineType(ctx *cli.Context) *cobra.Command {
+	var mode string
+	var common request.CommonBase
+	cmd := &cobra.Command{
+		Use:   "list-machine-type",
+		Short: "List available MySQL machine types",
+		Long:  "List available MySQL machine types via ListUDBMachineType API",
+		Run: func(c *cobra.Command, args []string) {
+			client := cli.NewServiceClient(ctx, udb.NewClient)
+			req := client.NewListUDBMachineTypeRequest()
+			req.Region = sdk.String(common.GetRegion())
+			req.Zone = sdk.String(common.GetZone())
+			req.ProjectId = sdk.String(common.GetProjectId())
+			if mode != "" {
+				req.InstanceMode = &mode
+			}
+			resp, err := client.ListUDBMachineType(req)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			var rows []MachineTypeRow
+			for _, mt := range resp.DataSet {
+				rows = append(rows, MachineTypeRow{
+					ID:          mt.ID,
+					Description: mt.Description,
+					Cpu:         mt.Cpu,
+					Memory:      mt.Memory,
+					Group:       mt.Group,
+				})
+			}
+			ctx.PrintList(rows)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	ctx.BindRegion(cmd, &common)
+	ctx.BindZone(cmd, &common)
+	ctx.BindProjectID(cmd, &common)
+	flags.StringVar(&mode, "mode", "", "Optional. Instance mode: Normal / HA")
+	command.SetFlagValues(cmd, "mode", "Normal", "HA")
+
+	return cmd
+}
+
+// newCreate ucloud mysql create
+func newCreate(ctx *cli.Context) *cobra.Command {
+	var confID string
+	var backupID int
+	var async bool
+	var labels []string
+	var name, password, version, machineType, storageClass, specClass string
+	var port, diskSpace int
+	var chargeType string
+	var quantity int
+	var mode, vpcID, subnetID, backupZone string
+	var backupCount, backupTime, backupDuration int
+	var disableSemisync bool
+	var tag, dbSubVersion, alarmTemplateID, backupURL string
+	var caseSensitivity, semisyncFlag int
+	var couponID string
+	var common request.CommonBase
+
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create MySQL instance on UCloud platform",
+		Long:  "Create MySQL instance on UCloud platform",
+		Run: func(c *cobra.Command, args []string) {
+			region := common.GetRegion()
+			zone := common.GetZone()
+			projectID := common.GetProjectId()
+			if len(name) < 6 {
+				ctx.HandleError(fmt.Errorf("name must be at least 6 characters"))
+				return
+			}
+			if diskSpace < 20 || diskSpace > 32000 {
+				ctx.HandleError(fmt.Errorf("disk-size-gb must be between 20 and 32000"))
+				return
+			}
+
+			// ParamGroupId: 用户传了就用，没传则自动获取默认模板
+			var paramGroupID int
+			if c.Flags().Changed("param-group-id") {
+				confID = ctx.PickResourceID(confID)
+				id, err := strconv.Atoi(confID)
+				if err != nil {
+					ctx.HandleError(fmt.Errorf("invalid param-group-id: %w", err))
+					return
+				}
+				paramGroupID = id
+			} else {
+				id, err := getDefaultParamGroupID(ctx, version, projectID, region, zone)
+				if err != nil {
+					ctx.HandleError(err)
+					return
+				}
+				paramGroupID = id
+			}
+
+			params := map[string]interface{}{
+				"Action":             "CreateUDBMySQLInstance",
+				"Region":             region,
+				"Zone":               zone,
+				"Name":               name,
+				"AdminPassword":      password,
+				"DBTypeId":           version,
+				"Port":               port,
+				"DiskSpace":          diskSpace,
+				"ParamGroupId":       paramGroupID,
+				"MachineType":        machineType,
+				"StorageClass":       storageClass,
+				"SpecificationClass": specClass,
+				"ChargeType":         chargeType,
+				"Quantity":           quantity,
+				"InstanceMode":       mode,
+				"BackupCount":        backupCount,
+				"BackupTime":         backupTime,
+				"BackupDuration":     backupDuration,
+				"DisableSemisync":    disableSemisync,
+				"SemisyncFlag":       semisyncFlag,
+			}
+			if projectID != "" {
+				params["ProjectId"] = projectID
+			}
+
+			// 以下为可选参数，仅在用户显式指定时下发
+			if c.Flags().Changed("vpc-id") {
+				params["VPCId"] = vpcID
+			}
+			if c.Flags().Changed("subnet-id") {
+				params["SubnetId"] = subnetID
+			}
+			if c.Flags().Changed("backup-zone") {
+				params["BackupZone"] = backupZone
+			}
+			if c.Flags().Changed("backup-id") {
+				params["BackupId"] = backupID
+			}
+			if c.Flags().Changed("tag") {
+				params["Tag"] = tag
+			}
+			if c.Flags().Changed("db-sub-version") {
+				params["DBSubVersion"] = dbSubVersion
+			}
+			if c.Flags().Changed("case-sensitivity") {
+				params["CaseSensitivityParam"] = caseSensitivity
+			}
+			if c.Flags().Changed("alarm-template-id") {
+				params["AlarmTemplateId"] = alarmTemplateID
+			}
+			if c.Flags().Changed("backup-url") {
+				params["BackupURL"] = backupURL
+			}
+			if c.Flags().Changed("coupon-id") {
+				params["CouponId"] = couponID
+			}
+
+			idx := 0
+			for _, l := range labels {
+				parts := strings.SplitN(l, "=", 2)
+				if len(parts) == 2 {
+					params[fmt.Sprintf("Labels.%d.Key", idx)] = parts[0]
+					params[fmt.Sprintf("Labels.%d.Value", idx)] = parts[1]
+					idx++
+				}
+			}
+
+			client := cli.NewServiceClient(ctx, uaccount.NewClient)
+			req := client.NewGenericRequest()
+			if err := req.SetPayload(params); err != nil {
+				ctx.HandleError(fmt.Errorf("set payload: %w", err))
+				return
+			}
+			resp, err := client.GenericInvoke(req)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+
+			dbID, _ := resp.GetPayload()["DBId"].(string)
+			if dbID == "" {
+				ctx.HandleError(fmt.Errorf("empty DBId in response"))
+				return
+			}
+			w := progressWriter(ctx)
+			if async {
+				fmt.Fprintf(w, "udb[%s] is initializing\n", dbID)
+			} else {
+				text := fmt.Sprintf("udb[%s] is initializing", dbID)
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(dbID, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+			}
+			emitResult(ctx, OpResultRow{ResourceID: dbID, Action: "create", Status: "Initializing"})
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	// Required flags
+	flags.StringVar(&name, "name", "", "Required. Instance name, at least 6 characters")
+	flags.StringVar(&password, "password", "", "Required. Admin password")
+	flags.StringVar(&version, "version", "", "Required. DB version. Options: mysql-5.7, mysql-8.0, mysql-8.4, percona-5.7")
+	flags.StringVar(&machineType, "machine-type", "", "Required. Machine type ID, e.g. o.mysql2m.xlarge for 4C8G. See 'ucloud mysql db list-machine-type'")
+
+	// Optional flags
+	ctx.BindRegion(cmd, &common)
+	ctx.BindZone(cmd, &common)
+	ctx.BindProjectID(cmd, &common)
+	flags.IntVar(&port, "port", 3306, "Optional. Port, default 3306")
+	flags.IntVar(&diskSpace, "disk-size-gb", 20, "Optional. Disk size (GiB), 20-32000, default 20")
+	flags.StringVar(&storageClass, "storage-class", "CLOUD_RSSD", "Optional. Storage class: CLOUD_RSSD")
+	flags.StringVar(&specClass, "spec-class", "O", "Optional. Spec class: O(NVMe) / O2")
+
+	flags.StringVar(&confID, "param-group-id", "", "Optional. Param group ID. Auto-fetched if omitted. See 'ucloud mysql conf list'")
+	flags.StringVar(&chargeType, "charge-type", "Month", "Optional. Year / Month / Dynamic")
+	flags.IntVar(&quantity, "quantity", 1, "Optional. Purchase duration")
+	flags.IntVar(&backupID, "backup-id", -1, "Optional. Restore from backup ID")
+	flags.StringVar(&mode, "mode", "HA", "Optional. Normal / HA")
+	flags.StringVar(&vpcID, "vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
+	flags.StringVar(&subnetID, "subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
+	flags.StringVar(&backupZone, "backup-zone", "", "Optional. Backup zone for cross-AZ HA")
+	flags.IntVar(&backupCount, "backup-count", 7, "Optional. Weekly backup count, default 7")
+	flags.IntVar(&backupTime, "backup-time", 1, "Optional. Backup start hour (0-23), default 1")
+	flags.IntVar(&backupDuration, "backup-duration", 24, "Optional. Backup interval hours, default 24")
+	flags.BoolVar(&disableSemisync, "disable-semisync", false, "Optional. Enable async HA")
+	flags.StringVar(&tag, "tag", "", "Optional. Business group name")
+	flags.StringVar(&dbSubVersion, "db-sub-version", "", "Optional. MySQL minor version")
+	flags.IntVar(&caseSensitivity, "case-sensitivity", -1, "Optional. 0=case-sensitive, 1=insensitive (MySQL 8.0 only)")
+	flags.StringVar(&alarmTemplateID, "alarm-template-id", "", "Optional. Alarm template ID")
+	flags.StringVar(&backupURL, "backup-url", "", "Optional. US3 backup download URL")
+	flags.IntVar(&semisyncFlag, "semisync-flag", 0, "Optional. 1=enable semi-sync, 2=disable, 0=default(enable)")
+	flags.StringSliceVar(&labels, "label", nil, "Optional. Resource label, format: key=value, repeatable")
+	flags.StringVar(&couponID, "coupon-id", "", "Optional. Coupon ID")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for creation to finish")
+
+	command.SetFlagValues(cmd, "version", dbVersionList...)
+	command.SetFlagValues(cmd, "storage-class", dbStorageClassList...)
+	command.SetFlagValues(cmd, "spec-class", dbSpecClassList...)
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetFlagValues(cmd, "mode", "Normal", "HA")
+
+	command.SetCompletion(cmd, "vpc-id", func() []string {
+		return getAllVPCIdNames(ctx, common.GetProjectId(), common.GetRegion())
+	})
+	command.SetCompletion(cmd, "subnet-id", func() []string {
+		return getAllSubnetIDNames(ctx, vpcID, common.GetProjectId(), common.GetRegion())
+	})
+	command.SetCompletion(cmd, "param-group-id", func() []string {
+		return listParamTemplates(ctx, version, common.GetProjectId(), common.GetRegion(), common.GetZone())
+	})
+	command.SetFlagValues(cmd, "machine-type", dbMachineTypeList...)
+
+	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("version")
+	cmd.MarkFlagRequired("machine-type")
+
+	// 自定义 usage，突出必填参数
+	requiredFlags := []string{"name", "password", "version", "machine-type"}
+	cmd.SetUsageFunc(func(c *cobra.Command) error {
+		w := c.OutOrStderr()
+		fmt.Fprintln(w, "Usage:")
+		fmt.Fprintf(w, "  %s [flags]\n\n", c.CommandPath())
+		fmt.Fprintln(w, "★ Required flags (must be provided):")
+		for _, name := range requiredFlags {
+			f := c.Flags().Lookup(name)
+			if f != nil {
+				fmt.Fprintf(w, "  --%-20s %s\n", f.Name, f.Usage)
+			}
+		}
+		fmt.Fprintln(w, "\nOptional flags:")
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			for _, req := range requiredFlags {
+				if f.Name == req {
+					return
+				}
+			}
+			defVal := ""
+			if f.DefValue != "" && f.DefValue != "[]" {
+				defVal = fmt.Sprintf(" (default %s)", f.DefValue)
+			}
+			fmt.Fprintf(w, "  --%-20s %s%s\n", f.Name, f.Usage, defVal)
+		})
+		return nil
+	})
+
+	return cmd
+}
+
+// newList ucloud udb list
+func newList(ctx *cli.Context) *cobra.Command {
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewDescribeUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List MySQL instances",
+		Long:  "List MySQL instances",
+		Run: func(c *cobra.Command, args []string) {
+			if *req.DBId != "" {
+				*req.DBId = ctx.PickResourceID(*req.DBId)
+			}
+			resp, err := client.DescribeUDBInstance(req)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			list := []UDBMysqlRow{}
+			for _, ins := range resp.DataSet {
+				row := UDBMysqlRow{}
+				row.Name = ins.Name
+				row.Zone = ins.Zone
+				row.Role = ins.Role
+				row.ResourceID = ins.DBId
+				row.Group = ins.Tag
+				row.VPC = ins.VPCId
+				row.Subnet = ins.SubnetId
+				row.IP = ins.VirtualIP
+				row.Mode = ins.InstanceMode
+				row.DiskType = ins.InstanceType
+				row.Status = ins.State
+				row.Config = fmt.Sprintf("%s|%dG|%dG", ins.DBTypeId, ins.MemoryLimit/1000, ins.DiskSpace)
+				list = append(list, row)
+				for _, slave := range ins.DataSet {
+					row := UDBMysqlRow{}
+					row.Name = slave.Name
+					row.Zone = slave.Zone
+					row.Role = fmt.Sprintf("⮑ %s", slave.Role)
+					row.ResourceID = slave.DBId
+					row.Group = slave.Tag
+					row.VPC = slave.VPCId
+					row.Subnet = slave.SubnetId
+					row.IP = slave.VirtualIP
+					row.Mode = slave.InstanceMode
+					row.DiskType = slave.InstanceType
+					row.Config = fmt.Sprintf("%s|%dG|%dG", slave.DBTypeId, slave.MemoryLimit/1000, slave.DiskSpace)
+					row.Status = slave.State
+					list = append(list, row)
+				}
+			}
+			ctx.PrintList(list)
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.DBId = flags.String("udb-id", "", "Optional. List the specified mysql")
+	ctx.BindProjectID(cmd, req)
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindLimit(cmd, req)
+	ctx.BindOffset(cmd, req)
+	req.IncludeSlaves = flags.Bool("include-slaves", false, "Optional. When specifying the udb-id, whether to display its slaves together. Accept values:true, false")
+	req.ClassType = sdk.String("sql")
+
+	command.SetFlagValues(cmd, "include-slaves", "true", "false")
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	return cmd
+}
+
+// newDelete ucloud udb delete
+func newDelete(ctx *cli.Context) *cobra.Command {
+	var idNames []string
+	var yes bool
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewDeleteUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete MySQL instances by udb-id",
+		Long:  "Delete MySQL instances by udb-id",
+		Run: func(c *cobra.Command, args []string) {
+			ok := ctx.Confirm(yes, "Are you sure you want to delete the udb(s)?")
+			if !ok {
+				return
+			}
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				any, err := describeUdbByID(ctx)(id, nil)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				req.DBId = &id
+				ins, ok := any.(*udb.UDBInstanceSet)
+				if ok && ins.State == status.UDB_RUNNING {
+					stopReq := client.NewStopUDBInstanceRequest()
+					stopReq.ProjectId = req.ProjectId
+					stopReq.Region = req.Region
+					stopReq.Zone = req.Zone
+					stopReq.DBId = req.DBId
+					stopUdbIns(ctx, stopReq, false, w)
+				}
+				_, err = client.DeleteUDBInstance(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				fmt.Fprintf(w, "udb[%s] deleted\n", idname)
+				results = append(results, OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to delete")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation.")
+
+	cmd.MarkFlagRequired("udb-id")
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+	return cmd
+}
+
+// newStop ucloud udb stop
+func newStop(ctx *cli.Context) *cobra.Command {
+	var idNames []string
+	var async bool
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewStopUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "stop",
+		Short: "Stop MySQL instances by udb-id",
+		Long:  "Stop MySQL instances by udb-id",
+		Run: func(c *cobra.Command, args []string) {
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = sdk.String(id)
+				if err := stopUdbIns(ctx, req, async, w); err != nil {
+					continue
+				}
+				results = append(results, OpResultRow{ResourceID: id, Action: "stop", Status: "Stopping"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to stop")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	req.ForceToKill = flags.Bool("force", false, "Optional. Stop UDB instances by force or not")
+	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
+
+	cmd.MarkFlagRequired("udb-id")
+
+	command.SetFlagValues(cmd, "force", "true", "false")
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, []string{status.UDB_RUNNING}, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	return cmd
+}
+
+// newStart ucloud udb start
+func newStart(ctx *cli.Context) *cobra.Command {
+	var async bool
+	var idNames []string
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewStartUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "start",
+		Short: "Start MySQL instances by udb-id",
+		Long:  "Start MySQL instances by udb-id",
+		Run: func(c *cobra.Command, args []string) {
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = &id
+				_, err := client.StartUDBInstance(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				if async {
+					fmt.Fprintf(w, "udb[%s] is starting\n", idname)
+				} else {
+					text := fmt.Sprintf("udb[%s] is starting", idname)
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+				}
+				results = append(results, OpResultRow{ResourceID: id, Action: "start", Status: "Starting"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to start")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
+
+	cmd.MarkFlagRequired("udb-id")
+
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, []string{status.UDB_SHUTOFF}, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+	return cmd
+}
+
+// newRestart ucloud udb restart
+func newRestart(ctx *cli.Context) *cobra.Command {
+	var async bool
+	var idNames []string
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewRestartUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart MySQL instances by udb-id",
+		Long:  "Restart MySQL instances by udb-id",
+		Run: func(c *cobra.Command, args []string) {
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = &id
+				_, err := client.RestartUDBInstance(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				if async {
+					fmt.Fprintf(w, "udb[%s] is restarting\n", idname)
+				} else {
+					text := fmt.Sprintf("udb[%s] is restarting", idname)
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+				}
+				results = append(results, OpResultRow{ResourceID: id, Action: "restart", Status: "Restarting"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to restart")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
+
+	cmd.MarkFlagRequired("udb-id")
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+	return cmd
+}
+
+// newResize ucloud udb resize
+func newResize(ctx *cli.Context) *cobra.Command {
+	var diskTypes = []string{"normal", "sata_ssd", "pcie_ssd", "normal_volume", "sata_ssd_volume", "pcie_ssd_volume"}
+	var async, yes bool
+	var idNames []string
+	var memory, disk int
+	var diskType string
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewResizeUDBInstanceRequest()
+	cmd := &cobra.Command{
+		Use:   "resize",
+		Short: "Reszie MySQL instances, such as memory size, disk size and disk type",
+		Long:  "Reszie MySQL instances, such as memory size, disk size and disk type",
+		Run: func(c *cobra.Command, args []string) {
+			if diskType != "" {
+				switch diskType {
+				case "normal":
+					req.InstanceType = sdk.String("Normal")
+				case "sata_ssd":
+					req.InstanceType = sdk.String("SATA_SSD")
+				case "pcie_ssd":
+					req.InstanceType = sdk.String("PCIE_SSD")
+				case "normal_volume":
+					req.InstanceType = sdk.String("Normal_Volume")
+				case "sata_ssd_volume":
+					req.InstanceType = sdk.String("SATA_SSD_Volume")
+				case "pcie_ssd_volume":
+					req.InstanceType = sdk.String("PCIE_SSD_Volume")
+				default:
+					req.InstanceType = &diskType
+				}
+			}
+
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = &id
+				any, err := describeUdbByID(ctx)(id, nil)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+
+				ins, ok := any.(*udb.UDBInstanceSet)
+				if !ok {
+					continue
+				}
+
+				if memory != 0 {
+					req.MemoryLimit = sdk.Int(memory * 1000)
+				} else {
+					req.MemoryLimit = &ins.MemoryLimit
+				}
+				if disk != 0 {
+					req.DiskSpace = &disk
+				} else {
+					req.DiskSpace = &ins.DiskSpace
+				}
+
+				if ins.State == status.UDB_RUNNING {
+					ok := ctx.Confirm(yes, fmt.Sprintf("Need to shut down udb[%s] before upgrading, whether to continue?", idname))
+					if !ok {
+						continue
+					}
+					stopReq := client.NewStopUDBInstanceRequest()
+					stopReq.ProjectId = req.ProjectId
+					stopReq.Region = req.Region
+					stopReq.Zone = req.Zone
+					stopReq.DBId = req.DBId
+					stopUdbIns(ctx, stopReq, false, w)
+				}
+				_, err = client.ResizeUDBInstance(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				if async {
+					fmt.Fprintf(w, "udb[%s] is resizing\n", idname)
+				} else {
+					text := fmt.Sprintf("udb[%s] is resizing", idname)
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_SHUTOFF, status.UDB_FAIL, status.UDB_UPGRADE_FAIL})
+				}
+				results = append(results, OpResultRow{ResourceID: id, Action: "resize", Status: "Resizing"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to restart")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.IntVar(&memory, "memory-size-gb", 0, "Optional. Memory size of udb instance. From 1 to 128. Unit GB")
+	flags.IntVar(&disk, "disk-size-gb", 0, "Optional. Disk size of udb instance. From 20 to 3000 according to memory size. Unit GB. Step 10GB")
+	flags.StringVar(&diskType, "disk-type", "", fmt.Sprintf("Optional. Disk type of udb instance. Accept values:%s", strings.Join(diskTypes, ", ")))
+	req.StartAfterUpgrade = flags.Bool("start-after-upgrade", true, "Optional. Automatic start the UDB instances after upgrade")
+	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish")
+	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
+
+	command.SetFlagValues(cmd, "disk-type", diskTypes...)
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	cmd.MarkFlagRequired("udb-id")
+
+	return cmd
+}
+
+// newResetPassword ucloud udb reset-password
+func newResetPassword(ctx *cli.Context) *cobra.Command {
+	var idNames []string
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewModifyUDBInstancePasswordRequest()
+	cmd := &cobra.Command{
+		Use:   "reset-password",
+		Short: "Reset password of MySQL instances",
+		Long:  "Reset password of MySQL instances",
+		Run: func(c *cobra.Command, args []string) {
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = &id
+				_, err := client.ModifyUDBInstancePassword(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				fmt.Fprintf(w, "udb[%s]'s password modified\n", idname)
+				results = append(results, OpResultRow{ResourceID: id, Action: "reset-password", Status: "PasswordReset"})
+			}
+			emitResult(ctx, results...)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to reset password")
+	req.Password = flags.String("password", "", "Required. New password")
+	ctx.BindProjectID(cmd, req)
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+
+	cmd.MarkFlagRequired("udb-id")
+	cmd.MarkFlagRequired("password")
+
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	return cmd
+}
+
+// newRestore ucloud udb restore
+func newRestore(ctx *cli.Context) *cobra.Command {
+	var datetime, diskType string
+	var async bool
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewCreateUDBInstanceByRecoveryRequest()
+	cmd := &cobra.Command{
+		Use:   "restore",
+		Short: "Create MySQL instance and restore the newly created db to the specified DB at a specified point in time",
+		Long:  "Create MySQL instance and restore the newly created db to the specified DB at a specified point in time",
+		Run: func(c *cobra.Command, args []string) {
+			t, err := time.Parse(time.RFC3339, datetime)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			req.RecoveryTime = sdk.Int(int(t.Unix()))
+			req.SrcDBId = sdk.String(ctx.PickResourceID(*req.SrcDBId))
+			if diskType == "" {
+				any, err := describeUdbByID(ctx)(*req.SrcDBId, nil)
+				if err != nil {
+					ctx.HandleError(err)
+					return
+				}
+				ins, ok := any.(*udb.UDBInstanceSet)
+				if !ok {
+					fmt.Fprintln(ctx.Out(), fmt.Sprintf("fetch udb[%s] instance", *req.SrcDBId))
+				}
+				req.UseSSD = &ins.UseSSD
+			} else if diskType == "normal" {
+				req.UseSSD = sdk.Bool(false)
+			} else if diskType == "ssd" {
+				req.UseSSD = sdk.Bool(true)
+			}
+			resp, err := client.CreateUDBInstanceByRecovery(req)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			w := progressWriter(ctx)
+			if async {
+				fmt.Fprintf(w, "udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
+			} else {
+				text := fmt.Sprintf("udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, text, []string{status.UDB_RUNNING, status.UDB_RECOVER_FAIL, status.UDB_FAIL})
+			}
+			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "restore", Status: "Restoring"})
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.Name = flags.String("name", "", "Required. Name of UDB instance to create")
+	req.SrcDBId = flags.String("src-udb-id", "", "Required. Resource ID of source UDB")
+	flags.StringVar(&datetime, "restore-to-time", "", "Required. The date and time to restore the DB to. Value must be a time in Universal Coordinated Time (UTC) format.Example: 2019-02-23T23:45:00Z")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.StringVar(&diskType, "disk-type", "", "Optional. Disk type. The default is to be consistent with the source database. Accept values: normal, ssd")
+	ctx.BindChargeType(cmd, req)
+	ctx.BindQuantity(cmd, req)
+	flags.BoolVarP(&async, "async", "a", false, "Optional. Do not wait for the long-running operation to finish")
+
+	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("src-udb-id")
+	cmd.MarkFlagRequired("restore-to-time")
+
+	command.SetFlagValues(cmd, "disk-type", "noraml", "ssd")
+	command.SetCompletion(cmd, "src-udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "sql", *req.ProjectId, *req.Region, *req.Zone)
+	})
+
+	return cmd
+}
+
+// newCreateSlave ucloud udb create-slave
+func newCreateSlave(ctx *cli.Context) *cobra.Command {
+	var diskType string
+	var async bool
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewCreateUDBSlaveRequest()
+	cmd := &cobra.Command{
+		Use:   "create-slave",
+		Short: "Create slave database",
+		Long:  "Create slave database",
+		Run: func(c *cobra.Command, args []string) {
+			*req.SrcId = ctx.PickResourceID(*req.SrcId)
+			switch diskType {
+			case "normal":
+				req.UseSSD = sdk.Bool(false)
+			case "sata_ssd":
+				req.UseSSD = sdk.Bool(true)
+				req.SSDType = sdk.String("SATA")
+			case "pcie_ssd":
+				req.UseSSD = sdk.Bool(true)
+				req.SSDType = sdk.String("PCI-E")
+			}
+			*req.MemoryLimit *= 1000
+			resp, err := client.CreateUDBSlave(req)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			w := progressWriter(ctx)
+			if async {
+				fmt.Fprintf(w, "udb[%s] is initializing\n", resp.DBId)
+			} else {
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, fmt.Sprintf("udb[%s] is initializing", resp.DBId), []string{status.UDB_RUNNING, status.UDB_FAIL})
+			}
+			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "create-slave", Status: "Initializing"})
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	req.SrcId = flags.String("master-udb-id", "", "Required. Resource ID of master UDB instance")
+	req.Name = flags.String("name", "", "Required. Name of the slave DB to create")
+	req.Port = flags.Int("port", 3306, "Optional. Port of the slave db service")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.StringVar(&diskType, "disk-type", "Normal", fmt.Sprintf("Optional. Setting this flag means using SSD disk. Accept values: %s", strings.Join(dbDiskTypeList, ", ")))
+	req.MemoryLimit = flags.Int("memory-size-gb", 1, "Optional. Memory size of udb instance. From 1 to 128. Unit GB")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the long-running operation to finish")
+	req.IsLock = flags.Bool("is-lock", false, "Optional. Lock master DB or not")
+
+	cmd.MarkFlagRequired("master-udb-id")
+	cmd.MarkFlagRequired("name")
+
+	command.SetFlagValues(cmd, "disk-type", dbDiskTypeList...)
+	command.SetCompletion(cmd, "master-udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, *req.Zone)
+	})
+	return cmd
+}
+
+// newPromoteSlave ucloud udb promote-slave
+func newPromoteSlave(ctx *cli.Context) *cobra.Command {
+	var ids []string
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewPromoteUDBSlaveRequest()
+	cmd := &cobra.Command{
+		Use:   "promote-slave",
+		Short: "Promote slave db to master",
+		Long:  "Promote slave db to master",
+		Run: func(c *cobra.Command, args []string) {
+			w := progressWriter(ctx)
+			results := []OpResultRow{}
+			defer func() { emitResult(ctx, results...) }()
+			for _, id := range ids {
+				req.DBId = sdk.String(id)
+				_, err := client.PromoteUDBSlave(req)
+				if err != nil {
+					ctx.HandleError(err)
+					return
+				}
+				fmt.Fprintf(w, "udb[%s] was promoted\n", *req.DBId)
+				results = append(results, OpResultRow{ResourceID: id, Action: "promote-slave", Status: "Promoted"})
+			}
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringSliceVar(&ids, "udb-id", nil, "Required. Resource ID of slave db to promote")
+	req.IsForce = flags.Bool("is-force", false, "Optional. Force to promote slave db or not. If the slave db falls behind, the force promote may lose some data")
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+
+	cmd.MarkFlagRequired("udb-id")
+
+	return cmd
+}
+
+// newPromoteToHA ucloud udb promote-to-ha 低频操作 暂不开放
+// Migrated for parity but NOT mounted (mirrors cmd/mysql.go's commented-out registration).
+func newPromoteToHA(ctx *cli.Context) *cobra.Command {
+	var idNames []string
+	var common request.CommonBase
+	client := cli.NewServiceClient(ctx, udb.NewClient)
+	req := client.NewPromoteUDBInstanceToHARequest()
+	cmd := &cobra.Command{
+		Use:   "promote-to-ha",
+		Short: "Promote db of normal mode to high availability db. ",
+		Long:  "Promote db of normal mode to high availability db",
+		Run: func(c *cobra.Command, args []string) {
+			for _, idname := range idNames {
+				id := ctx.PickResourceID(idname)
+				req.DBId = &id
+				_, err := client.PromoteUDBInstanceToHA(req)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				ctx.Poller(describeUdbByID(ctx)).Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{status.UDB_TOBE_SWITCH, status.UDB_FAIL})
+				any, err := describeUdbByID(ctx)(id, nil)
+				if err != nil {
+					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
+					continue
+				}
+				ins, ok := any.(*udb.UDBInstanceSet)
+				if !ok {
+					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. \n", idname)
+					continue
+				}
+				if ins.State != status.UDB_TOBE_SWITCH {
+					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. udb[%s]'s status:%s\n", idname, idname, ins.State)
+					continue
+				}
+				switchReq := client.NewSwitchUDBInstanceToHARequest()
+				switchReq.DBId = &id
+				switchReq.Region = req.Region
+				switchReq.ProjectId = req.ProjectId
+				switchReq.ChargeType = &ins.ChargeType
+				switchReq.Quantity = sdk.String("0")
+				// Original read base.ConfigIns.Zone (global default zone); products
+				// must not import base. This command is migrated for parity but is
+				// NOT mounted (see newMysqlDB), so it is unreachable. Zone falls back
+				// to the bound region's CommonBase zone (empty here). See report.
+				switchReq.Zone = sdk.String(common.GetZone())
+				switchResp, err := client.SwitchUDBInstanceToHA(switchReq)
+				if err != nil {
+					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
+					continue
+				}
+				ctx.Poller(describeUdbByID(ctx)).Spoll(switchResp.DBId, fmt.Sprintf("udb[%s] is switching to high availability mode", switchResp.DBId), []string{status.UDB_RUNNING, status.UDB_FAIL})
+			}
+		},
+	}
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	ctx.BindRegion(cmd, req)
+	ctx.BindProjectID(cmd, req)
+	flags.StringSliceVar(&idNames, "udb-id", nil, "Required. Resource ID of UDB instances to be promoted as high availability mode")
+
+	cmd.MarkFlagRequired("udb-id")
+	command.SetCompletion(cmd, "udb-id", func() []string {
+		return getUDBIDList(ctx, nil, "", *req.ProjectId, *req.Region, "")
+	})
+	return cmd
+}

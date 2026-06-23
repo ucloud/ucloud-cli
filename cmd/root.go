@@ -16,12 +16,18 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
@@ -34,6 +40,15 @@ func NewCmdRoot() *cobra.Command {
 		Short:             "UCloud CLI v" + base.Version,
 		Long:              `UCloud CLI - manage UCloud resources and developer workflow`,
 		DisableAutoGenTag: true,
+		// PersistentPreRun runs the per-invocation auth/config init for the
+		// executing command. Replaces the fork's OnInitialize(func(*cobra.Command))
+		// (upstream OnInitialize takes func() and can't receive the command). It is
+		// inherited by all subcommands (none override PersistentPreRun), so it runs
+		// before every runnable command as the old OnInitialize did. The `api`
+		// command keeps bypassing this via the direct-Run path in Execute().
+		PersistentPreRun: func(c *cobra.Command, args []string) {
+			initialize(c)
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			if global.Version {
 				base.Cxt.Printf("ucloud cli %s\n", base.Version)
@@ -51,13 +66,15 @@ func NewCmdRoot() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&global.Debug, "debug", "d", false, "Running in debug mode")
 	cmd.PersistentFlags().BoolVarP(&global.JSON, "json", "j", false, "Print result in JSON format whenever possible")
+	cmd.PersistentFlags().StringVar(&global.Output, "output", "", "Output format: table, json, or yaml. Defaults to json when stdout is not a TTY, else table")
 	cmd.PersistentFlags().StringVarP(&global.Profile, "profile", "p", global.Profile, "Specifies the configuration for the operation")
 	cmd.Flags().BoolVarP(&global.Version, "version", "v", false, "Display version")
 	cmd.Flags().BoolVar(&global.Completion, "completion", false, "Turn on auto completion according to the prompt")
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	cmd.PersistentFlags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetPersistentCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetPersistentCompletion(cmd, "output", func() []string { return []string{"json", "table", "yaml"} })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
 	resetHelpFunc(cmd)
@@ -99,12 +116,44 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 const usageTmpl = `Usage:{{if .Runnable}}
  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
  {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 1)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
- {{"flags may be" | printf "%-20s"}} {{.Flags.FlagNames}}
+ {{"flags may be" | printf "%-20s"}} {{flagNames .Flags}}
 
 Use "{{.CommandPath}} --help" for details.{{end}}
 `
 
+func newSchemaCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:    "__schema",
+		Short:  "Print a machine-readable schema of all commands (for tools/AI)",
+		Hidden: true,
+		Run: func(c *cobra.Command, args []string) {
+			out, err := cli.RenderSchemaJSON(c.Root())
+			if err != nil {
+				base.HandleError(err)
+				return
+			}
+			fmt.Fprintln(base.Cxt.GetWriter(), out)
+		},
+	}
+}
+
+// productCtx is the cli.Context shared by all product commands. Its output
+// format is finalized in initialize() (PersistentPreRun) after cobra parses
+// --output; buildContext() runs at tree-construction time, before flag parsing,
+// so the format it computes is provisional.
+var productCtx *cli.Context
+
 func addChildren(root *cobra.Command) {
+	addPlatformCommands(root)
+	productCtx = buildContext()
+	addProductCommands(root, registeredProducts(), productCtx)
+	applyGlobalOverrideFlags(root)
+}
+
+// addPlatformCommands registers all built-in platform commands onto root.
+// The set and order of AddCommand calls must stay identical to preserve
+// the command-tree golden (hack/snapshot/testdata/cmdtree.golden).
+func addPlatformCommands(root *cobra.Command) {
 	out := base.Cxt.GetWriter()
 	root.AddCommand(NewCmdInit())
 	root.AddCommand(NewCmdAuth())
@@ -125,12 +174,29 @@ func addChildren(root *cobra.Command) {
 	root.AddCommand(NewCmdULB())
 	root.AddCommand(NewCmdGssh())
 	root.AddCommand(NewCmdPathx())
-	root.AddCommand(NewCmdMysql())
 	root.AddCommand(NewCmdRedis())
 	root.AddCommand(NewCmdMemcache())
 	root.AddCommand(NewCmdExt())
 	root.AddCommand(NewCmdAPI(out))
 	root.AddCommand(NewCmdSignature())
+	root.AddCommand(newSchemaCmd())
+}
+
+// addProductCommands registers product-package commands onto root.
+// Each cli.Product contributes one top-level cobra command. This runs
+// after addPlatformCommands so product commands sort after platform ones
+// when cobra.EnableCommandSorting is false.
+func addProductCommands(root *cobra.Command, products []cli.Product, ctx *cli.Context) {
+	for _, p := range products {
+		root.AddCommand(p.NewCommand(ctx))
+	}
+}
+
+// applyGlobalOverrideFlags adds the five per-invocation override flags to
+// every top-level command that is not in the exempt list. Running this after
+// both addPlatformCommands and addProductCommands ensures product commands
+// also receive the flags.
+func applyGlobalOverrideFlags(root *cobra.Command) {
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" && c.Name() != "auth" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
@@ -140,6 +206,23 @@ func addChildren(root *cobra.Command) {
 			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
 		}
 	}
+}
+
+// buildContext constructs the platform-level cli.Context from base globals
+// and the cmd-package completion providers. Safe to call both under Execute
+// (post-InitConfig) and AddChildrenForSnapshot (stubbed values).
+func buildContext() *cli.Context {
+	return cli.NewContext(cli.Deps{
+		In:          os.Stdin,
+		Out:         os.Stdout,
+		Err:         os.Stderr,
+		Format:      decideOutputFormat(os.Stdout),
+		Biz:         base.BizClient,
+		Config:      base.ConfigIns,
+		RegionList:  getRegionList,
+		ZoneList:    getZoneList,
+		ProjectList: getProjectList,
+	})
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -183,6 +266,21 @@ func Execute() {
 }
 
 func init() {
+	// usageTmpl uses the `add` template function (the command-list separator).
+	// The forked cobra registered it; upstream cobra (C2) does not, so without
+	// this the usage template fails to parse ("function \"add\" not defined")
+	// and panics whenever it renders — e.g. on any required-flag error. Register
+	// it once here so usage rendering works for every command.
+	cobra.AddTemplateFunc("add", func(a, b int) int { return a + b })
+	// usageTmpl also used pflag's fork-only FlagSet.FlagNames; upstream pflag
+	// has no such method, so the template errored at render time. Provide an
+	// equivalent template func that lists the flag names.
+	cobra.AddTemplateFunc("flagNames", func(fs *pflag.FlagSet) string {
+		var names []string
+		fs.VisitAll(func(f *pflag.Flag) { names = append(names, f.Name) })
+		return strings.Join(names, ", ")
+	})
+
 	//-1表示不覆盖配置文件中的MaxRetryTimes参数
 	global.MaxRetryTimes = -1
 	for idx, arg := range os.Args {
@@ -216,7 +314,6 @@ func init() {
 		}
 	}
 	cobra.EnableCommandSorting = false
-	cobra.OnInitialize(initialize)
 }
 
 func resetHelpFunc(cmd *cobra.Command) {
@@ -228,6 +325,14 @@ func resetHelpFunc(cmd *cobra.Command) {
 }
 
 func initialize(cmd *cobra.Command) {
+	// Finalize the product output format now that cobra has parsed --output.
+	// buildContext() ran before flag parsing, so the format it set was
+	// provisional (always JSON for non-TTY stdout, ignoring an explicit
+	// --output). Recompute it here so `--output table` etc. take effect.
+	if productCtx != nil {
+		productCtx.SetFormat(decideOutputFormat(os.Stdout))
+	}
+
 	flags := cmd.Flags()
 	project, err := flags.GetString("project-id")
 	if err == nil {
@@ -291,13 +396,33 @@ func initialize(cmd *cobra.Command) {
 	}
 }
 
+// decideOutputFormat resolves the effective output format: explicit --output
+// wins; then legacy --json; otherwise JSON for non-TTY stdout, Table for TTY.
+func decideOutputFormat(out io.Writer) cli.OutputFormat {
+	switch strings.ToLower(global.Output) {
+	case "json":
+		return cli.OutputJSON
+	case "yaml":
+		return cli.OutputYAML
+	case "table":
+		return cli.OutputTable
+	}
+	if global.JSON {
+		return cli.OutputJSON
+	}
+	if ui.IsTTY(out) {
+		return cli.OutputTable
+	}
+	return cli.OutputJSON
+}
+
 // isAuthSkippedCmd 启动凭据检查跳过清单（D7：login/logout/help/version/config/init）
 func isAuthSkippedCmd(cmd *cobra.Command) bool {
 	if cmd.Parent() == nil {
 		return true // root 命令本身（--version/--config/help），与历史行为一致
 	}
 	switch cmd.Name() {
-	case "config", "init", "version", "login", "logout", "help", "auth":
+	case "config", "init", "version", "login", "logout", "help", "auth", "__schema":
 		return true
 	}
 	if cmd.Parent() != nil && (cmd.Parent().Name() == "config" || cmd.Parent().Name() == "auth") {

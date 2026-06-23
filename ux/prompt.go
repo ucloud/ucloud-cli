@@ -10,7 +10,7 @@ func Prompt(text string) (bool, error) {
 	if !strings.HasSuffix(text, "(y/n):") {
 		text += " (y/n):"
 	}
-	fmt.Printf(text)
+	fmt.Print(text)
 	var agreeClose string
 	_, err := fmt.Scanf("%s\n", &agreeClose)
 	if err != nil {

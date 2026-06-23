@@ -24,6 +24,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	"github.com/ucloud/ucloud-cli/model"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -473,6 +474,15 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 		done <- true
 	}()
 
+	if !ui.IsTTY(p.Out) {
+		// non-TTY (piped/redirected): no spinner animation, single terminal-state line
+		if <-done {
+			fmt.Fprintf(p.Out, "%s...done\n", pollText)
+		} else {
+			fmt.Fprintf(p.Out, "%s...timeout\n", pollText)
+		}
+		return
+	}
 	spinner := ux.NewDotSpinner(p.Out)
 	spinner.Start(pollText)
 	ret := <-done

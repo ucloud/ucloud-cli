@@ -170,26 +170,55 @@ func newOAuthRetryHandler(credConfig *CredentialConfig, ac *AggConfig) sdk.HttpR
 	}
 }
 
-// NewClient will return a aggregate client.
-// ac 是构造来源 profile（oauth 401 反应式刷新的对象），允许为 nil（此时不重放）。
-func NewClient(config *sdk.Config, credConfig *CredentialConfig, ac *AggConfig) *Client {
-	var handler sdk.RequestHandler = func(c *sdk.Client, req request.Common) (request.Common, error) {
-		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
-		return req, err
-	}
-	injectCredHeader := newCredHeaderInjector(credConfig)
-	oauthRetry := newOAuthRetryHandler(credConfig, ac)
-	// 不变式：一个请求只携带一种凭据机制（auth_mode 唯一决定走哪种）。
-	// oauth profile 会保留旧 AK/SK 在磁盘上（供 auth logout 恢复），但它们必须
-	// 对 SDK 签名器不可见——否则签名参数与 Bearer 同时上行，网关先验签名
-	// 直接报 RetCode 171 Signature VerifyAC Error。oauth 模式下凭据留空；
-	// 注意 SDK 编码器对空密钥仍会附加 Signature 参数，由 newCredHeaderInjector
-	// 剥离，最终 Bearer 是唯一凭据。
+// buildCredential 构造 SDK 签名凭据。
+// 不变式：一个请求只携带一种凭据机制（auth_mode 唯一决定走哪种）。
+// oauth profile 会保留旧 AK/SK 在磁盘上（供 auth logout 恢复），但它们必须
+// 对 SDK 签名器不可见——否则签名参数与 Bearer 同时上行，网关先验签名
+// 直接报 RetCode 171 Signature VerifyAC Error。oauth 模式下凭据留空；
+// 注意 SDK 编码器对空密钥仍会附加 Signature 参数，由 newCredHeaderInjector
+// 剥离，最终 Bearer 是唯一凭据。AK/SK 模式填真实公私钥，SDK 签名器据此签名。
+func buildCredential(credConfig *CredentialConfig) *auth.Credential {
 	credential := &auth.Credential{}
 	if credConfig.AuthMode != AuthModeOAuth {
 		credential.PublicKey = credConfig.PublicKey
 		credential.PrivateKey = credConfig.PrivateKey
 	}
+	return credential
+}
+
+// BuildCredential 从包级 AuthCredential（由 InitConfig/GetBizClient 填充）构造签名凭据。
+// 供 cli.NewServiceClient 使用——与 NewClient 走完全相同的 buildCredential 逻辑/分支，
+// oauth 与 AK/SK profile 共用一条代码路径（不分叉，§9 无鉴权回归）。
+func BuildCredential() *auth.Credential {
+	return buildCredential(AuthCredential)
+}
+
+// attachHandlers 把三个平台 handler 挂到 service client 上：
+// project-id 归一化、凭据头注入、oauth 反应式重试。
+// credConfig 与 ac 显式传入：NewClient 借此传它自己的构造来源 profile（ac），
+// 重试目标必须是构造本 client 的 profile，而非包级 ConfigIns
+// （详见 newOAuthRetryHandler 的注释：os.Args 扫描识别不了 -p X/--profile=X，
+// ConfigIns 可能指向另一个 profile，错刷会把别人的 Bearer 重放到当前请求）。
+func attachHandlers(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggConfig) {
+	sc.AddRequestHandler(func(c *sdk.Client, req request.Common) (request.Common, error) {
+		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
+		return req, err
+	})
+	sc.AddHttpRequestHandler(newCredHeaderInjector(credConfig))
+	sc.AddHttpResponseHandler(newOAuthRetryHandler(credConfig, ac))
+}
+
+// AttachHandlers 用包级 AuthCredential/ConfigIns（由 InitConfig 填充）把平台 handler
+// 挂到 sc 上。供 cli.NewServiceClient 使用——此时活动 profile 就是 ConfigIns，
+// 它正是正确的反应式刷新目标。
+func AttachHandlers(sc sdk.ServiceClient) {
+	attachHandlers(sc, AuthCredential, ConfigIns)
+}
+
+// NewClient will return a aggregate client.
+// ac 是构造来源 profile（oauth 401 反应式刷新的对象），允许为 nil（此时不重放）。
+func NewClient(config *sdk.Config, credConfig *CredentialConfig, ac *AggConfig) *Client {
+	credential := buildCredential(credConfig)
 	var (
 		uaccountClient = *uaccount.NewClient(config, credential)
 		uhostClient    = *uhost.NewClient(config, credential)
@@ -209,69 +238,22 @@ func NewClient(config *sdk.Config, credConfig *CredentialConfig, ac *AggConfig) 
 		ulhostClient   = *ucompshare.NewClient(config, credential)
 	)
 
-	uaccountClient.Client.AddRequestHandler(handler)
-	uaccountClient.Client.AddHttpRequestHandler(injectCredHeader)
-	uaccountClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	uhostClient.Client.AddRequestHandler(handler)
-	uhostClient.Client.AddHttpRequestHandler(injectCredHeader)
-	uhostClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	unetClient.Client.AddRequestHandler(handler)
-	unetClient.Client.AddHttpRequestHandler(injectCredHeader)
-	unetClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	vpcClient.Client.AddRequestHandler(handler)
-	vpcClient.Client.AddHttpRequestHandler(injectCredHeader)
-	vpcClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	udpnClient.Client.AddRequestHandler(handler)
-	udpnClient.Client.AddHttpRequestHandler(injectCredHeader)
-	udpnClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	pathxClient.Client.AddRequestHandler(handler)
-	pathxClient.Client.AddHttpRequestHandler(injectCredHeader)
-	pathxClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	udiskClient.Client.AddRequestHandler(handler)
-	udiskClient.Client.AddHttpRequestHandler(injectCredHeader)
-	udiskClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	ulbClient.Client.AddRequestHandler(handler)
-	ulbClient.Client.AddHttpRequestHandler(injectCredHeader)
-	ulbClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	udbClient.Client.AddRequestHandler(handler)
-	udbClient.Client.AddHttpRequestHandler(injectCredHeader)
-	udbClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	umemClient.Client.AddRequestHandler(handler)
-	umemClient.Client.AddHttpRequestHandler(injectCredHeader)
-	umemClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	uphostClient.Client.AddRequestHandler(handler)
-	uphostClient.Client.AddHttpRequestHandler(injectCredHeader)
-	uphostClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	puhostClient.Client.AddRequestHandler(handler)
-	puhostClient.Client.AddHttpRequestHandler(injectCredHeader)
-	puhostClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	pudbClient.Client.AddRequestHandler(handler)
-	pudbClient.Client.AddHttpRequestHandler(injectCredHeader)
-	pudbClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	pumemClient.Client.AddRequestHandler(handler)
-	pumemClient.Client.AddHttpRequestHandler(injectCredHeader)
-	pumemClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	ppathxClient.Client.AddRequestHandler(handler)
-	ppathxClient.Client.AddHttpRequestHandler(injectCredHeader)
-	ppathxClient.Client.AddHttpResponseHandler(oauthRetry)
-
-	ulhostClient.Client.AddRequestHandler(handler)
-	ulhostClient.Client.AddHttpRequestHandler(injectCredHeader)
-	ulhostClient.Client.AddHttpResponseHandler(oauthRetry)
+	attachHandlers(&uaccountClient, credConfig, ac)
+	attachHandlers(&uhostClient, credConfig, ac)
+	attachHandlers(&unetClient, credConfig, ac)
+	attachHandlers(&vpcClient, credConfig, ac)
+	attachHandlers(&udpnClient, credConfig, ac)
+	attachHandlers(&pathxClient, credConfig, ac)
+	attachHandlers(&udiskClient, credConfig, ac)
+	attachHandlers(&ulbClient, credConfig, ac)
+	attachHandlers(&udbClient, credConfig, ac)
+	attachHandlers(&umemClient, credConfig, ac)
+	attachHandlers(&uphostClient, credConfig, ac)
+	attachHandlers(&puhostClient, credConfig, ac)
+	attachHandlers(&pudbClient, credConfig, ac)
+	attachHandlers(&pumemClient, credConfig, ac)
+	attachHandlers(&ppathxClient, credConfig, ac)
+	attachHandlers(&ulhostClient, credConfig, ac)
 
 	return &Client{
 		uaccountClient,

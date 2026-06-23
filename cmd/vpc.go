@@ -13,6 +13,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdVpc ucloud vpc
@@ -82,7 +83,7 @@ func NewCmdVPCList(out io.Writer) *cobra.Command {
 	req.Tag = flags.String("group", "", "Optional. Group")
 	flags.StringSliceVar(&vpcIDs, "vpc-id", []string{}, "Optional. Multiple values separated by commas")
 
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -119,7 +120,7 @@ func NewCmdVpcCreate() *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign the region of the VPC")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign the project-id")
 
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -157,7 +158,7 @@ func NewCmdVpcDelete() *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Region of the vpc")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Project id of the vpc")
 
-	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -200,16 +201,16 @@ func NewCmdVpcCreatePeer() *cobra.Command {
 	cmd.MarkFlagRequired("vpc-id")
 	cmd.MarkFlagRequired("dst-vpc-id")
 
-	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	cmd.Flags().SetFlagValuesFunc("dst-vpc-id", func() []string {
+	command.SetCompletion(cmd, "dst-vpc-id", func() []string {
 		return getAllVPCIdNames(*req.DstProjectId, *req.DstRegion)
 	})
-	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
-	cmd.Flags().SetFlagValuesFunc("dst-region", getRegionList)
-	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
-	cmd.Flags().SetFlagValuesFunc("dst-project-id", getProjectList)
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "dst-region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "dst-project-id", getProjectList)
 
 	return cmd
 }
@@ -257,11 +258,11 @@ func NewCmdVpcListPeer(out io.Writer) *cobra.Command {
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. The project id of source vpc")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional, The region of source vpc")
 
-	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
-	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getProjectList)
 
 	cmd.MarkFlagRequired("vpc-id")
 
@@ -300,10 +301,10 @@ func NewCmdVpcDeletePeer() *cobra.Command {
 	cmd.MarkFlagRequired("dst-vpc-id")
 	cmd.MarkFlagRequired("dst-region")
 
-	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	cmd.Flags().SetFlagValuesFunc("dst-region", getRegionList)
+	command.SetCompletion(cmd, "dst-region", getRegionList)
 
 	return cmd
 }
@@ -438,7 +439,7 @@ func NewCmdSubnetCreate() *cobra.Command {
 	req.Tag = cmd.Flags().String("group", "", "Optional. Business group")
 	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of subnet to create")
 
-	cmd.Flags().SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
 
@@ -474,10 +475,10 @@ func NewCmdSubnetDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "subnet-id", nil, "Required. Resource ID of subent")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	cmd.MarkFlagRequired("subnet-id")
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames("", *req.ProjectId, *req.Region)
 	})
 
@@ -523,15 +524,15 @@ func NewCmdSubnetListResource(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 	req.SubnetId = flags.String("subnet-id", "", "Required. Resource ID of subnet which resources to list belong to")
 	req.ResourceType = flags.String("resource-type", "", "Optional. Resource type of resources to list. Accept values:'uhost','phost','ulb','uhadoophost','ufortresshost','unatgw','ukafka','umem','docker','udb','udw' and 'vip'")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 	cmd.MarkFlagRequired("subnet-id")
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames("", *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValues("resource-type", "uhost", "phost", "ulb", "uhadoophost", "ufortresshost", "unatgw", "ukafka", "umem", "docker", "udb", "udw", "vip")
+	command.SetFlagValues(cmd, "resource-type", "uhost", "phost", "ulb", "uhadoophost", "ufortresshost", "unatgw", "ukafka", "umem", "docker", "udb", "udw", "vip")
 
 	return cmd
 }

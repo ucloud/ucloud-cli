@@ -29,6 +29,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdEIP ucloud eip
@@ -116,13 +117,13 @@ func NewCmdEIPList(out io.Writer) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Offset = flags.Int("offset", 0, "Optional. Offset default 0")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit default 50, max value 100")
 	flags.BoolVar(&fetchAll, "list-all", false, "List all eip")
 	flags.BoolVar(&pageOff, "page-off", false, "Optional. Paging or not. Accept values: true or false")
-	flags.SetFlagValues("list-all", "true", "false")
+	command.SetFlagValues(cmd, "list-all", "true", "false")
 	flags.MarkDeprecated("list-all", "please use '--page-off' instead")
 
 	return cmd
@@ -251,8 +252,8 @@ func NewCmdEIPAllocate() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth(Unit:Mbps).The range of value related to network charge mode. By traffic [1, 200]; by bandwidth [1,800] (Unit: Mbps); it could be 0 if the eip belong to the shared bandwidth")
 	req.OperatorName = cmd.Flags().String("line", "", "Optional. 'BGP' or 'International'. 'BGP' could be set in China mainland regions, such as cn-bj2 etc. 'International' could be set in the regions beyond mainland, such as hk, tw-kh, us-ws etc.")
-	bindProjectID(req, cmd.Flags())
-	bindRegion(req, cmd.Flags())
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
 	req.PayMode = cmd.Flags().String("traffic-mode", "Bandwidth", "Optional. traffic-mode is an enumeration value. 'Traffic','Bandwidth' or 'ShareBandwidth'")
 	req.ShareBandwidthId = cmd.Flags().String("share-bandwidth-id", "", "Optional. ShareBandwidthId, required only when traffic-mode is 'ShareBandwidth'")
 	req.Quantity = cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
@@ -262,9 +263,9 @@ func NewCmdEIPAllocate() *cobra.Command {
 	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your EIP.")
 	count = cmd.Flags().Int("count", 1, "Optional. Count of EIP to allocate")
 
-	cmd.Flags().SetFlagValues("line", "BGP", "International")
-	cmd.Flags().SetFlagValues("traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "line", "BGP", "International")
+	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
 	cmd.MarkFlagRequired("bandwidth-mb")
 	return cmd
 }
@@ -293,8 +294,8 @@ func NewCmdEIPBind() *cobra.Command {
 	projectID = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 
-	cmd.Flags().SetFlagValues("resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetFlagValues(cmd, "resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*projectID, *region, []string{status.EIP_FREE}, nil)
 	})
 
@@ -388,11 +389,11 @@ func NewCmdEIPUnbind() *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&eipIDs, "eip-id", nil, "Required. Resource ID of eips to unbind with some resource")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("eip-id")
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_USED}, nil)
 	})
 
@@ -452,10 +453,10 @@ func NewCmdEIPRelease() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVarP(&ids, "eip-id", "", nil, "Required. Resource ID of the EIPs you want to release")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
 	cmd.MarkFlagRequired("eip-id")
-	flags.SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
 	})
 
@@ -490,7 +491,7 @@ func NewCmdEIPModifyBandwidth() *cobra.Command {
 	req.Bandwidth = cmd.Flags().Int("bandwidth-mb", 0, "Required. Bandwidth of EIP after modifed. Charge by traffic, range [1,300]; charge by bandwidth, range [1,800]")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
 	})
 	cmd.MarkFlagRequired("eip-id")
@@ -532,8 +533,8 @@ func NewCmdEIPSetChargeMode() *cobra.Command {
 	req.PayMode = cmd.Flags().String("traffic-mode", "", "Required, Charge mode of eip, 'Traffic','Bandwidth' or 'PostAccurateBandwidth'")
 	req.ProjectId = cmd.Flags().String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
-	cmd.Flags().SetFlagValues("traffic-mode", "Bandwidth", "Traffic", "PostAccurateBandwidth")
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic", "PostAccurateBandwidth")
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, nil)
 	})
 	cmd.MarkFlagRequired("eip-id")
@@ -569,10 +570,10 @@ func NewCmdEIPJoinSharedBW() *cobra.Command {
 	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth to be joined")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
-	flags.SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_BANDWIDTH, status.EIP_CHARGE_TRAFFIC})
 	})
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
@@ -636,11 +637,11 @@ func NewCmdEIPLeaveSharedBW() *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
 
-	flags.SetFlagValues("traffic-mode", "Bandwidth", "Traffic")
-	flags.SetFlagValuesFunc("eip-id", func() []string {
+	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic")
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_SHARE})
 	})
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})

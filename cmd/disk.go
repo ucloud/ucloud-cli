@@ -28,6 +28,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -151,9 +152,9 @@ func NewCmdDiskCreate(out io.Writer) *cobra.Command {
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	count = flags.Int("count", 1, "Optional. The count of udisk to create. Range [1,10]")
 
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
-	flags.SetFlagValues("enable-data-ark", "true", "false")
-	flags.SetFlagValues("udisk-type", "Oridinary", "SSD")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "enable-data-ark", "true", "false")
+	command.SetFlagValues(cmd, "udisk-type", "Oridinary", "SSD")
 
 	cmd.MarkFlagRequired("size-gb")
 	cmd.MarkFlagRequired("name")
@@ -235,7 +236,7 @@ func NewCmdDiskList(out io.Writer) *cobra.Command {
 	req.DiskType = flags.String("udisk-type", "", "Optional. Optional. Type of the udisk to search. 'Oridinary-Data-Disk','Oridinary-System-Disk' or 'SSD-Data-Disk'")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit")
-	flags.SetFlagValues("udisk-type", "Oridinary-Data-Disk", "Oridinary-System-Disk", "SSD-Data-Disk")
+	command.SetFlagValues(cmd, "udisk-type", "Oridinary-Data-Disk", "Oridinary-System-Disk", "SSD-Data-Disk")
 	return cmd
 }
 
@@ -279,10 +280,10 @@ func NewCmdDiskAttach(out io.Writer) *cobra.Command {
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
-	flags.SetFlagValuesFunc("udisk-id", func() []string {
+	command.SetCompletion(cmd, "udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -332,7 +333,7 @@ func NewCmdDiskDetach(out io.Writer) *cobra.Command {
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
-	flags.SetFlagValuesFunc("udisk-id", func() []string {
+	command.SetCompletion(cmd, "udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -410,7 +411,7 @@ func NewCmdDiskDelete() *cobra.Command {
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
-	flags.SetFlagValuesFunc("udisk-id", func() []string {
+	command.SetCompletion(cmd, "udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE, status.DISK_FAILED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -468,10 +469,10 @@ func NewCmdDiskClone(out io.Writer) *cobra.Command {
 	req.CouponId = flags.String("coupon-id", "", "Optional. Coupon ID, The Coupon can deduct part of the payment,see https://accountv2.ucloud.cn")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
-	flags.SetFlagValues("enable-data-ark", "true", "false")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "enable-data-ark", "true", "false")
 
-	flags.SetFlagValuesFunc("source-id", func() []string {
+	command.SetCompletion(cmd, "source-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -510,7 +511,7 @@ func NewCmdDiskExpand() *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 
-	flags.SetFlagValuesFunc("udisk-id", func() []string {
+	command.SetCompletion(cmd, "udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -561,7 +562,7 @@ func NewCmdDiskSnapshot(out io.Writer) *cobra.Command {
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	req.Comment = flags.String("comment", "", "Optional. Description of snapshots")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
-	flags.SetFlagValuesFunc("udisk-id", func() []string {
+	command.SetCompletion(cmd, "udisk-id", func() []string {
 		return getDiskList([]string{status.DISK_AVAILABLE, status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("udisk-id")
@@ -621,7 +622,7 @@ func NewCmdDiskRestore(out io.Writer) *cobra.Command {
 	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Assign project-id")
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
-	flags.SetFlagValuesFunc("snapshot-id", func() []string {
+	command.SetCompletion(cmd, "snapshot-id", func() []string {
 		return getSnapshotList([]string{status.SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("snapshot-id")

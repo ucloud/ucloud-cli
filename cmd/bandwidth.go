@@ -27,6 +27,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdBandwidth ucloud bw
@@ -80,11 +81,11 @@ func NewCmdSharedBWCreate() *cobra.Command {
 	flags.SortFlags = false
 	req.Name = flags.String("name", "", "Required. Name of the shared bandwidth instance")
 	req.ShareBandwidth = flags.Int("bandwidth-mb", 20, "Optional. Unit:Mb. Bandwidth of the shared bandwidth. Range [20,5000]")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
 
 	cmd.MarkFlagRequired("name")
 
@@ -140,8 +141,8 @@ func NewCmdSharedBWList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	flags.StringSliceVar(&req.ShareBandwidthIds, "shared-bw-id", nil, "Resource ID of shared bandwidth instances to list")
 
 	return cmd
@@ -174,10 +175,10 @@ func NewCmdSharedBWResize() *cobra.Command {
 
 	req.ShareBandwidthId = flags.String("shared-bw-id", "", "Required. Resource ID of shared bandwidth instance to resize")
 	req.ShareBandwidth = flags.Int("bandwidth-mb", 0, "Required. Unit:Mb. resize to bandwidth value")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
@@ -214,13 +215,13 @@ func NewCmdSharedBWDelete() *cobra.Command {
 	flags.StringSliceVar(&ids, "shared-bw-id", nil, "Required. Resource ID of shared bandwidth instances to delete")
 	req.EIPBandwidth = flags.Int("eip-bandwidth-mb", 1, "Optional. Bandwidth of the joined EIPs,after deleting the shared bandwidth instance")
 	req.PayMode = flags.String("traffic-mode", "", "Optional. The charge mode of joined EIPs after deleting the shared bandwidth. Accept values:Bandwidth,Traffic")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
-	flags.SetFlagValuesFunc("shared-bw-id", func() []string {
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
+	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(*req.ProjectId, *req.Region)
 		return list
 	})
-	flags.SetFlagValues("traffic-mode", "Bandwidth", "Traffic")
+	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic")
 
 	cmd.MarkFlagRequired("shared-bw-id")
 
@@ -309,10 +310,10 @@ func NewCmdBandwidthPkgCreate() *cobra.Command {
 	start = flags.String("start-time", "", "Required. The time to enable bandwidth package. Local time, for example '2018-12-25/08:30:00'")
 	end = flags.String("end-time", "", "Required. The time to disable bandwidth package. Local time, for example '2018-12-26/08:30:00'")
 	req.Bandwidth = flags.Int("bandwidth-mb", 0, "Required. bandwidth of the bandwidth package to create.Range [1,800]. Unit:'Mb'.")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
-	cmd.Flags().SetFlagValuesFunc("eip-id", func() []string {
+	command.SetCompletion(cmd, "eip-id", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_USED}, []string{status.EIP_CHARGE_BANDWIDTH})
 	})
 
@@ -365,8 +366,8 @@ func NewCmdBandwidthPkgList(out io.Writer) *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")
 	req.Limit = cmd.Flags().Int("limit", 50, "Optional. Limit range [0,10000000]")
 
@@ -398,8 +399,8 @@ func NewCmdBandwidthPkgDelete() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&ids, "resource-id", nil, "Required, Resource ID of bandwidth package to delete")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
 	return cmd
 }

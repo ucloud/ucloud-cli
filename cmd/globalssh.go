@@ -26,6 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdGssh ucloud gssh
@@ -190,7 +191,7 @@ func NewCmdGsshCreate() *cobra.Command {
 
 	req.AreaCode = cmd.Flags().String("location", "", "Required. Location of the source server. See 'ucloud gssh location'")
 	targetIP = cmd.Flags().IP("target-ip", nil, "Required. IP of the source server. Required")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.Port = cmd.Flags().Int("port", 22, "Optional. Port of The SSH service between 1 and 65535. Do not use ports such as 80, 443 or 65123.")
 	req.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
 	req.ChargeType = cmd.Flags().String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly(requires access)")
@@ -200,12 +201,12 @@ func NewCmdGsshCreate() *cobra.Command {
 	req.BandwidthPackage = cmd.Flags().Int("bandwidth-package", 0, "Optional. You can set one of 0, 20, 40 When instance-type is 'Ultimate'")
 	cmd.MarkFlagRequired("location")
 	cmd.MarkFlagRequired("target-ip")
-	cmd.Flags().SetFlagValues("location", "LosAngeles", "Singapore", "Lagos", "HongKong", "Tokyo", "Washington", "Frankfurt")
-	cmd.Flags().SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
-	cmd.Flags().SetFlagValues("bandwidth-package", "0", "20", "40")
-	cmd.Flags().SetFlagValues("forward-region", "cn-bj2", "cn-sh2", "cn-gd")
-	cmd.Flags().SetFlagValues("instance-type", "Free", "Basic", "Enterprise", "Ultimate")
-	cmd.Flags().SetFlagValuesFunc("target-ip", func() []string {
+	command.SetFlagValues(cmd, "location", "LosAngeles", "Singapore", "Lagos", "HongKong", "Tokyo", "Washington", "Frankfurt")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "bandwidth-package", "0", "20", "40")
+	command.SetFlagValues(cmd, "forward-region", "cn-bj2", "cn-sh2", "cn-gd")
+	command.SetFlagValues(cmd, "instance-type", "Free", "Basic", "Enterprise", "Ultimate")
+	command.SetCompletion(cmd, "target-ip", func() []string {
 		eips := getAllEip(*req.ProjectId, base.ConfigIns.Region, nil, nil)
 		for idx, eip := range eips {
 			eips[idx] = strings.SplitN(eip, "/", 2)[1]
@@ -240,9 +241,9 @@ func NewCmdGsshDelete() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	gsshIds = cmd.Flags().StringSlice("gssh-id", make([]string, 0), "Required. ID of the GlobalSSH instances you want to delete. Multiple values specified by multiple commas")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	cmd.MarkFlagRequired("gssh-id")
-	cmd.Flags().SetFlagValuesFunc("gssh-id", func() []string {
+	command.SetCompletion(cmd, "gssh-id", func() []string {
 		return getAllGsshIDNames(*req.ProjectId)
 	})
 	return cmd
@@ -298,11 +299,11 @@ func NewCmdGsshModify() *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&gsshIDs, "gssh-id", nil, "Required. ResourceID of your GlobalSSH instances")
-	bindProjectIDS(&project, flags)
+	bindProjectIDS(&project, cmd)
 	gsshModifyPortReq.Port = cmd.Flags().Int("port", 0, "Optional. Port of SSH service.")
 	gsshModifyRemarkReq.Remark = cmd.Flags().String("remark", "", "Optional. Remark of your GlobalSSH.")
 	cmd.MarkFlagRequired("gssh-id")
-	cmd.Flags().SetFlagValuesFunc("gssh-id", func() []string {
+	command.SetCompletion(cmd, "gssh-id", func() []string {
 		return getAllGsshIDNames(project)
 	})
 	return cmd

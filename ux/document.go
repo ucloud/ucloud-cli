@@ -31,7 +31,7 @@ func (d *document) reset() {
 	}
 	d.mux.RUnlock()
 	if size != 0 {
-		fmt.Printf(ansi.CursorLeft + ansi.CursorPrevLine(size) + ansi.EraseDown)
+		fmt.Fprint(d.out, ansi.CursorLeft+ansi.CursorPrevLine(size)+ansi.EraseDown)
 	}
 }
 

@@ -35,6 +35,7 @@ import (
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -268,26 +269,25 @@ func NewCmdUHostList(out io.Writer) *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Optional. Accept values: wide. Display more information about uhost such as DiskSet and Zone")
 	bindGroup(req, cmd.Flags())
 
-	cmd.Flags().SetFlagValues("page-off", "true", "false")
-	cmd.Flags().SetFlagValues("uhost-id-only", "true", "false")
-	cmd.Flags().SetFlagValues("output", "wide")
-	cmd.Flags().SetFlagValuesFunc("project-id", getProjectList)
-	cmd.Flags().SetFlagValuesFunc("region", getRegionList)
-	cmd.Flags().SetFlagValuesFunc("zone", func() []string {
+	command.SetFlagValues(cmd, "page-off", "true", "false")
+	command.SetFlagValues(cmd, "uhost-id-only", "true", "false")
+	command.SetFlagValues(cmd, "output", "wide")
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
 
-	flags := cmd.Flags()
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("isolation-group", func() []string {
+	command.SetCompletion(cmd, "isolation-group", func() []string {
 		return getIsolationGroupList(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList(nil, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -509,9 +509,9 @@ func NewCmdUHostCreate() *cobra.Command {
 
 	req.ChargeType = flags.String("charge-type", "Month", "Optional.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O, OS. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accept values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
@@ -534,37 +534,37 @@ func NewCmdUHostCreate() *cobra.Command {
 	flags.StringVar(&userDataBase64, "user-data-base64", "", "Optional. Conflicts with `user-data`. Customize the startup behaviors when launching the instance. The value must be base64-encode. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
 
 	flags.MarkDeprecated("type", "please use --machine-type instead")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Dynamic", "Trial")
-	flags.SetFlagValues("hot-plug", "true", "false")
-	flags.SetFlagValues("cpu", "1", "2", "4", "8", "12", "16", "24", "32", "64")
-	flags.SetFlagValues("type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
-	flags.SetFlagValues("machine-type", "N", "C", "G", "O", "OS")
-	flags.SetFlagValues("minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
-	flags.SetFlagValues("net-capability", "Normal", "Super", "Ultra")
-	flags.SetFlagValues("os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
-	flags.SetFlagValues("os-disk-backup-type", "NONE", "DATAARK")
-	flags.SetFlagValues("data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK", "NONE")
-	flags.SetFlagValues("data-disk-backup-type", "NONE", "DATAARK")
-	flags.SetFlagValues("create-eip-line", "BGP", "International")
-	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	flags.SetFlagValues("gpu-type", "K80", "P40", "V100")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "hot-plug", "true", "false")
+	command.SetFlagValues(cmd, "cpu", "1", "2", "4", "8", "12", "16", "24", "32", "64")
+	command.SetFlagValues(cmd, "type", "N2", "N1", "N3", "I2", "I1", "C1", "G1", "G2", "G3")
+	command.SetFlagValues(cmd, "machine-type", "N", "C", "G", "O", "OS")
+	command.SetFlagValues(cmd, "minimal-cpu-platform", "Intel/Auto", "Intel/IvyBridge", "Intel/Haswell", "Intel/Broadwell", "Intel/Skylake", "Intel/Cascadelake")
+	command.SetFlagValues(cmd, "net-capability", "Normal", "Super", "Ultra")
+	command.SetFlagValues(cmd, "os-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
+	command.SetFlagValues(cmd, "os-disk-backup-type", "NONE", "DATAARK")
+	command.SetFlagValues(cmd, "data-disk-type", "LOCAL_NORMAL", "CLOUD_NORMAL", "LOCAL_SSD", "CLOUD_SSD", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK", "NONE")
+	command.SetFlagValues(cmd, "data-disk-backup-type", "NONE", "DATAARK")
+	command.SetFlagValues(cmd, "create-eip-line", "BGP", "International")
+	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100")
 
-	flags.SetFlagValuesFunc("image-id", func() []string {
+	command.SetCompletion(cmd, "image-id", func() []string {
 		return getImageList([]string{status.IMAGE_AVAILABLE}, cli.IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
 	})
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("bind-eip", func() []string {
+	command.SetCompletion(cmd, "bind-eip", func() []string {
 		return getAllEip(*req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
 	})
-	flags.SetFlagValuesFunc("firewall-id", func() []string {
+	command.SetCompletion(cmd, "firewall-id", func() []string {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, *req.ProjectId, *req.Region)
 	})
-	flags.SetFlagValuesFunc("isolation-group", func() []string {
+	command.SetCompletion(cmd, "isolation-group", func() []string {
 		return getIsolationGroupList(*req.ProjectId, *req.Region)
 	})
 
@@ -852,17 +852,17 @@ func NewCmdUHostDelete() *cobra.Command {
 	flags.SortFlags = false
 
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Requried. ResourceIDs(UhostIds) of the uhost instance")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Zone = cmd.Flags().String("zone", "", "Optional. availability zone")
 	isDestroy = cmd.Flags().Bool("destroy", false, "Optional. false,the uhost instance will be thrown to UHost recycle if you have permission; true,the uhost instance will be deleted directly")
 	cmd.Flags().BoolVar(&releaseEIP, "release-eip", true, "Optional. false,Unbind EIP only; true, Unbind EIP and release it")
 	cmd.Flags().BoolVar(&releaseUDisk, "delete-cloud-disk", true, "Optional. false, detach cloud disk only; true, detach cloud disk and delete it")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
-	cmd.Flags().SetFlagValues("destroy", "true", "false")
-	cmd.Flags().SetFlagValues("release-eip", "true", "false")
-	cmd.Flags().SetFlagValues("delete-cloud-disk", "true", "false")
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetFlagValues(cmd, "destroy", "true", "false")
+	command.SetFlagValues(cmd, "release-eip", "true", "false")
+	command.SetFlagValues(cmd, "delete-cloud-disk", "true", "false")
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -933,7 +933,7 @@ func NewCmdUHostStop(out io.Writer) *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1022,7 +1022,7 @@ func NewCmdUHostStart(out io.Writer) *cobra.Command {
 	req.Region = cmd.Flags().String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1065,7 +1065,7 @@ func NewCmdUHostReboot(out io.Writer) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	req.DiskPassword = cmd.Flags().String("disk-password", "", "Optional. Encrypted disk password")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_FAIL, status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1116,7 +1116,7 @@ func NewCmdUHostPoweroff(out io.Writer) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_FAIL, status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1282,9 +1282,9 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	uhostIDs = cmd.Flags().StringSlice("uhost-id", nil, "Required. ResourceIDs(or UhostIDs) of the uhost instances")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 	req.CPU = cmd.Flags().Int("cpu", 0, "Optional. The number of virtual CPU cores. Series1 {1, 2, 4, 8, 12, 16, 24, 32}. Series2 {1,2,4,8,16}")
 	req.Memory = cmd.Flags().Int("memory-gb", 0, "Optional. memory size. Unit: GB. Range: [1, 128], multiple of 2")
 	cmd.Flags().IntVar(&bootDiskSize, "system-disk-size-gb", 0, "Optional. System disk size, unit GB. Range[20,100]. Step 10. System disk does not support shrinkage")
@@ -1293,7 +1293,7 @@ func NewCmdUHostResize(out io.Writer) *cobra.Command {
 	req.NetCapValue = cmd.Flags().Int("net-cap", 0, "Optional. NIC scale. 1,upgrade; 2,downgrade; 0,unchanged")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = cmd.Flags().BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
-	cmd.Flags().SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1480,7 +1480,7 @@ func NewCmdUHostClone(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1522,7 +1522,7 @@ func NewCmdUhostCreateImage(out io.Writer) *cobra.Command {
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
@@ -1576,7 +1576,7 @@ func NewCmdUhostResetPassword(out io.Writer) *cobra.Command {
 	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Assign region")
 	req.Zone = flags.String("zone", base.ConfigIns.Zone, "Optional. Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1711,7 +1711,7 @@ func NewCmdUhostReinstallOS(out io.Writer) *cobra.Command {
 	isReserveDataDisk = flags.Bool("keep-data-disk", false, "Keep data disk or not. If you keep data disk, you can't change OS type(Linux->Window,e.g.)")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
@@ -1756,11 +1756,11 @@ func NewCmdUhostLeaveIsolationGroup(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&uhostIds, "uhost-id", nil, "Required. Resource ID of uhosts to be detech from its isolation group")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
-	bindZone(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
+	bindZone(req, cmd)
 	cmd.MarkFlagRequired("uhost-id")
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList(nil, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
@@ -1804,8 +1804,8 @@ func NewCmdIsolationCreate(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupName = flags.String("group-name", "", "Required. Name of isolation group. Length 1~63, only English,Chinese,number and '-_.' are allowed")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	req.Remark = flags.String("remark", "", "Optional. Remark ok isolation group")
 
 	cmd.MarkFlagRequired("group-name")
@@ -1836,11 +1836,11 @@ func NewCmdIsolationDelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&ids, "group-id", nil, "Required. Resource ID of isolation groups to be deleted")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("group-id")
-	flags.SetFlagValuesFunc("group-id", func() []string {
+	command.SetCompletion(cmd, "group-id", func() []string {
 		return getIsolationGroupList(*req.ProjectId, *req.Region)
 	})
 
@@ -1887,12 +1887,12 @@ func NewCmdIsolationList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupId = flags.String("group-id", "", "Optional. Resource ID of isolation group to describe")
-	bindRegion(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindProjectID(req, cmd)
 	bindLimit(req, flags)
 	bindOffset(req, flags)
 
-	flags.SetFlagValuesFunc("group-id", func() []string {
+	command.SetCompletion(cmd, "group-id", func() []string {
 		return getIsolationGroupList(*req.ProjectId, *req.Region)
 	})
 

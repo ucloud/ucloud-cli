@@ -1,0 +1,63 @@
+version: 2
+
+builds:
+  - id: ucloud
+    main: .
+    binary: ucloud
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/ucloud/ucloud-cli/base.Version={{.Version}}
+
+archives:
+  - id: ucloud
+    ids:
+      - ucloud
+    formats:
+      - zip
+    name_template: "ucloud-{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: git
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?\!?:.+'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^fix(\(.+\))?\!?:.+'
+      order: 1
+    - title: Performance Improvements
+      regexp: '^perf(\(.+\))?\!?:.+'
+      order: 2
+    - title: Documentation
+      regexp: '^docs(\(.+\))?\!?:.+'
+      order: 3
+    - title: Refactoring
+      regexp: '^refactor(\(.+\))?\!?:.+'
+      order: 4
+    - title: Build & CI
+      regexp: '^(build|ci|chore)(\(.+\))?\!?:.+'
+      order: 5
+    - title: Other Changes
+      order: 999
+  filters:
+    exclude:
+      - '^Merge '
+
+# release: the target repo (owner/name) is intentionally NOT hardcoded — goreleaser
+# auto-detects it from GITHUB_REPOSITORY / the git remote, so the same config
+# publishes to whichever repo runs it (a fork when testing, ucloud/ucloud-cli in
+# production). Hardcoding it would let a fork's release accidentally target upstream.
