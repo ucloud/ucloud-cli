@@ -1123,13 +1123,13 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 
 			ins := resp.UGAList[0]
 			list := []base.DescribeTableRow{
-				{"ResourceID", ins.UGAId},
-				{"UGAName", ins.UGAName},
-				{"Origin", fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
-				{"CName", ins.CName},
-				{"AcceleratedPath", getUpathStr(ins.UPathSet)},
-				{"OutIP", getOutIPStr(ins.OutPublicIpList)},
-				{"Port", getPortStr(ins.TaskSet)},
+				{Attribute: "ResourceID", Content: ins.UGAId},
+				{Attribute: "UGAName", Content: ins.UGAName},
+				{Attribute: "Origin", Content: fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
+				{Attribute: "CName", Content: ins.CName},
+				{Attribute: "AcceleratedPath", Content: getUpathStr(ins.UPathSet)},
+				{Attribute: "OutIP", Content: getOutIPStr(ins.OutPublicIpList)},
+				{Attribute: "Port", Content: getPortStr(ins.TaskSet)},
 			}
 			base.PrintList(list, out)
 		},
