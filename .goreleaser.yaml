@@ -57,7 +57,7 @@ changelog:
     exclude:
       - '^Merge '
 
-release:
-  github:
-    owner: ucloud
-    name: ucloud-cli
+# release: the target repo (owner/name) is intentionally NOT hardcoded — goreleaser
+# auto-detects it from GITHUB_REPOSITORY / the git remote, so the same config
+# publishes to whichever repo runs it (a fork when testing, ucloud/ucloud-cli in
+# production). Hardcoding it would let a fork's release accidentally target upstream.
