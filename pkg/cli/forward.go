@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
@@ -62,6 +64,14 @@ func (c *Context) BindChargeType(cmd *cobra.Command, req interface{}) {
 // BindQuantity binds --quantity into req via reflection.
 func (c *Context) BindQuantity(cmd *cobra.Command, req interface{}) { command.BindQuantity(cmd, req) }
 
+// BindCommonParams binds all common flags in one call using ctx defaults +
+// injected completion providers. It binds region/zone/project when req
+// satisfies request.Common, plus --limit/--offset/--charge-type/--quantity for
+// whichever of those fields exist on req (absent fields are skipped, no panic).
+func (c *Context) BindCommonParams(cmd *cobra.Command, req interface{}) {
+	command.BindCommonParams(cmd, req, c.defaults(), c.regionList, c.zoneList, c.projectList)
+}
+
 // PrintList renders dataSet to the ctx writer in the ctx format.
 func (c *Context) PrintList(dataSet interface{}) {
 	ui.Printer{Out: c.out, Format: ui.Format(c.format)}.PrintList(dataSet)
@@ -82,4 +92,12 @@ func (c *Context) PickResourceID(s string) string { return PickResourceID(s) }
 // Poller wraps base.NewSpoller bound to ctx's writer.
 func (c *Context) Poller(describeFunc func(string, *request.CommonBase) (interface{}, error)) *base.Poller {
 	return base.NewSpoller(describeFunc, c.out)
+}
+
+// PollerTo wraps base.NewSpoller bound to an explicit writer, so callers can
+// route progress narration to stderr (e.g. in json/yaml mode) while keeping
+// machine output on stdout. Products cannot import base directly, so this
+// exposes the writer-parameterized poller through the Context.
+func (c *Context) PollerTo(w io.Writer, describeFunc func(string, *request.CommonBase) (interface{}, error)) *base.Poller {
+	return base.NewSpoller(describeFunc, w)
 }

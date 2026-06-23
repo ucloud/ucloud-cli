@@ -67,11 +67,20 @@ func NewContext(d Deps) *Context {
 	}
 }
 
-// Out returns the output writer.
+// Out returns the output writer (stdout). Machine-readable results go here.
 func (c *Context) Out() io.Writer { return c.out }
+
+// Err returns the error/diagnostics writer (stderr). Human-facing narration
+// and progress belong here so machine output on Out stays clean.
+func (c *Context) Err() io.Writer { return c.err }
 
 // In returns the input reader.
 func (c *Context) In() io.Reader { return c.in }
 
 // Format returns the output format requested for this invocation.
 func (c *Context) Format() OutputFormat { return c.format }
+
+// SetFormat overrides the output format. The host (cmd) calls this from its
+// PersistentPreRun once --output has been parsed, because the Context is built
+// at command-registration time, before cobra parses flags.
+func (c *Context) SetFormat(f OutputFormat) { c.format = f }

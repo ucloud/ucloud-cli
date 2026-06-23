@@ -122,3 +122,84 @@ func TestBindLimitOffsetChargeTypeQuantity(t *testing.T) {
 		t.Fatalf("charge-type completion values = %v", got)
 	}
 }
+
+// partialReq has only some of the optional reflection fields (no Limit/Offset).
+type partialReq struct {
+	request.CommonBase
+	ChargeType *string
+	Quantity   *int
+}
+
+func TestBindCommonParams(t *testing.T) {
+	regionList := func() []string { return []string{"cn-bj2"} }
+	zoneList := func(region string) []string { return []string{region} }
+	projectList := func() []string { return []string{"org-x"} }
+	def := command.Defaults{Region: "cn-bj2", Zone: "cn-bj2-02", ProjectID: "org-x"}
+
+	cases := []struct {
+		name    string
+		req     interface{}
+		want    []string // flags that MUST be registered
+		notWant []string // flags that MUST NOT be registered
+	}{
+		{
+			name:    "all fields present",
+			req:     &fakeReq{},
+			want:    []string{"region", "zone", "project-id", "limit", "offset", "charge-type", "quantity"},
+			notWant: nil,
+		},
+		{
+			name:    "missing limit and offset",
+			req:     &partialReq{},
+			want:    []string{"region", "zone", "project-id", "charge-type", "quantity"},
+			notWant: []string{"limit", "offset"},
+		},
+		{
+			name:    "only request.Common",
+			req:     &request.CommonBase{},
+			want:    []string{"region", "zone", "project-id"},
+			notWant: []string{"limit", "offset", "charge-type", "quantity"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := &cobra.Command{Use: "x"}
+			// Must NOT panic regardless of which optional fields the req carries.
+			command.BindCommonParams(cmd, tc.req, def, regionList, zoneList, projectList)
+
+			for _, name := range tc.want {
+				if cmd.Flags().Lookup(name) == nil {
+					t.Errorf("flag %q not registered, want registered", name)
+				}
+			}
+			for _, name := range tc.notWant {
+				if cmd.Flags().Lookup(name) != nil {
+					t.Errorf("flag %q registered, want skipped", name)
+				}
+			}
+		})
+	}
+}
+
+func TestBindCommonParamsRefWiring(t *testing.T) {
+	cmd := &cobra.Command{Use: "x"}
+	req := &fakeReq{}
+
+	command.BindCommonParams(cmd, req,
+		command.Defaults{Region: "cn-bj2"},
+		func() []string { return []string{"cn-bj2"} },
+		func(region string) []string { return []string{region} },
+		func() []string { return []string{"org-x"} },
+	)
+
+	if err := cmd.Flags().Set("region", "cn-sh2"); err != nil {
+		t.Fatalf("set region flag: %v", err)
+	}
+	if got := req.GetRegion(); got != "cn-sh2" {
+		t.Fatalf("req.GetRegion() = %q, want cn-sh2 (ref wiring broken)", got)
+	}
+	if req.Limit == nil || *req.Limit != 100 {
+		t.Fatalf("limit default not wired: %v", req.Limit)
+	}
+}

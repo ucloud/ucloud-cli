@@ -13,6 +13,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/udb"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -112,12 +113,6 @@ type UDBConfParamRow struct {
 	Value string
 }
 
-// confDescribeRow mirrors base.DescribeTableRow for the conf describe view.
-type confDescribeRow struct {
-	Attribute string
-	Content   string
-}
-
 // newUDBConfDescribe ucloud udb conf describe
 func newUDBConfDescribe(ctx *cli.Context) *cobra.Command {
 	var confID string
@@ -145,7 +140,7 @@ func newUDBConfDescribe(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			conf := resp.DataSet[0]
-			attrs := []confDescribeRow{
+			attrs := []cli.DescribeRow{
 				{Attribute: "ConfID", Content: strconv.Itoa(conf.GroupId)},
 				{Attribute: "DBVersion", Content: conf.DBTypeId},
 				{Attribute: "Name", Content: conf.GroupName},
@@ -303,7 +298,7 @@ func newUDBConfUpload(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "db-version", dbVersionList...)
 	// command.SetFlagValues(cmd, "db-type", subtypeList...)
 	command.SetCompletion(cmd, "conf-file", func() []string {
-		return getFileList("")
+		return common.GetFileList("")
 	})
 	return cmd
 }
@@ -373,7 +368,7 @@ func newUDBConfUpdate(ctx *cli.Context) *cobra.Command {
 		return getModifiableConfIDList(ctx, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	command.SetCompletion(cmd, "file", func() []string {
-		return getFileList("")
+		return common.GetFileList("")
 	})
 
 	cmd.MarkFlagRequired("conf-id")

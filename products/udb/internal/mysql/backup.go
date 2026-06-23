@@ -2,11 +2,7 @@ package mysql
 
 import (
 	"fmt"
-	"io/ioutil" //nolint:staticcheck // keep ioutil for zero-behavior-change verbatim copy
-	"os"
-	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,67 +11,10 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
-
-// dateTimeLayout 时间格式，mirrors base.DateTimeLayout.
-const dateTimeLayout = "2006-01-02/15:04:05"
-
-// formatDateTime mirrors base.FormatDateTime: format a unix second timestamp.
-func formatDateTime(seconds int) string {
-	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
-}
-
-// getHomePath mirrors base.GetHomePath.
-func getHomePath() string {
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	return os.Getenv("HOME")
-}
-
-// getFileList mirrors base.GetFileList: complete file names for shell completion.
-func getFileList(suffix string) []string {
-	cmdLine := strings.TrimSpace(os.Getenv("COMP_LINE"))
-	words := strings.Split(cmdLine, " ")
-	last := words[len(words)-1]
-	pathPrefix := "."
-
-	if !strings.HasPrefix(last, "-") {
-		pathPrefix = last
-	}
-	hasTilde := false
-	//https://tiswww.case.edu/php/chet/bash/bashref.html#Tilde-Expansion
-	if strings.HasPrefix(pathPrefix, "~") {
-		pathPrefix = strings.Replace(pathPrefix, "~", getHomePath(), 1)
-		hasTilde = true
-	}
-	files, err := ioutil.ReadDir(pathPrefix)
-	if err != nil {
-		return nil
-	}
-	names := []string{}
-	for _, f := range files {
-		name := f.Name()
-		if !strings.HasSuffix(name, suffix) {
-			continue
-		}
-		if hasTilde {
-			pathPrefix = strings.Replace(pathPrefix, getHomePath(), "~", 1)
-		}
-		if strings.HasSuffix(pathPrefix, "/") {
-			names = append(names, pathPrefix+name)
-		} else {
-			names = append(names, pathPrefix+"/"+name)
-		}
-	}
-	return names
-}
 
 // newUDBBackup ucloud udb backup
 func newUDBBackup(ctx *cli.Context) *cobra.Command {
@@ -207,8 +146,8 @@ func newUDBBackupList(ctx *cli.Context) *cobra.Command {
 					BackupSize:       fmt.Sprintf("%dB", ins.BackupSize),
 					BackupType:       reverseBpTypeMap[ins.BackupType],
 					Status:           ins.State,
-					BackupBeginTime:  formatDateTime(ins.BackupTime),
-					BackupEndTime:    formatDateTime(ins.BackupEndTime),
+					BackupBeginTime:  common.FormatDateTime(ins.BackupTime),
+					BackupEndTime:    common.FormatDateTime(ins.BackupEndTime),
 				}
 				list = append(list, row)
 			}
@@ -328,16 +267,16 @@ func newUDBLog(ctx *cli.Context) *cobra.Command {
 func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 	var udbID string
 	var name, logType, beginTime, endTime string
-	var common request.CommonBase
+	var commonBase request.CommonBase
 	cmd := &cobra.Command{
 		Use:     "archive",
 		Short:   "Archive the log of mysql as a compressed file",
 		Long:    "Archive the log of mysql as a compressed file",
 		Example: "ucloud mysql logs archive --name test.cli2 --udb-id udb-xxx/test.cli1 --log-type slow_query --begin-time 2019-02-23/15:30:00 --end-time 2019-02-24/15:31:00",
 		Run: func(c *cobra.Command, args []string) {
-			region := common.GetRegion()
-			zone := common.GetZone()
-			project := common.GetProjectId()
+			region := commonBase.GetRegion()
+			zone := commonBase.GetZone()
+			project := commonBase.GetProjectId()
 			udbID = ctx.PickResourceID(udbID)
 			client := cli.NewServiceClient(ctx, udb.NewClient)
 			if logType == "slow_query" {
@@ -345,12 +284,12 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintln(ctx.Out(), "Error. Both begin-time and end-time can not be empty")
 					return
 				}
-				bt, err := time.Parse(dateTimeLayout, beginTime)
+				bt, err := time.Parse(common.DateTimeLayout, beginTime)
 				if err != nil {
 					ctx.HandleError(err)
 					return
 				}
-				et, err := time.Parse(dateTimeLayout, endTime)
+				et, err := time.Parse(common.DateTimeLayout, endTime)
 				if err != nil {
 					ctx.HandleError(err)
 					return
@@ -396,9 +335,9 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&logType, "log-type", "", "Required. Type of log to package. Accept values: slow_query, error")
 	flags.StringVar(&beginTime, "begin-time", "", "Optional. Required when log-type is slow. For example 2019-01-02/15:04:05")
 	flags.StringVar(&endTime, "end-time", "", "Optional. Required when log-type is slow. For example 2019-01-02/15:04:05")
-	ctx.BindRegion(cmd, &common)
-	ctx.BindZone(cmd, &common)
-	ctx.BindProjectID(cmd, &common)
+	ctx.BindRegion(cmd, &commonBase)
+	ctx.BindZone(cmd, &commonBase)
+	ctx.BindProjectID(cmd, &commonBase)
 
 	cmd.MarkFlagRequired("udb-id")
 	cmd.MarkFlagRequired("name")
@@ -406,7 +345,7 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "log-type", "slow_query", "error")
 	command.SetCompletion(cmd, "udb-id", func() []string {
-		return getUDBIDList(ctx, nil, "sql", common.GetProjectId(), common.GetRegion(), common.GetZone())
+		return getUDBIDList(ctx, nil, "sql", commonBase.GetProjectId(), commonBase.GetRegion(), commonBase.GetZone())
 	})
 	return cmd
 }
@@ -443,7 +382,7 @@ func newUDBLogArchiveList(ctx *cli.Context) *cobra.Command {
 		Long:  "List mysql log archives(log files)",
 		Run: func(c *cobra.Command, args []string) {
 			if beginTime != "" {
-				bt, err := time.Parse(dateTimeLayout, beginTime)
+				bt, err := time.Parse(common.DateTimeLayout, beginTime)
 				if err != nil {
 					ctx.HandleError(err)
 					return
@@ -451,7 +390,7 @@ func newUDBLogArchiveList(ctx *cli.Context) *cobra.Command {
 				req.BeginTime = sdk.Int(int(bt.Unix()))
 			}
 			if endTime != "" {
-				et, err := time.Parse(dateTimeLayout, endTime)
+				et, err := time.Parse(common.DateTimeLayout, endTime)
 				if err != nil {
 					ctx.HandleError(err)
 					return
@@ -485,7 +424,7 @@ func newUDBLogArchiveList(ctx *cli.Context) *cobra.Command {
 					DB:         fmt.Sprintf("%s|%s", ins.DBId, ins.DBName),
 					Size:       fmt.Sprintf("%dB", ins.BackupSize),
 					Status:     ins.State,
-					CreateTime: formatDateTime(ins.BackupTime),
+					CreateTime: common.FormatDateTime(ins.BackupTime),
 				}
 				list = append(list, row)
 			}

@@ -30,6 +30,10 @@
 //  5. products.yaml consistency: every enabled product whose dir is absent on
 //     disk emits a WARNING (not a failure). Every directory under products/
 //     that has no entry in products.yaml is a VIOLATION.
+//  6. Reserved command names: no products.yaml entry may declare a top-level
+//     command name that the platform itself registers (see reservedCommands).
+//     A product declaring e.g. "config" would silently shadow the platform
+//     command, so it is a VIOLATION.
 package main
 
 import (
@@ -219,6 +223,63 @@ func checkConsistency(yamlProducts []Product, dirs []string) (violations, warnin
 	return violations, warnings
 }
 
+// reservedCommands is the set of PLATFORM-RESERVED top-level command names.
+// A product must not declare any of these in its products.yaml `commands`,
+// because doing so would silently shadow the platform's own command.
+//
+// MUST track the platform commands registered in cmd/root.go:
+// addPlatformCommands (the root.AddCommand(NewCmd*()) calls and newSchemaCmd),
+// plus the root-level pseudo-commands wired in NewCmdRoot (completion, signup).
+// When a platform command is added/renamed/removed in cmd/root.go, update this
+// set to match.
+var reservedCommands = map[string]bool{
+	// addPlatformCommands (cmd/root.go), in registration order:
+	"init":      true, // NewCmdInit
+	"auth":      true, // NewCmdAuth
+	"gendoc":    true, // NewCmdDoc (doc-gen command, Use: "gendoc")
+	"config":    true, // NewCmdConfig
+	"region":    true, // NewCmdRegion
+	"project":   true, // NewCmdProject
+	"uhost":     true, // NewCmdUHost
+	"uphost":    true, // NewCmdUPHost
+	"uimage":    true, // NewCmdUImage
+	"subnet":    true, // NewCmdSubnet
+	"vpc":       true, // NewCmdVpc
+	"firewall":  true, // NewCmdFirewall
+	"udisk":     true, // NewCmdDisk
+	"eip":       true, // NewCmdEIP
+	"bandwidth": true, // NewCmdBandwidth
+	"udpn":      true, // NewCmdUDPN
+	"ulb":       true, // NewCmdULB
+	"gssh":      true, // NewCmdGssh
+	"pathx":     true, // NewCmdPathx
+	"redis":     true, // NewCmdRedis
+	"memcache":  true, // NewCmdMemcache
+	"ext":       true, // NewCmdExt
+	"api":       true, // NewCmdAPI
+	"signature": true, // NewCmdSignature
+	"__schema":  true, // newSchemaCmd (hidden)
+	// Root-level pseudo-commands wired in NewCmdRoot (cmd/root.go):
+	"completion": true, // NewCmdCompletion
+	"signup":     true, // NewCmdSignup
+}
+
+// checkReservedCommands verifies that no product declares a top-level command
+// name that collides with a platform-reserved name (see reservedCommands).
+// Returns one violation string per offending (product, command) pair.
+func checkReservedCommands(yamlProducts []Product) []string {
+	var violations []string
+	for _, p := range yamlProducts {
+		for _, c := range p.Commands {
+			if reservedCommands[c] {
+				violations = append(violations,
+					fmt.Sprintf("rule6: product %q declares reserved platform command %q", p.Name, c))
+			}
+		}
+	}
+	return violations
+}
+
 func main() {
 	var allViolations []string
 	var allWarnings []string
@@ -257,6 +318,9 @@ func main() {
 	v5, w5 := checkConsistency(reg.Products, foundDirs)
 	allViolations = append(allViolations, v5...)
 	allWarnings = append(allWarnings, w5...)
+
+	// ---- Rule 6: reserved platform command names --------------------------
+	allViolations = append(allViolations, checkReservedCommands(reg.Products)...)
 
 	// ---- Rules 1–4: walk every .go file under products/ ------------------
 	if _, statErr := os.Stat(productsRoot); statErr == nil {

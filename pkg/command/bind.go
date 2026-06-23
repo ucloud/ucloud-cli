@@ -86,3 +86,53 @@ func BindQuantity(cmd *cobra.Command, req interface{}) {
 	quantity := cmd.Flags().Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	reflect.ValueOf(req).Elem().FieldByName("Quantity").Set(reflect.ValueOf(quantity))
 }
+
+// hasField reports whether req (a pointer to a struct) has a settable field
+// with the given name. It is used to guard optional reflection-bound flags so
+// that a req lacking the field is simply skipped instead of panicking.
+func hasField(req interface{}, name string) bool {
+	v := reflect.ValueOf(req)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return false
+	}
+	v = v.Elem()
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	f := v.FieldByName(name)
+	return f.IsValid() && f.CanSet()
+}
+
+// BindCommonParams binds all common flags onto cmd in a single call.
+//
+// It always binds region/zone/project when req satisfies request.Common,
+// reusing the presence-safe per-field binders. It then binds the optional
+// list/charge flags (--limit/--offset/--charge-type/--quantity) ONLY for the
+// fields that actually exist on req, so a request lacking them does not panic.
+func BindCommonParams(
+	cmd *cobra.Command,
+	req interface{},
+	def Defaults,
+	regionList func() []string,
+	zoneList func(region string) []string,
+	projectList func() []string,
+) {
+	if common, ok := req.(request.Common); ok {
+		BindRegion(cmd, common, def, regionList)
+		BindZone(cmd, common, def, zoneList)
+		BindProjectID(cmd, common, def, projectList)
+	}
+
+	if hasField(req, "Limit") {
+		BindLimit(cmd, req)
+	}
+	if hasField(req, "Offset") {
+		BindOffset(cmd, req)
+	}
+	if hasField(req, "ChargeType") {
+		BindChargeType(cmd, req)
+	}
+	if hasField(req, "Quantity") {
+		BindQuantity(cmd, req)
+	}
+}

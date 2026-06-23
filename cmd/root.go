@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
@@ -115,7 +116,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 const usageTmpl = `Usage:{{if .Runnable}}
  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}} [command] {{if $size:=len .Commands}}
  {{"command may be" | printf "%-20s"}} {{range $index,$cmd:= .Commands}}{{if .IsAvailableCommand}}{{$cmd.Name}}{{if gt $size  (add $index 1)}} | {{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableFlags}}
- {{"flags may be" | printf "%-20s"}} {{.Flags.FlagNames}}
+ {{"flags may be" | printf "%-20s"}} {{flagNames .Flags}}
 
 Use "{{.CommandPath}} --help" for details.{{end}}
 `
@@ -136,9 +137,16 @@ func newSchemaCmd() *cobra.Command {
 	}
 }
 
+// productCtx is the cli.Context shared by all product commands. Its output
+// format is finalized in initialize() (PersistentPreRun) after cobra parses
+// --output; buildContext() runs at tree-construction time, before flag parsing,
+// so the format it computes is provisional.
+var productCtx *cli.Context
+
 func addChildren(root *cobra.Command) {
 	addPlatformCommands(root)
-	addProductCommands(root, registeredProducts(), buildContext())
+	productCtx = buildContext()
+	addProductCommands(root, registeredProducts(), productCtx)
 	applyGlobalOverrideFlags(root)
 }
 
@@ -258,6 +266,21 @@ func Execute() {
 }
 
 func init() {
+	// usageTmpl uses the `add` template function (the command-list separator).
+	// The forked cobra registered it; upstream cobra (C2) does not, so without
+	// this the usage template fails to parse ("function \"add\" not defined")
+	// and panics whenever it renders — e.g. on any required-flag error. Register
+	// it once here so usage rendering works for every command.
+	cobra.AddTemplateFunc("add", func(a, b int) int { return a + b })
+	// usageTmpl also used pflag's fork-only FlagSet.FlagNames; upstream pflag
+	// has no such method, so the template errored at render time. Provide an
+	// equivalent template func that lists the flag names.
+	cobra.AddTemplateFunc("flagNames", func(fs *pflag.FlagSet) string {
+		var names []string
+		fs.VisitAll(func(f *pflag.Flag) { names = append(names, f.Name) })
+		return strings.Join(names, ", ")
+	})
+
 	//-1表示不覆盖配置文件中的MaxRetryTimes参数
 	global.MaxRetryTimes = -1
 	for idx, arg := range os.Args {
@@ -302,6 +325,14 @@ func resetHelpFunc(cmd *cobra.Command) {
 }
 
 func initialize(cmd *cobra.Command) {
+	// Finalize the product output format now that cobra has parsed --output.
+	// buildContext() ran before flag parsing, so the format it set was
+	// provisional (always JSON for non-TTY stdout, ignoring an explicit
+	// --output). Recompute it here so `--output table` etc. take effect.
+	if productCtx != nil {
+		productCtx.SetFormat(decideOutputFormat(os.Stdout))
+	}
+
 	flags := cmd.Flags()
 	project, err := flags.GetString("project-id")
 	if err == nil {

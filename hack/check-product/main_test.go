@@ -312,3 +312,41 @@ func TestCheckConsistency_DisabledProductMissingDir_NoWarn(t *testing.T) {
 		t.Errorf("expected no warnings for disabled product, got: %v", warnings)
 	}
 }
+
+// --------------------------------------------------------------------------
+// checkReservedCommands tests
+// --------------------------------------------------------------------------
+
+func TestCheckReservedCommands_ReservedName_Violation(t *testing.T) {
+	// A product declaring the platform-reserved "config" command must violate.
+	products := []Product{
+		{Name: "rogue", Dir: "products/rogue", Commands: []string{"config"}, Enabled: true},
+	}
+
+	violations := checkReservedCommands(products)
+
+	found := false
+	for _, v := range violations {
+		if strings.Contains(v, "rule6") &&
+			strings.Contains(v, "rogue") &&
+			strings.Contains(v, "config") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rule6 violation for reserved command 'config', got: %v", violations)
+	}
+}
+
+func TestCheckReservedCommands_RealRegistry_Clean(t *testing.T) {
+	// The real registry (udb → mysql) declares no reserved name → clean.
+	products := []Product{
+		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+	}
+
+	violations := checkReservedCommands(products)
+	if len(violations) != 0 {
+		t.Errorf("expected no violations for clean registry, got: %v", violations)
+	}
+}

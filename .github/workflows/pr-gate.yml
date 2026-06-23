@@ -40,7 +40,7 @@ jobs:
           echo "Changed files:"; echo "$FILES"
 
           # Protected paths require platform review (cannot be auto-admitted).
-          PROTECTED='^(\.github/workflows/|hack/|products\.yaml$|go\.mod$|go\.sum$|\.goreleaser\.yaml$|\.svu\.yaml$)'
+          PROTECTED='^(\.github/workflows/|hack/|pkg/|products\.yaml$|go\.mod$|go\.sum$|\.goreleaser\.yaml$|\.svu\.yaml$)'
           touches_protected=$(echo "$FILES" | grep -E "$PROTECTED" || true)
 
           # Product scope: all changed files under a single products/<name>/ ?

@@ -12,19 +12,23 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-func stopUdbIns(ctx *cli.Context, req *udb.StopUDBInstanceRequest, async bool, out io.Writer) {
+// stopUdbIns stops the instance and narrates progress to out (the caller passes
+// progressWriter(ctx): stdout in table mode, stderr in json/yaml). Returns the
+// stop error so callers can decide whether to record a structured result.
+func stopUdbIns(ctx *cli.Context, req *udb.StopUDBInstanceRequest, async bool, out io.Writer) error {
 	client := cli.NewServiceClient(ctx, udb.NewClient)
 	_, err := client.StopUDBInstance(req)
 	if err != nil {
 		ctx.HandleError(err)
-		return
+		return err
 	}
 	text := fmt.Sprintf("udb[%s] is stopping", *req.DBId)
 	if async {
 		fmt.Fprintln(out, text)
 	} else {
-		ctx.Poller(describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_SHUTOFF, status.UDB_FAIL})
+		ctx.PollerTo(out, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_SHUTOFF, status.UDB_FAIL})
 	}
+	return nil
 }
 
 func getUDBIDList(ctx *cli.Context, states []string, dbType, project, region, zone string) []string {
