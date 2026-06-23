@@ -18,7 +18,7 @@ builds:
 
 archives:
   - id: ucloud
-    builds:
+    ids:
       - ucloud
     formats:
       - zip
