@@ -26,6 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -83,7 +84,7 @@ func NewCmdULBList(out io.Writer) *cobra.Command {
 				row.Group = ulb.BusinessId
 				row.VserverCount = len(ulb.VServerSet)
 				row.VPC = ulb.VPCId
-				row.CreationTime = base.FormatDate(ulb.CreateTime)
+				row.CreationTime = common.FormatDate(ulb.CreateTime)
 				if ulb.ULBType == "OuterMode" {
 					ips := []string{}
 					for _, ip := range ulb.IPSet {

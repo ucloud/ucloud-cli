@@ -24,6 +24,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -127,7 +128,7 @@ func NewCmdUDPNList(out io.Writer) *cobra.Command {
 				row.Peers = fmt.Sprintf("%s <--> %s", udpn.Peer1, udpn.Peer2)
 				row.Bandwidth = fmt.Sprintf("%dMb", udpn.Bandwidth)
 				row.ChargeType = udpn.ChargeType
-				row.CreationTime = base.FormatDate(udpn.CreateTime)
+				row.CreationTime = common.FormatDate(udpn.CreateTime)
 				list = append(list, row)
 			}
 			base.PrintList(list, out)

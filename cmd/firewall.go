@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -84,7 +85,7 @@ func NewCmdFirewallList(out io.Writer) *cobra.Command {
 				row.Group = fw.Tag
 				row.RuleAmount = len(fw.Rule)
 				row.BoundResourceAmount = fw.ResourceCount
-				row.CreationTime = base.FormatDate(fw.CreateTime)
+				row.CreationTime = common.FormatDate(fw.CreateTime)
 				if fw.Remark != "" {
 					row.FirewallName += "\nremark:" + fw.Remark + "\n"
 				}

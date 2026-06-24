@@ -26,6 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -122,7 +123,7 @@ func NewCmdSharedBWList(out io.Writer) *cobra.Command {
 				row.ResourceID = sb.ShareBandwidthId
 				row.ChargeType = sb.ChargeType
 				row.Bandwidth = strconv.Itoa(sb.ShareBandwidth) + "Mb"
-				row.ExpirationTime = base.FormatDate(sb.ExpireTime)
+				row.ExpirationTime = common.FormatDate(sb.ExpireTime)
 				eipList := []string{}
 				for _, eip := range sb.EIPSet {
 					eipText := ""

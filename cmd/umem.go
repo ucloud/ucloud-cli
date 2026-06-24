@@ -28,6 +28,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
@@ -108,7 +109,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 					UsedSize:   fmt.Sprintf("%dMB", ins.UsedSize),
 					State:      ins.State,
 					Zone:       ins.Zone,
-					CreateTime: base.FormatDate(ins.CreateTime),
+					CreateTime: common.FormatDate(ins.CreateTime),
 				}
 				addrs := []string{}
 				for _, addr := range ins.Address {
@@ -128,7 +129,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 						State:      slave.State,
 						Zone:       slave.Zone,
 						Address:    fmt.Sprintf("%s:%d", slave.VirtualIP, slave.Port),
-						CreateTime: base.FormatDate(slave.CreateTime),
+						CreateTime: common.FormatDate(slave.CreateTime),
 					}
 					list = append(list, srow)
 				}
@@ -514,7 +515,7 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 					Size:       fmt.Sprintf("%dGB", ins.Size),
 					UsedSize:   fmt.Sprintf("%dMB", ins.UsedSize),
 					State:      ins.State,
-					CreateTime: base.FormatDate(ins.CreateTime),
+					CreateTime: common.FormatDate(ins.CreateTime),
 					Address:    fmt.Sprintf("%s:%d", ins.VirtualIP, ins.Port),
 				}
 				list = append(list, row)

@@ -24,6 +24,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -81,7 +82,7 @@ func NewCmdUImageList(out io.Writer) *cobra.Command {
 				row.ImageType = image.ImageType
 				row.BasicImage = image.OsName
 				row.ExtensibleFeature = strings.Join(image.Features, ",")
-				row.CreationTime = base.FormatDate(image.CreateTime)
+				row.CreationTime = common.FormatDate(image.CreateTime)
 				row.State = image.State
 				if row.State == "Available" {
 					list = append(list, row)

@@ -27,6 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
@@ -493,7 +494,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 				row.OriginAreaCode = item.OriginAreaCode
 				row.IPList = strings.Join(item.IPList, ",")
 				row.Domain = item.Domain
-				row.CreateTime = base.FormatDate(item.CreateTime)
+				row.CreateTime = common.FormatDate(item.CreateTime)
 
 				var egressIps []string
 				for _, egressIp := range item.EgressIpList {
