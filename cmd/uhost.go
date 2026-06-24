@@ -324,7 +324,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			if len(userDataBase64) > 0 {
-				if !base.IsBase64Encoded([]byte(userDataBase64)) {
+				if !common.IsBase64Encoded([]byte(userDataBase64)) {
 					return fmt.Errorf("%q must be base64-encoded", "user-data-base64")
 				}
 			}

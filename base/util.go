@@ -2,7 +2,6 @@ package base
 
 import (
 	"bufio"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -737,9 +736,4 @@ func getDefaultProject(cookie, csrfToken string) (string, string, error) {
 		}
 	}
 	return "", "", fmt.Errorf("default project not found")
-}
-
-func IsBase64Encoded(data []byte) bool {
-	_, err := base64.StdEncoding.DecodeString(string(data))
-	return err == nil
 }
