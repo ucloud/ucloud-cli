@@ -32,6 +32,16 @@ snapshot:
 changelog:
   use: git
   sort: asc
+  # Render each entry as the bare commit subject (e.g. "feat(udb): ...") instead
+  # of goreleaser's default "<40-char-sha> <subject>". The subject already carries
+  # the Conventional-Commit type+scope, and the groups below bucket by type, so the
+  # raw SHA prefix is just noise. Traceability stays available via the Release's
+  # auto-generated compare link on GitHub.
+  format: "{{ .Message }}"
+  # Customer-facing release notes: surface only user-perceivable change types
+  # (feat/fix/perf/docs). Internal-only commit types are filtered out below so a
+  # release — especially a large internal refactor — doesn't bury users in noise.
+  # Those commits still live in git history and the Release's compare link.
   groups:
     - title: Features
       regexp: '^feat(\(.+\))?\!?:.+'
@@ -45,17 +55,15 @@ changelog:
     - title: Documentation
       regexp: '^docs(\(.+\))?\!?:.+'
       order: 3
-    - title: Refactoring
-      regexp: '^refactor(\(.+\))?\!?:.+'
-      order: 4
-    - title: Build & CI
-      regexp: '^(build|ci|chore)(\(.+\))?\!?:.+'
-      order: 5
-    - title: Other Changes
-      order: 999
   filters:
     exclude:
       - '^Merge '
+      - '^refactor(\(.+\))?\!?:'
+      - '^test(\(.+\))?\!?:'
+      - '^style(\(.+\))?\!?:'
+      - '^chore(\(.+\))?\!?:'
+      - '^ci(\(.+\))?\!?:'
+      - '^build(\(.+\))?\!?:'
 
 # release: the target repo (owner/name) is intentionally NOT hardcoded — goreleaser
 # auto-detects it from GITHUB_REPOSITORY / the git remote, so the same config
