@@ -1,3 +1,13 @@
+# Changelog
+
+This file is a historical archive of changes up to and including **v0.3.3**.
+
+Starting with the next release, change logs are published with each GitHub Release
+(auto-generated from Conventional Commits):
+https://github.com/ucloud/ucloud-cli/releases
+
+---
+
 ## 0.3.3 (2026-06-18)
 
 * chore: bump `base.Version` to 0.3.3 to match the release tag
