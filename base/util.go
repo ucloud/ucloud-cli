@@ -1,7 +1,6 @@
 package base
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -58,46 +57,6 @@ func MosaicString(str string, beginChars, lastChars int) string {
 		return str[:beginChars] + strings.Repeat("*", 5) + str[(r+beginChars):]
 	}
 	return strings.Repeat("*", len(str))
-}
-
-// AppendToFile 添加到文件中
-func AppendToFile(name string, content string) error {
-	f, err := os.OpenFile(name, os.O_RDWR|os.O_APPEND, 0)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(fmt.Sprintf("\n%s\n", content))
-	return err
-}
-
-// LineInFile 检查某一行是否在某文件中
-func LineInFile(fileName string, lookFor string) bool {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-	r := bufio.NewReader(f)
-	prefix := []byte{}
-	for {
-		line, isPrefix, err := r.ReadLine()
-		if err == io.EOF {
-			return false
-		}
-		if err != nil {
-			return false
-		}
-		if isPrefix {
-			prefix = append(prefix, line...)
-			continue
-		}
-		line = append(prefix, line...)
-		if string(line) == lookFor {
-			return true
-		}
-		prefix = prefix[:0]
-	}
 }
 
 // GetConfigDir 获取配置文件所在目录
@@ -295,9 +254,6 @@ func calcWidth(text string) int {
 	}
 	return width
 }
-
-// DateTimeLayout 时间格式
-const DateTimeLayout = "2006-01-02/15:04:05"
 
 // RegionLabel regionlable
 var RegionLabel = map[string]string{
@@ -570,19 +526,6 @@ func PickResourceID(str string) string {
 		return strings.SplitN(str, "/", 2)[0]
 	}
 	return str
-}
-
-// WriteJSONFile 写json文件
-func WriteJSONFile(list interface{}, filePath string) error {
-	byts, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filePath, byts, 0600)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // WriteJSONFileAtomic 原子写 json 文件：同目录临时文件 + Sync + Rename（D3；对照 botocore#3213 损坏事故）
