@@ -1264,7 +1264,7 @@ func NewCmdSSLList(out io.Writer) *cobra.Command {
 				row.Name = ssl.SSLName
 				row.ResourceID = ssl.SSLId
 				row.MD5 = ssl.HashValue
-				row.UploadTime = base.FormatDateTime(ssl.CreateTime)
+				row.UploadTime = common.FormatDateTime(ssl.CreateTime)
 				targets := []string{}
 				for _, t := range ssl.BindedTargetSet {
 					item := fmt.Sprintf("%s/%s(%s/%s)", t.VServerId, t.VServerName, t.ULBId, t.ULBName)
@@ -1329,7 +1329,7 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 				},
 				{
 					Attribute: "UploadTime",
-					Content:   base.FormatDateTime(sslcf.CreateTime),
+					Content:   common.FormatDateTime(sslcf.CreateTime),
 				},
 				{
 					Attribute: "BindResource",

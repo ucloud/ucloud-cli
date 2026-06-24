@@ -352,8 +352,8 @@ func NewCmdBandwidthPkgList(out io.Writer) *cobra.Command {
 				row := BandwidthPkgRow{
 					ResourceID: bp.BandwidthPackageId,
 					Bandwidth:  strconv.Itoa(bp.Bandwidth) + "MB",
-					StartTime:  base.FormatDateTime(bp.EnableTime),
-					EndTime:    base.FormatDateTime(bp.DisableTime),
+					StartTime:  common.FormatDateTime(bp.EnableTime),
+					EndTime:    common.FormatDateTime(bp.DisableTime),
 				}
 				eip := bp.EIPId
 				for _, addr := range bp.EIPAddr {

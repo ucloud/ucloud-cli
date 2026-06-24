@@ -538,8 +538,8 @@ func printPathxDetail(instanceInfo pathx.ForwardInfo, out io.Writer) {
 		{Attribute: "IPList", Content: strings.Join(instanceInfo.IPList, ",")},
 		{Attribute: "Domain", Content: instanceInfo.Domain},
 		{Attribute: "Remark", Content: instanceInfo.Remark},
-		{Attribute: "CreateTime", Content: base.FormatDateTime(instanceInfo.CreateTime)},
-		{Attribute: "ExpireTime", Content: base.FormatDateTime(instanceInfo.ExpireTime)},
+		{Attribute: "CreateTime", Content: common.FormatDateTime(instanceInfo.CreateTime)},
+		{Attribute: "ExpireTime", Content: common.FormatDateTime(instanceInfo.ExpireTime)},
 	}
 	for _, attr := range attrs {
 		fmt.Fprintf(out, "%-22s: %s", attr.Attribute, attr.Content)
