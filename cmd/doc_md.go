@@ -25,6 +25,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -75,7 +76,7 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 
 	command.SetFlagValues(cmd, "format", "douku", "markdown", "rst")
 	command.SetCompletion(cmd, "dir", func() []string {
-		return base.GetFileList("")
+		return common.GetFileList("")
 	})
 
 	cmd.MarkFlagRequired("dir")

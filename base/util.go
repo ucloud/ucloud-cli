@@ -615,44 +615,6 @@ func WriteJSONFileAtomic(list interface{}, filePath string) error {
 	return os.Rename(tmp.Name(), filePath)
 }
 
-// GetFileList 补全文件名
-func GetFileList(suffix string) []string {
-	cmdLine := strings.TrimSpace(os.Getenv("COMP_LINE"))
-	words := strings.Split(cmdLine, " ")
-	last := words[len(words)-1]
-	pathPrefix := "."
-
-	if !strings.HasPrefix(last, "-") {
-		pathPrefix = last
-	}
-	hasTilde := false
-	//https://tiswww.case.edu/php/chet/bash/bashref.html#Tilde-Expansion
-	if strings.HasPrefix(pathPrefix, "~") {
-		pathPrefix = strings.Replace(pathPrefix, "~", GetHomePath(), 1)
-		hasTilde = true
-	}
-	files, err := ioutil.ReadDir(pathPrefix)
-	if err != nil {
-		return nil
-	}
-	names := []string{}
-	for _, f := range files {
-		name := f.Name()
-		if !strings.HasSuffix(name, suffix) {
-			continue
-		}
-		if hasTilde {
-			pathPrefix = strings.Replace(pathPrefix, GetHomePath(), "~", 1)
-		}
-		if strings.HasSuffix(pathPrefix, "/") {
-			names = append(names, pathPrefix+name)
-		} else {
-			names = append(names, pathPrefix+"/"+name)
-		}
-	}
-	return names
-}
-
 // Confirm 二次确认
 func Confirm(yes bool, text string) bool {
 	if yes {

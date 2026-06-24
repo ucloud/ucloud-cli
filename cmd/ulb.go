@@ -1428,16 +1428,16 @@ func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	caPath = flags.String("ca-certificate-file", "", "Optional. Path of CA certificate file, *.crt")
 	cmd.MarkFlagRequired("name")
 	command.SetCompletion(cmd, "all-in-one-file", func() []string {
-		return base.GetFileList("")
+		return common.GetFileList("")
 	})
 	command.SetCompletion(cmd, "private-key-file", func() []string {
-		return base.GetFileList(".key")
+		return common.GetFileList(".key")
 	})
 	command.SetCompletion(cmd, "ca-certificate-file", func() []string {
-		return base.GetFileList(".crt")
+		return common.GetFileList(".crt")
 	})
 	command.SetCompletion(cmd, "site-certificate-file", func() []string {
-		return base.GetFileList(".crt")
+		return common.GetFileList(".crt")
 	})
 	return cmd
 }
