@@ -5,17 +5,19 @@
 #   2. Version policy: every release is a PATCH bump (0.3.3 → 0.3.4 → 0.3.5),
 #      regardless of whether the commits are feat or fix — we intentionally do
 #      NOT auto-minor on feat. svu is used in two roles here:
-#        - `svu next`  → DETECTOR only: if it equals `svu current`, there are no
-#                        releasable conventional commits since the last tag, so
-#                        we skip. (next > current ⇒ something worth releasing.)
+#        - `svu next`  → DETECTOR: if it equals `svu current`, svu sees no
+#                        releasable feat/fix/breaking commit since the last tag.
+#                        We additionally treat refactor/perf commits as
+#                        releasable (a `git log` grep), so platform refactors
+#                        ship too; pure docs/chore/test/ci/style/build still skip.
 #        - `svu patch` → the actual version: always current + 0.0.1.
 #   3. If there are releasable commits, the job tags HEAD with that patch version
 #      and pushes the tag — all in the SAME job that runs goreleaser.
 #      This avoids the "default GITHUB_TOKEN-pushed tag doesn't trigger a
 #      downstream workflow" trap: tag + release happen in one atomic job.
 #   4. goreleaser builds the binaries and creates the GitHub Release.
-#   5. If there are no new feat/fix commits, the job exits early without
-#      creating a release.
+#   5. If there are no new releasable commits (feat/fix/perf/refactor/breaking),
+#      the job exits early without creating a release.
 #
 # First-launch guard:
 #   The `environment: release` line below requires manual approval via
@@ -63,13 +65,21 @@ jobs:
         run: |
           SVU="$(go env GOPATH)/bin/svu"
           CURRENT="$("$SVU" current)"
-          # DETECTOR: svu next > current iff there are releasable conventional
-          # commits since the last tag. We never publish `svu next` itself —
-          # the version policy is patch-only (see header).
-          DETECT="$("$SVU" next)"
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-          if [ "$DETECT" != "$CURRENT" ]; then
-            NEXT="$("$SVU" patch)"   # force a patch bump regardless of feat/fix
+          # DETECTOR: is there anything releasable since the last tag ($CURRENT)?
+          #   - `svu next` catches feat/fix/breaking (next != current ⇒ releasable).
+          #   - We ADD refactor/perf so platform refactors also ship. Pure
+          #     docs/chore/test/ci/style/build merges still skip.
+          # We never publish `svu next` itself — the version policy is patch-only
+          # (every release is current + 0.0.1; see header).
+          DETECT="$("$SVU" next)"
+          RELEASABLE=""
+          if git log --format='%s' "$CURRENT"..HEAD \
+               | grep -qE '^(refactor|perf)(\([^)]+\))?!?:'; then
+            RELEASABLE="refactor/perf"
+          fi
+          if [ "$DETECT" != "$CURRENT" ] || [ -n "$RELEASABLE" ]; then
+            NEXT="$("$SVU" patch)"   # force a patch bump regardless of commit type
             echo "next=$NEXT" >> "$GITHUB_OUTPUT"
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
