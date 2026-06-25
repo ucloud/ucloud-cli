@@ -1,4 +1,5 @@
 // encoding.go —— encoding 纯工具（stdlib-only）。
+
 package common
 
 import "encoding/base64"
