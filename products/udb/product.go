@@ -13,7 +13,7 @@ type product struct{}
 func New() cli.Product { return product{} }
 
 func (product) Metadata() cli.Metadata {
-	return cli.Metadata{Name: "udb", Owners: []string{"episkey"}, Commands: []string{"mysql"}}
+	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
 }
 
 func (product) NewCommand(ctx *cli.Context) *cobra.Command { return mysql.NewCommand(ctx) }

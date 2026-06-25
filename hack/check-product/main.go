@@ -59,15 +59,34 @@ const moduleRoot = "github.com/ucloud/ucloud-cli"
 // Product mirrors the products.yaml entry.
 type Product struct {
 	Name     string   `yaml:"name"`
-	Dir      string   `yaml:"dir"`
+	Dir      string   `yaml:"-"` // 从 product.yaml 路径推断,不从文件读
 	Owners   []string `yaml:"owners"`
 	Commands []string `yaml:"commands"`
 	Enabled  bool     `yaml:"enabled"`
 }
 
-// registry is the top-level products.yaml structure.
-type registry struct {
-	Products []Product `yaml:"products"`
+// loadProducts scans products/*/product.yaml and returns the products in
+// deterministic (path-sorted) order. Dir is derived from each file's directory.
+func loadProducts() ([]Product, error) {
+	matches, err := filepath.Glob("products/*/product.yaml")
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(matches)
+	var products []Product
+	for _, path := range matches {
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil, fmt.Errorf("read %s: %w", path, readErr)
+		}
+		var p Product
+		if uErr := yaml.Unmarshal(raw, &p); uErr != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, uErr)
+		}
+		p.Dir = filepath.Dir(path)
+		products = append(products, p)
+	}
+	return products, nil
 }
 
 // rawCompletion methods that must go through command.*; flagging them is
@@ -184,48 +203,19 @@ func checkFile(path, productName string) []string {
 	return violations
 }
 
-// checkConsistency verifies that:
-//   - every enabled product in yamlProducts whose dir IS PRESENT on disk has a
-//     matching directory under products/ (and vice-versa).
-//   - every directory under products/ corresponds to at least one products.yaml
-//     entry (any enablement state).
-//
-// An enabled product whose dir is ABSENT on disk emits a warning (not a
-// violation) — this is the expected pre-F state.
-//
-// dirs is the list of immediate subdirectory names under products/.
-//
-// Returns (violations, warnings).
-func checkConsistency(yamlProducts []Product, dirs []string) (violations, warnings []string) {
-	// Build sets.
-	dirSet := make(map[string]bool, len(dirs))
-	for _, d := range dirs {
-		dirSet[d] = true
+// checkConsistency (rule5): every immediate subdirectory of products/ must have
+// a product.yaml (i.e. appear in the scanned products list).
+func checkConsistency(products []Product, dirs []string) (violations, warnings []string) {
+	hasYAML := make(map[string]bool, len(products))
+	for _, p := range products {
+		hasYAML[filepath.Base(p.Dir)] = true
 	}
-
-	// Build a set of dirs claimed by any products.yaml entry (not just enabled).
-	yamlDirNames := make(map[string]bool, len(yamlProducts))
-	for _, p := range yamlProducts {
-		// p.Dir is "products/<name>"; we want the leaf name.
-		leaf := filepath.Base(p.Dir)
-		yamlDirNames[leaf] = true
-
-		// Only warn (not fail) if an enabled product's dir is missing.
-		if p.Enabled && !dirSet[leaf] {
-			warnings = append(warnings,
-				fmt.Sprintf("warn: enabled product %q dir %q not found on disk (pre-F state, not a failure)",
-					p.Name, p.Dir))
-		}
-	}
-
-	// Every directory under products/ must have a products.yaml entry.
 	for _, d := range dirs {
-		if !yamlDirNames[d] {
+		if !hasYAML[d] {
 			violations = append(violations,
-				fmt.Sprintf("products/%s: rule5: directory has no matching entry in products.yaml", d))
+				fmt.Sprintf("products/%s: rule5: directory has no product.yaml", d))
 		}
 	}
-
 	return violations, warnings
 }
 
@@ -325,17 +315,10 @@ func main() {
 	var allViolations []string
 	var allWarnings []string
 
-	// ---- Load products.yaml -----------------------------------------------
-	yamlPath := "products.yaml"
-	raw, err := os.ReadFile(yamlPath)
+	// ---- Load products from products/*/product.yaml -----------------------
+	products, err := loadProducts()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "check-product: cannot read %s: %v\n", yamlPath, err)
-		os.Exit(2)
-	}
-
-	var reg registry
-	if err := yaml.Unmarshal(raw, &reg); err != nil {
-		fmt.Fprintf(os.Stderr, "check-product: parse %s: %v\n", yamlPath, err)
+		fmt.Fprintf(os.Stderr, "check-product: load products: %v\n", err)
 		os.Exit(2)
 	}
 
@@ -356,18 +339,18 @@ func main() {
 	}
 
 	// ---- Rule 5: consistency check ----------------------------------------
-	v5, w5 := checkConsistency(reg.Products, foundDirs)
+	v5, w5 := checkConsistency(products, foundDirs)
 	allViolations = append(allViolations, v5...)
 	allWarnings = append(allWarnings, w5...)
 
 	// ---- Rule 6: reserved platform command names --------------------------
-	allViolations = append(allViolations, checkReservedCommands(reg.Products)...)
+	allViolations = append(allViolations, checkReservedCommands(products)...)
 
 	// ---- Rule 7: cross-product command-name uniqueness --------------------
-	allViolations = append(allViolations, checkCommandCollisions(reg.Products)...)
+	allViolations = append(allViolations, checkCommandCollisions(products)...)
 
 	// ---- Rule 8: product.go Metadata commands ↔ products.yaml -------------
-	allViolations = append(allViolations, checkCommandsConsistency(reg.Products)...)
+	allViolations = append(allViolations, checkCommandsConsistency(products)...)
 
 	// ---- Rules 1–4: walk every .go file under products/ ------------------
 	if _, statErr := os.Stat(productsRoot); statErr == nil {

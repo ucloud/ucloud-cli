@@ -242,74 +242,40 @@ func setup(ctx *cli.Context, f someFlag) {
 // checkConsistency tests
 // --------------------------------------------------------------------------
 
-func TestCheckConsistency_EnabledProductMissingDir_Warn(t *testing.T) {
-	products := []Product{
-		{Name: "udb", Dir: "products/udb", Enabled: true},
-	}
-	dirs := []string{} // udb dir does not exist
-
-	violations, warnings := checkConsistency(products, dirs)
-
-	// Missing-dir for enabled product must be a WARNING, not a violation.
-	if len(violations) != 0 {
-		t.Errorf("expected no violations, got: %v", violations)
-	}
-	if len(warnings) == 0 {
-		t.Error("expected warning for missing enabled-product dir, got none")
-	}
-	if !strings.Contains(warnings[0], "warn") {
-		t.Errorf("expected warn prefix, got: %v", warnings[0])
-	}
-}
-
-func TestCheckConsistency_UnknownDir_Violation(t *testing.T) {
-	products := []Product{
-		{Name: "udb", Dir: "products/udb", Enabled: true},
-	}
-	dirs := []string{"udb", "mystery"} // "mystery" has no products.yaml entry
-
+func TestCheckConsistency_DirWithoutYAML_Violation(t *testing.T) {
+	products := []Product{{Name: "udb", Dir: "products/udb", Enabled: true}}
+	dirs := []string{"udb", "mystery"} // mystery 无 product.yaml
 	violations, _ := checkConsistency(products, dirs)
-
 	found := false
 	for _, v := range violations {
 		if strings.Contains(v, "mystery") && strings.Contains(v, "rule5") {
 			found = true
-			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rule5 violation for unknown directory 'mystery', got: %v", violations)
+		t.Fatalf("expected rule5 violation for dir without product.yaml, got: %v", violations)
 	}
 }
 
-func TestCheckConsistency_AllMatch_Clean(t *testing.T) {
-	products := []Product{
-		{Name: "udb", Dir: "products/udb", Enabled: true},
-	}
+func TestCheckConsistency_AllHaveYAML_Clean(t *testing.T) {
+	products := []Product{{Name: "udb", Dir: "products/udb", Enabled: true}}
 	dirs := []string{"udb"}
-
-	violations, warnings := checkConsistency(products, dirs)
+	violations, _ := checkConsistency(products, dirs)
 	if len(violations) != 0 {
 		t.Errorf("expected no violations, got: %v", violations)
-	}
-	if len(warnings) != 0 {
-		t.Errorf("expected no warnings, got: %v", warnings)
 	}
 }
 
-func TestCheckConsistency_DisabledProductMissingDir_NoWarn(t *testing.T) {
-	// A disabled product whose dir is absent should produce no warning/violation.
-	products := []Product{
-		{Name: "vpc", Dir: "products/vpc", Enabled: false},
+func TestLoadProducts(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "products/udb/product.yaml", "name: udb\nowners: [Episkey-G]\ncommands: [mysql]\nenabled: true\n")
+	t.Chdir(dir)
+	got, err := loadProducts()
+	if err != nil {
+		t.Fatalf("loadProducts: %v", err)
 	}
-	dirs := []string{}
-
-	violations, warnings := checkConsistency(products, dirs)
-	if len(violations) != 0 {
-		t.Errorf("expected no violations, got: %v", violations)
-	}
-	if len(warnings) != 0 {
-		t.Errorf("expected no warnings for disabled product, got: %v", warnings)
+	if len(got) != 1 || got[0].Name != "udb" || got[0].Dir != "products/udb" || len(got[0].Commands) != 1 {
+		t.Fatalf("unexpected: %+v", got)
 	}
 }
 
