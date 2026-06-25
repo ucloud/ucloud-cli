@@ -21,6 +21,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model"
 	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-cli/ux"
@@ -38,18 +39,6 @@ var Cxt = model.GetContext(os.Stdout)
 // SdkClient 用于上报数据
 var SdkClient *sdk.Client
 
-// GetHomePath 获取家目录
-func GetHomePath() string {
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	return os.Getenv("HOME")
-}
-
 // MosaicString 对字符串敏感部分打马赛克 如公钥私钥
 func MosaicString(str string, beginChars, lastChars int) string {
 	r := len(str) - lastChars - beginChars
@@ -61,7 +50,7 @@ func MosaicString(str string, beginChars, lastChars int) string {
 
 // GetConfigDir 获取配置文件所在目录
 func GetConfigDir() string {
-	path := GetHomePath() + "/" + ConfigPath
+	path := common.GetHomePath() + "/" + ConfigPath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)
 		if err != nil {
