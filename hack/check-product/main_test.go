@@ -350,3 +350,142 @@ func TestCheckReservedCommands_RealRegistry_Clean(t *testing.T) {
 		t.Errorf("expected no violations for clean registry, got: %v", violations)
 	}
 }
+
+// --------------------------------------------------------------------------
+// checkCommandCollisions tests (rule7)
+// --------------------------------------------------------------------------
+
+func TestCheckCommandCollisions_Duplicate_Violation(t *testing.T) {
+	products := []Product{
+		{Name: "uhost", Dir: "products/uhost", Commands: []string{"uhost"}, Enabled: true},
+		{Name: "compute", Dir: "products/compute", Commands: []string{"uhost"}, Enabled: true},
+	}
+	violations := checkCommandCollisions(products)
+	found := false
+	for _, v := range violations {
+		if strings.Contains(v, "rule7") && strings.Contains(v, "uhost") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rule7 violation for duplicate command 'uhost', got: %v", violations)
+	}
+}
+
+func TestCheckCommandCollisions_UniqueRegistry_Clean(t *testing.T) {
+	products := []Product{
+		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+		{Name: "uhost", Dir: "products/uhost", Commands: []string{"uhost"}, Enabled: true},
+	}
+	violations := checkCommandCollisions(products)
+	if len(violations) != 0 {
+		t.Errorf("expected no violations for unique commands, got: %v", violations)
+	}
+}
+
+func TestCheckCommandCollisions_DisabledIgnored_Clean(t *testing.T) {
+	// 被禁用产品即便重名也不算冲突(它不会被注册进命令树)。
+	products := []Product{
+		{Name: "uhost", Dir: "products/uhost", Commands: []string{"uhost"}, Enabled: true},
+		{Name: "legacy", Dir: "products/legacy", Commands: []string{"uhost"}, Enabled: false},
+	}
+	violations := checkCommandCollisions(products)
+	if len(violations) != 0 {
+		t.Errorf("expected no violations when duplicate is disabled, got: %v", violations)
+	}
+}
+
+// --------------------------------------------------------------------------
+// rule8: commands consistency (product.go Metadata vs products.yaml)
+// --------------------------------------------------------------------------
+
+func TestSameStringSet(t *testing.T) {
+	cases := []struct {
+		a, b []string
+		want bool
+	}{
+		{[]string{"mysql"}, []string{"mysql"}, true},
+		{[]string{"redis", "memcache"}, []string{"memcache", "redis"}, true}, // order-independent
+		{[]string{"mysql"}, []string{"mysql", "extra"}, false},
+		{[]string{"mysql"}, []string{"redis"}, false},
+		{nil, nil, true},
+	}
+	for i, c := range cases {
+		if got := sameStringSet(c.a, c.b); got != c.want {
+			t.Errorf("case %d: sameStringSet(%v,%v)=%v want %v", i, c.a, c.b, got, c.want)
+		}
+	}
+}
+
+func TestExtractMetadataCommands(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "product.go", `package udb
+
+import "github.com/ucloud/ucloud-cli/pkg/cli"
+
+type product struct{}
+
+func (product) Metadata() cli.Metadata {
+	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
+}
+`)
+	got, err := extractMetadataCommands(dir)
+	if err != nil {
+		t.Fatalf("extractMetadataCommands: %v", err)
+	}
+	if len(got) != 1 || got[0] != "mysql" {
+		t.Fatalf("expected [mysql], got %v", got)
+	}
+}
+
+func TestCheckCommandsConsistency_Mismatch_Violation(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "products/udb/product.go", `package udb
+
+import "github.com/ucloud/ucloud-cli/pkg/cli"
+
+type product struct{}
+
+func (product) Metadata() cli.Metadata {
+	return cli.Metadata{Name: "udb", Commands: []string{"mysql", "extra"}}
+}
+`)
+	t.Chdir(dir) // Go 1.24+: chdir for this test, auto-restored
+	products := []Product{
+		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+	}
+	violations := checkCommandsConsistency(products)
+	found := false
+	for _, v := range violations {
+		if strings.Contains(v, "rule8") && strings.Contains(v, "udb") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rule8 mismatch violation, got: %v", violations)
+	}
+}
+
+func TestCheckCommandsConsistency_Match_Clean(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "products/udb/product.go", `package udb
+
+import "github.com/ucloud/ucloud-cli/pkg/cli"
+
+type product struct{}
+
+func (product) Metadata() cli.Metadata {
+	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
+}
+`)
+	t.Chdir(dir)
+	products := []Product{
+		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+	}
+	violations := checkCommandsConsistency(products)
+	if len(violations) != 0 {
+		t.Errorf("expected no violations for matching commands, got: %v", violations)
+	}
+}

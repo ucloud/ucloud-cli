@@ -34,6 +34,10 @@
 //     command name that the platform itself registers (see reservedCommands).
 //     A product declaring e.g. "config" would silently shadow the platform
 //     command, so it is a VIOLATION.
+//  7. Cross-product command uniqueness: no two enabled products may declare the
+//     same top-level command name (cobra AddCommand silently shadows duplicates).
+//  8. Commands consistency: each enabled product's product.go Metadata().Commands
+//     must match its products.yaml `commands` (order-independent).
 package main
 
 import (
@@ -43,6 +47,8 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -280,6 +286,41 @@ func checkReservedCommands(yamlProducts []Product) []string {
 	return violations
 }
 
+// checkCommandCollisions verifies that no two ENABLED products declare the same
+// top-level command name (设计 §6.3「一级命令无冲突」, rule7). cobra's AddCommand
+// does not panic on duplicate names — the later registration silently shadows the
+// earlier — so this static gate is the only thing that catches a collision once
+// multiple products live under products/.
+func checkCommandCollisions(yamlProducts []Product) []string {
+	// command name -> products declaring it (enabled only)
+	owners := make(map[string][]string)
+	for _, p := range yamlProducts {
+		if !p.Enabled {
+			continue
+		}
+		for _, c := range p.Commands {
+			owners[c] = append(owners[c], p.Name)
+		}
+	}
+
+	// Deterministic output: iterate command names in sorted order.
+	cmds := make([]string, 0, len(owners))
+	for c := range owners {
+		cmds = append(cmds, c)
+	}
+	sort.Strings(cmds)
+
+	var violations []string
+	for _, c := range cmds {
+		if len(owners[c]) > 1 {
+			violations = append(violations,
+				fmt.Sprintf("rule7: top-level command %q declared by multiple products %v (command names must be unique across products)",
+					c, owners[c]))
+		}
+	}
+	return violations
+}
+
 func main() {
 	var allViolations []string
 	var allWarnings []string
@@ -322,6 +363,12 @@ func main() {
 	// ---- Rule 6: reserved platform command names --------------------------
 	allViolations = append(allViolations, checkReservedCommands(reg.Products)...)
 
+	// ---- Rule 7: cross-product command-name uniqueness --------------------
+	allViolations = append(allViolations, checkCommandCollisions(reg.Products)...)
+
+	// ---- Rule 8: product.go Metadata commands ↔ products.yaml -------------
+	allViolations = append(allViolations, checkCommandsConsistency(reg.Products)...)
+
 	// ---- Rules 1–4: walk every .go file under products/ ------------------
 	if _, statErr := os.Stat(productsRoot); statErr == nil {
 		walkErr := filepath.Walk(productsRoot, func(path string, info os.FileInfo, walkErr error) error {
@@ -362,4 +409,107 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "check-product: %d violation(s) found.\n", len(allViolations))
 	os.Exit(1)
+}
+
+// extractMetadataCommands statically extracts the string slice passed as the
+// Commands field of the cli.Metadata composite literal returned by the
+// Metadata() method in <productDir>/product.go. Returns (nil, nil) if there is
+// no Metadata method or no Commands field (设计 §6.3「命令声明与 products.yaml 一致」).
+func extractMetadataCommands(productDir string) ([]string, error) {
+	path := filepath.Join(productDir, "product.go")
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, path, nil, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var cmds []string
+	found := false
+	ast.Inspect(f, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Recv == nil || fn.Name.Name != "Metadata" || fn.Body == nil {
+			return true
+		}
+		ast.Inspect(fn.Body, func(m ast.Node) bool {
+			kv, ok := m.(*ast.KeyValueExpr)
+			if !ok {
+				return true
+			}
+			key, ok := kv.Key.(*ast.Ident)
+			if !ok || key.Name != "Commands" {
+				return true
+			}
+			lit, ok := kv.Value.(*ast.CompositeLit)
+			if !ok {
+				return true
+			}
+			for _, elt := range lit.Elts {
+				if bl, ok := elt.(*ast.BasicLit); ok && bl.Kind == token.STRING {
+					if s, uerr := strconv.Unquote(bl.Value); uerr == nil {
+						cmds = append(cmds, s)
+					}
+				}
+			}
+			found = true
+			return false
+		})
+		return true
+	})
+	if !found {
+		return nil, nil
+	}
+	return cmds, nil
+}
+
+// sameStringSet reports whether a and b contain the same elements (order-independent).
+func sameStringSet(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	seen := make(map[string]int, len(a))
+	for _, s := range a {
+		seen[s]++
+	}
+	for _, s := range b {
+		seen[s]--
+	}
+	for _, n := range seen {
+		if n != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// checkCommandsConsistency verifies that each enabled product whose dir exists
+// on disk declares the same Commands in product.go's Metadata() as in
+// products.yaml (设计 §6.3, rule8). Skips products whose dir is not yet present
+// (pre-F state). Order-independent comparison.
+func checkCommandsConsistency(yamlProducts []Product) []string {
+	var violations []string
+	for _, p := range yamlProducts {
+		if !p.Enabled {
+			continue
+		}
+		if _, statErr := os.Stat(p.Dir); os.IsNotExist(statErr) {
+			continue
+		}
+		meta, err := extractMetadataCommands(p.Dir)
+		if err != nil {
+			violations = append(violations,
+				fmt.Sprintf("rule8: %s: cannot parse product.go: %v", p.Dir, err))
+			continue
+		}
+		if meta == nil {
+			violations = append(violations,
+				fmt.Sprintf("rule8: product %q: product.go has no Metadata().Commands to verify against products.yaml", p.Name))
+			continue
+		}
+		if !sameStringSet(p.Commands, meta) {
+			violations = append(violations,
+				fmt.Sprintf("rule8: product %q commands mismatch: products.yaml=%v vs product.go Metadata()=%v",
+					p.Name, p.Commands, meta))
+		}
+	}
+	return violations
 }
