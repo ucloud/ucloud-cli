@@ -217,7 +217,6 @@ func buildContext() *cli.Context {
 		Out:         os.Stdout,
 		Err:         os.Stderr,
 		Format:      decideOutputFormat(os.Stdout),
-		Biz:         base.BizClient,
 		Config:      base.ConfigIns,
 		RegionList:  getRegionList,
 		ZoneList:    getZoneList,

@@ -27,7 +27,6 @@ type Context struct {
 	out    io.Writer
 	err    io.Writer
 	format OutputFormat
-	biz    *base.Client
 	config *base.AggConfig
 
 	// Completion candidate providers injected by the host so that bind
@@ -44,7 +43,6 @@ type Deps struct {
 	Out    io.Writer
 	Err    io.Writer
 	Format OutputFormat
-	Biz    *base.Client
 	Config *base.AggConfig
 
 	RegionList  func() []string
@@ -59,7 +57,6 @@ func NewContext(d Deps) *Context {
 		out:         d.Out,
 		err:         d.Err,
 		format:      d.Format,
-		biz:         d.Biz,
 		config:      d.Config,
 		regionList:  d.RegionList,
 		zoneList:    d.ZoneList,
