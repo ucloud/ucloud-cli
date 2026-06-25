@@ -73,9 +73,17 @@ jobs:
           # We never publish `svu next` itself — the version policy is patch-only
           # (every release is current + 0.0.1; see header).
           DETECT="$("$SVU" next)"
+          # Also releasable if a refactor/perf commit exists since $CURRENT.
+          # Scan %B (full message, not just %s) so a type that only shows up in a
+          # merge-commit body / PR title is still caught. Capture first and match
+          # via here-string (NO pipe): `grep -q` exits on first hit; a piped
+          # `git log` would then take SIGPIPE and — under bash -o pipefail (the
+          # GitHub Actions default) — flip the whole pipeline non-zero, which
+          # would falsely read as "nothing releasable" and skip. The here-string
+          # avoids the pipe entirely (no-match just makes the `if` false).
           RELEASABLE=""
-          if git log --format='%s' "$CURRENT"..HEAD \
-               | grep -qE '^(refactor|perf)(\([^)]+\))?!?:'; then
+          LOG="$(git log --format='%B' "$CURRENT"..HEAD)"
+          if grep -qE '^(refactor|perf)(\([^)]+\))?!?:' <<<"$LOG"; then
             RELEASABLE="refactor/perf"
           fi
           if [ "$DETECT" != "$CURRENT" ] || [ -n "$RELEASABLE" ]; then
