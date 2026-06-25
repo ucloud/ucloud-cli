@@ -13,6 +13,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -70,7 +71,7 @@ func NewCmdVPCList(out io.Writer) *cobra.Command {
 				row.Group = vpc.Tag
 				row.NetworkSegment = strings.Join(vpc.Network, ",")
 				row.SubnetCount = vpc.SubnetCount
-				row.CreationTime = base.FormatDate(vpc.CreateTime)
+				row.CreationTime = common.FormatDate(vpc.CreateTime)
 				list = append(list, row)
 			}
 			base.PrintList(list, out)
@@ -381,7 +382,7 @@ func NewCmdSubnetList(out io.Writer) *cobra.Command {
 				row.Group = sn.Tag
 				row.AffiliatedVPC = fmt.Sprintf("%s/%s", sn.VPCId, sn.VPCName)
 				row.NetworkSegment = fmt.Sprintf("%s/%s", sn.Subnet, sn.Netmask)
-				row.CreationTime = base.FormatDate(sn.CreateTime)
+				row.CreationTime = common.FormatDate(sn.CreateTime)
 				list = append(list, row)
 			}
 			base.PrintList(list, out)

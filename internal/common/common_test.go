@@ -21,6 +21,26 @@ func TestFormatDateTime(t *testing.T) {
 	}
 }
 
+func TestFormatDate(t *testing.T) {
+	want := time.Unix(int64(1609459200), 0).Format("2006-01-02")
+	got := FormatDate(1609459200)
+	if got != want {
+		t.Fatalf("FormatDate(1609459200) = %q, want %q", got, want)
+	}
+	if len(got) != len("2006-01-02") {
+		t.Fatalf("FormatDate(1609459200) length = %d, want %d (%q)", len(got), len("2006-01-02"), got)
+	}
+}
+
+func TestIsBase64Encoded(t *testing.T) {
+	if !IsBase64Encoded([]byte("aGVsbG8=")) {
+		t.Fatalf("IsBase64Encoded(%q) = false, want true", "aGVsbG8=")
+	}
+	if IsBase64Encoded([]byte("not base64!!!")) {
+		t.Fatalf("IsBase64Encoded(%q) = true, want false", "not base64!!!")
+	}
+}
+
 func TestGetHomePath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unix-only home semantics")

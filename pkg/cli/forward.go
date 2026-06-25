@@ -78,7 +78,7 @@ func (c *Context) PrintList(dataSet interface{}) {
 }
 
 // PrintJSON renders dataSet as JSON to the ctx writer.
-func (c *Context) PrintJSON(dataSet interface{}) error { return base.PrintJSON(dataSet, c.out) }
+func (c *Context) PrintJSON(dataSet interface{}) error { return ui.PrintJSON(dataSet, c.out) }
 
 // Confirm prompts the user for a yes/no confirmation on the ctx streams.
 func (c *Context) Confirm(yes bool, text string) bool { return ui.Confirm(c.in, c.out, yes, text) }

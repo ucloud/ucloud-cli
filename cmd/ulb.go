@@ -26,6 +26,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -83,7 +84,7 @@ func NewCmdULBList(out io.Writer) *cobra.Command {
 				row.Group = ulb.BusinessId
 				row.VserverCount = len(ulb.VServerSet)
 				row.VPC = ulb.VPCId
-				row.CreationTime = base.FormatDate(ulb.CreateTime)
+				row.CreationTime = common.FormatDate(ulb.CreateTime)
 				if ulb.ULBType == "OuterMode" {
 					ips := []string{}
 					for _, ip := range ulb.IPSet {
@@ -1263,7 +1264,7 @@ func NewCmdSSLList(out io.Writer) *cobra.Command {
 				row.Name = ssl.SSLName
 				row.ResourceID = ssl.SSLId
 				row.MD5 = ssl.HashValue
-				row.UploadTime = base.FormatDateTime(ssl.CreateTime)
+				row.UploadTime = common.FormatDateTime(ssl.CreateTime)
 				targets := []string{}
 				for _, t := range ssl.BindedTargetSet {
 					item := fmt.Sprintf("%s/%s(%s/%s)", t.VServerId, t.VServerName, t.ULBId, t.ULBName)
@@ -1328,7 +1329,7 @@ func NewCmdSSLDescribe(out io.Writer) *cobra.Command {
 				},
 				{
 					Attribute: "UploadTime",
-					Content:   base.FormatDateTime(sslcf.CreateTime),
+					Content:   common.FormatDateTime(sslcf.CreateTime),
 				},
 				{
 					Attribute: "BindResource",
@@ -1427,16 +1428,16 @@ func NewCmdSSLAdd(out io.Writer) *cobra.Command {
 	caPath = flags.String("ca-certificate-file", "", "Optional. Path of CA certificate file, *.crt")
 	cmd.MarkFlagRequired("name")
 	command.SetCompletion(cmd, "all-in-one-file", func() []string {
-		return base.GetFileList("")
+		return common.GetFileList("")
 	})
 	command.SetCompletion(cmd, "private-key-file", func() []string {
-		return base.GetFileList(".key")
+		return common.GetFileList(".key")
 	})
 	command.SetCompletion(cmd, "ca-certificate-file", func() []string {
-		return base.GetFileList(".crt")
+		return common.GetFileList(".crt")
 	})
 	command.SetCompletion(cmd, "site-certificate-file", func() []string {
-		return base.GetFileList(".crt")
+		return common.GetFileList(".crt")
 	})
 	return cmd
 }

@@ -27,6 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
@@ -493,7 +494,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 				row.OriginAreaCode = item.OriginAreaCode
 				row.IPList = strings.Join(item.IPList, ",")
 				row.Domain = item.Domain
-				row.CreateTime = base.FormatDate(item.CreateTime)
+				row.CreateTime = common.FormatDate(item.CreateTime)
 
 				var egressIps []string
 				for _, egressIp := range item.EgressIpList {
@@ -537,8 +538,8 @@ func printPathxDetail(instanceInfo pathx.ForwardInfo, out io.Writer) {
 		{Attribute: "IPList", Content: strings.Join(instanceInfo.IPList, ",")},
 		{Attribute: "Domain", Content: instanceInfo.Domain},
 		{Attribute: "Remark", Content: instanceInfo.Remark},
-		{Attribute: "CreateTime", Content: base.FormatDateTime(instanceInfo.CreateTime)},
-		{Attribute: "ExpireTime", Content: base.FormatDateTime(instanceInfo.ExpireTime)},
+		{Attribute: "CreateTime", Content: common.FormatDateTime(instanceInfo.CreateTime)},
+		{Attribute: "ExpireTime", Content: common.FormatDateTime(instanceInfo.ExpireTime)},
 	}
 	for _, attr := range attrs {
 		fmt.Fprintf(out, "%-22s: %s", attr.Attribute, attr.Content)

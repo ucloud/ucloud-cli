@@ -18,3 +18,8 @@ const DateTimeLayout = "2006-01-02/15:04:05"
 func FormatDateTime(seconds int) string {
 	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
 }
+
+// FormatDate 格式化时间，把以秒为单位的时间戳格式化为年月日
+func FormatDate(seconds int) string {
+	return time.Unix(int64(seconds), 0).Format("2006-01-02")
+}

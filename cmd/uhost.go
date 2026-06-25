@@ -33,6 +33,7 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -125,7 +126,7 @@ func listUhost(uhosts []uhost.UHostInstanceSet, out io.Writer, output string, li
 		row.DiskSet = strings.Join(disks, "|")
 		row.Config = fmt.Sprintf("cpu:%d memory:%dG disk:%dG", cupCore, memorySize, diskSize)
 		row.Image = fmt.Sprintf("%s|%s", host.BasicImageId, host.BasicImageName)
-		row.CreationTime = base.FormatDate(host.CreateTime)
+		row.CreationTime = common.FormatDate(host.CreateTime)
 		row.State = host.State
 		row.Type = host.MachineType + "/" + host.HostType
 		if host.HotplugFeature {
@@ -323,7 +324,7 @@ func NewCmdUHostCreate() *cobra.Command {
 			}
 
 			if len(userDataBase64) > 0 {
-				if !base.IsBase64Encoded([]byte(userDataBase64)) {
+				if !common.IsBase64Encoded([]byte(userDataBase64)) {
 					return fmt.Errorf("%q must be base64-encoded", "user-data-base64")
 				}
 			}

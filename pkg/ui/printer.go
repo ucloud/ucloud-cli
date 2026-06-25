@@ -61,6 +61,19 @@ func (p Printer) PrintList(dataSet interface{}) {
 	}
 }
 
+// PrintJSON renders dataSet as indented JSON to out.
+func PrintJSON(dataSet interface{}, out io.Writer) error {
+	b, err := json.MarshalIndent(dataSet, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(out, string(b))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // gap is the number of spaces between table columns.
 const gap = 2
 

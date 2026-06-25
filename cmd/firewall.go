@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -84,7 +85,7 @@ func NewCmdFirewallList(out io.Writer) *cobra.Command {
 				row.Group = fw.Tag
 				row.RuleAmount = len(fw.Rule)
 				row.BoundResourceAmount = fw.ResourceCount
-				row.CreationTime = base.FormatDate(fw.CreateTime)
+				row.CreationTime = common.FormatDate(fw.CreateTime)
 				if fw.Remark != "" {
 					row.FirewallName += "\nremark:" + fw.Remark + "\n"
 				}
@@ -170,7 +171,7 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	req.Remark = flags.String("remark", "", "Optional. Remark of the firewall to create")
 	cmd.MarkFlagRequired("name")
 	command.SetCompletion(cmd, "rules-file", func() []string {
-		return base.GetFileList("")
+		return common.GetFileList("")
 	})
 	return cmd
 }
@@ -241,7 +242,7 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 		return getFirewallIDNames(*req.ProjectId, *req.Region)
 	})
 	command.SetCompletion(cmd, "rules-file", func() []string {
-		return base.GetFileList("")
+		return common.GetFileList("")
 	})
 
 	cmd.MarkFlagRequired("fw-id")

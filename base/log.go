@@ -16,6 +16,8 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
+
+	"github.com/ucloud/ucloud-cli/internal/common"
 )
 
 const DefaultDasURL = "https://das-rpt.ucloud.cn/log"
@@ -87,12 +89,12 @@ func GetLogger() *log.Logger {
 
 // GetLogFileDir 获取日志文件路径
 func GetLogFileDir() string {
-	return GetHomePath() + fmt.Sprintf("/%s", ConfigPath)
+	return common.GetHomePath() + fmt.Sprintf("/%s", ConfigPath)
 }
 
 // GetLogFilePath 获取日志文件路径
 func GetLogFilePath() string {
-	return GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
+	return common.GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
 }
 
 // LogInfo 记录日志

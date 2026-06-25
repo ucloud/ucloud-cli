@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
@@ -216,8 +217,8 @@ func NewCmdDiskList(out io.Writer) *cobra.Command {
 					MountUHost:     fmt.Sprintf("%s/%s", disk.UHostName, disk.UHostIP),
 					MountPoint:     disk.DeviceName,
 					State:          disk.Status,
-					CreationTime:   base.FormatDate(disk.CreateTime),
-					ExpirationTime: base.FormatDate(disk.ExpiredTime),
+					CreationTime:   common.FormatDate(disk.CreateTime),
+					ExpirationTime: common.FormatDate(disk.ExpiredTime),
 				}
 				if disk.UHostIP == "" {
 					row.MountUHost = ""
@@ -664,7 +665,7 @@ func NewCmdSnapshotList(out io.Writer) *cobra.Command {
 					Size:             fmt.Sprintf("%dGB", snapshot.Size),
 					State:            snapshot.State,
 					UDiskType:        snapshot.DiskType,
-					CreationTime:     base.FormatDate(snapshot.CreateTime),
+					CreationTime:     common.FormatDate(snapshot.CreateTime),
 				}
 				list = append(list, row)
 			}

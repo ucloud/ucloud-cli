@@ -50,3 +50,13 @@ func TestConfirm(t *testing.T) {
 		t.Fatal("Confirm with 'n' input should return false")
 	}
 }
+
+func TestPrintJSON(t *testing.T) {
+	var buf bytes.Buffer
+	if err := ui.PrintJSON(map[string]int{"a": 1}, &buf); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "\"a\": 1") {
+		t.Fatalf("unexpected: %q", buf.String())
+	}
+}
