@@ -23,6 +23,10 @@ name: PR Gate
 
 on:
   pull_request:
+    # labeled/unlabeled are REQUIRED so hold-gate re-runs when do-not-merge/hold
+    # is added/removed after checks went green — otherwise branch protection keeps
+    # seeing the stale green hold-gate and the /hold brake silently fails.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   merge_group:
 
 permissions:
@@ -69,7 +73,11 @@ jobs:
           GOPROXY: 'https://goproxy.cn,direct'
         run: |
           set -euo pipefail
-          git diff --name-status "$OWNER_GATE_BASE_SHA" "$HEAD_SHA" \
+          # Three-dot diff = the PR's own changes (diff from merge-base to head),
+          # matching GitHub's "Files changed". A two-dot "$BASE $HEAD" diff would,
+          # when the branch is behind master, also surface unrelated master-side
+          # changes and wrongly downgrade a product-autonomous PR to platform.
+          git diff --name-status "$OWNER_GATE_BASE_SHA...$HEAD_SHA" \
             | go run ./hack/owner-gate
       - name: Post verdict to PR (sticky comment)
         env:
