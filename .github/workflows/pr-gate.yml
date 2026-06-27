@@ -1,66 +1,126 @@
 # PR Admission Gate
 #
-# Required status checks (register ALL jobs in repo Settings → Branches → branch protection):
-#   - scope-gate
-#   - check-product
-#   - test
-#   - build-matrix (6 × platform)
+# Required status checks (repo Settings → Branches → branch protection):
+#   - owner-gate     (product-autonomous vs platform verdict; base-version owners)
+#   - hold-gate      (red while a do-not-merge/hold label is present)
+#   - scope-gate     (conventional commit title)
+#   - check-product  (rule1–8 boundary checks)
+#   - test           (build + vet + offline tests)
+#   - build-matrix   (6 × platform)
 #
-# Merge Queue enablement: repo Settings → Merge Queue → "Require merge queue" (Task E9).
+# Plus repo Settings → General → "Allow auto-merge" ✓ (and "Allow squash merging"),
+# and a branch-protection rule requiring ≥1 approval (the platform-PR human gate).
 #
-# IMPORTANT: The `merge_group` trigger is required. Without it, required checks stay in
-# "Pending" state inside the GitHub Merge Queue and PRs can never be merged.
+# Auto-merge: when owner-gate判定 a PR product-autonomous & eligible, the
+# auto-merge job runs `gh pr merge --auto`. GitHub merges only once ALL required
+# checks above are green and required approvals are met — so a red hold-gate
+# (hold label) or a failing test keeps the PR un-merged (fail-closed).
+#
+# Merge-queue note: the `merge_group` trigger is kept so check-product/test/
+# build-matrix can report inside a queue if one is enabled later (ROADMAP §5).
 
 name: PR Gate
 
 on:
   pull_request:
-  merge_group: # REQUIRED — without this, checks stay pending in the merge queue
+    # labeled/unlabeled are REQUIRED so hold-gate re-runs when do-not-merge/hold
+    # is added/removed after checks went green — otherwise branch protection keeps
+    # seeing the stale green hold-gate and the /hold brake silently fails.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
 
 permissions:
   contents: read
-  pull-requests: write # for the gate bot to comment
+  pull-requests: write
 
 jobs:
   scope-gate:
-    # Fast structural judgment. Only meaningful on pull_request events.
+    # Conventional commit title only. Product/platform/cross-product/owner
+    # routing now lives in owner-gate (Go, base-version aware).
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - name: Check scope, conventional title, protected paths
+      - name: Conventional commit title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
-          echo "Changed files:"; echo "$FILES"
-
-          # Protected paths require platform review (cannot be auto-admitted).
-          PROTECTED='^(\.github/workflows/|hack/|pkg/|products\.yaml$|go\.mod$|go\.sum$|\.goreleaser\.yaml$|\.svu\.yaml$)'
-          touches_protected=$(echo "$FILES" | grep -E "$PROTECTED" || true)
-
-          # Product scope: all changed files under a single products/<name>/ ?
-          products_touched=$(echo "$FILES" | grep -E '^products/' | sed -E 's#^products/([^/]+)/.*#\1#' | sort -u || true)
-          n_products=$(echo "$products_touched" | grep -c . || true)
-
-          # Conventional commit title check (feat|fix|refactor|build|ci|docs|test|chore|perf, optional scope).
           if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|refactor|build|ci|docs|test|chore|perf)(\([a-z0-9_-]+\))?!?: .+'; then
             echo "::error::PR title is not a conventional commit: $PR_TITLE"
             exit 1
           fi
+          echo "scope-gate: conventional title OK"
 
-          if [ -n "$touches_protected" ]; then
-            echo "::notice::PR touches protected/platform paths — requires platform review (not auto-admit)."
-          elif [ "$n_products" -gt 1 ]; then
-            echo "::error::PR touches multiple products ($products_touched) — split into per-product PRs."
-            exit 1
+  owner-gate:
+    # Decides product-autonomous (auto-merge) vs platform (human approval) and
+    # surfaces the reason to the PR. Green on a successful judgment — eligibility
+    # is consumed by the auto-merge job; routing is not a failure.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      auto_merge: ${{ steps.gate.outputs.autoMergeEligible }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # need base+head for git diff / git show
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25' }
+      - name: Judge admission
+        id: gate
+        env:
+          OWNER_GATE_AUTHOR: ${{ github.event.pull_request.user.login }}
+          OWNER_GATE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GOPROXY: 'https://goproxy.cn,direct'
+        run: |
+          set -euo pipefail
+          # Three-dot diff = the PR's own changes (diff from merge-base to head),
+          # matching GitHub's "Files changed". A two-dot "$BASE $HEAD" diff would,
+          # when the branch is behind master, also surface unrelated master-side
+          # changes and wrongly downgrade a product-autonomous PR to platform.
+          git diff --name-status "$OWNER_GATE_BASE_SHA...$HEAD_SHA" \
+            | go run ./hack/owner-gate
+      - name: Post verdict to PR (sticky comment)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.gate.outputs.reason }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          MARKER='<!-- owner-gate-verdict -->'
+          BODY="$MARKER"$'\n'"$REASON"
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+                 --jq "map(select(.body|startswith(\"$MARKER\")))|.[0].id // empty")
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -f body="$BODY" >/dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$BODY" >/dev/null
           fi
+          echo "$REASON"
 
-          echo "scope-gate passed"
+  hold-gate:
+    # /hold emergency brake: red while the PR carries do-not-merge/hold, which
+    # blocks auto-merge via branch protection without dropping approvals.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if on hold
+        if: contains(github.event.pull_request.labels.*.name, 'do-not-merge/hold')
+        run: |
+          echo "::error::PR is on hold (do-not-merge/hold label present) — remove the label to allow merge."
+          exit 1
+      - run: echo "hold-gate - not on hold"
+
+  auto-merge:
+    # Native GitHub auto-merge. Enabled only for product-autonomous eligible PRs;
+    # GitHub enforces required checks + approval before the actual merge.
+    if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
+    needs: [owner-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY"
 
   check-product:
     runs-on: ubuntu-latest
@@ -72,9 +132,8 @@ jobs:
         env: { GOPROXY: 'https://goproxy.cn,direct' }
 
   test:
-    # NOTE: Only OFFLINE-safe packages are tested here.
-    # The `cmd` integration tests hit a live UCloud API and are excluded.
-    # Run `go test ./cmd/...` manually or in a separate protected environment with credentials.
+    # NOTE: Only OFFLINE-safe packages. The `cmd` integration tests hit a live
+    # UCloud API and are excluded; run `go test ./cmd/...` separately with creds.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

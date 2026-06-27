@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"text/template"
 
 	"gopkg.in/yaml.v2"
@@ -22,15 +23,34 @@ const moduleRoot = "github.com/ucloud/ucloud-cli"
 // Product mirrors the products.yaml entry.
 type Product struct {
 	Name     string   `yaml:"name"`
-	Dir      string   `yaml:"dir"`
+	Dir      string   `yaml:"-"` // 从 product.yaml 路径推断,不从文件读
 	Owners   []string `yaml:"owners"`
 	Commands []string `yaml:"commands"`
 	Enabled  bool     `yaml:"enabled"`
 }
 
-// registry is the top-level products.yaml structure.
-type registry struct {
-	Products []Product `yaml:"products"`
+// loadProducts scans products/*/product.yaml and returns the products in
+// deterministic (path-sorted) order. Dir is derived from each file's directory.
+func loadProducts() ([]Product, error) {
+	matches, err := filepath.Glob("products/*/product.yaml")
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(matches)
+	var products []Product
+	for _, path := range matches {
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil, fmt.Errorf("read %s: %w", path, readErr)
+		}
+		var p Product
+		if uErr := yaml.Unmarshal(raw, &p); uErr != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, uErr)
+		}
+		p.Dir = filepath.Dir(path) // products/<name>
+		products = append(products, p)
+	}
+	return products, nil
 }
 
 // emptySource is used when there are no enabled+present products.
@@ -106,42 +126,24 @@ func generate(products []Product) ([]byte, error) {
 }
 
 func main() {
-	yamlPath := "products.yaml"
 	outPath := filepath.Join("cmd", "products.gen.go")
 
-	raw, err := os.ReadFile(yamlPath)
+	products, err := loadProducts()
 	if err != nil {
-		log.Fatalf("read %s: %v", yamlPath, err)
-	}
-
-	var reg registry
-	if err := yaml.Unmarshal(raw, &reg); err != nil {
-		log.Fatalf("parse %s: %v", yamlPath, err)
+		log.Fatalf("load products: %v", err)
 	}
 
 	var enabled []Product
-	for _, p := range reg.Products {
+	for _, p := range products {
 		if !p.Enabled {
-			continue
-		}
-		// Skip products whose directory does not yet exist on disk.
-		if _, statErr := os.Stat(p.Dir); os.IsNotExist(statErr) {
-			log.Printf("warn: product %q dir %q not found on disk — skipping", p.Name, p.Dir)
 			continue
 		}
 		enabled = append(enabled, p)
 	}
 
-	// Log how many products will actually be registered.
-	log.Printf("registering %d product(s) (of %d enabled in %s)",
-		len(enabled), countEnabled(reg.Products), yamlPath)
+	log.Printf("registering %d product(s) (of %d total)", len(enabled), len(products))
 	for _, p := range enabled {
-		pkgName := filepath.Base(p.Dir)
-		log.Printf("  + %s (%s.New())", p.Name, pkgName)
-	}
-	skipped := countEnabled(reg.Products) - len(enabled)
-	if skipped > 0 {
-		log.Printf("  skipped %d product(s) with missing dir", skipped)
+		log.Printf("  + %s (%s.New())", p.Name, filepath.Base(p.Dir))
 	}
 
 	src, err := generate(enabled)
@@ -153,14 +155,4 @@ func main() {
 		log.Fatalf("write %s: %v", outPath, err)
 	}
 	log.Printf("wrote %s", outPath)
-}
-
-func countEnabled(products []Product) int {
-	n := 0
-	for _, p := range products {
-		if p.Enabled {
-			n++
-		}
-	}
-	return n
 }
