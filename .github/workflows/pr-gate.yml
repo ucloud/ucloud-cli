@@ -1,33 +1,61 @@
 # PR Admission Gate
 #
-# Required status checks (repo Settings → Branches → branch protection):
-#   - owner-gate     (product-autonomous vs platform verdict; base-version owners)
+# Required status checks (repo Settings → Branches/Rulesets):
+#   - owner-gate     (product-autonomous vs platform; platform fail-closed)
 #   - hold-gate      (red while a do-not-merge/hold label is present)
 #   - scope-gate     (conventional commit title)
 #   - check-product  (rule1–8 boundary checks)
 #   - test           (build + vet + offline tests)
 #   - build-matrix   (6 × platform)
 #
-# Plus repo Settings → General → "Allow auto-merge" ✓ (and "Allow squash merging"),
-# and a branch-protection rule requiring ≥1 approval (the platform-PR human gate).
+# owner-gate model (see docs/owner-gate-hardblock-design.md):
+#   - product PR (single product, author is BASE-version owner) → green, auto-merge.
+#   - platform PR (platform files / cross-product / non-owner / onboarding /
+#     offboarding) → fail-closed RED, UNLESS cleared: the PR author is an admin,
+#     OR an admin (≠ author) has APPROVED the PR. A "Compute platform clearance"
+#     step computes this via the API; the "Admission" step turns Blocking into a
+#     red check. owner-gate (Go) itself only routes and never fails (exit 0).
 #
-# Auto-merge: when owner-gate判定 a PR product-autonomous & eligible, the
-# auto-merge job runs `gh pr merge --auto`. GitHub merges only once ALL required
-# checks above are green and required approvals are met — so a red hold-gate
-# (hold label) or a failing test keeps the PR un-merged (fail-closed).
+# Repo settings that this gate RELIES ON:
+#   - Settings → General → "Allow auto-merge" ✓ + "Allow squash merging" ✓.
+#   - Required approvals = 0. Do NOT set a global "require N approvals" — that
+#     would also block product autonomy. Platform approval is enforced by
+#     owner-gate (admin review), not by branch protection's approval count.
+#   - The stale-approval defense is SELF-CONTAINED: clearance only counts an
+#     admin approval whose commit_id == current head, so a post-approval push
+#     auto-invalidates it without depending on branch protection's "Dismiss
+#     stale approvals" toggle. Enabling that toggle is fine as defense-in-depth.
 #
-# Merge-queue note: the `merge_group` trigger is kept so check-product/test/
-# build-matrix can report inside a queue if one is enabled later (ROADMAP §5).
+# Triggers: pull_request_review is added so owner-gate re-runs (red→green) when an
+# admin approves and (green→red) when the approval is dismissed. Security/CI jobs
+# run on review events too — they must NOT be `if`-skipped, because GitHub counts
+# a skipped required check as success and would mask a real prior failure.
+#
+# Merge-queue note: owner-gate/hold-gate/scope-gate are `pull_request*` only and
+# do not run under merge_group. BEFORE enabling a merge queue you MUST either run
+# owner-gate/hold-gate in merge_group (short-circuit on already-judged PRs) or
+# keep them PR-level-required only (queue-level required = check-product/test/
+# build-matrix). Otherwise a skipped owner-gate counts as success in the queue.
 
 name: PR Gate
 
 on:
   pull_request:
-    # labeled/unlabeled are REQUIRED so hold-gate re-runs when do-not-merge/hold
-    # is added/removed after checks went green — otherwise branch protection keeps
-    # seeing the stale green hold-gate and the /hold brake silently fails.
+    # labeled/unlabeled REQUIRED so hold-gate re-runs when do-not-merge/hold is
+    # added/removed after checks went green.
     types: [opened, synchronize, reopened, labeled, unlabeled]
+  pull_request_review:
+    # submitted/dismissed REQUIRED so owner-gate re-evaluates platform clearance
+    # when an admin approves or the approval is dismissed (stale-on-push).
+    types: [submitted, dismissed]
   merge_group:
+
+# One run per PR; a newer event (push / review) cancels the older in-flight run
+# so the latest state always wins and interleaved label/review/push events can't
+# leave a stale conclusion standing.
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -35,9 +63,8 @@ permissions:
 
 jobs:
   scope-gate:
-    # Conventional commit title only. Product/platform/cross-product/owner
-    # routing now lives in owner-gate (Go, base-version aware).
-    if: github.event_name == 'pull_request'
+    # Conventional commit title only.
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
     runs-on: ubuntu-latest
     steps:
       - name: Conventional commit title
@@ -52,10 +79,10 @@ jobs:
           echo "scope-gate: conventional title OK"
 
   owner-gate:
-    # Decides product-autonomous (auto-merge) vs platform (human approval) and
-    # surfaces the reason to the PR. Green on a successful judgment — eligibility
-    # is consumed by the auto-merge job; routing is not a failure.
-    if: github.event_name == 'pull_request'
+    # Routes product vs platform (Go, base-version aware) and enforces the
+    # platform hard-block. Green on product OR cleared platform; red on
+    # un-cleared platform. Eligibility (auto_merge) is consumed downstream.
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
     runs-on: ubuntu-latest
     outputs:
       auto_merge: ${{ steps.gate.outputs.autoMergeEligible }}
@@ -64,43 +91,93 @@ jobs:
         with: { fetch-depth: 0 }   # need base+head for git diff / git show
       - uses: actions/setup-go@v5
         with: { go-version: '1.25' }
+
+      - name: Compute platform clearance
+        id: clr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          PR='${{ github.event.pull_request.number }}'
+          AUTHOR='${{ github.event.pull_request.user.login }}'
+          # admin/maintain 视为管理员级;查询失败(如 fork 只读 token 403)→ 视为非管理员(fail-closed)。
+          is_admin() {
+            perm=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$1/permission" --jq '.permission' 2>/dev/null || echo none)
+            case "$perm" in admin|maintain) return 0 ;; *) return 1 ;; esac
+          }
+          cleared=false
+          if is_admin "$AUTHOR"; then
+            cleared=true
+            echo "作者 $AUTHOR 具管理员权限,平台改动放行。"
+          else
+            # 每个 reviewer 取其最新一条 review;state=APPROVED、reviewer 是管理员(≠作者),
+            # 且 **批准时的 commit == 当前 head**(把批准钉死到被审的那个 commit)即放行。
+            # 作者批准后再 push,新 head ≠ 批准 commit → 该 review 不再命中 → 回红,需重新批准。
+            # 这条 self-contained 的 stale 防线不依赖分支保护的 Dismiss-stale 开关。
+            approvers=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" --paginate 2>/dev/null \
+              | jq -s --arg head "$HEAD_SHA" 'add | group_by(.user.login) | map(max_by(.id)) | map(select(.state=="APPROVED" and .commit_id==$head)) | .[].user.login' -r 2>/dev/null || true)
+            for a in $approvers; do
+              [ "$a" = "$AUTHOR" ] && continue
+              if is_admin "$a"; then cleared=true; echo "已由管理员 $a 批准放行。"; break; fi
+            done
+          fi
+          echo "cleared=$cleared" >> "$GITHUB_OUTPUT"
+
       - name: Judge admission
         id: gate
         env:
           OWNER_GATE_AUTHOR: ${{ github.event.pull_request.user.login }}
           OWNER_GATE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OWNER_GATE_PLATFORM_CLEARED: ${{ steps.clr.outputs.cleared }}
           GOPROXY: 'https://goproxy.cn,direct'
         run: |
           set -euo pipefail
-          # Three-dot diff = the PR's own changes (diff from merge-base to head),
-          # matching GitHub's "Files changed". A two-dot "$BASE $HEAD" diff would,
-          # when the branch is behind master, also surface unrelated master-side
-          # changes and wrongly downgrade a product-autonomous PR to platform.
+          # Three-dot diff = the PR's own changes (merge-base..head), matching
+          # GitHub's "Files changed". A two-dot diff would, when the branch is
+          # behind master, surface unrelated master-side changes.
           git diff --name-status "$OWNER_GATE_BASE_SHA...$HEAD_SHA" \
             | go run ./hack/owner-gate
+
       - name: Post verdict to PR (sticky comment)
+        # always() + tolerant: must update the verdict even when admission will
+        # fail the job (red), and must not fail the job if the comment write is
+        # denied (fork PRs get a read-only token).
+        if: always() && steps.gate.outputs.reason != ''
         env:
           GH_TOKEN: ${{ github.token }}
           REASON: ${{ steps.gate.outputs.reason }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           MARKER='<!-- owner-gate-verdict -->'
           BODY="$MARKER"$'\n'"$REASON"
           ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
-                 --jq "map(select(.body|startswith(\"$MARKER\")))|.[0].id // empty")
+                 --jq "map(select(.body|startswith(\"$MARKER\")))|.[0].id // empty" 2>/dev/null || true)
           if [ -n "$ID" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -f body="$BODY" >/dev/null
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -f body="$BODY" >/dev/null 2>&1 \
+              || echo "::warning::owner-gate: 更新裁决评论失败(可能是 fork 只读 token)"
           else
-            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$BODY" >/dev/null
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$BODY" >/dev/null 2>&1 \
+              || echo "::warning::owner-gate: 贴裁决评论失败(可能是 fork 只读 token)"
           fi
           echo "$REASON"
 
+      - name: Admission (hard-block un-cleared platform PR)
+        # The actual red: owner-gate (Go) always exits 0 and writes blocking;
+        # this step is what fails the required check when blocking is true.
+        if: steps.gate.outputs.blocking == 'true'
+        env:
+          REASON: ${{ steps.gate.outputs.reason }}
+        run: |
+          echo "::error::$REASON"
+          exit 1
+
   hold-gate:
-    # /hold emergency brake: red while the PR carries do-not-merge/hold, which
-    # blocks auto-merge via branch protection without dropping approvals.
-    if: github.event_name == 'pull_request'
+    # /hold emergency brake: red while the PR carries do-not-merge/hold. Runs on
+    # review events too so a skipped run can't mask a real red (skipped=success).
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
     runs-on: ubuntu-latest
     steps:
       - name: Fail if on hold
@@ -111,8 +188,8 @@ jobs:
       - run: echo "hold-gate - not on hold"
 
   auto-merge:
-    # Native GitHub auto-merge. Enabled only for product-autonomous eligible PRs;
-    # GitHub enforces required checks + approval before the actual merge.
+    # Native GitHub auto-merge, only for product-autonomous eligible PRs. GitHub
+    # enforces required checks + (any) required approvals before the actual merge.
     if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
     needs: [owner-gate]
     runs-on: ubuntu-latest
@@ -123,6 +200,8 @@ jobs:
         run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY"
 
   check-product:
+    # Runs on every trigger (incl. merge_group + review events): must produce a
+    # real conclusion, never an `if`-skip that GitHub would count as success.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
