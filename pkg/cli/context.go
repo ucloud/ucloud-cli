@@ -35,6 +35,9 @@ type Context struct {
 	regionList  func() []string
 	zoneList    func(region string) []string
 	projectList func() []string
+	// allRegions is the runtime all-region lister (returns an error, unlike the
+	// completion providers) for non-standard flags like uhost --all-region.
+	allRegions func() ([]string, error)
 }
 
 // Deps carries constructor arguments for NewContext.
@@ -48,6 +51,7 @@ type Deps struct {
 	RegionList  func() []string
 	ZoneList    func(region string) []string
 	ProjectList func() []string
+	AllRegions  func() ([]string, error)
 }
 
 // NewContext constructs a Context from the provided Deps.
@@ -61,6 +65,7 @@ func NewContext(d Deps) *Context {
 		regionList:  d.RegionList,
 		zoneList:    d.ZoneList,
 		projectList: d.ProjectList,
+		allRegions:  d.AllRegions,
 	}
 }
 

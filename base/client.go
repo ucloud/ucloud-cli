@@ -204,6 +204,15 @@ func attachHandlers(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggC
 		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
 		return req, err
 	})
+	// Platform request logging: every API request is logged uniformly at the SDK
+	// layer (replaces per-command hand-rolled logging; products no longer build
+	// "api:..." lines with ToQueryMap). logToFile writes to local cli.log only
+	// (NO DAS upload) and skips completion (COMP_LINE) — see batch-1 plan Part 0
+	// Task 0.2 (decision A: keep request logs local, don't inflate telemetry).
+	sc.AddRequestHandler(func(c *sdk.Client, req request.Common) (request.Common, error) {
+		logToFile(requestLogLine(req))
+		return req, nil
+	})
 	sc.AddHttpRequestHandler(newCredHeaderInjector(credConfig))
 	sc.AddHttpResponseHandler(newOAuthRetryHandler(credConfig, ac))
 }

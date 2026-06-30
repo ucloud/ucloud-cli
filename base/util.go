@@ -342,6 +342,18 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 		pollRetChan <- ret
 	}()
 
+	if !ui.IsTTY(p.Out) {
+		// non-TTY (piped/redirected): no spinner animation, single terminal-state
+		// line — mirrors Spoll's suppression so machine output stays clean.
+		ret := <-pollRetChan
+		if ret.Timeout {
+			fmt.Fprintf(p.Out, "%s...timeout\n", pollText)
+		} else {
+			fmt.Fprintf(p.Out, "%s...done\n", pollText)
+		}
+		return &ret
+	}
+
 	spin := ux.NewDotSpin(p.Out, pollText)
 	block.SetSpin(spin)
 

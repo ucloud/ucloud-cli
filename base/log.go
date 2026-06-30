@@ -97,6 +97,24 @@ func GetLogFilePath() string {
 	return common.GetHomePath() + fmt.Sprintf("/%s/cli.log", ConfigPath)
 }
 
+// logToFile writes lines to the local cli.log only — NO DAS telemetry upload —
+// with the same redaction and COMP_LINE skip as LogInfo. Used by the platform
+// request-logging handler so logging every API request does not inflate
+// telemetry traffic for users who opted into log upload (see batch-1 plan
+// Part 0 Task 0.2, decision A).
+func logToFile(logs ...string) {
+	if _, ok := os.LookupEnv("COMP_LINE"); ok {
+		return
+	}
+	logs = redactLogLines(logs)
+	mu.Lock()
+	defer mu.Unlock()
+	goID := curGoroutineID()
+	for _, line := range logs {
+		logger.WithField("goroutine_id", goID).Info(line)
+	}
+}
+
 // LogInfo 记录日志
 func LogInfo(logs ...string) {
 	_, ok := os.LookupEnv("COMP_LINE")
@@ -253,6 +271,15 @@ func ToQueryMap(req request.Common) map[string]string {
 	}
 	delete(reqMap, "Password")
 	return reqMap
+}
+
+// requestLogLine formats an API request for the platform request-logging
+// handler: "api: <Action>, request: <query map>" (Password already redacted by
+// ToQueryMap). This replaces the per-command hand-rolled request logging that
+// products used to build with ToQueryMap — every request is now logged
+// uniformly at the SDK handler layer (see batch-1 plan Part 0 Task 0.2).
+func requestLogLine(req request.Common) string {
+	return fmt.Sprintf("api: %s, request: %v", req.GetAction(), ToQueryMap(req))
 }
 
 // Tracer upload log to server if allowed

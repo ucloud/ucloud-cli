@@ -87,6 +87,13 @@ func BindQuantity(cmd *cobra.Command, req interface{}) {
 	reflect.ValueOf(req).Elem().FieldByName("Quantity").Set(reflect.ValueOf(quantity))
 }
 
+// BindGroup binds a --group flag into req.Tag via reflection (verbatim from
+// cmd/util.go bindGroup; req must have a settable `Tag *string` field).
+func BindGroup(cmd *cobra.Command, req interface{}) {
+	group := cmd.Flags().String("group", "", "Optional. Business group")
+	reflect.ValueOf(req).Elem().FieldByName("Tag").Set(reflect.ValueOf(group))
+}
+
 // hasField reports whether req (a pointer to a struct) has a settable field
 // with the given name. It is used to guard optional reflection-bound flags so
 // that a req lacking the field is simply skipped instead of panicking.

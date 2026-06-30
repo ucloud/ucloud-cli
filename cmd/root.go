@@ -221,6 +221,7 @@ func buildContext() *cli.Context {
 		RegionList:  getRegionList,
 		ZoneList:    getZoneList,
 		ProjectList: getProjectList,
+		AllRegions:  getAllRegions,
 	})
 }
 

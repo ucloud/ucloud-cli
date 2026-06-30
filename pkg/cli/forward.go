@@ -64,6 +64,45 @@ func (c *Context) BindChargeType(cmd *cobra.Command, req interface{}) {
 // BindQuantity binds --quantity into req via reflection.
 func (c *Context) BindQuantity(cmd *cobra.Command, req interface{}) { command.BindQuantity(cmd, req) }
 
+// BindGroup binds --group into req.Tag via reflection.
+func (c *Context) BindGroup(cmd *cobra.Command, req interface{}) { command.BindGroup(cmd, req) }
+
+// RegionList / ZoneList / ProjectList expose the injected completion providers
+// for non-standard flags (e.g. --target-region) where the standard Bind*
+// helpers don't apply. Nil-safe: return nil when no provider was injected.
+func (c *Context) RegionList() []string {
+	if c.regionList == nil {
+		return nil
+	}
+	return c.regionList()
+}
+
+// ZoneList returns the availability zones for the given region.
+func (c *Context) ZoneList(region string) []string {
+	if c.zoneList == nil {
+		return nil
+	}
+	return c.zoneList(region)
+}
+
+// ProjectList returns the project id/name completion candidates.
+func (c *Context) ProjectList() []string {
+	if c.projectList == nil {
+		return nil
+	}
+	return c.projectList()
+}
+
+// AllRegions returns every region the account can see, propagating the
+// fetch error (unlike RegionList, which is for completion and drops it). Used
+// by runtime fan-out flags such as uhost --all-region. Nil-safe.
+func (c *Context) AllRegions() ([]string, error) {
+	if c.allRegions == nil {
+		return nil, nil
+	}
+	return c.allRegions()
+}
+
 // BindCommonParams binds all common flags in one call using ctx defaults +
 // injected completion providers. It binds region/zone/project when req
 // satisfies request.Common, plus --limit/--offset/--charge-type/--quantity for
@@ -85,6 +124,19 @@ func (c *Context) Confirm(yes bool, text string) bool { return ui.Confirm(c.in, 
 
 // HandleError logs err in the standard CLI error format.
 func (c *Context) HandleError(err error) { base.HandleError(err) }
+
+// LogInfo / LogPrint / LogWarn / LogError forward to the platform logger
+// (cli.log + optional telemetry, with redaction) for non-request product
+// diagnostics (warnings, errors, status). API request logging is handled
+// automatically by the platform SDK handler — products do NOT log requests
+// themselves (see batch-1 plan Part 0 Task 0.2 / D-C).
+func (c *Context) LogInfo(logs ...string)  { base.LogInfo(logs...) }
+func (c *Context) LogPrint(logs ...string) { base.LogPrint(logs...) }
+func (c *Context) LogWarn(logs ...string)  { base.LogWarn(logs...) }
+func (c *Context) LogError(logs ...string) { base.LogError(logs...) }
+
+// LogFilePath returns the path of the CLI log file (e.g. for "check logs in …").
+func (c *Context) LogFilePath() string { return base.GetLogFilePath() }
 
 // PickResourceID extracts the resource ID from a "resourceID/name" string.
 func (c *Context) PickResourceID(s string) string { return PickResourceID(s) }
