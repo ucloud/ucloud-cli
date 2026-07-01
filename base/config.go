@@ -796,7 +796,17 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		ProjectId:  ac.ProjectID,
 		MaxRetries: *ac.MaxRetryTimes,
 	}
-	AuthCredential = &CredentialConfig{
+	// AuthCredential must keep a STABLE pointer identity for the whole process:
+	// product service clients (cli.NewServiceClient) capture this pointer at
+	// command-tree registration and read AccessToken lazily per request, so a
+	// token refresh here must be visible to them. Overwrite the pointed-to object
+	// in place instead of replacing the pointer — otherwise those already-built
+	// clients keep sending the pre-refresh (possibly expired) Bearer and only
+	// recover via the reactive retry handler at the cost of a wasted round-trip.
+	if AuthCredential == nil {
+		AuthCredential = &CredentialConfig{}
+	}
+	*AuthCredential = CredentialConfig{
 		PublicKey:    ac.PublicKey,
 		PrivateKey:   ac.PrivateKey,
 		Cookie:       ac.Cookie,

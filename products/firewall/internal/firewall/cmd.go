@@ -1,24 +1,7 @@
-// Copyright © 2018 NAME HERE tony.li@ucloud.cn
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package cmd
+package firewall
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,55 +9,45 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/internal/common"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// NewCmdFirewall  ucloud firewall
-func NewCmdFirewall() *cobra.Command {
+// NewCommand builds the `firewall` root command and mounts the 9 subcommands.
+// Mirrors cmd/firewall.go NewCmdFirewall (same AddCommand order).
+func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "firewall",
 		Short: "List and manipulate extranet firewall",
 		Long:  `List and manipulate extranet firewall`,
 		Args:  cobra.NoArgs,
 	}
-	writer := base.Cxt.GetWriter()
-	cmd.AddCommand(NewCmdFirewallList(writer))
-	cmd.AddCommand(NewCmdFirewallCreate(writer))
-	cmd.AddCommand(NewCmdFirewallAddRule(writer))
-	cmd.AddCommand(NewCmdFirewallDeleteRule(writer))
-	cmd.AddCommand(NewCmdFirewallApply())
-	cmd.AddCommand(NewCmdFirewallCopy())
-	cmd.AddCommand(NewCmdFirewallDelete())
-	cmd.AddCommand(NewCmdFirewallResource(writer))
-	cmd.AddCommand(NewCmdFirewallUpdate(writer))
+	cmd.AddCommand(newList(ctx))
+	cmd.AddCommand(newCreate(ctx))
+	cmd.AddCommand(newAddRule(ctx))
+	cmd.AddCommand(newDeleteRule(ctx))
+	cmd.AddCommand(newApply(ctx))
+	cmd.AddCommand(newCopy(ctx))
+	cmd.AddCommand(newDelete(ctx))
+	cmd.AddCommand(newResource(ctx))
+	cmd.AddCommand(newUpdate(ctx))
 
 	return cmd
 }
 
-// FirewallRow 表格行
-type FirewallRow struct {
-	ResourceID          string
-	FirewallName        string
-	Rule                string
-	Group               string
-	RuleAmount          int
-	BoundResourceAmount int
-	CreationTime        string
-}
-
-// NewCmdFirewallList ucloud firewall list
-func NewCmdFirewallList(out io.Writer) *cobra.Command {
-	req := base.BizClient.NewDescribeFirewallRequest()
+// newList ucloud firewall list
+func newList(ctx *cli.Context) *cobra.Command {
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewDescribeFirewallRequest()
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List extranet firewall",
 		Long:  `List extranet firewall`,
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.DescribeFirewall(req)
+			resp, err := client.DescribeFirewall(req)
 			if err != nil {
-				base.HandleError(err)
+				ctx.HandleError(err)
 				return
 			}
 			list := []FirewallRow{}
@@ -95,13 +68,13 @@ func NewCmdFirewallList(out io.Writer) *cobra.Command {
 				}
 				list = append(list, row)
 			}
-			base.PrintList(list, out)
+			ctx.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 	req.FWId = flags.String("firewall-id", "", "Optional. The Rsource ID of firewall. Return all firewalls by default.")
 	req.ResourceType = flags.String("bound-resource-type", "", "Optional. The type of resource bound on the firewall")
 	req.ResourceId = flags.String("bound-resource-id", "", "Optional. The resource ID of resource bound on the firewall")
@@ -110,29 +83,13 @@ func NewCmdFirewallList(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func parseRulesFromFile(filePath string) ([]string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	lines := []string{}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
-}
-
-// NewCmdFirewallCreate ucloud firewall create
-func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
+// newCreate ucloud firewall create
+func newCreate(ctx *cli.Context) *cobra.Command {
 	var rulesFilePath string
 	var rules []string
 
-	req := base.BizClient.NewCreateFirewallRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewCreateFirewallRequest()
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Create firewall",
@@ -140,24 +97,25 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 		Example: `ucloud firewall create --name test3 --rules "TCP|22|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if rules == nil && rulesFilePath == "" {
-				fmt.Fprintln(out, "Error: flags rules and rules-file can't be both empty")
+				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
 				return
 			}
 			if rulesFilePath != "" {
 				lines, err := parseRulesFromFile(rulesFilePath)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
 				rules = append(rules, lines...)
 			}
 			req.Rule = rules
-			resp, err := base.BizClient.CreateFirewall(req)
+			resp, err := client.CreateFirewall(req)
 			if err != nil {
-				base.HandleError(err)
+				ctx.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("firewall[%s] created\n", resp.FWId)
+			fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] created\n", resp.FWId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.FWId, Action: "create", Status: "Created"})
 		},
 	}
 	flags := cmd.Flags()
@@ -165,8 +123,8 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&rules, "rules", nil, "Required if rules-file doesn't exist. Schema: Protocol|Port|IP|Action|Level. Prototol range 'TCP','UDP','ICMP' and 'GRE'; Port is a local port accessed by source address, port range [0-65535]; IP is the source address of the network packet that requests ucloud host resource, supporting IP address and network segment, such as '120.132.69.216' or '0.0.0.0/0'; Action is the processing behavior of the packet when the firewall is in effect, including 'ACCEPT' AND 'DROP'; Level, when a rule is added to a firewall, the rules take effect in order of level, which range 'HIGH','MEDIUM' and 'LOW'. For example, 'TCP|22|192.168.1.1/22|DROP|LOW'")
 	flags.StringVar(&rulesFilePath, "rules-file", "", "Required if rules doesn't exist. Path of rules file, in which each rule occupies one line. Schema: Protocol|Port|IP|Action|Level.")
 	req.Name = flags.String("name", "", "Required. Name of firewall to create")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 	req.Tag = flags.String("group", "", "Optional. Group of the firewall to create")
 	req.Remark = flags.String("remark", "", "Optional. Remark of the firewall to create")
 	cmd.MarkFlagRequired("name")
@@ -176,11 +134,12 @@ func NewCmdFirewallCreate(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// NewCmdFirewallAddRule ucloud firewall add-rule
-func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
+// newAddRule ucloud firewall add-rule
+func newAddRule(ctx *cli.Context) *cobra.Command {
 	var rulesFilePath string
 	var fwIDs []string
-	req := base.BizClient.NewUpdateFirewallRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewUpdateFirewallRequest()
 	cmd := &cobra.Command{
 		Use:     "add-rule",
 		Short:   "Add rule to firewall instance",
@@ -188,15 +147,16 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 		Example: `ucloud firewall add-rule --fw-id firewall-2xxxxz/test.lxj2 --rules "TCP|24|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if req.Rule == nil && rulesFilePath == "" {
-				fmt.Fprintln(out, "Error: flags rules and rules-file can't be both empty")
+				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
 				return
 			}
+			results := []cli.OpResultRow{}
 			for _, fwID := range fwIDs {
-				id := base.PickResourceID(fwID)
+				id := ctx.PickResourceID(fwID)
 				req.FWId = &id
-				firewall, err := getFirewall(*req.FWId, *req.ProjectId, *req.Region)
+				firewall, err := getFirewall(ctx, *req.FWId, *req.ProjectId, *req.Region)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
 				ruleMap := map[string]bool{}
@@ -207,7 +167,7 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 				if rulesFilePath != "" {
 					rules, err := parseRulesFromFile(rulesFilePath)
 					if err != nil {
-						base.HandleError(err)
+						ctx.HandleError(err)
 						return
 					}
 					req.Rule = append(req.Rule, rules...)
@@ -220,13 +180,15 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 					r = strings.TrimSpace(r)
 					req.Rule = append(req.Rule, r)
 				}
-				_, err = base.BizClient.UpdateFirewall(req)
+				_, err = client.UpdateFirewall(req)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
-				base.Cxt.Printf("firewall[%s] updated\n", fwID)
+				fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] updated\n", fwID)
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "add-rule", Status: "Updated"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
@@ -235,11 +197,11 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&fwIDs, "fw-id", nil, "Required. Resource ID of firewalls to update")
 	flags.StringSliceVar(&req.Rule, "rules", nil, "Required if rules-file is empay. Rules to add to firewall. Schema:'Protocol|Port|IP|Action|Level'. See 'ucloud firewall create --help' for detail.")
 	flags.StringVar(&rulesFilePath, "rules-file", "", "Required if rules is empty. Path of rules file, in which each rule occupies one line. Schema: Protocol|Port|IP|Action|Level.")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 	command.SetCompletion(cmd, "rules-file", func() []string {
 		return common.GetFileList("")
@@ -249,11 +211,12 @@ func NewCmdFirewallAddRule(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// NewCmdFirewallDeleteRule ucloud firewall remove-rule
-func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
+// newDeleteRule ucloud firewall remove-rule
+func newDeleteRule(ctx *cli.Context) *cobra.Command {
 	var rulesFilePath string
 	var fwIDs []string
-	req := base.BizClient.NewUpdateFirewallRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewUpdateFirewallRequest()
 	cmd := &cobra.Command{
 		Use:     "remove-rule",
 		Short:   "Remove rule from firewall instance",
@@ -261,15 +224,16 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 		Example: `ucloud firewall remove-rule --fw-id firewall-2cxxxz/test.lxj2 --rules "TCP|24|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if req.Rule == nil && rulesFilePath == "" {
-				fmt.Fprintln(out, "Error: flags rules and rules-file can't be both empty")
+				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
 				return
 			}
+			results := []cli.OpResultRow{}
 			for _, fwID := range fwIDs {
-				id := base.PickResourceID(fwID)
+				id := ctx.PickResourceID(fwID)
 				req.FWId = &id
-				firewall, err := getFirewall(*req.FWId, *req.ProjectId, *req.Region)
+				firewall, err := getFirewall(ctx, *req.FWId, *req.ProjectId, *req.Region)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
 				ruleMap := map[string]bool{}
@@ -280,7 +244,7 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 				if rulesFilePath != "" {
 					rules, err := parseRulesFromFile(rulesFilePath)
 					if err != nil {
-						base.HandleError(err)
+						ctx.HandleError(err)
 						return
 					}
 					req.Rule = append(req.Rule, rules...)
@@ -294,16 +258,18 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 					req.Rule = append(req.Rule, r)
 				}
 				if len(req.Rule) == 0 {
-					fmt.Fprintf(out, "Error: rules can't be all deleted\n")
+					fmt.Fprintf(ctx.Err(), "Error: rules can't be all deleted\n")
 					return
 				}
-				_, err = base.BizClient.UpdateFirewall(req)
+				_, err = client.UpdateFirewall(req)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
-				fmt.Fprintf(out, "firewall[%s] updated\n", fwID)
+				fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] updated\n", fwID)
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "remove-rule", Status: "Updated"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
@@ -312,20 +278,21 @@ func NewCmdFirewallDeleteRule(out io.Writer) *cobra.Command {
 	flags.StringSliceVar(&fwIDs, "fw-id", nil, "Required. Resource ID of firewalls to update")
 	flags.StringSliceVar(&req.Rule, "rules", nil, "Required if rules-file is empay. Rules to add to firewall. Schema:'Protocol|Port|IP|Action|Level'. See 'ucloud firewall create --help' for detail.")
 	flags.StringVar(&rulesFilePath, "rules-file", "", "Required if rules is empty. Path of rules file, in which each rule occupies one line. Schema: Protocol|Port|IP|Action|Level.")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("fw-id")
 	return cmd
 }
 
-// NewCmdFirewallApply ucloud firewall apply
-func NewCmdFirewallApply() *cobra.Command {
-	req := base.BizClient.NewGrantFirewallRequest()
+// newApply ucloud firewall apply
+func newApply(ctx *cli.Context) *cobra.Command {
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewGrantFirewallRequest()
 	resourceIDs := []string{}
 	fwID := ""
 	cmd := &cobra.Command{
@@ -334,16 +301,19 @@ func NewCmdFirewallApply() *cobra.Command {
 		Long:    "Applay firewall to ucloud service",
 		Example: "ucloud firewall apply --fw-id firewall-xxx --resource-id uhost-xxx --resource-type uhost",
 		Run: func(c *cobra.Command, args []string) {
-			req.FWId = sdk.String(base.PickResourceID(fwID))
+			req.FWId = sdk.String(ctx.PickResourceID(fwID))
+			results := []cli.OpResultRow{}
 			for _, id := range resourceIDs {
 				req.ResourceId = sdk.String(id)
-				_, err := base.BizClient.GrantFirewall(req)
+				_, err := client.GrantFirewall(req)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					continue
 				}
-				base.Cxt.Printf("firewall[%s] applied to %s[%s]\n", fwID, *req.ResourceType, id)
+				fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] applied to %s[%s]\n", fwID, *req.ResourceType, id)
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "apply", Status: "Applied"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
@@ -352,12 +322,12 @@ func NewCmdFirewallApply() *cobra.Command {
 	flags.StringVar(&fwID, "fw-id", "", "Required. Resource ID of firewall to apply to some ucloud resource")
 	req.ResourceType = flags.String("resource-type", "", "Required. Resource type of resource to be applied firewall. Range 'uhost','unatgw','upm','hadoophost','fortresshost','udhost','udockhost','dbaudit'.")
 	flags.StringSliceVar(&resourceIDs, "resource-id", nil, "Resource ID of resources to be applied firewall")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 
 	command.SetFlagValues(cmd, "resource-type", "uhost", "unatgw", "upm", "hadoophost", "fortresshost", "udhost", "udockhost", "dbaudit")
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("fw-id")
@@ -367,22 +337,23 @@ func NewCmdFirewallApply() *cobra.Command {
 	return cmd
 }
 
-// NewCmdFirewallCopy ucloud firewall copy
-func NewCmdFirewallCopy() *cobra.Command {
+// newCopy ucloud firewall copy
+func newCopy(ctx *cli.Context) *cobra.Command {
 	srcFirewall := ""
 	srcRegion := ""
-	req := base.BizClient.NewCreateFirewallRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewCreateFirewallRequest()
 	cmd := &cobra.Command{
 		Use:     "copy",
 		Short:   "Copy firewall",
 		Long:    "Copy firewall",
 		Example: "ucloud firewall copy --src-fw firewall-xxx --target-region cn-bj2 --name test",
 		Run: func(c *cobra.Command, args []string) {
-			fwID := base.PickResourceID(srcFirewall)
-			firewall, err := getFirewall(fwID, *req.ProjectId, srcRegion)
+			fwID := ctx.PickResourceID(srcFirewall)
+			firewall, err := getFirewall(ctx, fwID, *req.ProjectId, srcRegion)
 
 			if err != nil {
-				base.HandleError(err)
+				ctx.HandleError(err)
 				return
 			}
 			req.Tag = sdk.String(firewall.Tag)
@@ -391,37 +362,39 @@ func NewCmdFirewallCopy() *cobra.Command {
 				rstr := fmt.Sprintf("%s|%s|%s|%s|%s", r.ProtocolType, r.DstPort, r.SrcIP, r.RuleAction, r.Priority)
 				req.Rule = append(req.Rule, rstr)
 			}
-			resp, err := base.BizClient.CreateFirewall(req)
+			resp, err := client.CreateFirewall(req)
 			if err != nil {
-				base.HandleError(err)
+				ctx.HandleError(err)
 				return
 			}
-			base.Cxt.Printf("firewall[%s] created from %s\n", resp.FWId, srcFirewall)
+			fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] created from %s\n", resp.FWId, srcFirewall)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.FWId, Action: "copy", Status: "Created"})
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringVar(&srcFirewall, "src-fw", "", "Required. ResourceID or name of source firewall")
 	req.Name = flags.String("name", "", "Required. Name of new firewall")
-	flags.StringVar(&srcRegion, "region", base.ConfigIns.Region, "Optional. Current region, used to fetch source firewall")
-	req.Region = flags.String("target-region", base.ConfigIns.Region, "Optional. Copy firewall to target region")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	flags.StringVar(&srcRegion, "region", ctx.DefaultRegion(), "Optional. Current region, used to fetch source firewall")
+	req.Region = flags.String("target-region", ctx.DefaultRegion(), "Optional. Copy firewall to target region")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 
 	command.SetCompletion(cmd, "src-fw", func() []string {
-		return getFirewallIDNames(*req.ProjectId, srcRegion)
+		return getFirewallIDNames(ctx, *req.ProjectId, srcRegion)
 	})
-	command.SetCompletion(cmd, "target-region", getRegionList)
-	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "target-region", ctx.RegionList)
+	command.SetCompletion(cmd, "region", ctx.RegionList)
 
-	cmd.MarkFlagRequired("src-fw-id")
+	cmd.MarkFlagRequired("src-fw")
 	cmd.MarkFlagRequired("name")
 
 	return cmd
 }
 
-// NewCmdFirewallDelete ucloud firewall delete
-func NewCmdFirewallDelete() *cobra.Command {
-	req := base.BizClient.NewDeleteFirewallRequest()
+// newDelete ucloud firewall delete
+func newDelete(ctx *cli.Context) *cobra.Command {
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewDeleteFirewallRequest()
 	ids := []string{}
 	cmd := &cobra.Command{
 		Use:     "delete",
@@ -429,54 +402,49 @@ func NewCmdFirewallDelete() *cobra.Command {
 		Long:    "Delete firewall by resource ids or names",
 		Example: "ucloud firewall delete --fw-id firewall-xxx",
 		Run: func(c *cobra.Command, args []string) {
+			results := []cli.OpResultRow{}
 			for _, id := range ids {
-				req.FWId = sdk.String(base.PickResourceID(id))
-				_, err := base.BizClient.DeleteFirewall(req)
+				rid := ctx.PickResourceID(id)
+				req.FWId = sdk.String(rid)
+				_, err := client.DeleteFirewall(req)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
-				base.Cxt.Printf("firewall[%s] deleted\n", id)
+				fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] deleted\n", id)
+				results = append(results, cli.OpResultRow{ResourceID: rid, Action: "delete", Status: "Deleted"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringSliceVar(&ids, "fw-id", nil, "Required. Resource IDs of firewall to delete")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 
 	cmd.MarkFlagRequired("fw-id")
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 
 	return cmd
 }
 
-// FirewallResourceRow 表格行
-type FirewallResourceRow struct {
-	ResourceName string
-	ResourceID   string
-	ResourceType string
-	IntranetIP   string
-	Group        string
-	Remark       string
-}
-
-// NewCmdFirewallResource ucloud firewall resource
-func NewCmdFirewallResource(out io.Writer) *cobra.Command {
+// newResource ucloud firewall resource
+func newResource(ctx *cli.Context) *cobra.Command {
 	fwID := ""
-	req := base.BizClient.NewDescribeFirewallResourceRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewDescribeFirewallResourceRequest()
 	cmd := &cobra.Command{
 		Use:   "resource",
 		Short: "List resources that has been applied the firewall",
 		Long:  "List resources that has been applied the firewall",
 		Run: func(c *cobra.Command, args []string) {
-			req.FWId = sdk.String(base.PickResourceID(fwID))
-			resp, err := base.BizClient.DescribeFirewallResource(req)
+			req.FWId = sdk.String(ctx.PickResourceID(fwID))
+			resp, err := client.DescribeFirewallResource(req)
 			if err != nil {
-				base.HandleError(err)
+				ctx.HandleError(err)
 				return
 			}
 			list := []FirewallResourceRow{}
@@ -490,20 +458,20 @@ func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 				row.Remark = rs.Remark
 				list = append(list, row)
 			}
-			base.PrintList(list, out)
+			ctx.PrintList(list)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
 	flags.StringVar(&fwID, "fw-id", "", "Required. Resource ID of firewall")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 	req.Offset = flags.Int("offset", 0, "Optional. Offset")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("fw-id")
@@ -511,10 +479,11 @@ func NewCmdFirewallResource(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// NewCmdFirewallUpdate ucloud firewall update
-func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
+// newUpdate ucloud firewall update
+func newUpdate(ctx *cli.Context) *cobra.Command {
 	fwIDs := []string{}
-	req := base.BizClient.NewUpdateFirewallAttributeRequest()
+	client := cli.NewServiceClient(ctx, unet.NewClient)
+	req := client.NewUpdateFirewallAttributeRequest()
 	cmd := &cobra.Command{
 		Use:     "update",
 		Short:   "Update firewall attribute, such as name,group and remark.",
@@ -522,7 +491,7 @@ func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
 		Example: `ucloud firewall update --fw-id firewall-2xxxx/test2 --name test_update.1 --remark "this is a remark"`,
 		Run: func(c *cobra.Command, args []string) {
 			if *req.Name == "" && *req.Tag == "" && *req.Remark == "" {
-				fmt.Fprintln(out, "Error: name, group and remark can't be all empty")
+				fmt.Fprintln(ctx.Err(), "Error: name, group and remark can't be all empty")
 				return
 			}
 			if *req.Name == "" {
@@ -534,82 +503,36 @@ func NewCmdFirewallUpdate(out io.Writer) *cobra.Command {
 			if *req.Remark == "" {
 				req.Remark = nil
 			}
+			results := []cli.OpResultRow{}
 			for _, id := range fwIDs {
-				req.FWId = sdk.String(base.PickResourceID(id))
-				_, err := base.BizClient.UpdateFirewallAttribute(req)
+				rid := ctx.PickResourceID(id)
+				req.FWId = sdk.String(rid)
+				_, err := client.UpdateFirewallAttribute(req)
 				if err != nil {
-					base.HandleError(err)
+					ctx.HandleError(err)
 					return
 				}
-				fmt.Fprintf(out, "firewall[%s] updated\n", id)
+				fmt.Fprintf(ctx.ProgressWriter(), "firewall[%s] updated\n", id)
+				results = append(results, cli.OpResultRow{ResourceID: rid, Action: "update", Status: "Updated"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&fwIDs, "fw-id", nil, "Required. Resource ID of firewalls")
-	req.Region = flags.String("region", base.ConfigIns.Region, "Optional. Region, see 'ucloud region'")
-	req.ProjectId = flags.String("project-id", base.ConfigIns.ProjectID, "Optional. Project-id, see 'ucloud project list'")
+	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
+	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 	req.Name = flags.String("name", "", "Name of firewall")
 	req.Tag = flags.String("group", "", "Group of firewall")
 	req.Remark = flags.String("remark", "", "Remark of firewall")
 
 	command.SetCompletion(cmd, "fw-id", func() []string {
-		return getFirewallIDNames(*req.ProjectId, *req.Region)
+		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
 	})
 
 	cmd.MarkFlagRequired("fw-id")
 
 	return cmd
-}
-
-func getFirewallIDNames(project, region string) (idNames []string) {
-	list, err := getAllFirewallIns(project, region)
-	if err != nil {
-		return
-	}
-	for _, f := range list {
-		idNames = append(idNames, f.FWId+"/"+f.Name)
-	}
-	return
-}
-
-func getFirewall(fwNameID, project, region string) (*unet.FirewallDataSet, error) {
-	var firewall *unet.FirewallDataSet
-	list, err := getAllFirewallIns(project, region)
-	if err != nil {
-		return nil, err
-	}
-	for i, fw := range list {
-		if fw.FWId == fwNameID || fw.Name == fwNameID {
-			firewall = &list[i]
-		}
-	}
-	if firewall == nil {
-		return nil, fmt.Errorf("firwall[%s] does not exist", fwNameID)
-	}
-	return firewall, nil
-}
-
-func getAllFirewallIns(project, region string) ([]unet.FirewallDataSet, error) {
-	req := base.BizClient.NewDescribeFirewallRequest()
-	req.ProjectId = sdk.String(project)
-	req.Region = sdk.String(region)
-	list := []unet.FirewallDataSet{}
-	for offset, limit := 0, 100; ; offset += limit {
-		req.Offset = sdk.Int(offset)
-		req.Limit = sdk.Int(limit)
-		resp, err := base.BizClient.DescribeFirewall(req)
-		if err != nil {
-			return nil, err
-		}
-		for _, fw := range resp.DataSet {
-			list = append(list, fw)
-		}
-		if resp.TotalCount < offset+limit {
-			break
-		}
-	}
-	return list, nil
 }

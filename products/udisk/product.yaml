@@ -1,0 +1,7 @@
+# products/udisk/product.yaml — udisk 产品元数据(归属真源,owner 自治维护)
+name: udisk
+owners:
+  - Episkey-G
+commands:
+  - udisk
+enabled: true

@@ -93,6 +93,36 @@ func (c *Context) ProjectList() []string {
 	return c.projectList()
 }
 
+// DefaultRegion / DefaultProjectID expose the per-invocation config defaults
+// (the same values Bind* helpers use) for hand-written flags where the standard
+// Bind* helpers don't apply — e.g. a product command that needs the configured
+// default region/project as a flag default but must NOT register region/project
+// completion (mirrors the RegionList rationale). Nil-safe: empty when no config.
+func (c *Context) DefaultRegion() string {
+	if c.config == nil {
+		return ""
+	}
+	return c.config.Region
+}
+
+// DefaultProjectID returns the per-invocation default project id from config.
+func (c *Context) DefaultProjectID() string {
+	if c.config == nil {
+		return ""
+	}
+	return c.config.ProjectID
+}
+
+// DefaultZone returns the per-invocation default availability zone from config,
+// for hand-written --zone flags that must NOT register zone completion (same
+// rationale as DefaultRegion/DefaultProjectID). Nil-safe: empty when no config.
+func (c *Context) DefaultZone() string {
+	if c.config == nil {
+		return ""
+	}
+	return c.config.Zone
+}
+
 // AllRegions returns every region the account can see, propagating the
 // fetch error (unlike RegionList, which is for completion and drops it). Used
 // by runtime fan-out flags such as uhost --all-region. Nil-safe.
@@ -119,21 +149,31 @@ func (c *Context) PrintList(dataSet interface{}) {
 // PrintJSON renders dataSet as JSON to the ctx writer.
 func (c *Context) PrintJSON(dataSet interface{}) error { return ui.PrintJSON(dataSet, c.out) }
 
-// Confirm prompts the user for a yes/no confirmation on the ctx streams.
-func (c *Context) Confirm(yes bool, text string) bool { return ui.Confirm(c.in, c.out, yes, text) }
+// Confirm prompts the user for a yes/no confirmation. The prompt is written to
+// the progress writer (stdout in table mode, stderr in json/yaml mode) so it
+// never corrupts machine-readable output on stdout; the answer is read from the
+// ctx input stream.
+func (c *Context) Confirm(yes bool, text string) bool {
+	return ui.Confirm(c.in, c.ProgressWriter(), yes, text)
+}
 
-// HandleError logs err in the standard CLI error format.
-func (c *Context) HandleError(err error) { base.HandleError(err) }
+// HandleError renders err (business RetCode / transport error) to stderr — never
+// stdout, so machine output on stdout stays clean — and records it to the
+// cli.log file / telemetry.
+func (c *Context) HandleError(err error) { base.HandleErrorTo(c.err, err) }
 
 // LogInfo / LogPrint / LogWarn / LogError forward to the platform logger
 // (cli.log + optional telemetry, with redaction) for non-request product
 // diagnostics (warnings, errors, status). API request logging is handled
 // automatically by the platform SDK handler — products do NOT log requests
 // themselves (see batch-1 plan Part 0 Task 0.2 / D-C).
+// LogInfo writes to the log file only (no console). LogPrint/LogWarn/LogError
+// send their console copy to stderr (ctx.Err), never stdout, so machine output
+// on stdout stays clean; all four still record to cli.log / telemetry.
 func (c *Context) LogInfo(logs ...string)  { base.LogInfo(logs...) }
-func (c *Context) LogPrint(logs ...string) { base.LogPrint(logs...) }
-func (c *Context) LogWarn(logs ...string)  { base.LogWarn(logs...) }
-func (c *Context) LogError(logs ...string) { base.LogError(logs...) }
+func (c *Context) LogPrint(logs ...string) { base.LogPrintTo(c.err, logs...) }
+func (c *Context) LogWarn(logs ...string)  { base.LogWarnTo(c.err, logs...) }
+func (c *Context) LogError(logs ...string) { base.LogErrorTo(c.err, logs...) }
 
 // LogFilePath returns the path of the CLI log file (e.g. for "check logs in …").
 func (c *Context) LogFilePath() string { return base.GetLogFilePath() }

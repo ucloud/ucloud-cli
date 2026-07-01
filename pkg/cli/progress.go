@@ -34,6 +34,12 @@ func (c *Context) NewProgress() *Progress {
 // Disable switches off per-block animation (the count>5 aggregate path).
 func (p *Progress) Disable() { p.doc.Disable() }
 
+// Animated reports whether the progress document renders live frames. It is
+// false when the bound writer is not a TTY (pipe/file/json mode) or Disable()
+// was called for the aggregate count>5 path. When false, block content is never
+// shown, so callers must surface errors to stderr (ctx.Err()) themselves.
+func (p *Progress) Animated() bool { return !p.doc.Disabled() }
+
 // NewBlock appends a fresh block to the document and returns it.
 func (p *Progress) NewBlock() *Block {
 	b := ux.NewBlock()

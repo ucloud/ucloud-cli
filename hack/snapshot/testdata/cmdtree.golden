@@ -179,7 +179,7 @@ ucloud firewall copy	use=copy	short=Copy firewall
   flag=name	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
-  flag=src-fw	short=	default=	required=
+  flag=src-fw	short=	default=	required=true
   flag=target-region	short=	default=	required=
 ucloud firewall create	use=create	short=Create firewall
   flag=group	short=	default=	required=
@@ -757,7 +757,7 @@ ucloud udisk delete	use=delete	short=Delete udisk instances
 ucloud udisk delete-snapshot	use=delete-snapshot	short=Delete snapshots
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
-  flag=snaphost-id	short=	default=[]	required=
+  flag=snapshot-id	short=	default=[]	required=true
   flag=zone	short=	default=	required=
 ucloud udisk detach	use=detach	short=Detach udisk instances from an uhost
   flag=async	short=a	default=false	required=
@@ -780,13 +780,13 @@ ucloud udisk list	use=list	short=List udisk instance
   flag=udisk-id	short=	default=	required=
   flag=udisk-type	short=	default=	required=
   flag=zone	short=	default=	required=
-ucloud udisk list-snapshot	use=list-snapshot	short=List snaphosts
+ucloud udisk list-snapshot	use=list-snapshot	short=List snapshots
   flag=disk-id	short=	default=	required=
   flag=limit	short=	default=50	required=
   flag=offset	short=	default=0	required=
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
-  flag=snaphost-id	short=	default=[]	required=
+  flag=snapshot-id	short=	default=[]	required=
   flag=uhost-id	short=	default=	required=
   flag=zone	short=	default=	required=
 ucloud udisk restore	use=restore	short=Restore udisk from snapshot
@@ -921,7 +921,6 @@ ucloud uhost list	use=list	short=List all UHost Instances
   flag=isolation-group	short=	default=	required=
   flag=limit	short=	default=50	required=
   flag=offset	short=	default=0	required=
-  flag=output	short=o	default=	required=
   flag=page-off	short=	default=false	required=
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=

@@ -1,0 +1,7 @@
+# products/image/product.yaml — image 产品元数据(归属真源,owner 自治维护)
+name: image
+owners:
+  - Episkey-G
+commands:
+  - image
+enabled: true

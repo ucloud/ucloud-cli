@@ -67,13 +67,18 @@ func HandleBizError(resp response.Common) error {
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
-// HandleError 处理错误，业务错误 和 HTTP错误
-func HandleError(err error) {
+// HandleError 处理错误，业务错误 和 HTTP错误. The console copy goes to the global
+// writer (stdout); product code uses ctx.HandleError → HandleErrorTo(stderr).
+func HandleError(err error) { HandleErrorTo(out, err) }
+
+// HandleErrorTo is HandleError with a caller-chosen console writer w, so product
+// commands can route errors to stderr and keep stdout machine-clean.
+func HandleErrorTo(w io.Writer, err error) {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s\n"
-		LogError(fmt.Sprintf(format, uErr.Code(), uErr.Message()))
+		LogErrorTo(w, fmt.Sprintf(format, uErr.Code(), uErr.Message()))
 	} else {
-		LogError(fmt.Sprintf("%v", err))
+		LogErrorTo(w, fmt.Sprintf("%v", err))
 	}
 }
 

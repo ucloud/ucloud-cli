@@ -389,7 +389,6 @@ ucloud uhost leave-isolation-group	region	dynamic
 ucloud uhost leave-isolation-group	uhost-id	dynamic
 ucloud uhost leave-isolation-group	zone	dynamic
 ucloud uhost list	isolation-group	dynamic
-ucloud uhost list	output	static	wide
 ucloud uhost list	page-off	static	false,true
 ucloud uhost list	project-id	dynamic
 ucloud uhost list	region	dynamic

@@ -236,14 +236,9 @@ var reservedCommands = map[string]bool{
 	"config":    true, // NewCmdConfig
 	"region":    true, // NewCmdRegion
 	"project":   true, // NewCmdProject
-	"uhost":     true, // NewCmdUHost
-	"uphost":    true, // NewCmdUPHost
-	"uimage":    true, // NewCmdUImage
+	// uhost migrated to products/uhost (Part 6) — no longer platform-reserved.
 	"subnet":    true, // NewCmdSubnet
 	"vpc":       true, // NewCmdVpc
-	"firewall":  true, // NewCmdFirewall
-	"udisk":     true, // NewCmdDisk
-	"eip":       true, // NewCmdEIP
 	"bandwidth": true, // NewCmdBandwidth
 	"udpn":      true, // NewCmdUDPN
 	"ulb":       true, // NewCmdULB

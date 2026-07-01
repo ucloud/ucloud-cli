@@ -41,6 +41,14 @@ func (d *document) Disable() {
 	d.disable = true
 }
 
+// Disabled reports whether live rendering is off — either because Disable() was
+// called (the aggregate count>5 path) or because NewDocument bound a non-TTY
+// writer. Callers use this to know block content will NOT be shown, so they must
+// surface errors to stderr themselves (aws/gcloud: errors always on stderr).
+func (d *document) Disabled() bool {
+	return d.disable
+}
+
 func (d *document) SetWriter(out io.Writer) {
 	d.out = out
 }
