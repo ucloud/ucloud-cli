@@ -508,3 +508,98 @@ import (
 		t.Fatalf("rule1/2 territory must be flagged exactly once (by rule1/2, not rule9):\n%s", joined)
 	}
 }
+
+// --------------------------------------------------------------------------
+// rule10: §2 file layout (grab-bag filenames + one cobra constructor per file)
+// --------------------------------------------------------------------------
+
+func TestCheckFile_Rule10_OneConstructorPerFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// Two cobra constructors in one file (a method counts too) → exactly one
+	// rule10 violation naming the file.
+	src := `package p
+
+import "github.com/spf13/cobra"
+
+func NewCmdList() *cobra.Command { return &cobra.Command{} }
+
+func (b builder) NewCmdCreate() *cobra.Command { return &cobra.Command{} }
+`
+	path := writeFile(t, dir, "udb/list.go", src)
+	got := checkFile(path, "udb")
+	count := 0
+	for _, v := range got {
+		if strings.Contains(v, "rule10") {
+			count++
+			if !strings.Contains(v, path) {
+				t.Errorf("rule10 violation must name the file %s, got: %v", path, v)
+			}
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected exactly one rule10 violation for two constructors, got %d: %v", count, got)
+	}
+
+	// One constructor + unrelated funcs (incl. a FuncLit returning
+	// *cobra.Command inside a body) → zero rule10.
+	clean := `package p
+
+import "github.com/spf13/cobra"
+
+func NewCmdList() *cobra.Command {
+	build := func() *cobra.Command { return &cobra.Command{} }
+	return build()
+}
+
+func rows() []string { return nil }
+
+func (x *thing) status() error { return nil }
+`
+	cleanPath := writeFile(t, dir, "udb/clean.go", clean)
+	for _, v := range checkFile(cleanPath, "udb") {
+		if strings.Contains(v, "rule10") {
+			t.Errorf("unexpected rule10 violation for single-constructor file: %v", v)
+		}
+	}
+
+	// _test.go files are exempt from the constructor budget.
+	testPath := writeFile(t, dir, "udb/list_test.go", src)
+	for _, v := range checkFile(testPath, "udb") {
+		if strings.Contains(v, "rule10") {
+			t.Errorf("unexpected rule10 violation for _test.go file: %v", v)
+		}
+	}
+}
+
+func TestCheckFilename_Rule10_GrabBagNames(t *testing.T) {
+	flagged := []string{
+		"products/uhost/helpers.go",
+		"products/uhost/internal/uhost/utils.go",
+		"products/udisk/util.go",
+		"products/eip/common.go",
+		"products/image/misc.go",
+		"products/uhost/helpers_test.go",
+	}
+	for _, p := range flagged {
+		got := checkFilename(p)
+		if len(got) != 1 || !strings.Contains(got[0], "rule10") {
+			t.Errorf("expected one rule10 violation for %s, got: %v", p, got)
+		}
+	}
+
+	clean := []string{
+		"products/uhost/list.go",
+		"products/uhost/rows.go",
+		"products/uhost/describe.go",
+		"products/uhost/status.go",
+		"products/uhost/x.go",
+		"products/uhost/list_test.go",
+		"products/uhost/product.yaml", // non-.go files are out of scope
+	}
+	for _, p := range clean {
+		if got := checkFilename(p); len(got) != 0 {
+			t.Errorf("unexpected rule10 violation for %s: %v", p, got)
+		}
+	}
+}

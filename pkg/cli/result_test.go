@@ -45,4 +45,9 @@ func TestProgressWriterRoutesByFormat(t *testing.T) {
 	if js.ProgressWriter() != js.Err() {
 		t.Fatal("json mode: ProgressWriter must route to Err (stderr)")
 	}
+
+	yml := cli.NewContext(cli.Deps{Out: &out, Err: &err, Format: cli.OutputYAML})
+	if yml.ProgressWriter() != yml.Err() {
+		t.Fatal("yaml mode: ProgressWriter must route to Err (stderr)")
+	}
 }

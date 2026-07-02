@@ -193,6 +193,13 @@ jobs:
     if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
     needs: [owner-gate]
     runs-on: ubuntu-latest
+    # enablePullRequestAutoMerge (GraphQL) requires contents:write in addition to
+    # pull-requests:write; the workflow default above is contents:read, which made
+    # this job fail with "Resource not accessible by integration" on the first
+    # real product-autonomous PRs (P3.6 batch, 2026-07-02).
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Enable auto-merge
         env:

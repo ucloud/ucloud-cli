@@ -42,6 +42,11 @@
 //     ucloud-sdk-go, spf13/cobra|pflag, pkg/cli|command|ui, internal/common,
 //     and their own product subtree. Anything else (model/*, ux/, new
 //     third-party deps) is a violation; extending the list is a platform PR.
+//  10. §2 file layout: (a) grab-bag basenames (helpers.go, utils.go, util.go,
+//     common.go, misc.go, and their _test.go variants) are forbidden under
+//     products/ — name files by verb or concern; (b) each non-test .go file
+//     may declare at most one top-level function (methods included) returning
+//     *cobra.Command: one verb per file.
 package main
 
 import (
@@ -147,6 +152,61 @@ func importAllowed(importPath, productName string) bool {
 	}
 	for _, p := range allowedThirdParty {
 		if importPath == p || strings.HasPrefix(importPath, p+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// ---- Rule 10a: forbidden grab-bag filenames --------------------------------
+// §2 names product files by verb or concern (list.go, rows.go, completion.go,
+// describe.go/poll.go, status.go, ...). Grab-bag basenames defeat that layout,
+// so they are forbidden under products/ — including their _test.go variants
+// (a grab-bag test file is the same smell).
+var grabBagBasenames = map[string]bool{
+	"helpers": true,
+	"utils":   true,
+	"util":    true,
+	"common":  true,
+	"misc":    true,
+}
+
+// checkFilename enforces rule 10a on a single path under products/. It is a
+// pure path check (no parsing) kept separate from checkFile so it can be
+// unit-tested with arbitrary paths.
+func checkFilename(path string) []string {
+	base := filepath.Base(path)
+	if !strings.HasSuffix(base, ".go") {
+		return nil
+	}
+	stem := strings.TrimSuffix(base, ".go")
+	stem = strings.TrimSuffix(stem, "_test")
+	if grabBagBasenames[stem] {
+		return []string{fmt.Sprintf(
+			"rule10: grab-bag filename %q is forbidden under products/ (name files by verb or concern: <verb>.go, rows.go, completion.go, describe.go/poll.go, status.go)",
+			path)}
+	}
+	return nil
+}
+
+// ---- Rule 10b: one cobra constructor per file -------------------------------
+
+// returnsCobraCommand reports whether the function signature's result list
+// includes a *cobra.Command. Matching is by AST shape — a StarExpr over a
+// SelectorExpr whose Sel is "Command" — regardless of the import alias or
+// package qualifier: the only *X.Command pointer type used in this codebase
+// is cobra's (verified by grep across cmd/, products/, pkg/, internal/, base/,
+// ux/, model/), so selector-name matching is sufficient and alias-proof.
+func returnsCobraCommand(ft *ast.FuncType) bool {
+	if ft == nil || ft.Results == nil {
+		return false
+	}
+	for _, field := range ft.Results.List {
+		star, ok := field.Type.(*ast.StarExpr)
+		if !ok {
+			continue
+		}
+		if sel, ok := star.X.(*ast.SelectorExpr); ok && sel.Sel.Name == "Command" {
 			return true
 		}
 	}
@@ -268,6 +328,26 @@ func checkFile(path, productName string) []string {
 
 		return true
 	})
+
+	// ---- Rule 10b: at most one cobra constructor per file ------------------
+	// §2「one verb per file」: a non-test file may declare at most one
+	// top-level function whose results include *cobra.Command. Methods count
+	// too (a method returning *cobra.Command is still a constructor); FuncLit
+	// closures inside bodies are naturally excluded because only f.Decls is
+	// scanned.
+	if !strings.HasSuffix(filepath.Base(path), "_test.go") {
+		constructors := 0
+		for _, decl := range f.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && returnsCobraCommand(fn.Type) {
+				constructors++
+			}
+		}
+		if constructors > 1 {
+			violations = append(violations,
+				fmt.Sprintf("rule10: %s declares %d cobra-constructor functions; §2 allows at most one per file (one verb per file; move extras to their own <verb>.go)",
+					path, constructors))
+		}
+	}
 
 	return violations
 }
@@ -416,7 +496,7 @@ func main() {
 	// ---- Rule 8: product.go Metadata commands ↔ products.yaml -------------
 	allViolations = append(allViolations, checkCommandsConsistency(products)...)
 
-	// ---- Rules 1–4: walk every .go file under products/ ------------------
+	// ---- Rules 1–4 & 10: walk every .go file under products/ --------------
 	if _, statErr := os.Stat(productsRoot); statErr == nil {
 		walkErr := filepath.Walk(productsRoot, func(path string, info os.FileInfo, walkErr error) error {
 			if walkErr != nil {
@@ -432,6 +512,8 @@ func main() {
 			parts := strings.SplitN(rel, string(filepath.Separator), 2)
 			productName := parts[0]
 
+			// Rule 10a is a per-path check; no parsing needed.
+			allViolations = append(allViolations, checkFilename(path)...)
 			allViolations = append(allViolations, checkFile(path, productName)...)
 			return nil
 		})
