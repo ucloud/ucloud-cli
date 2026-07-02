@@ -42,8 +42,12 @@ func checkAndCloseUhost(ctx *cli.Context, client *uhostsdk.UHostClient, yes, asy
 	inst, ok := host.(*uhostsdk.UHostInstanceSet)
 	if ok {
 		if inst.State == "Running" {
-			if !ctx.Confirm(yes, fmt.Sprintf("uhost[%s] will be stopped, can we do this?", uhostID)) {
-				return fmt.Errorf("skip, you do not agree to stop uhost")
+			ok, err := ctx.Confirm(yes, fmt.Sprintf("uhost[%s] will be stopped, can we do this?", uhostID))
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return nil
 			}
 			_req := client.NewStopUHostInstanceRequest()
 			_req.ProjectId = &project

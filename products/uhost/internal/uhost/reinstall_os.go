@@ -57,7 +57,12 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 						sure := false
 						if !*yes {
 							text := fmt.Sprintf("udisk[%s/%s] will be detached, can we do this?", disk.DiskId, disk.Name)
-							sure = ctx.Confirm(false, text)
+							var cErr error
+							sure, cErr = ctx.Confirm(false, text)
+							if cErr != nil {
+								ctx.HandleError(cErr)
+								return
+							}
 							if !sure {
 								fmt.Fprintf(w, "you don't agree to detach udisk\n")
 								return
