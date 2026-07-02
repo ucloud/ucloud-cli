@@ -135,7 +135,7 @@ func newUDBConfDescribe(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			if len(resp.DataSet) != 1 {
-				fmt.Fprintf(ctx.Out(), "Error, conf-id[%d] may not be exist\n", req.GroupId)
+				ctx.HandleError(fmt.Errorf("conf-id[%d] may not be exist", *req.GroupId))
 				return
 			}
 			conf := resp.DataSet[0]
@@ -147,7 +147,7 @@ func newUDBConfDescribe(ctx *cli.Context) *cobra.Command {
 				{Attribute: "Modifiable", Content: strconv.FormatBool(conf.Modifiable)},
 				{Attribute: "Zone", Content: conf.Zone},
 			}
-			fmt.Fprintln(ctx.Out(), "Attributes:")
+			fmt.Fprintln(ctx.ProgressWriter(), "Attributes:")
 			ctx.PrintList(attrs)
 
 			params := []UDBConfParamRow{}
@@ -161,7 +161,7 @@ func newUDBConfDescribe(ctx *cli.Context) *cobra.Command {
 				}
 				params = append(params, row)
 			}
-			fmt.Fprintln(ctx.Out(), "\nParameters:")
+			fmt.Fprintln(ctx.ProgressWriter(), "\nParameters:")
 			ctx.PrintList(params)
 		},
 	}
@@ -210,7 +210,8 @@ func newUDBConfClone(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.Out(), "conf[%d] created\n", resp.GroupId)
+			fmt.Fprintf(ctx.ProgressWriter(), "conf[%d] created\n", resp.GroupId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: strconv.Itoa(resp.GroupId), Action: "clone", Status: "Created"})
 		},
 	}
 
@@ -264,7 +265,7 @@ func newUDBConfUpload(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			if l := len(*req.GroupName); l < 6 || l > 63 {
-				fmt.Fprintln(ctx.Out(), "Error, length of name shoud be between 6 and 63")
+				ctx.HandleError(fmt.Errorf("length of name shoud be between 6 and 63"))
 				return
 			}
 			req.Content = sdk.String(base64.StdEncoding.EncodeToString([]byte(content)))
@@ -274,7 +275,8 @@ func newUDBConfUpload(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.Out(), "conf[%d] uploaded\n", resp.GroupId)
+			fmt.Fprintf(ctx.ProgressWriter(), "conf[%d] uploaded\n", resp.GroupId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: strconv.Itoa(resp.GroupId), Action: "upload", Status: "Uploaded"})
 		},
 	}
 	flags := cmd.Flags()
@@ -319,6 +321,8 @@ func newUDBConfUpdate(ctx *cli.Context) *cobra.Command {
 			}
 			req.GroupId = &id
 
+			w := ctx.ProgressWriter()
+			updated := 0
 			if key != "" && value != "" {
 				req.Key = &key
 				req.Value = &value
@@ -326,7 +330,8 @@ func newUDBConfUpdate(ctx *cli.Context) *cobra.Command {
 				if err != nil {
 					ctx.HandleError(err)
 				} else {
-					fmt.Printf("conf[%s]'sparameter[%s = %s] updated\n", confID, key, value)
+					fmt.Fprintf(w, "conf[%s]'sparameter[%s = %s] updated\n", confID, key, value)
+					updated++
 				}
 			}
 			if file != "" {
@@ -340,14 +345,19 @@ func newUDBConfUpdate(ctx *cli.Context) *cobra.Command {
 					req.Value = sdk.String(p.Value)
 					_, err := client.UpdateUDBParamGroup(req)
 					if err != nil {
-						fmt.Printf("conf[%s]'sparameter[%s = %s] failed\n", confID, p.Key, p.Value)
-						ctx.HandleError(err)
+						ctx.HandleError(fmt.Errorf("conf[%s]'s parameter[%s = %s] failed: %w", confID, p.Key, p.Value, err))
 					} else {
-						fmt.Printf("conf[%s]'sparameter[%s = %s] updated\n", confID, p.Key, p.Value)
+						fmt.Fprintf(w, "conf[%s]'sparameter[%s = %s] updated\n", confID, p.Key, p.Value)
+						updated++
 					}
-					fmt.Println("")
+					fmt.Fprintln(w)
 				}
 			}
+			results := []cli.OpResultRow{}
+			if updated > 0 {
+				results = append(results, cli.OpResultRow{ResourceID: strconv.Itoa(id), Action: "update", Status: "Updated"})
+			}
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -395,7 +405,8 @@ func newUDBConfDelete(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.Out(), "conf[%s] deleted\n", confID)
+			fmt.Fprintf(ctx.ProgressWriter(), "conf[%s] deleted\n", confID)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: strconv.Itoa(id), Action: "delete", Status: "Deleted"})
 		},
 	}
 	flags := cmd.Flags()
@@ -427,6 +438,8 @@ func newUDBConfApply(ctx *cli.Context) *cobra.Command {
 		Long:  "Apply configuration for UDB instances",
 		Run: func(c *cobra.Command, args []string) {
 			req.GroupId = sdk.String(ctx.PickResourceID(confID))
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range udbIDs {
 				req.DBId = sdk.String(ctx.PickResourceID(idname))
 				_, err := client.ChangeUDBParamGroup(req)
@@ -434,7 +447,8 @@ func newUDBConfApply(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
-				fmt.Fprintf(ctx.Out(), "conf[%s] has applied for udb[%s]\n", confID, idname)
+				fmt.Fprintf(w, "conf[%s] has applied for udb[%s]\n", confID, idname)
+				results = append(results, cli.OpResultRow{ResourceID: *req.DBId, Action: "apply", Status: "Applied"})
 				if !restart {
 					continue
 				}
@@ -453,12 +467,13 @@ func newUDBConfApply(ctx *cli.Context) *cobra.Command {
 					continue
 				}
 				if async {
-					fmt.Fprintf(ctx.Out(), "udb[%s] is restarting\n", idname)
+					fmt.Fprintf(w, "udb[%s] is restarting\n", idname)
 				} else {
 					text := fmt.Sprintf("udb[%s] is restarting", idname)
-					ctx.Poller(describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_FAIL, UDB_RUNNING})
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_FAIL, UDB_RUNNING})
 				}
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 

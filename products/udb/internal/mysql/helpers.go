@@ -12,7 +12,7 @@ import (
 )
 
 // stopUdbIns stops the instance and narrates progress to out (the caller passes
-// progressWriter(ctx): stdout in table mode, stderr in json/yaml). Returns the
+// ctx.ProgressWriter(): stdout in table mode, stderr in json/yaml). Returns the
 // stop error so callers can decide whether to record a structured result.
 func stopUdbIns(ctx *cli.Context, req *udb.StopUDBInstanceRequest, async bool, out io.Writer) error {
 	client := cli.NewServiceClient(ctx, udb.NewClient)

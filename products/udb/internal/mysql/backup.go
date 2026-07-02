@@ -45,7 +45,8 @@ func newUDBBackupCreate(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.Out(), "udb[%s] backuped\n", *req.DBId)
+			fmt.Fprintf(ctx.ProgressWriter(), "udb[%s] backuped\n", *req.DBId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.DBId, Action: "create", Status: "Backuped"})
 		},
 	}
 
@@ -190,6 +191,8 @@ func newUDBBackupDelete(ctx *cli.Context) *cobra.Command {
 		Long:    "Delete backups of MySQL instance",
 		Example: "ucloud udb backup delete --backup-id 65534,65535",
 		Run: func(c *cobra.Command, args []string) {
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, id := range ids {
 				req.BackupId = sdk.Int(id)
 				_, err := client.DeleteUDBBackup(req)
@@ -197,8 +200,10 @@ func newUDBBackupDelete(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
-				fmt.Fprintf(ctx.Out(), "backup[%d] deleted\n", id)
+				fmt.Fprintf(w, "backup[%d] deleted\n", id)
+				results = append(results, cli.OpResultRow{ResourceID: strconv.Itoa(id), Action: "delete", Status: "Deleted"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
@@ -279,9 +284,11 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 			project := commonBase.GetProjectId()
 			udbID = ctx.PickResourceID(udbID)
 			client := cli.NewServiceClient(ctx, udb.NewClient)
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			if logType == "slow_query" {
 				if beginTime == "" || endTime == "" {
-					fmt.Fprintln(ctx.Out(), "Error. Both begin-time and end-time can not be empty")
+					ctx.HandleError(fmt.Errorf("both begin-time and end-time can not be empty"))
 					return
 				}
 				bt, err := time.Parse(common.DateTimeLayout, beginTime)
@@ -308,7 +315,8 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					return
 				}
-				fmt.Fprintf(ctx.Out(), "mysql log archive[%s] created\n", name)
+				fmt.Fprintf(w, "mysql log archive[%s] created\n", name)
+				results = append(results, cli.OpResultRow{ResourceID: name, Action: "archive", Status: "Created"})
 			} else if logType == "error" {
 				req := client.NewBackupUDBInstanceErrorLogRequest()
 				req.DBId = &udbID
@@ -322,8 +330,10 @@ func newUDBLogArchiveCreate(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					return
 				}
-				fmt.Fprintf(ctx.Out(), "mysql log archive[%s] created\n", name)
+				fmt.Fprintf(w, "mysql log archive[%s] created\n", name)
+				results = append(results, cli.OpResultRow{ResourceID: name, Action: "archive", Status: "Created"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -406,7 +416,7 @@ func newUDBLogArchiveList(ctx *cli.Context) *cobra.Command {
 				if v, ok := logTypeMap[s]; ok {
 					req.Types = append(req.Types, v)
 				} else {
-					fmt.Fprintln(ctx.Out(), "Error, log-type should be one of 'binlog', 'slow_query' or 'error'")
+					ctx.HandleError(fmt.Errorf("log-type should be one of 'binlog', 'slow_query' or 'error'"))
 				}
 			}
 
@@ -502,6 +512,8 @@ func newUDBLogArchiveDelete(ctx *cli.Context) *cobra.Command {
 		Long:    "Delete log archives(log files)",
 		Example: "ucloud mysql logs delete --archive-id 35025",
 		Run: func(c *cobra.Command, args []string) {
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, id := range ids {
 				req.BackupId = sdk.Int(id)
 				_, err := client.DeleteUDBLogPackage(req)
@@ -509,8 +521,10 @@ func newUDBLogArchiveDelete(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
-				fmt.Fprintf(ctx.Out(), "archive[%d] deleted\n", id)
+				fmt.Fprintf(w, "archive[%d] deleted\n", id)
+				results = append(results, cli.OpResultRow{ResourceID: strconv.Itoa(id), Action: "delete", Status: "Deleted"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()

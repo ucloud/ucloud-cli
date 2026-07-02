@@ -335,14 +335,14 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(fmt.Errorf("empty DBId in response"))
 				return
 			}
-			w := progressWriter(ctx)
+			w := ctx.ProgressWriter()
 			if async {
 				fmt.Fprintf(w, "udb[%s] is initializing\n", dbID)
 			} else {
 				text := fmt.Sprintf("udb[%s] is initializing", dbID)
 				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(dbID, text, []string{UDB_RUNNING, UDB_FAIL})
 			}
-			emitResult(ctx, OpResultRow{ResourceID: dbID, Action: "create", Status: "Initializing"})
+			ctx.EmitResult(cli.OpResultRow{ResourceID: dbID, Action: "create", Status: "Initializing"})
 		},
 	}
 
@@ -528,8 +528,8 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 			if !ok {
 				return
 			}
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				any, err := describeUdbByID(ctx)(id, nil)
@@ -553,9 +553,9 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 					continue
 				}
 				fmt.Fprintf(w, "udb[%s] deleted\n", idname)
-				results = append(results, OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
@@ -585,17 +585,17 @@ func newStop(ctx *cli.Context) *cobra.Command {
 		Short: "Stop MySQL instances by udb-id",
 		Long:  "Stop MySQL instances by udb-id",
 		Run: func(c *cobra.Command, args []string) {
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = sdk.String(id)
 				if err := stopUdbIns(ctx, req, async, w); err != nil {
 					continue
 				}
-				results = append(results, OpResultRow{ResourceID: id, Action: "stop", Status: "Stopping"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "stop", Status: "Stopping"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -630,8 +630,8 @@ func newStart(ctx *cli.Context) *cobra.Command {
 		Short: "Start MySQL instances by udb-id",
 		Long:  "Start MySQL instances by udb-id",
 		Run: func(c *cobra.Command, args []string) {
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = &id
@@ -646,9 +646,9 @@ func newStart(ctx *cli.Context) *cobra.Command {
 					text := fmt.Sprintf("udb[%s] is starting", idname)
 					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_FAIL})
 				}
-				results = append(results, OpResultRow{ResourceID: id, Action: "start", Status: "Starting"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "start", Status: "Starting"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -680,8 +680,8 @@ func newRestart(ctx *cli.Context) *cobra.Command {
 		Short: "Restart MySQL instances by udb-id",
 		Long:  "Restart MySQL instances by udb-id",
 		Run: func(c *cobra.Command, args []string) {
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = &id
@@ -696,9 +696,9 @@ func newRestart(ctx *cli.Context) *cobra.Command {
 					text := fmt.Sprintf("udb[%s] is restarting", idname)
 					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_FAIL})
 				}
-				results = append(results, OpResultRow{ResourceID: id, Action: "restart", Status: "Restarting"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "restart", Status: "Restarting"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -751,8 +751,8 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				}
 			}
 
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = &id
@@ -801,9 +801,9 @@ func newResize(ctx *cli.Context) *cobra.Command {
 					text := fmt.Sprintf("udb[%s] is resizing", idname)
 					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_SHUTOFF, UDB_FAIL, UDB_UPGRADE_FAIL})
 				}
-				results = append(results, OpResultRow{ResourceID: id, Action: "resize", Status: "Resizing"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "resize", Status: "Resizing"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -841,8 +841,8 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 		Short: "Reset password of MySQL instances",
 		Long:  "Reset password of MySQL instances",
 		Run: func(c *cobra.Command, args []string) {
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = &id
@@ -852,9 +852,9 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 					continue
 				}
 				fmt.Fprintf(w, "udb[%s]'s password modified\n", idname)
-				results = append(results, OpResultRow{ResourceID: id, Action: "reset-password", Status: "PasswordReset"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "reset-password", Status: "PasswordReset"})
 			}
-			emitResult(ctx, results...)
+			ctx.EmitResult(results...)
 		},
 	}
 
@@ -903,7 +903,8 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 				}
 				ins, ok := any.(*udb.UDBInstanceSet)
 				if !ok {
-					fmt.Fprintln(ctx.Out(), fmt.Sprintf("fetch udb[%s] instance", *req.SrcDBId))
+					ctx.HandleError(fmt.Errorf("fetch udb[%s] instance", *req.SrcDBId))
+					return
 				}
 				req.UseSSD = &ins.UseSSD
 			} else if diskType == "normal" {
@@ -916,14 +917,14 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			w := progressWriter(ctx)
+			w := ctx.ProgressWriter()
 			if async {
 				fmt.Fprintf(w, "udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
 			} else {
 				text := fmt.Sprintf("udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
 				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, text, []string{UDB_RUNNING, UDB_RECOVER_FAIL, UDB_FAIL})
 			}
-			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "restore", Status: "Restoring"})
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.DBId, Action: "restore", Status: "Restoring"})
 		},
 	}
 	flags := cmd.Flags()
@@ -980,13 +981,13 @@ func newCreateSlave(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			w := progressWriter(ctx)
+			w := ctx.ProgressWriter()
 			if async {
 				fmt.Fprintf(w, "udb[%s] is initializing\n", resp.DBId)
 			} else {
 				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, fmt.Sprintf("udb[%s] is initializing", resp.DBId), []string{UDB_RUNNING, UDB_FAIL})
 			}
-			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "create-slave", Status: "Initializing"})
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.DBId, Action: "create-slave", Status: "Initializing"})
 		},
 	}
 	flags := cmd.Flags()
@@ -1023,9 +1024,10 @@ func newPromoteSlave(ctx *cli.Context) *cobra.Command {
 		Short: "Promote slave db to master",
 		Long:  "Promote slave db to master",
 		Run: func(c *cobra.Command, args []string) {
-			w := progressWriter(ctx)
-			results := []OpResultRow{}
-			defer func() { emitResult(ctx, results...) }()
+			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
+			// loop aborts on first error (legacy); defer still emits partial results
+			defer func() { ctx.EmitResult(results...) }()
 			for _, id := range ids {
 				req.DBId = sdk.String(id)
 				_, err := client.PromoteUDBSlave(req)
@@ -1034,7 +1036,7 @@ func newPromoteSlave(ctx *cli.Context) *cobra.Command {
 					return
 				}
 				fmt.Fprintf(w, "udb[%s] was promoted\n", *req.DBId)
-				results = append(results, OpResultRow{ResourceID: id, Action: "promote-slave", Status: "Promoted"})
+				results = append(results, cli.OpResultRow{ResourceID: id, Action: "promote-slave", Status: "Promoted"})
 			}
 		},
 	}
@@ -1065,6 +1067,7 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 		Short: "Promote db of normal mode to high availability db. ",
 		Long:  "Promote db of normal mode to high availability db",
 		Run: func(c *cobra.Command, args []string) {
+			w := ctx.ProgressWriter()
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
 				req.DBId = &id
@@ -1073,19 +1076,19 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
-				ctx.Poller(describeUdbByID(ctx)).Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{UDB_TOBE_SWITCH, UDB_FAIL})
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{UDB_TOBE_SWITCH, UDB_FAIL})
 				any, err := describeUdbByID(ctx)(id, nil)
 				if err != nil {
-					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
+					ctx.HandleError(fmt.Errorf("udb[%s] promoted failed, please contact technical support; %v", idname, err))
 					continue
 				}
 				ins, ok := any.(*udb.UDBInstanceSet)
 				if !ok {
-					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. \n", idname)
+					ctx.HandleError(fmt.Errorf("udb[%s] promoted failed, please contact technical support", idname))
 					continue
 				}
 				if ins.State != UDB_TOBE_SWITCH {
-					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. udb[%s]'s status:%s\n", idname, idname, ins.State)
+					ctx.HandleError(fmt.Errorf("udb[%s] promoted failed, please contact technical support. udb[%s]'s status:%s", idname, idname, ins.State))
 					continue
 				}
 				switchReq := client.NewSwitchUDBInstanceToHARequest()
@@ -1101,10 +1104,10 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 				switchReq.Zone = sdk.String(common.GetZone())
 				switchResp, err := client.SwitchUDBInstanceToHA(switchReq)
 				if err != nil {
-					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
+					ctx.HandleError(fmt.Errorf("udb[%s] promoted failed, please contact technical support; %v", idname, err))
 					continue
 				}
-				ctx.Poller(describeUdbByID(ctx)).Spoll(switchResp.DBId, fmt.Sprintf("udb[%s] is switching to high availability mode", switchResp.DBId), []string{UDB_RUNNING, UDB_FAIL})
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(switchResp.DBId, fmt.Sprintf("udb[%s] is switching to high availability mode", switchResp.DBId), []string{UDB_RUNNING, UDB_FAIL})
 			}
 		},
 	}
