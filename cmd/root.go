@@ -258,6 +258,14 @@ func Execute() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+	// A product command that reported an error via ctx.HandleError but used
+	// cobra Run (no return value) would otherwise exit 0. Set a non-zero code
+	// here. Exclude completion invocations: their dynamic-completion helpers
+	// call ctx.HandleError on transient API failures but must still yield
+	// candidates (or none) with rc=0 per shell-completion convention.
+	if productCtx != nil && productCtx.Failed() && !isCompletionInvocation() {
+		os.Exit(1)
+	}
 }
 
 func init() {
@@ -421,6 +429,20 @@ func isAuthSkippedCmd(cmd *cobra.Command) bool {
 		return true
 	}
 	if cmd.Parent() != nil && (cmd.Parent().Name() == "config" || cmd.Parent().Name() == "auth") {
+		return true
+	}
+	return false
+}
+
+// isCompletionInvocation reports whether this process is a shell-completion
+// request (ucloud __complete ...), whose exit code must stay 0 regardless of
+// transient completion-helper errors.
+func isCompletionInvocation() bool {
+	if len(os.Args) < 2 {
+		return false
+	}
+	switch os.Args[1] {
+	case "__complete", "__completeNoDesc", "completion":
 		return true
 	}
 	return false

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"io"
+	"sync/atomic"
 
 	"github.com/spf13/cobra"
 
@@ -160,7 +161,10 @@ func (c *Context) Confirm(yes bool, text string) bool {
 // HandleError renders err (business RetCode / transport error) to stderr — never
 // stdout, so machine output on stdout stays clean — and records it to the
 // cli.log file / telemetry.
-func (c *Context) HandleError(err error) { base.HandleErrorTo(c.err, err) }
+func (c *Context) HandleError(err error) {
+	atomic.AddInt32(&c.errCount, 1)
+	base.HandleErrorTo(c.err, err)
+}
 
 // LogInfo / LogPrint / LogWarn / LogError forward to the platform logger
 // (cli.log + optional telemetry, with redaction) for non-request product
