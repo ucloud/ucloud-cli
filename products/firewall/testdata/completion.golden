@@ -1,0 +1,12 @@
+ucloud firewall add-rule	fw-id	dynamic
+ucloud firewall add-rule	rules-file	static	
+ucloud firewall apply	fw-id	dynamic
+ucloud firewall apply	resource-type	static	dbaudit,fortresshost,hadoophost,udhost,udockhost,uhost,unatgw,upm
+ucloud firewall copy	region	dynamic
+ucloud firewall copy	src-fw	dynamic
+ucloud firewall copy	target-region	dynamic
+ucloud firewall create	rules-file	static	
+ucloud firewall delete	fw-id	dynamic
+ucloud firewall remove-rule	fw-id	dynamic
+ucloud firewall resource	fw-id	dynamic
+ucloud firewall update	fw-id	dynamic

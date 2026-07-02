@@ -15,8 +15,6 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/internal/common"
-	cliconst "github.com/ucloud/ucloud-cli/model/cli"
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -351,13 +349,13 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100")
 
 	command.SetCompletion(cmd, "image-id", func() []string {
-		return getImageList(ctx, []string{status.IMAGE_AVAILABLE}, cliconst.IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
+		return getImageList(ctx, []string{IMAGE_AVAILABLE}, IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(ctx, *req.ProjectId, *req.Region)
 	})
 	command.SetCompletion(cmd, "bind-eip", func() []string {
-		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
+		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{EIP_FREE}, nil)
 	})
 	command.SetCompletion(cmd, "firewall-id", func() []string {
 		return getFirewallIDNames(ctx, *req.ProjectId, *req.Region)
@@ -463,7 +461,7 @@ func createMultipleUhost(ctx *cli.Context, prog *cli.Progress, client *uhostsdk.
 		if async {
 			block.Append(text)
 		} else {
-			prog.Sspoll(sdescribeUHostByID(ctx), uhostID, text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
+			prog.Sspoll(sdescribeUHostByID(ctx), uhostID, text, []string{HOST_RUNNING, HOST_FAIL}, block, &req.CommonBase)
 		}
 		bindEipID := ""
 		if len(bindEipIDs) > i {
@@ -541,7 +539,7 @@ func createUhost(ctx *cli.Context, prog *cli.Progress, client *uhostsdk.UHostCli
 	if async {
 		block.Append(text)
 	} else {
-		prog.Sspoll(sdescribeUHostByID(ctx), resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &req.CommonBase)
+		prog.Sspoll(sdescribeUHostByID(ctx), resp.UHostIds[0], text, []string{HOST_RUNNING, HOST_FAIL}, block, &req.CommonBase)
 	}
 
 	if bindEipID != "" {
@@ -659,7 +657,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "release-eip", "true", "false")
 	command.SetFlagValues(cmd, "delete-cloud-disk", "true", "false")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED, HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 
@@ -725,6 +723,6 @@ func stopUhostInsV2(ctx *cli.Context, prog *cli.Progress, client *uhostsdk.UHost
 	if async {
 		block.Append(text)
 	} else {
-		prog.Sspoll(sdescribeUHostByID(ctx), resp.UHostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL}, block, nil)
+		prog.Sspoll(sdescribeUHostByID(ctx), resp.UHostId, text, []string{HOST_STOPPED, HOST_FAIL}, block, nil)
 	}
 }

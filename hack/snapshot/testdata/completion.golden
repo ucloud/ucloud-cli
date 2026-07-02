@@ -36,48 +36,12 @@ ucloud config update	profile	static
 ucloud config update	project-id	dynamic
 ucloud config update	region	dynamic
 ucloud config update	zone	dynamic
-ucloud eip allocate	charge-type	static	Dynamic,Month,Trial,Year
-ucloud eip allocate	line	static	BGP,International
-ucloud eip allocate	project-id	dynamic
-ucloud eip allocate	region	dynamic
-ucloud eip allocate	traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
-ucloud eip bind	eip-id	dynamic
-ucloud eip bind	resource-type	static	dbaudit,fortresshost,hadoophost,natgw,ucdr,udb,udhost,udockhost,uhost,ulb,upm,vpngw,vrouter
-ucloud eip join-shared-bw	eip-id	dynamic
-ucloud eip join-shared-bw	shared-bw-id	dynamic
-ucloud eip leave-shared-bw	eip-id	dynamic
-ucloud eip leave-shared-bw	shared-bw-id	dynamic
-ucloud eip leave-shared-bw	traffic-mode	static	Bandwidth,Traffic
-ucloud eip list	list-all	static	false,true
-ucloud eip list	project-id	dynamic
-ucloud eip list	region	dynamic
-ucloud eip modify-bw	eip-id	dynamic
-ucloud eip modify-traffic-mode	eip-id	dynamic
-ucloud eip modify-traffic-mode	traffic-mode	static	Bandwidth,PostAccurateBandwidth,Traffic
-ucloud eip release	eip-id	dynamic
-ucloud eip release	project-id	dynamic
-ucloud eip release	region	dynamic
-ucloud eip unbind	eip-id	dynamic
-ucloud eip unbind	project-id	dynamic
-ucloud eip unbind	region	dynamic
 ucloud ext uhost switch-eip	create-eip-charge-type	static	Dynamic,Month,Trial,Year
 ucloud ext uhost switch-eip	create-eip-traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
 ucloud ext uhost switch-eip	project-id	dynamic
 ucloud ext uhost switch-eip	region	dynamic
 ucloud ext uhost switch-eip	uhost-id	dynamic
 ucloud ext uhost switch-eip	zone	dynamic
-ucloud firewall add-rule	fw-id	dynamic
-ucloud firewall add-rule	rules-file	static	
-ucloud firewall apply	fw-id	dynamic
-ucloud firewall apply	resource-type	static	dbaudit,fortresshost,hadoophost,udhost,udockhost,uhost,unatgw,upm
-ucloud firewall copy	region	dynamic
-ucloud firewall copy	src-fw	dynamic
-ucloud firewall copy	target-region	dynamic
-ucloud firewall create	rules-file	static	
-ucloud firewall delete	fw-id	dynamic
-ucloud firewall remove-rule	fw-id	dynamic
-ucloud firewall resource	fw-id	dynamic
-ucloud firewall update	fw-id	dynamic
 ucloud gendoc	dir	static	
 ucloud gendoc	format	static	douku,markdown,rst
 ucloud gssh create	bandwidth-package	static	0,20,40
@@ -91,15 +55,6 @@ ucloud gssh delete	gssh-id	dynamic
 ucloud gssh delete	project-id	dynamic
 ucloud gssh update	gssh-id	dynamic
 ucloud gssh update	project-id	dynamic
-ucloud image copy	project-id	dynamic
-ucloud image copy	region	dynamic
-ucloud image copy	source-image-id	dynamic
-ucloud image copy	target-project	dynamic
-ucloud image copy	target-region	dynamic
-ucloud image copy	zone	dynamic
-ucloud image create	uhost-id	dynamic
-ucloud image delete	image-id	dynamic
-ucloud image list	image-type	static	Base,Business,Custom
 ucloud memcache create	charge-type	static	Dynamic,Month,Year
 ucloud memcache create	project-id	dynamic
 ucloud memcache create	region	dynamic
@@ -118,137 +73,6 @@ ucloud memcache restart	project-id	dynamic
 ucloud memcache restart	region	dynamic
 ucloud memcache restart	umem-id	dynamic
 ucloud memcache restart	zone	dynamic
-ucloud mysql backup create	project-id	dynamic
-ucloud mysql backup create	region	dynamic
-ucloud mysql backup create	udb-id	dynamic
-ucloud mysql backup create	zone	dynamic
-ucloud mysql backup delete	project-id	dynamic
-ucloud mysql backup delete	region	dynamic
-ucloud mysql backup delete	zone	dynamic
-ucloud mysql backup download	project-id	dynamic
-ucloud mysql backup download	region	dynamic
-ucloud mysql backup download	udb-id	dynamic
-ucloud mysql backup download	zone	dynamic
-ucloud mysql backup list	backup-type	static	auto,manual
-ucloud mysql backup list	db-type	static	mongodb,mysql,postgresql,sqlserver
-ucloud mysql backup list	project-id	dynamic
-ucloud mysql backup list	region	dynamic
-ucloud mysql backup list	udb-id	dynamic
-ucloud mysql backup list	zone	dynamic
-ucloud mysql conf apply	conf-id	dynamic
-ucloud mysql conf apply	project-id	dynamic
-ucloud mysql conf apply	region	dynamic
-ucloud mysql conf apply	udb-id	dynamic
-ucloud mysql conf apply	zone	dynamic
-ucloud mysql conf clone	db-version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
-ucloud mysql conf clone	project-id	dynamic
-ucloud mysql conf clone	region	dynamic
-ucloud mysql conf clone	src-conf-id	dynamic
-ucloud mysql conf clone	zone	dynamic
-ucloud mysql conf delete	conf-id	dynamic
-ucloud mysql conf delete	project-id	dynamic
-ucloud mysql conf delete	region	dynamic
-ucloud mysql conf delete	zone	dynamic
-ucloud mysql conf describe	conf-id	dynamic
-ucloud mysql conf describe	project-id	dynamic
-ucloud mysql conf describe	region	dynamic
-ucloud mysql conf describe	zone	dynamic
-ucloud mysql conf download	conf-id	dynamic
-ucloud mysql conf download	project-id	dynamic
-ucloud mysql conf download	region	dynamic
-ucloud mysql conf download	zone	dynamic
-ucloud mysql conf list	conf-id	dynamic
-ucloud mysql conf list	project-id	dynamic
-ucloud mysql conf list	region	dynamic
-ucloud mysql conf list	zone	dynamic
-ucloud mysql conf update	conf-id	dynamic
-ucloud mysql conf update	file	static	
-ucloud mysql conf update	project-id	dynamic
-ucloud mysql conf update	region	dynamic
-ucloud mysql conf update	zone	dynamic
-ucloud mysql conf upload	conf-file	static	
-ucloud mysql conf upload	db-version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
-ucloud mysql conf upload	project-id	dynamic
-ucloud mysql conf upload	region	dynamic
-ucloud mysql conf upload	zone	dynamic
-ucloud mysql db create	charge-type	static	Dynamic,Month,Year
-ucloud mysql db create	machine-type	static	o.mysql2m.12xlarge,o.mysql2m.16xlarge,o.mysql2m.2xlarge,o.mysql2m.4xlarge,o.mysql2m.8xlarge,o.mysql2m.medium,o.mysql2m.small,o.mysql2m.xlarge,o.mysql4m.16xlarge,o.mysql4m.2xlarge,o.mysql4m.4xlarge,o.mysql4m.8xlarge,o.mysql4m.medium,o.mysql4m.xlarge,o.mysql8m.16xlarge,o.mysql8m.2xlarge,o.mysql8m.4xlarge,o.mysql8m.8xlarge,o.mysql8m.medium,o.mysql8m.xlarge
-ucloud mysql db create	mode	static	HA,Normal
-ucloud mysql db create	param-group-id	dynamic
-ucloud mysql db create	project-id	dynamic
-ucloud mysql db create	region	dynamic
-ucloud mysql db create	spec-class	static	O,O2
-ucloud mysql db create	storage-class	static	CLOUD_RSSD
-ucloud mysql db create	subnet-id	dynamic
-ucloud mysql db create	version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
-ucloud mysql db create	vpc-id	dynamic
-ucloud mysql db create	zone	dynamic
-ucloud mysql db create-slave	disk-type	static	normal,pcie_ssd,sata_ssd
-ucloud mysql db create-slave	master-udb-id	dynamic
-ucloud mysql db create-slave	project-id	dynamic
-ucloud mysql db create-slave	region	dynamic
-ucloud mysql db create-slave	zone	dynamic
-ucloud mysql db delete	project-id	dynamic
-ucloud mysql db delete	region	dynamic
-ucloud mysql db delete	udb-id	dynamic
-ucloud mysql db delete	zone	dynamic
-ucloud mysql db list	include-slaves	static	false,true
-ucloud mysql db list	project-id	dynamic
-ucloud mysql db list	region	dynamic
-ucloud mysql db list	udb-id	dynamic
-ucloud mysql db list	zone	dynamic
-ucloud mysql db list-machine-type	mode	static	HA,Normal
-ucloud mysql db list-machine-type	project-id	dynamic
-ucloud mysql db list-machine-type	region	dynamic
-ucloud mysql db list-machine-type	zone	dynamic
-ucloud mysql db promote-slave	project-id	dynamic
-ucloud mysql db promote-slave	region	dynamic
-ucloud mysql db promote-slave	zone	dynamic
-ucloud mysql db reset-password	project-id	dynamic
-ucloud mysql db reset-password	region	dynamic
-ucloud mysql db reset-password	udb-id	dynamic
-ucloud mysql db reset-password	zone	dynamic
-ucloud mysql db resize	disk-type	static	normal,normal_volume,pcie_ssd,pcie_ssd_volume,sata_ssd,sata_ssd_volume
-ucloud mysql db resize	project-id	dynamic
-ucloud mysql db resize	region	dynamic
-ucloud mysql db resize	udb-id	dynamic
-ucloud mysql db resize	zone	dynamic
-ucloud mysql db restart	project-id	dynamic
-ucloud mysql db restart	region	dynamic
-ucloud mysql db restart	udb-id	dynamic
-ucloud mysql db restart	zone	dynamic
-ucloud mysql db restore	charge-type	static	Dynamic,Month,Year
-ucloud mysql db restore	disk-type	static	noraml,ssd
-ucloud mysql db restore	project-id	dynamic
-ucloud mysql db restore	region	dynamic
-ucloud mysql db restore	src-udb-id	dynamic
-ucloud mysql db restore	zone	dynamic
-ucloud mysql db start	project-id	dynamic
-ucloud mysql db start	region	dynamic
-ucloud mysql db start	udb-id	dynamic
-ucloud mysql db start	zone	dynamic
-ucloud mysql db stop	force	static	false,true
-ucloud mysql db stop	project-id	dynamic
-ucloud mysql db stop	region	dynamic
-ucloud mysql db stop	udb-id	dynamic
-ucloud mysql db stop	zone	dynamic
-ucloud mysql logs archive	log-type	static	error,slow_query
-ucloud mysql logs archive	project-id	dynamic
-ucloud mysql logs archive	region	dynamic
-ucloud mysql logs archive	udb-id	dynamic
-ucloud mysql logs archive	zone	dynamic
-ucloud mysql logs delete	project-id	dynamic
-ucloud mysql logs delete	region	dynamic
-ucloud mysql logs delete	zone	dynamic
-ucloud mysql logs download	project-id	dynamic
-ucloud mysql logs download	region	dynamic
-ucloud mysql logs download	udb-id	dynamic
-ucloud mysql logs download	zone	dynamic
-ucloud mysql logs list	log-type	static	binlog,error,slow_query
-ucloud mysql logs list	project-id	dynamic
-ucloud mysql logs list	region	dynamic
-ucloud mysql logs list	udb-id	dynamic
-ucloud mysql logs list	zone	dynamic
 ucloud pathx area list	project-id	dynamic
 ucloud pathx area list	region	dynamic
 ucloud pathx area list	zone	dynamic
@@ -321,20 +145,6 @@ ucloud subnet list-resource	project-id	dynamic
 ucloud subnet list-resource	region	dynamic
 ucloud subnet list-resource	resource-type	static	docker,phost,udb,udw,ufortresshost,uhadoophost,uhost,ukafka,ulb,umem,unatgw,vip
 ucloud subnet list-resource	subnet-id	dynamic
-ucloud udisk attach	udisk-id	dynamic
-ucloud udisk attach	uhost-id	dynamic
-ucloud udisk clone	charge-type	static	Dynamic,Month,Trial,Year
-ucloud udisk clone	enable-data-ark	static	false,true
-ucloud udisk clone	source-id	dynamic
-ucloud udisk create	charge-type	static	Dynamic,Month,Trial,Year
-ucloud udisk create	enable-data-ark	static	false,true
-ucloud udisk create	udisk-type	static	Oridinary,SSD
-ucloud udisk delete	udisk-id	dynamic
-ucloud udisk detach	udisk-id	dynamic
-ucloud udisk expand	udisk-id	dynamic
-ucloud udisk list	udisk-type	static	Oridinary-Data-Disk,Oridinary-System-Disk,SSD-Data-Disk
-ucloud udisk restore	snapshot-id	dynamic
-ucloud udisk snapshot	udisk-id	dynamic
 ucloud udpn create	charge-type	static	Dynamic,Month,Year
 ucloud udpn create	peer1	dynamic
 ucloud udpn create	peer2	dynamic
@@ -345,68 +155,6 @@ ucloud udpn list	project-id	dynamic
 ucloud udpn list	region	dynamic
 ucloud udpn list	udpn-id	dynamic
 ucloud udpn modify-bw	udpn-id	dynamic
-ucloud uhost clone	uhost-id	dynamic
-ucloud uhost create	bind-eip	dynamic
-ucloud uhost create	charge-type	static	Dynamic,Month,Trial,Year
-ucloud uhost create	cpu	static	1,12,16,2,24,32,4,64,8
-ucloud uhost create	create-eip-line	static	BGP,International
-ucloud uhost create	create-eip-traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
-ucloud uhost create	data-disk-backup-type	static	DATAARK,NONE
-ucloud uhost create	data-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD,NONE
-ucloud uhost create	firewall-id	dynamic
-ucloud uhost create	gpu-type	static	K80,P40,V100
-ucloud uhost create	hot-plug	static	false,true
-ucloud uhost create	image-id	dynamic
-ucloud uhost create	isolation-group	dynamic
-ucloud uhost create	machine-type	static	C,G,N,O,OS
-ucloud uhost create	minimal-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
-ucloud uhost create	net-capability	static	Normal,Super,Ultra
-ucloud uhost create	os-disk-backup-type	static	DATAARK,NONE
-ucloud uhost create	os-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
-ucloud uhost create	project-id	dynamic
-ucloud uhost create	region	dynamic
-ucloud uhost create	subnet-id	dynamic
-ucloud uhost create	type	static	C1,G1,G2,G3,I1,I2,N1,N2,N3
-ucloud uhost create	vpc-id	dynamic
-ucloud uhost create	zone	dynamic
-ucloud uhost create-image	uhost-id	dynamic
-ucloud uhost delete	delete-cloud-disk	static	false,true
-ucloud uhost delete	destroy	static	false,true
-ucloud uhost delete	project-id	dynamic
-ucloud uhost delete	region	dynamic
-ucloud uhost delete	release-eip	static	false,true
-ucloud uhost delete	uhost-id	dynamic
-ucloud uhost isolation-group create	project-id	dynamic
-ucloud uhost isolation-group create	region	dynamic
-ucloud uhost isolation-group delete	group-id	dynamic
-ucloud uhost isolation-group delete	project-id	dynamic
-ucloud uhost isolation-group delete	region	dynamic
-ucloud uhost isolation-group list	group-id	dynamic
-ucloud uhost isolation-group list	project-id	dynamic
-ucloud uhost isolation-group list	region	dynamic
-ucloud uhost leave-isolation-group	project-id	dynamic
-ucloud uhost leave-isolation-group	region	dynamic
-ucloud uhost leave-isolation-group	uhost-id	dynamic
-ucloud uhost leave-isolation-group	zone	dynamic
-ucloud uhost list	isolation-group	dynamic
-ucloud uhost list	page-off	static	false,true
-ucloud uhost list	project-id	dynamic
-ucloud uhost list	region	dynamic
-ucloud uhost list	subnet-id	dynamic
-ucloud uhost list	uhost-id	dynamic
-ucloud uhost list	uhost-id-only	static	false,true
-ucloud uhost list	vpc-id	dynamic
-ucloud uhost list	zone	dynamic
-ucloud uhost poweroff	uhost-id	dynamic
-ucloud uhost reinstall-os	uhost-id	dynamic
-ucloud uhost reset-password	uhost-id	dynamic
-ucloud uhost resize	project-id	dynamic
-ucloud uhost resize	region	dynamic
-ucloud uhost resize	uhost-id	dynamic
-ucloud uhost resize	zone	dynamic
-ucloud uhost restart	uhost-id	dynamic
-ucloud uhost start	uhost-id	dynamic
-ucloud uhost stop	uhost-id	dynamic
 ucloud ulb create	bind-eip	dynamic
 ucloud ulb create	charge-type	static	Dynamic,Month,Year
 ucloud ulb create	create-eip-line	static	BGP,International
@@ -511,9 +259,6 @@ ucloud ulb vserver update	region	dynamic
 ucloud ulb vserver update	session-maintain-mode	static	None,ServerInsert,UserDefined
 ucloud ulb vserver update	ulb-id	dynamic
 ucloud ulb vserver update	vserver-id	dynamic
-ucloud uphost list	project-id	dynamic
-ucloud uphost list	region	dynamic
-ucloud uphost list	zone	dynamic
 ucloud vpc create-intercome	dst-project-id	dynamic
 ucloud vpc create-intercome	dst-region	dynamic
 ucloud vpc create-intercome	dst-vpc-id	dynamic

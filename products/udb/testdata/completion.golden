@@ -1,0 +1,131 @@
+ucloud mysql backup create	project-id	dynamic
+ucloud mysql backup create	region	dynamic
+ucloud mysql backup create	udb-id	dynamic
+ucloud mysql backup create	zone	dynamic
+ucloud mysql backup delete	project-id	dynamic
+ucloud mysql backup delete	region	dynamic
+ucloud mysql backup delete	zone	dynamic
+ucloud mysql backup download	project-id	dynamic
+ucloud mysql backup download	region	dynamic
+ucloud mysql backup download	udb-id	dynamic
+ucloud mysql backup download	zone	dynamic
+ucloud mysql backup list	backup-type	static	auto,manual
+ucloud mysql backup list	db-type	static	mongodb,mysql,postgresql,sqlserver
+ucloud mysql backup list	project-id	dynamic
+ucloud mysql backup list	region	dynamic
+ucloud mysql backup list	udb-id	dynamic
+ucloud mysql backup list	zone	dynamic
+ucloud mysql conf apply	conf-id	dynamic
+ucloud mysql conf apply	project-id	dynamic
+ucloud mysql conf apply	region	dynamic
+ucloud mysql conf apply	udb-id	dynamic
+ucloud mysql conf apply	zone	dynamic
+ucloud mysql conf clone	db-version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
+ucloud mysql conf clone	project-id	dynamic
+ucloud mysql conf clone	region	dynamic
+ucloud mysql conf clone	src-conf-id	dynamic
+ucloud mysql conf clone	zone	dynamic
+ucloud mysql conf delete	conf-id	dynamic
+ucloud mysql conf delete	project-id	dynamic
+ucloud mysql conf delete	region	dynamic
+ucloud mysql conf delete	zone	dynamic
+ucloud mysql conf describe	conf-id	dynamic
+ucloud mysql conf describe	project-id	dynamic
+ucloud mysql conf describe	region	dynamic
+ucloud mysql conf describe	zone	dynamic
+ucloud mysql conf download	conf-id	dynamic
+ucloud mysql conf download	project-id	dynamic
+ucloud mysql conf download	region	dynamic
+ucloud mysql conf download	zone	dynamic
+ucloud mysql conf list	conf-id	dynamic
+ucloud mysql conf list	project-id	dynamic
+ucloud mysql conf list	region	dynamic
+ucloud mysql conf list	zone	dynamic
+ucloud mysql conf update	conf-id	dynamic
+ucloud mysql conf update	file	static	
+ucloud mysql conf update	project-id	dynamic
+ucloud mysql conf update	region	dynamic
+ucloud mysql conf update	zone	dynamic
+ucloud mysql conf upload	conf-file	static	
+ucloud mysql conf upload	db-version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
+ucloud mysql conf upload	project-id	dynamic
+ucloud mysql conf upload	region	dynamic
+ucloud mysql conf upload	zone	dynamic
+ucloud mysql db create	charge-type	static	Dynamic,Month,Year
+ucloud mysql db create	machine-type	static	o.mysql2m.12xlarge,o.mysql2m.16xlarge,o.mysql2m.2xlarge,o.mysql2m.4xlarge,o.mysql2m.8xlarge,o.mysql2m.medium,o.mysql2m.small,o.mysql2m.xlarge,o.mysql4m.16xlarge,o.mysql4m.2xlarge,o.mysql4m.4xlarge,o.mysql4m.8xlarge,o.mysql4m.medium,o.mysql4m.xlarge,o.mysql8m.16xlarge,o.mysql8m.2xlarge,o.mysql8m.4xlarge,o.mysql8m.8xlarge,o.mysql8m.medium,o.mysql8m.xlarge
+ucloud mysql db create	mode	static	HA,Normal
+ucloud mysql db create	param-group-id	dynamic
+ucloud mysql db create	project-id	dynamic
+ucloud mysql db create	region	dynamic
+ucloud mysql db create	spec-class	static	O,O2
+ucloud mysql db create	storage-class	static	CLOUD_RSSD
+ucloud mysql db create	subnet-id	dynamic
+ucloud mysql db create	version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
+ucloud mysql db create	vpc-id	dynamic
+ucloud mysql db create	zone	dynamic
+ucloud mysql db create-slave	disk-type	static	normal,pcie_ssd,sata_ssd
+ucloud mysql db create-slave	master-udb-id	dynamic
+ucloud mysql db create-slave	project-id	dynamic
+ucloud mysql db create-slave	region	dynamic
+ucloud mysql db create-slave	zone	dynamic
+ucloud mysql db delete	project-id	dynamic
+ucloud mysql db delete	region	dynamic
+ucloud mysql db delete	udb-id	dynamic
+ucloud mysql db delete	zone	dynamic
+ucloud mysql db list	include-slaves	static	false,true
+ucloud mysql db list	project-id	dynamic
+ucloud mysql db list	region	dynamic
+ucloud mysql db list	udb-id	dynamic
+ucloud mysql db list	zone	dynamic
+ucloud mysql db list-machine-type	mode	static	HA,Normal
+ucloud mysql db list-machine-type	project-id	dynamic
+ucloud mysql db list-machine-type	region	dynamic
+ucloud mysql db list-machine-type	zone	dynamic
+ucloud mysql db promote-slave	project-id	dynamic
+ucloud mysql db promote-slave	region	dynamic
+ucloud mysql db promote-slave	zone	dynamic
+ucloud mysql db reset-password	project-id	dynamic
+ucloud mysql db reset-password	region	dynamic
+ucloud mysql db reset-password	udb-id	dynamic
+ucloud mysql db reset-password	zone	dynamic
+ucloud mysql db resize	disk-type	static	normal,normal_volume,pcie_ssd,pcie_ssd_volume,sata_ssd,sata_ssd_volume
+ucloud mysql db resize	project-id	dynamic
+ucloud mysql db resize	region	dynamic
+ucloud mysql db resize	udb-id	dynamic
+ucloud mysql db resize	zone	dynamic
+ucloud mysql db restart	project-id	dynamic
+ucloud mysql db restart	region	dynamic
+ucloud mysql db restart	udb-id	dynamic
+ucloud mysql db restart	zone	dynamic
+ucloud mysql db restore	charge-type	static	Dynamic,Month,Year
+ucloud mysql db restore	disk-type	static	noraml,ssd
+ucloud mysql db restore	project-id	dynamic
+ucloud mysql db restore	region	dynamic
+ucloud mysql db restore	src-udb-id	dynamic
+ucloud mysql db restore	zone	dynamic
+ucloud mysql db start	project-id	dynamic
+ucloud mysql db start	region	dynamic
+ucloud mysql db start	udb-id	dynamic
+ucloud mysql db start	zone	dynamic
+ucloud mysql db stop	force	static	false,true
+ucloud mysql db stop	project-id	dynamic
+ucloud mysql db stop	region	dynamic
+ucloud mysql db stop	udb-id	dynamic
+ucloud mysql db stop	zone	dynamic
+ucloud mysql logs archive	log-type	static	error,slow_query
+ucloud mysql logs archive	project-id	dynamic
+ucloud mysql logs archive	region	dynamic
+ucloud mysql logs archive	udb-id	dynamic
+ucloud mysql logs archive	zone	dynamic
+ucloud mysql logs delete	project-id	dynamic
+ucloud mysql logs delete	region	dynamic
+ucloud mysql logs delete	zone	dynamic
+ucloud mysql logs download	project-id	dynamic
+ucloud mysql logs download	region	dynamic
+ucloud mysql logs download	udb-id	dynamic
+ucloud mysql logs download	zone	dynamic
+ucloud mysql logs list	log-type	static	binlog,error,slow_query
+ucloud mysql logs list	project-id	dynamic
+ucloud mysql logs list	region	dynamic
+ucloud mysql logs list	udb-id	dynamic
+ucloud mysql logs list	zone	dynamic

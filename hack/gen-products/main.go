@@ -1,4 +1,4 @@
-// hack/gen-products generates cmd/products.gen.go from products.yaml.
+// hack/gen-products generates cmd/products.gen.go from products/*/product.yaml.
 //
 // Run from repo root:
 //

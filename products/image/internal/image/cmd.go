@@ -10,8 +10,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/internal/common"
-	cliconst "github.com/ucloud/ucloud-cli/model/cli"
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -113,7 +111,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	cmd.MarkFlagRequired("image-id")
 	command.SetCompletion(cmd, "image-id", func() []string {
-		return getImageList(ctx, []string{status.IMAGE_AVAILABLE, status.IMAGE_COPYING, status.IMAGE_MAKING}, cliconst.IAMGE_CUSTOM, *req.ProjectId, *req.Region, "")
+		return getImageList(ctx, []string{IMAGE_AVAILABLE, IMAGE_COPYING, IMAGE_MAKING}, IAMGE_CUSTOM, *req.ProjectId, *req.Region, "")
 	})
 	return cmd
 }
@@ -148,7 +146,7 @@ func newCopy(ctx *cli.Context) *cobra.Command {
 					// M2: poll the TARGET project/region (not the source request
 					// defaults) so cross-region copy converges. Mirrors cmd/image.go,
 					// whose base.Poller.Poll bound *req.TargetProjectId/*req.TargetRegion.
-					ctx.PollerTo(w, describeImageByID(ctx, *req.TargetProjectId, *req.TargetRegion, "")).Spoll(resp.TargetImageId, text, []string{status.IMAGE_AVAILABLE, status.IMAGE_UNAVAILABLE})
+					ctx.PollerTo(w, describeImageByID(ctx, *req.TargetProjectId, *req.TargetRegion, "")).Spoll(resp.TargetImageId, text, []string{IMAGE_AVAILABLE, IMAGE_UNAVAILABLE})
 				}
 				results = append(results, cli.OpResultRow{ResourceID: resp.TargetImageId, Action: "copy", Status: "Copying"})
 			}
@@ -168,7 +166,7 @@ func newCopy(ctx *cli.Context) *cobra.Command {
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	command.SetCompletion(cmd, "source-image-id", func() []string {
-		return getImageList(ctx, []string{status.IMAGE_AVAILABLE}, cliconst.IAMGE_CUSTOM, *req.ProjectId, *req.Region, *req.Zone)
+		return getImageList(ctx, []string{IMAGE_AVAILABLE}, IAMGE_CUSTOM, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	command.SetCompletion(cmd, "project-id", ctx.ProjectList)
 	command.SetCompletion(cmd, "region", ctx.RegionList)
@@ -209,7 +207,7 @@ func newCreateImage(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeImageByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.ImageId, text, []string{status.IMAGE_AVAILABLE, status.IMAGE_UNAVAILABLE})
+				ctx.PollerTo(w, describeImageByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.ImageId, text, []string{IMAGE_AVAILABLE, IMAGE_UNAVAILABLE})
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.ImageId, Action: "create", Status: "Making"})
 		},
@@ -226,7 +224,7 @@ func newCreateImage(ctx *cli.Context) *cobra.Command {
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("uhost-id")

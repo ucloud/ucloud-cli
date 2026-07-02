@@ -3,8 +3,11 @@ package cli
 import "github.com/spf13/cobra"
 
 // Metadata identifies a product and its owners.
-// Commands is a slice of command names this product exposes
-// (informational only; the actual cobra command tree is built by NewCommand).
+// Commands declares the top-level command names this product claims. It is the
+// basis for golden partitioning: the platform golden (hack/snapshot/testdata)
+// prunes exactly these subtrees, and the product's own goldens
+// (products/<name>/testdata) cover them. It must match product.yaml (rule-8).
+// The actual cobra command tree is built by NewCommand.
 type Metadata struct {
 	Name     string
 	Owners   []string

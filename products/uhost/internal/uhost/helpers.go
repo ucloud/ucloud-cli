@@ -13,7 +13,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
@@ -269,7 +268,7 @@ func detachUdisk(ctx *cli.Context, async bool, udiskID string, out io.Writer) er
 	if async {
 		fmt.Fprintln(out, text)
 	} else {
-		ctx.PollerTo(out, describeUdiskByID(ctx)).Spoll(udiskID, text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+		ctx.PollerTo(out, describeUdiskByID(ctx)).Spoll(udiskID, text, []string{DISK_AVAILABLE, DISK_FAILED})
 	}
 	return nil
 }

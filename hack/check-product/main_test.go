@@ -455,3 +455,56 @@ func (product) Metadata() cli.Metadata {
 		t.Errorf("expected no violations for matching commands, got: %v", violations)
 	}
 }
+
+// --------------------------------------------------------------------------
+// rule9: §6.1 product import whitelist
+// --------------------------------------------------------------------------
+
+func TestCheckFile_Rule9_ImportWhitelist(t *testing.T) {
+	src := `package p
+
+import (
+	_ "fmt"
+	_ "github.com/spf13/cobra"
+	_ "github.com/ucloud/ucloud-cli/internal/common"
+	_ "github.com/ucloud/ucloud-cli/model/status"
+	_ "github.com/ucloud/ucloud-cli/pkg/cli"
+	_ "github.com/ucloud/ucloud-cli/products/udb/internal/mysql"
+	_ "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
+	_ "github.com/fatih/color"
+)
+`
+	joined := strings.Join(checkFile(writeFile(t, t.TempDir(), "x.go", src), "udb"), "\n")
+
+	for _, bad := range []string{
+		`rule9: import "github.com/ucloud/ucloud-cli/model/status"`,
+		`rule9: import "github.com/fatih/color"`,
+	} {
+		if !strings.Contains(joined, bad) {
+			t.Fatalf("missing violation %q in:\n%s", bad, joined)
+		}
+	}
+	for _, ok := range []string{`"fmt"`, `"github.com/spf13/cobra"`,
+		`"github.com/ucloud/ucloud-cli/internal/common"`,
+		`"github.com/ucloud/ucloud-cli/pkg/cli"`,
+		`"github.com/ucloud/ucloud-cli/products/udb/internal/mysql"`,
+		`"github.com/ucloud/ucloud-sdk-go/private/services/uhost"`} {
+		if strings.Contains(joined, "rule9: import "+ok) {
+			t.Fatalf("false positive on %s in:\n%s", ok, joined)
+		}
+	}
+}
+
+func TestCheckFile_Rule9_DoesNotDuplicateRules12(t *testing.T) {
+	src := `package p
+
+import (
+	_ "github.com/ucloud/ucloud-cli/base"
+	_ "github.com/ucloud/ucloud-cli/products/vpc/internal/vpc"
+)
+`
+	joined := strings.Join(checkFile(writeFile(t, t.TempDir(), "x.go", src), "udb"), "\n")
+	if strings.Count(joined, "ucloud-cli/base") != 1 || strings.Count(joined, "products/vpc") != 1 {
+		t.Fatalf("rule1/2 territory must be flagged exactly once (by rule1/2, not rule9):\n%s", joined)
+	}
+}

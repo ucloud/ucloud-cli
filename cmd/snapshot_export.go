@@ -5,6 +5,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
 // AddChildrenForSnapshot builds the full command tree for the structure golden,
@@ -25,3 +26,8 @@ func AddChildrenForSnapshot(root *cobra.Command) {
 	}
 	addChildren(root)
 }
+
+// ProductsForSnapshot exposes the registered product list to the snapshot
+// golden tests (hack/snapshot): each product's subtree is rendered against
+// the golden the product team owns (products/<name>/testdata/). Test-only.
+func ProductsForSnapshot() []cli.Product { return registeredProducts() }

@@ -27,17 +27,21 @@
 //  4. No raw completion API calls: flag selector calls whose method name is
 //     SetFlagValuesFunc, GetFlagValuesFunc, GetFlagValues, or SetFlagValues
 //     (when the receiver is not "command").
-//  5. products.yaml consistency: every enabled product whose dir is absent on
+//  5. product.yaml consistency: every enabled product whose dir is absent on
 //     disk emits a WARNING (not a failure). Every directory under products/
-//     that has no entry in products.yaml is a VIOLATION.
-//  6. Reserved command names: no products.yaml entry may declare a top-level
+//     that has no product.yaml is a VIOLATION.
+//  6. Reserved command names: no product.yaml may declare a top-level
 //     command name that the platform itself registers (see reservedCommands).
 //     A product declaring e.g. "config" would silently shadow the platform
 //     command, so it is a VIOLATION.
 //  7. Cross-product command uniqueness: no two enabled products may declare the
 //     same top-level command name (cobra AddCommand silently shadows duplicates).
 //  8. Commands consistency: each enabled product's product.go Metadata().Commands
-//     must match its products.yaml `commands` (order-independent).
+//     must match its product.yaml `commands` (order-independent).
+//  9. §6.1 import whitelist: product files may import only stdlib,
+//     ucloud-sdk-go, spf13/cobra|pflag, pkg/cli|command|ui, internal/common,
+//     and their own product subtree. Anything else (model/*, ux/, new
+//     third-party deps) is a violation; extending the list is a platform PR.
 package main
 
 import (
@@ -99,6 +103,56 @@ var rawCompletionMethods = map[string]bool{
 	"SetFlagValues": true,
 }
 
+// ---- Rule 9: §6.1 product import whitelist -------------------------------
+// A product file may import ONLY: the Go standard library; the platform
+// contract packages pkg/cli, pkg/command, pkg/ui; internal/common
+// (domain-agnostic pure tools, open to products); the UCloud SDK (incl.
+// private/); the cobra flag stack; and its own product subtree. Everything
+// else — other module-internal packages (model/*, ux/, ...) and any NEW
+// third-party dependency — is a violation. Extending this list is a platform
+// PR by design: it is the gate that keeps go.mod out of product PRs.
+//
+// allowedModulePackages: exact import paths — subpackages need their own
+// entry (platform PR).
+var allowedModulePackages = map[string]bool{
+	moduleRoot + "/pkg/cli":         true,
+	moduleRoot + "/pkg/command":     true,
+	moduleRoot + "/pkg/ui":          true,
+	moduleRoot + "/internal/common": true,
+}
+
+// allowedThirdParty: prefix match — subpackages allowed.
+var allowedThirdParty = []string{
+	"github.com/ucloud/ucloud-sdk-go",
+	"github.com/spf13/cobra",
+	"github.com/spf13/pflag",
+}
+
+// importAllowed reports whether importPath is inside the §6.1 whitelist for
+// files belonging to productName.
+func importAllowed(importPath, productName string) bool {
+	first := importPath
+	if idx := strings.Index(importPath, "/"); idx >= 0 {
+		first = importPath[:idx]
+	}
+	if !strings.Contains(first, ".") {
+		return true // standard library
+	}
+	if allowedModulePackages[importPath] {
+		return true
+	}
+	self := moduleRoot + "/products/" + productName
+	if importPath == self || strings.HasPrefix(importPath, self+"/") {
+		return true
+	}
+	for _, p := range allowedThirdParty {
+		if importPath == p || strings.HasPrefix(importPath, p+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 // checkFile parses the Go file at path (which lives under
 // products/<productName>/…) and returns one string per violation.
 //
@@ -119,7 +173,8 @@ func checkFile(path, productName string) []string {
 		return fmt.Sprintf("%s:%d", p.Filename, p.Line)
 	}
 
-	// ---- Rule 1 & 2: import paths ----------------------------------------
+	// ---- Rules 1, 2 & 9: import paths --------------------------------------
+	productsPrefix := moduleRoot + "/products/"
 	for _, imp := range f.Imports {
 		if imp.Path == nil {
 			continue
@@ -127,23 +182,28 @@ func checkFile(path, productName string) []string {
 		// Strip surrounding quotes.
 		importPath := strings.Trim(imp.Path.Value, `"`)
 
+		// Shared territory booleans: rules 1-2 and rule 9's carve-out must
+		// stay in sync, so classify each import path exactly once.
+		isCmdImport := importPath == moduleRoot+"/cmd" ||
+			strings.HasPrefix(importPath, moduleRoot+"/cmd/")
+		isBaseImport := importPath == moduleRoot+"/base" ||
+			strings.HasPrefix(importPath, moduleRoot+"/base/")
+		isProductsImport := strings.HasPrefix(importPath, productsPrefix)
+
 		// Rule 2: no cmd or base imports.
-		if importPath == moduleRoot+"/cmd" ||
-			strings.HasPrefix(importPath, moduleRoot+"/cmd/") {
+		if isCmdImport {
 			violations = append(violations,
 				fmt.Sprintf("%s: rule2: product must not import cmd package %q",
 					pos(imp.Path), importPath))
 		}
-		if importPath == moduleRoot+"/base" ||
-			strings.HasPrefix(importPath, moduleRoot+"/base/") {
+		if isBaseImport {
 			violations = append(violations,
 				fmt.Sprintf("%s: rule2: product must not import base package %q",
 					pos(imp.Path), importPath))
 		}
 
 		// Rule 1: no cross-product imports.
-		productsPrefix := moduleRoot + "/products/"
-		if strings.HasPrefix(importPath, productsPrefix) {
+		if isProductsImport {
 			// e.g. "github.com/ucloud/ucloud-cli/products/vpc/something"
 			// → rest = "vpc/something"
 			rest := strings.TrimPrefix(importPath, productsPrefix)
@@ -157,6 +217,15 @@ func checkFile(path, productName string) []string {
 					fmt.Sprintf("%s: rule1: product %q must not import sibling product %q (import %q)",
 						pos(imp.Path), productName, otherProduct, importPath))
 			}
+		}
+
+		// Rule 9: §6.1 whitelist. cmd/base and products/ prefixes are owned by
+		// rules 1-2 above (more specific messages) — rule 9 covers the rest.
+		isRule12Territory := isCmdImport || isBaseImport || isProductsImport
+		if !isRule12Territory && !importAllowed(importPath, productName) {
+			violations = append(violations,
+				fmt.Sprintf("%s: rule9: import %q is outside the §6.1 product import whitelist (allowed: stdlib, ucloud-sdk-go, spf13/cobra|pflag, pkg/cli|command|ui, internal/common, own product); extending the whitelist is a platform PR",
+					pos(imp.Path), importPath))
 		}
 	}
 

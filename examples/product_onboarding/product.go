@@ -8,11 +8,12 @@
 //
 //  1. Documentation. A new product author copies this directory as a starting
 //     point. It shows the standard 2-level command shape (<product> <verb>) and
-//     exercises every platform API a product is expected to use.
+//     exercises the core platform contract a product uses: client construction,
+//     flag binding, output, completion, polling, and machine-mode results.
 //
-//  2. Compile gate. Because it calls EVERY public pkg/cli + pkg/command API,
-//     any drift in those signatures breaks `go build ./...`, so CI catches
-//     platform-API regressions before they reach real products.
+//  2. Compile gate. Because it calls the core pkg/cli + pkg/command APIs
+//     above, any drift in those signatures breaks `go build ./...`, so CI
+//     catches platform-API regressions before they reach real products.
 //
 // The Run funcs build real SDK requests and type-check against the live SDK,
 // but the example is never executed; it only needs to compile.
@@ -24,8 +25,11 @@
 //   - Required flags: MarkFlagRequired + a "Required." description prefix.
 //   - Optional flags: an "Optional." description prefix.
 //   - Long-running verbs (create/start/stop/restart) offer `--async` and
-//     otherwise wait via ctx.Poller(...).Spoll(...).
+//     otherwise wait via ctx.PollerTo(w, ...).Spoll(...).
 //   - Destructive verbs (delete) offer `--yes/-y` and gate on ctx.Confirm(...).
+//   - Write verbs narrate via ctx.ProgressWriter() (stdout in table mode,
+//     stderr in machine modes) and emit structured cli.OpResultRow rows via
+//     ctx.EmitResult, so json/yaml stdout stays machine-parseable.
 package onboarding
 
 import (
@@ -66,25 +70,10 @@ func (p *Product) Metadata() cli.Metadata {
 // NewCommand builds the product's cobra subtree. This is the only wiring a
 // product owns: construct the root command and AddCommand one cobra.Command per
 // verb. Each verb constructor receives ctx so it can build authed SDK clients
-// (via cli.NewServiceClient) and bind common flags.
+// (via cli.NewServiceClient) and bind common flags. NewCommand hands the tree
+// assembly to newCommand (cmd.go).
 func (p *Product) NewCommand(ctx *cli.Context) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   productName,
-		Short: "Greenfield example product (onboarding worked example)",
-		Long: "Greenfield example product demonstrating the ucloud-cli platform " +
-			"onboarding contract. Not a real product; exists as the onboarding " +
-			"worked example and the platform-API compile gate.",
-	}
-
-	cmd.AddCommand(newList(ctx))
-	cmd.AddCommand(newDescribe(ctx))
-	cmd.AddCommand(newCreate(ctx))
-	cmd.AddCommand(newDelete(ctx))
-	cmd.AddCommand(newStart(ctx))
-	cmd.AddCommand(newStop(ctx))
-	cmd.AddCommand(newRestart(ctx))
-
-	return cmd
+	return newCommand(ctx)
 }
 
 // Compile-time assurance that Product satisfies the platform interface. If

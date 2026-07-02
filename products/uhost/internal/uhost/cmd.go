@@ -13,7 +13,6 @@ import (
 	sdkerror "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
 	"github.com/ucloud/ucloud-cli/internal/common"
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -305,7 +304,7 @@ func newStop(ctx *cli.Context) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 
@@ -332,7 +331,7 @@ func stopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.
 	// the writer but returns nothing, so we return true here: a successful
 	// (non-async) stop request that we then polled is treated as "stopped" for
 	// the resize state-transition, which matches the original intent.
-	ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{status.HOST_STOPPED, status.HOST_FAIL})
+	ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_STOPPED, HOST_FAIL})
 	return true
 }
 
@@ -369,7 +368,7 @@ func newStart(ctx *cli.Context) *cobra.Command {
 					if *async {
 						fmt.Fprintln(w, text)
 					} else {
-						ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+						ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_RUNNING, HOST_FAIL})
 					}
 				}
 			}
@@ -382,7 +381,7 @@ func newStart(ctx *cli.Context) *cobra.Command {
 	req.Zone = cmd.Flags().String("zone", "", "Optional. Assign availability zone")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	return cmd
@@ -412,7 +411,7 @@ func newReboot(ctx *cli.Context) *cobra.Command {
 					if *async {
 						fmt.Fprintln(w, text)
 					} else {
-						ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+						ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_RUNNING, HOST_FAIL})
 					}
 				}
 			}
@@ -426,7 +425,7 @@ func newReboot(ctx *cli.Context) *cobra.Command {
 	req.DiskPassword = cmd.Flags().String("disk-password", "", "Optional. Encrypted disk password")
 	async = cmd.Flags().Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_FAIL, status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_FAIL, HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	return cmd
@@ -472,7 +471,7 @@ func newPoweroff(ctx *cli.Context) *cobra.Command {
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_FAIL, status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_FAIL, HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 
@@ -484,7 +483,7 @@ func newPoweroff(ctx *cli.Context) *cobra.Command {
 func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.ResizeAttachedDiskRequest, host *uhostsdk.UHostInstanceSet, yes, async bool, promptText string) error {
 	w := ctx.ProgressWriter()
 	req.UHostId = &host.UHostId
-	if host.State == status.HOST_RUNNING {
+	if host.State == HOST_RUNNING {
 		err := tryStopUhost(ctx, client, req, host.UHostId, promptText, yes, async)
 		if err != nil {
 			return fmt.Errorf("try to stop uhost error :%w", err)
@@ -499,7 +498,7 @@ func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	if async {
 		fmt.Fprintln(w, text)
 	} else {
-		ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(host.UHostId, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+		ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(host.UHostId, text, []string{HOST_RUNNING, HOST_STOPPED, HOST_FAIL})
 	}
 	return nil
 }
@@ -560,10 +559,10 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				stopReq.UHostId = &id
 				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
 				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
-					if inst.State == status.HOST_RUNNING {
+					if inst.State == HOST_RUNNING {
 						ret := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
 						if ret {
-							inst.State = status.HOST_STOPPED
+							inst.State = HOST_STOPPED
 						}
 					}
 					resp, err := client.ResizeUHostInstance(req)
@@ -574,7 +573,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 						if *async {
 							fmt.Fprintln(w, text)
 						} else {
-							ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL})
+							ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_RUNNING, HOST_STOPPED, HOST_FAIL})
 						}
 					}
 				}
@@ -655,7 +654,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = cmd.Flags().BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED, HOST_FAIL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	return cmd
@@ -762,7 +761,7 @@ func newClone(ctx *cli.Context) *cobra.Command {
 				if *async {
 					fmt.Fprintln(w, text)
 				} else {
-					ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostIds[0], text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+					ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostIds[0], text, []string{HOST_RUNNING, HOST_FAIL})
 				}
 			} else {
 				ctx.HandleError(fmt.Errorf("expect uhost count 1, accept %d", len(resp.UHostIds)))
@@ -782,7 +781,7 @@ func newClone(ctx *cli.Context) *cobra.Command {
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	return cmd
@@ -810,7 +809,7 @@ func newCreateImage(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeImageByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.ImageId, text, []string{status.IMAGE_AVAILABLE, status.IMAGE_UNAVAILABLE})
+				ctx.PollerTo(w, describeImageByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.ImageId, text, []string{IMAGE_AVAILABLE, IMAGE_UNAVAILABLE})
 			}
 		},
 	}
@@ -826,7 +825,7 @@ func newCreateImage(ctx *cli.Context) *cobra.Command {
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("uhost-id")
@@ -882,7 +881,7 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	cmd.MarkFlagRequired("password")
@@ -992,7 +991,7 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{status.HOST_RUNNING, status.HOST_FAIL})
+				ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_RUNNING, HOST_FAIL})
 			}
 		},
 	}
@@ -1009,7 +1008,7 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 	yes = cmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("uhost-id")
 	return cmd

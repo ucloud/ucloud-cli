@@ -8,7 +8,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
@@ -26,7 +25,7 @@ func stopUdbIns(ctx *cli.Context, req *udb.StopUDBInstanceRequest, async bool, o
 	if async {
 		fmt.Fprintln(out, text)
 	} else {
-		ctx.PollerTo(out, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_SHUTOFF, status.UDB_FAIL})
+		ctx.PollerTo(out, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_SHUTOFF, UDB_FAIL})
 	}
 	return nil
 }

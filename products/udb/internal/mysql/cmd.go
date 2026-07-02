@@ -14,7 +14,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -341,7 +340,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				fmt.Fprintf(w, "udb[%s] is initializing\n", dbID)
 			} else {
 				text := fmt.Sprintf("udb[%s] is initializing", dbID)
-				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(dbID, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(dbID, text, []string{UDB_RUNNING, UDB_FAIL})
 			}
 			emitResult(ctx, OpResultRow{ResourceID: dbID, Action: "create", Status: "Initializing"})
 		},
@@ -540,7 +539,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 				}
 				req.DBId = &id
 				ins, ok := any.(*udb.UDBInstanceSet)
-				if ok && ins.State == status.UDB_RUNNING {
+				if ok && ins.State == UDB_RUNNING {
 					stopReq := client.NewStopUDBInstanceRequest()
 					stopReq.ProjectId = req.ProjectId
 					stopReq.Region = req.Region
@@ -614,7 +613,7 @@ func newStop(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "force", "true", "false")
 	command.SetCompletion(cmd, "udb-id", func() []string {
-		return getUDBIDList(ctx, []string{status.UDB_RUNNING}, "", *req.ProjectId, *req.Region, *req.Zone)
+		return getUDBIDList(ctx, []string{UDB_RUNNING}, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	return cmd
@@ -645,7 +644,7 @@ func newStart(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(w, "udb[%s] is starting\n", idname)
 				} else {
 					text := fmt.Sprintf("udb[%s] is starting", idname)
-					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_FAIL})
 				}
 				results = append(results, OpResultRow{ResourceID: id, Action: "start", Status: "Starting"})
 			}
@@ -665,7 +664,7 @@ func newStart(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("udb-id")
 
 	command.SetCompletion(cmd, "udb-id", func() []string {
-		return getUDBIDList(ctx, []string{status.UDB_SHUTOFF}, "", *req.ProjectId, *req.Region, *req.Zone)
+		return getUDBIDList(ctx, []string{UDB_SHUTOFF}, "", *req.ProjectId, *req.Region, *req.Zone)
 	})
 	return cmd
 }
@@ -695,7 +694,7 @@ func newRestart(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(w, "udb[%s] is restarting\n", idname)
 				} else {
 					text := fmt.Sprintf("udb[%s] is restarting", idname)
-					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_FAIL})
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_FAIL})
 				}
 				results = append(results, OpResultRow{ResourceID: id, Action: "restart", Status: "Restarting"})
 			}
@@ -779,7 +778,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 					req.DiskSpace = &ins.DiskSpace
 				}
 
-				if ins.State == status.UDB_RUNNING {
+				if ins.State == UDB_RUNNING {
 					ok := ctx.Confirm(yes, fmt.Sprintf("Need to shut down udb[%s] before upgrading, whether to continue?", idname))
 					if !ok {
 						continue
@@ -800,7 +799,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(w, "udb[%s] is resizing\n", idname)
 				} else {
 					text := fmt.Sprintf("udb[%s] is resizing", idname)
-					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_RUNNING, status.UDB_SHUTOFF, status.UDB_FAIL, status.UDB_UPGRADE_FAIL})
+					ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_RUNNING, UDB_SHUTOFF, UDB_FAIL, UDB_UPGRADE_FAIL})
 				}
 				results = append(results, OpResultRow{ResourceID: id, Action: "resize", Status: "Resizing"})
 			}
@@ -922,7 +921,7 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 				fmt.Fprintf(w, "udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
 			} else {
 				text := fmt.Sprintf("udb[%s] is restorting from udb[%s] at time point %s", resp.DBId, *req.SrcDBId, datetime)
-				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, text, []string{status.UDB_RUNNING, status.UDB_RECOVER_FAIL, status.UDB_FAIL})
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, text, []string{UDB_RUNNING, UDB_RECOVER_FAIL, UDB_FAIL})
 			}
 			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "restore", Status: "Restoring"})
 		},
@@ -985,7 +984,7 @@ func newCreateSlave(ctx *cli.Context) *cobra.Command {
 			if async {
 				fmt.Fprintf(w, "udb[%s] is initializing\n", resp.DBId)
 			} else {
-				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, fmt.Sprintf("udb[%s] is initializing", resp.DBId), []string{status.UDB_RUNNING, status.UDB_FAIL})
+				ctx.PollerTo(w, describeUdbByID(ctx)).Spoll(resp.DBId, fmt.Sprintf("udb[%s] is initializing", resp.DBId), []string{UDB_RUNNING, UDB_FAIL})
 			}
 			emitResult(ctx, OpResultRow{ResourceID: resp.DBId, Action: "create-slave", Status: "Initializing"})
 		},
@@ -1074,7 +1073,7 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
-				ctx.Poller(describeUdbByID(ctx)).Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{status.UDB_TOBE_SWITCH, status.UDB_FAIL})
+				ctx.Poller(describeUdbByID(ctx)).Spoll(id, fmt.Sprintf("udb[%s] is synchronizing data", id), []string{UDB_TOBE_SWITCH, UDB_FAIL})
 				any, err := describeUdbByID(ctx)(id, nil)
 				if err != nil {
 					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
@@ -1085,7 +1084,7 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. \n", idname)
 					continue
 				}
-				if ins.State != status.UDB_TOBE_SWITCH {
+				if ins.State != UDB_TOBE_SWITCH {
 					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support. udb[%s]'s status:%s\n", idname, idname, ins.State)
 					continue
 				}
@@ -1105,7 +1104,7 @@ func newPromoteToHA(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(ctx.Out(), "udb[%s] promoted failed, please contact technical support; %v\n", idname, err)
 					continue
 				}
-				ctx.Poller(describeUdbByID(ctx)).Spoll(switchResp.DBId, fmt.Sprintf("udb[%s] is switching to high availability mode", switchResp.DBId), []string{status.UDB_RUNNING, status.UDB_FAIL})
+				ctx.Poller(describeUdbByID(ctx)).Spoll(switchResp.DBId, fmt.Sprintf("udb[%s] is switching to high availability mode", switchResp.DBId), []string{UDB_RUNNING, UDB_FAIL})
 			}
 		},
 	}

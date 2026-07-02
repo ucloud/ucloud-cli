@@ -10,7 +10,6 @@ import (
 	uhostsdk "github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	cliconst "github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -38,7 +37,7 @@ func newIsolationCreate(ctx *cli.Context) *cobra.Command {
 		Short: "Create isolation group instance",
 		Long:  "Create isolation group instance",
 		Run: func(c *cobra.Command, args []string) {
-			re := regexp.MustCompile(cliconst.REGEXP_NAME)
+			re := regexp.MustCompile(REGEXP_NAME)
 			if !re.Match([]byte(*req.GroupName)) {
 				ctx.LogError(fmt.Sprintf("group-name %s is invalid! Length 1~63, only English,Chinese,number and '-_.' are allowed", *req.GroupName))
 				return

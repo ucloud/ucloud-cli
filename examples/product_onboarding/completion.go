@@ -60,3 +60,11 @@ func stateAllowed(state string, states []string) bool {
 	}
 	return false
 }
+
+// derefStr safely dereferences a *string bound by a flag, returning "" for nil.
+func derefStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}

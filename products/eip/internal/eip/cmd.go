@@ -10,7 +10,6 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -186,7 +185,7 @@ func newRelease(ctx *cli.Context) *cobra.Command {
 	ctx.BindRegion(cmd, req)
 	cmd.MarkFlagRequired("eip-id")
 	command.SetCompletion(cmd, "eip-id", func() []string {
-		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{status.EIP_FREE}, nil)
+		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{EIP_FREE}, nil)
 	})
 
 	return cmd
@@ -222,7 +221,7 @@ func newBind(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "resource-type", "uhost", "vrouter", "ulb", "upm", "hadoophost", "fortresshost", "udockhost", "udhost", "natgw", "udb", "vpngw", "ucdr", "dbaudit")
 	command.SetCompletion(cmd, "eip-id", func() []string {
-		return getAllEip(ctx, *projectID, *region, []string{status.EIP_FREE}, nil)
+		return getAllEip(ctx, *projectID, *region, []string{EIP_FREE}, nil)
 	})
 
 	cmd.MarkFlagRequired("eip-id")
@@ -273,7 +272,7 @@ func newUnbind(ctx *cli.Context) *cobra.Command {
 
 	cmd.MarkFlagRequired("eip-id")
 	command.SetCompletion(cmd, "eip-id", func() []string {
-		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{status.EIP_USED}, nil)
+		return getAllEip(ctx, *req.ProjectId, *req.Region, []string{EIP_USED}, nil)
 	})
 
 	return cmd
@@ -401,7 +400,7 @@ func newJoinSharedBW(ctx *cli.Context) *cobra.Command {
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Region, see 'ucloud region'")
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Project-id, see 'ucloud project list'")
 	command.SetCompletion(cmd, "eip-id", func() []string {
-		return getAllEip(ctx, *req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_BANDWIDTH, status.EIP_CHARGE_TRAFFIC})
+		return getAllEip(ctx, *req.ProjectId, *req.Region, nil, []string{EIP_CHARGE_BANDWIDTH, EIP_CHARGE_TRAFFIC})
 	})
 	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(ctx, *req.ProjectId, *req.Region)
@@ -476,7 +475,7 @@ func newLeaveSharedBW(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "traffic-mode", "Bandwidth", "Traffic")
 	command.SetCompletion(cmd, "eip-id", func() []string {
-		return getAllEip(ctx, *req.ProjectId, *req.Region, nil, []string{status.EIP_CHARGE_SHARE})
+		return getAllEip(ctx, *req.ProjectId, *req.Region, nil, []string{EIP_CHARGE_SHARE})
 	})
 	command.SetCompletion(cmd, "shared-bw-id", func() []string {
 		list, _ := getAllSharedBW(ctx, *req.ProjectId, *req.Region)

@@ -10,7 +10,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	cliconst "github.com/ucloud/ucloud-cli/model/cli"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
@@ -180,7 +179,7 @@ func getImageList(ctx *cli.Context, states []string, imageType, project, region,
 	req.Region = &region
 	req.Zone = &zone
 	req.Limit = sdk.Int(1000)
-	if imageType != cliconst.IMAGE_ALL {
+	if imageType != IMAGE_ALL {
 		req.ImageType = sdk.String(imageType)
 	}
 	resp, err := client.DescribeImage(req)

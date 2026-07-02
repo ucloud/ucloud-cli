@@ -64,10 +64,16 @@ func classifyFlag(c *cobra.Command, flagName string) completionResult {
 //
 // Flags with no registered completion are omitted.
 // Subcommands are visited in sorted order; flags are visited in sorted order.
-func RenderCompletion(root *cobra.Command) string {
+func RenderCompletion(root *cobra.Command) string { return RenderCompletionPlatform(root, nil) }
+
+// RenderCompletionPlatform is RenderCompletion minus the top-level subtrees
+// named in skip. Product-claimed top-level commands are guarded by their own
+// goldens under products/<name>/testdata/, so the platform golden must not
+// duplicate them; only direct children of root are ever pruned.
+func RenderCompletionPlatform(root *cobra.Command, skip map[string]bool) string {
 	var b strings.Builder
-	var walk func(c *cobra.Command)
-	walk = func(c *cobra.Command) {
+	var walk func(c *cobra.Command, depth int)
+	walk = func(c *cobra.Command, depth int) {
 		// Collect all flags on this command (non-persistent only; persistent flags
 		// are registered on the defining command and appear there too).
 		var fs []*pflag.Flag
@@ -93,9 +99,12 @@ func RenderCompletion(root *cobra.Command) string {
 		ch := c.Commands()
 		sort.Slice(ch, func(i, j int) bool { return ch[i].Use < ch[j].Use })
 		for _, x := range ch {
-			walk(x)
+			if depth == 0 && skip[x.Name()] {
+				continue
+			}
+			walk(x, depth+1)
 		}
 	}
-	walk(root)
+	walk(root, 0)
 	return b.String()
 }

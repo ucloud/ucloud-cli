@@ -11,7 +11,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/internal/common"
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -90,7 +89,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 						if *async {
 							fmt.Fprintln(w, text)
 						} else {
-							ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+							ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{DISK_AVAILABLE, DISK_FAILED})
 						}
 						results = append(results, cli.OpResultRow{ResourceID: resp.UDiskId[0], Action: "create", Status: "Initializing"})
 					} else if count > 1 {
@@ -114,7 +113,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 						if *async {
 							fmt.Fprintln(w, text)
 						} else {
-							ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+							ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{DISK_AVAILABLE, DISK_FAILED})
 						}
 						results = append(results, cli.OpResultRow{ResourceID: resp.UDiskId[0], Action: "create", Status: "Initializing"})
 					} else if count > 1 {
@@ -248,7 +247,7 @@ func newAttach(ctx *cli.Context) *cobra.Command {
 				if *async {
 					fmt.Fprintln(w, text)
 				} else {
-					ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId, text, []string{status.DISK_INUSE, status.DISK_FAILED})
+					ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId, text, []string{DISK_INUSE, DISK_FAILED})
 				}
 				results = append(results, cli.OpResultRow{ResourceID: resp.UDiskId, Action: "attach", Status: "Attaching"})
 			}
@@ -265,10 +264,10 @@ func newAttach(ctx *cli.Context) *cobra.Command {
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
 
 	command.SetCompletion(cmd, "udisk-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList(ctx, []string{status.HOST_RUNNING, status.HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getUhostList(ctx, []string{HOST_RUNNING, HOST_STOPPED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("uhost-id")
@@ -316,7 +315,7 @@ func newDetach(ctx *cli.Context) *cobra.Command {
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	command.SetCompletion(cmd, "udisk-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("udisk-id")
@@ -363,7 +362,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 
 	command.SetCompletion(cmd, "udisk-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_AVAILABLE, status.DISK_FAILED}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_AVAILABLE, DISK_FAILED}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("udisk-id")
@@ -401,7 +400,7 @@ func newClone(ctx *cli.Context) *cobra.Command {
 				if *async {
 					fmt.Fprintln(w, text)
 				} else {
-					ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{status.DISK_AVAILABLE, status.DISK_FAILED})
+					ctx.PollerTo(w, describeUdiskByID(ctx)).Spoll(resp.UDiskId[0], text, []string{DISK_AVAILABLE, DISK_FAILED})
 				}
 				ctx.EmitResult(cli.OpResultRow{ResourceID: resp.UDiskId[0], Action: "clone", Status: "Initializing"})
 			} else {
@@ -431,7 +430,7 @@ func newClone(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "enable-data-ark", "true", "false")
 
 	command.SetCompletion(cmd, "source-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("source-id")
@@ -475,7 +474,7 @@ func newExpand(ctx *cli.Context) *cobra.Command {
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 
 	command.SetCompletion(cmd, "udisk-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_AVAILABLE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 
 	cmd.MarkFlagRequired("udisk-id")
@@ -510,7 +509,7 @@ func newSnapshot(ctx *cli.Context) *cobra.Command {
 					if *async {
 						fmt.Fprintln(w, text)
 					} else {
-						ctx.PollerTo(w, describeSnapshotByID(ctx)).Spoll(resp.SnapshotId[0], text, []string{status.SNAPSHOT_NORMAL})
+						ctx.PollerTo(w, describeSnapshotByID(ctx)).Spoll(resp.SnapshotId[0], text, []string{SNAPSHOT_NORMAL})
 					}
 					results = append(results, cli.OpResultRow{ResourceID: resp.SnapshotId[0], Action: "snapshot", Status: "Creating"})
 				} else {
@@ -533,7 +532,7 @@ func newSnapshot(ctx *cli.Context) *cobra.Command {
 	req.Comment = flags.String("comment", "", "Optional. Description of snapshots")
 	async = flags.BoolP("async", "a", false, "Optional. Do not wait for the long-running operation to finish.")
 	command.SetCompletion(cmd, "udisk-id", func() []string {
-		return getDiskList(ctx, []string{status.DISK_AVAILABLE, status.DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
+		return getDiskList(ctx, []string{DISK_AVAILABLE, DISK_INUSE}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("udisk-id")
 	cmd.MarkFlagRequired("name")
@@ -593,7 +592,7 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	command.SetCompletion(cmd, "snapshot-id", func() []string {
-		return getSnapshotList(ctx, []string{status.SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
+		return getSnapshotList(ctx, []string{SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
 	cmd.MarkFlagRequired("snapshot-id")
 	return cmd

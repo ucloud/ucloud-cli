@@ -1,0 +1,62 @@
+ucloud uhost clone	uhost-id	dynamic
+ucloud uhost create	bind-eip	dynamic
+ucloud uhost create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud uhost create	cpu	static	1,12,16,2,24,32,4,64,8
+ucloud uhost create	create-eip-line	static	BGP,International
+ucloud uhost create	create-eip-traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
+ucloud uhost create	data-disk-backup-type	static	DATAARK,NONE
+ucloud uhost create	data-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD,NONE
+ucloud uhost create	firewall-id	dynamic
+ucloud uhost create	gpu-type	static	K80,P40,V100
+ucloud uhost create	hot-plug	static	false,true
+ucloud uhost create	image-id	dynamic
+ucloud uhost create	isolation-group	dynamic
+ucloud uhost create	machine-type	static	C,G,N,O,OS
+ucloud uhost create	minimal-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
+ucloud uhost create	net-capability	static	Normal,Super,Ultra
+ucloud uhost create	os-disk-backup-type	static	DATAARK,NONE
+ucloud uhost create	os-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uhost create	project-id	dynamic
+ucloud uhost create	region	dynamic
+ucloud uhost create	subnet-id	dynamic
+ucloud uhost create	type	static	C1,G1,G2,G3,I1,I2,N1,N2,N3
+ucloud uhost create	vpc-id	dynamic
+ucloud uhost create	zone	dynamic
+ucloud uhost create-image	uhost-id	dynamic
+ucloud uhost delete	delete-cloud-disk	static	false,true
+ucloud uhost delete	destroy	static	false,true
+ucloud uhost delete	project-id	dynamic
+ucloud uhost delete	region	dynamic
+ucloud uhost delete	release-eip	static	false,true
+ucloud uhost delete	uhost-id	dynamic
+ucloud uhost isolation-group create	project-id	dynamic
+ucloud uhost isolation-group create	region	dynamic
+ucloud uhost isolation-group delete	group-id	dynamic
+ucloud uhost isolation-group delete	project-id	dynamic
+ucloud uhost isolation-group delete	region	dynamic
+ucloud uhost isolation-group list	group-id	dynamic
+ucloud uhost isolation-group list	project-id	dynamic
+ucloud uhost isolation-group list	region	dynamic
+ucloud uhost leave-isolation-group	project-id	dynamic
+ucloud uhost leave-isolation-group	region	dynamic
+ucloud uhost leave-isolation-group	uhost-id	dynamic
+ucloud uhost leave-isolation-group	zone	dynamic
+ucloud uhost list	isolation-group	dynamic
+ucloud uhost list	page-off	static	false,true
+ucloud uhost list	project-id	dynamic
+ucloud uhost list	region	dynamic
+ucloud uhost list	subnet-id	dynamic
+ucloud uhost list	uhost-id	dynamic
+ucloud uhost list	uhost-id-only	static	false,true
+ucloud uhost list	vpc-id	dynamic
+ucloud uhost list	zone	dynamic
+ucloud uhost poweroff	uhost-id	dynamic
+ucloud uhost reinstall-os	uhost-id	dynamic
+ucloud uhost reset-password	uhost-id	dynamic
+ucloud uhost resize	project-id	dynamic
+ucloud uhost resize	region	dynamic
+ucloud uhost resize	uhost-id	dynamic
+ucloud uhost resize	zone	dynamic
+ucloud uhost restart	uhost-id	dynamic
+ucloud uhost start	uhost-id	dynamic
+ucloud uhost stop	uhost-id	dynamic

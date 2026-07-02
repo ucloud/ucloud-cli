@@ -14,7 +14,6 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/internal/common"
-	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -457,7 +456,7 @@ func newUDBConfApply(ctx *cli.Context) *cobra.Command {
 					fmt.Fprintf(ctx.Out(), "udb[%s] is restarting\n", idname)
 				} else {
 					text := fmt.Sprintf("udb[%s] is restarting", idname)
-					ctx.Poller(describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{status.UDB_FAIL, status.UDB_RUNNING})
+					ctx.Poller(describeUdbByID(ctx)).Spoll(*req.DBId, text, []string{UDB_FAIL, UDB_RUNNING})
 				}
 			}
 		},
