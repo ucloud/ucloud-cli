@@ -22,7 +22,11 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 		Short: "Delete MySQL instances by udb-id",
 		Long:  "Delete MySQL instances by udb-id",
 		Run: func(c *cobra.Command, args []string) {
-			ok := ctx.Confirm(yes, "Are you sure you want to delete the udb(s)?")
+			ok, err := ctx.Confirm(yes, "Are you sure you want to delete the udb(s)?")
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
 			if !ok {
 				return
 			}
