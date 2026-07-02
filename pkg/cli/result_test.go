@@ -51,3 +51,27 @@ func TestProgressWriterRoutesByFormat(t *testing.T) {
 		t.Fatal("yaml mode: ProgressWriter must route to Err (stderr)")
 	}
 }
+
+func TestEmitResultJSONEmptyRowsIsEmptyArrayNotNull(t *testing.T) {
+	var out bytes.Buffer
+	ctx := cli.NewContext(cli.Deps{Out: &out, Format: cli.OutputJSON})
+
+	var rows []cli.OpResultRow // nil slice — the all-failed case
+	ctx.EmitResult(rows...)
+
+	if got := out.String(); got != "[]\n" {
+		t.Fatalf("EmitResult(JSON) empty must be %q, got %q", "[]\n", got)
+	}
+}
+
+func TestEmitResultYAMLEmptyRowsIsEmptyArray(t *testing.T) {
+	var out bytes.Buffer
+	ctx := cli.NewContext(cli.Deps{Out: &out, Format: cli.OutputYAML})
+
+	var rows []cli.OpResultRow
+	ctx.EmitResult(rows...)
+
+	if got := out.String(); got != "[]\n" {
+		t.Fatalf("EmitResult(YAML) empty must be %q, got %q", "[]\n", got)
+	}
+}
