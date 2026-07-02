@@ -1,7 +1,6 @@
 package uhost
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -40,7 +39,7 @@ func newClone(ctx *cli.Context) *cobra.Command {
 				req.KeyPairId = sdk.String(keyPairId)
 				req.Password = nil
 			} else {
-				fmt.Fprintln(ctx.Err(), errors.New("password or key-pair-id is required"))
+				ctx.HandleError(fmt.Errorf("password or key-pair-id is required"))
 				return
 			}
 			*uhostID = ctx.PickResourceID(*uhostID)
@@ -55,11 +54,11 @@ func newClone(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			if len(queryResp.UHostSet) < 1 {
-				fmt.Fprintln(ctx.Err(), fmt.Errorf("uhost[%s] not exist", *uhostID))
+				ctx.HandleError(fmt.Errorf("uhost[%s] not exist", *uhostID))
 				return
 			}
 			if queryResp.UHostSet[0].SecGroupInstance == true {
-				fmt.Fprintln(ctx.Err(), fmt.Errorf("uhost[%s] is in security groups, it is not allowed to clone", *uhostID))
+				ctx.HandleError(fmt.Errorf("uhost[%s] is in security groups, it is not allowed to clone", *uhostID))
 				return
 			}
 			queryFirewallReq := unetClient.NewDescribeFirewallRequest()

@@ -34,7 +34,7 @@ func newDetach(ctx *cli.Context) *cobra.Command {
 				id = ctx.PickResourceID(id)
 				err := DetachUdisk(ctx, *async, id, w)
 				if err != nil {
-					fmt.Fprintln(ctx.Err(), err)
+					ctx.HandleError(err)
 					continue
 				}
 				results = append(results, cli.OpResultRow{ResourceID: id, Action: "detach", Status: "Detaching"})

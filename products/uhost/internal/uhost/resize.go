@@ -40,7 +40,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				req.UHostId = &id
 				host, err := describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)(id, nil)
 				if err != nil {
-					fmt.Fprintln(ctx.Err(), err)
+					ctx.HandleError(err)
 					return
 				}
 				inst := host.(*uhostsdk.UHostInstanceSet)
