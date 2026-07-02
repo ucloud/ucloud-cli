@@ -8,7 +8,6 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	"github.com/ucloud/ucloud-sdk-go/services/vpc"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
@@ -126,7 +125,7 @@ func getFirewallIDNames(ctx *cli.Context, project, region string) (idNames []str
 
 // getAllEip returns "EIPId/ip1,ip2" completion candidates filtered by states and
 // paymodes (nil filter = no filter). Copied self-contained from
-// cmd/eip_compat.go; uses the package-local fetchAllEip (helpers.go).
+// cmd/eip_compat.go; uses the package-local fetchAllEip (eip.go).
 func getAllEip(ctx *cli.Context, projectID, region string, states, paymodes []string) []string {
 	list, err := fetchAllEip(ctx, projectID, region)
 	if err != nil {
@@ -197,29 +196,53 @@ func getImageList(ctx *cli.Context, states []string, imageType, project, region,
 	return list
 }
 
-// describeImageByID returns the image-feature-probe describe func, closing over
-// ctx + project/region/zone. Copied self-contained from cmd/image_compat.go;
-// used by create to probe an image's HotPlug/CloudInit features and by
-// create-image's poller. Returns *uhostsdk.UHostImageSet.
-func describeImageByID(ctx *cli.Context, project, region, zone string) func(imageID string, commonBase *request.CommonBase) (interface{}, error) {
-	return func(imageID string, commonBase *request.CommonBase) (interface{}, error) {
-		client := cli.NewServiceClient(ctx, uhostsdk.NewClient)
-		req := client.NewDescribeImageRequest()
-		if commonBase != nil {
-			req.CommonBase = *commonBase
-		}
-		req.ImageId = sdk.String(imageID)
-		req.ProjectId = sdk.String(project)
-		req.Region = sdk.String(region)
-		req.Zone = sdk.String(zone)
-		req.Limit = sdk.Int(50)
-		resp, err := client.DescribeImage(req)
-		if err != nil {
-			return nil, err
-		}
-		if len(resp.ImageSet) < 1 {
-			return nil, nil
-		}
-		return &resp.ImageSet[0], nil
+// getUhostList returns "UHostId/Name" completion candidates filtered by states
+// (nil = all). Copied self-contained from cmd/uhost.go getUhostList
+// (base.BizClient → cli.NewServiceClient on the public uhost SDK).
+func getUhostList(ctx *cli.Context, states []string, project, region, zone string) []string {
+	client := cli.NewServiceClient(ctx, uhostsdk.NewClient)
+	req := client.NewDescribeUHostInstanceRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	req.Zone = sdk.String(zone)
+	req.Limit = sdk.Int(50)
+	resp, err := client.DescribeUHostInstance(req)
+	if err != nil {
+		//todo runtime log
+		return nil
 	}
+	list := []string{}
+	for _, host := range resp.UHostSet {
+		if states != nil {
+			for _, s := range states {
+				if host.State == s {
+					list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+				}
+			}
+		} else {
+			list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+		}
+	}
+	return list
+}
+
+// getIsolationGroupList returns "GroupId/Name" completion candidates. Copied
+// self-contained from cmd/uhost.go getIsolationGroupList (the original printed
+// the fetch error to stdout; that diagnostic is dropped — completion funcs must
+// stay silent so they don't corrupt shell completion output).
+func getIsolationGroupList(ctx *cli.Context, project, region string) []string {
+	client := cli.NewServiceClient(ctx, uhostsdk.NewClient)
+	req := client.NewDescribeIsolationGroupRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	req.Limit = sdk.Int(50)
+	resp, err := client.DescribeIsolationGroup(req)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, group := range resp.IsolationGroupSet {
+		list = append(list, group.GroupId+"/"+strings.Replace(group.GroupName, " ", "-", -1))
+	}
+	return list
 }
