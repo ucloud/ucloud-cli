@@ -42,7 +42,9 @@ type Context struct {
 
 	// errCount tallies HandleError calls this invocation so the host (cmd) can
 	// set a non-zero exit code when any product error occurred (aws/gcloud
-	// convention). Atomic: uhost create/delete call HandleError from goroutines.
+	// convention). Atomic because product commands can call HandleError from
+	// concurrent goroutines (e.g. uhost create's per-instance EIP binding in the
+	// count>5 fan-out).
 	errCount int32
 }
 

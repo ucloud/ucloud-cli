@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
@@ -14,7 +15,7 @@ func TestFailedFalseUntilHandleError(t *testing.T) {
 	if ctx.Failed() {
 		t.Fatal("fresh context must not be Failed()")
 	}
-	ctx.HandleError(nil)
+	ctx.HandleError(fmt.Errorf("boom"))
 	if !ctx.Failed() {
 		t.Fatal("after HandleError, Failed() must be true")
 	}
