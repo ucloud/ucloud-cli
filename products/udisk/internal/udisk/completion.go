@@ -3,6 +3,7 @@ package udisk
 import (
 	"strings"
 
+	udisksdk "github.com/ucloud/ucloud-sdk-go/services/udisk"
 	uhostsdk "github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
@@ -34,6 +35,51 @@ func getUhostList(ctx *cli.Context, states []string, project, region, zone strin
 			}
 		} else {
 			list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+		}
+	}
+	return list
+}
+
+func getDiskList(ctx *cli.Context, states []string, project, region, zone string) []string {
+	client := cli.NewServiceClient(ctx, udisksdk.NewClient)
+	req := client.NewDescribeUDiskRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	req.Zone = sdk.String(zone)
+	req.Limit = sdk.Int(50)
+	resp, err := client.DescribeUDisk(req)
+	if err != nil {
+		//todo runtime log
+		return nil
+	}
+	list := []string{}
+	for _, disk := range resp.DataSet {
+		for _, s := range states {
+			if disk.Status == s {
+				list = append(list, disk.UDiskId+"/"+strings.Replace(disk.Name, " ", "-", -1))
+			}
+		}
+	}
+	return list
+}
+
+func getSnapshotList(ctx *cli.Context, states []string, project, region, zone string) []string {
+	client := cli.NewServiceClient(ctx, udisksdk.NewClient)
+	req := client.NewDescribeUDiskSnapshotRequest()
+	req.Limit = sdk.Int(50)
+	req.ProjectId = &project
+	req.Region = &region
+	req.Zone = &zone
+	resp, err := client.DescribeUDiskSnapshot(req)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, snapshot := range resp.DataSet {
+		for _, s := range states {
+			if snapshot.Status == s {
+				list = append(list, snapshot.SnapshotId+"/"+strings.Replace(snapshot.Name, " ", "-", -1))
+			}
 		}
 	}
 	return list
