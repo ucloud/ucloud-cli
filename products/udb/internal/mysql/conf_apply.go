@@ -40,7 +40,11 @@ func newUDBConfApply(ctx *cli.Context) *cobra.Command {
 				if !restart {
 					continue
 				}
-				ok := ctx.Confirm(yes, fmt.Sprintf("udb[%s] is about to restart, do you want to continue?", idname))
+				ok, err := ctx.Confirm(yes, fmt.Sprintf("udb[%s] is about to restart, do you want to continue?", idname))
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
 				if !ok {
 					continue
 				}

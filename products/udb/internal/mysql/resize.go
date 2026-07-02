@@ -74,7 +74,11 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				}
 
 				if ins.State == UDB_RUNNING {
-					ok := ctx.Confirm(yes, fmt.Sprintf("Need to shut down udb[%s] before upgrading, whether to continue?", idname))
+					ok, err := ctx.Confirm(yes, fmt.Sprintf("Need to shut down udb[%s] before upgrading, whether to continue?", idname))
+					if err != nil {
+						ctx.HandleError(err)
+						continue
+					}
 					if !ok {
 						continue
 					}

@@ -37,7 +37,12 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 				}
 				if snapshot.UHostId != "" {
 					text := fmt.Sprintf("can we detach udisk[%s] from uhost[%s]?", snapshot.DiskId, snapshot.UHostId)
-					if !ctx.Confirm(false, text) {
+					ok, err := ctx.Confirm(false, text)
+					if err != nil {
+						ctx.HandleError(err)
+						continue
+					}
+					if !ok {
 						continue
 					}
 					DetachUdisk(ctx, false, snapshot.DiskId, w)
