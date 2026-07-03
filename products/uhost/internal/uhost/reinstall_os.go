@@ -1,6 +1,7 @@
 package uhost
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -84,6 +85,9 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 
 			err = checkAndCloseUhost(ctx, client, *yes, *async, *req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
 			if err != nil {
+				if errors.Is(err, errStopDeclined) {
+					return
+				}
 				ctx.HandleError(err)
 				return
 			}

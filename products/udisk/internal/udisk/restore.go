@@ -14,6 +14,7 @@ import (
 // newRestore ucloud udisk restore
 func newRestore(ctx *cli.Context) *cobra.Command {
 	var snapshotIDs *[]string
+	var yes *bool
 	client := cli.NewServiceClient(ctx, puhost.NewClient)
 	req := client.NewRestoreUHostDiskRequest()
 	cmd := &cobra.Command{
@@ -37,7 +38,7 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 				}
 				if snapshot.UHostId != "" {
 					text := fmt.Sprintf("can we detach udisk[%s] from uhost[%s]?", snapshot.DiskId, snapshot.UHostId)
-					ok, err := ctx.Confirm(false, text)
+					ok, err := ctx.Confirm(*yes, text)
 					if err != nil {
 						ctx.HandleError(err)
 						continue
@@ -68,6 +69,7 @@ func newRestore(ctx *cli.Context) *cobra.Command {
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
+	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
 	command.SetCompletion(cmd, "snapshot-id", func() []string {
 		return getSnapshotList(ctx, []string{SNAPSHOT_NORMAL}, *req.ProjectId, *req.Region, *req.Zone)
 	})
