@@ -31,7 +31,12 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 		Long:  "Delete one or more example instances by resource ID.",
 		Run: func(c *cobra.Command, args []string) {
 			// Destructive: gate on confirmation unless --yes was passed.
-			if !ctx.Confirm(yes, "Are you sure you want to delete the instance(s)?") {
+			ok, err := ctx.Confirm(yes, "Are you sure you want to delete the instance(s)?")
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
 				return
 			}
 			w := ctx.ProgressWriter()

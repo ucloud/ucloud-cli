@@ -1,6 +1,7 @@
 package uhost
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -41,13 +42,13 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 				req.KeyPairId = sdk.String(keyPairId)
 				req.Password = nil
 			} else {
-				fmt.Fprintln(ctx.Err(), fmt.Errorf("password or key-pair-id is required"))
+				ctx.HandleError(fmt.Errorf("password or key-pair-id is required"))
 				return
 			}
 
 			any, err := describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)(*req.UHostId, nil)
 			if err != nil {
-				fmt.Fprintln(ctx.Err(), err)
+				ctx.HandleError(err)
 				return
 			}
 			uhostIns, ok := any.(*uhostsdk.UHostInstanceSet)
@@ -57,7 +58,12 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 						sure := false
 						if !*yes {
 							text := fmt.Sprintf("udisk[%s/%s] will be detached, can we do this?", disk.DiskId, disk.Name)
-							sure = ctx.Confirm(false, text)
+							var cErr error
+							sure, cErr = ctx.Confirm(false, text)
+							if cErr != nil {
+								ctx.HandleError(cErr)
+								return
+							}
 							if !sure {
 								fmt.Fprintf(w, "you don't agree to detach udisk\n")
 								return
@@ -66,7 +72,7 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 						if *yes || sure {
 							err := detachUdisk(ctx, false, disk.DiskId, w)
 							if err != nil {
-								fmt.Fprintln(ctx.Err(), err)
+								ctx.HandleError(err)
 								return
 							}
 						}
@@ -79,12 +85,15 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 
 			err = checkAndCloseUhost(ctx, client, *yes, *async, *req.UHostId, *req.ProjectId, *req.Region, *req.Zone)
 			if err != nil {
-				fmt.Fprintln(ctx.Err(), err)
+				if errors.Is(err, errStopDeclined) {
+					return
+				}
+				ctx.HandleError(err)
 				return
 			}
 			resp, err := client.ReinstallUHostInstance(req)
 			if err != nil {
-				fmt.Fprintln(ctx.Err(), err)
+				ctx.HandleError(err)
 				return
 			}
 			text := fmt.Sprintf("uhost[%s] is reinstalling OS", *req.UHostId)

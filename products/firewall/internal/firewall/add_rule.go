@@ -26,7 +26,7 @@ func newAddRule(ctx *cli.Context) *cobra.Command {
 		Example: `ucloud firewall add-rule --fw-id firewall-2xxxxz/test.lxj2 --rules "TCP|24|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if req.Rule == nil && rulesFilePath == "" {
-				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
+				ctx.HandleError(fmt.Errorf("flags rules and rules-file can't be both empty"))
 				return
 			}
 			results := []cli.OpResultRow{}

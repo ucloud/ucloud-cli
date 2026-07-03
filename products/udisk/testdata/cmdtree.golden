@@ -76,6 +76,7 @@ ucloud udisk restore	use=restore	short=Restore udisk from snapshot
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=snapshot-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
   flag=zone	short=	default=	required=
 ucloud udisk snapshot	use=snapshot	short=Create shapshots for udisks
   flag=async	short=a	default=false	required=

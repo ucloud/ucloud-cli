@@ -26,7 +26,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 		Example: `ucloud firewall create --name test3 --rules "TCP|22|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if rules == nil && rulesFilePath == "" {
-				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
+				ctx.HandleError(fmt.Errorf("flags rules and rules-file can't be both empty"))
 				return
 			}
 			if rulesFilePath != "" {

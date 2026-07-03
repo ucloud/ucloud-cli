@@ -73,7 +73,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 							results = append(results, cli.OpResultRow{ResourceID: id, Action: "create", Status: "Created"})
 						}
 					} else {
-						fmt.Fprintln(ctx.Err(), "Error: none udisk created")
+						ctx.HandleError(fmt.Errorf("none udisk created"))
 					}
 				}
 			} else {
@@ -97,7 +97,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 							results = append(results, cli.OpResultRow{ResourceID: id, Action: "create", Status: "Created"})
 						}
 					} else {
-						fmt.Fprintln(ctx.Err(), "Error: none udisk created")
+						ctx.HandleError(fmt.Errorf("none udisk created"))
 					}
 				}
 			}

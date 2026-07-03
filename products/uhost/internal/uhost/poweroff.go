@@ -28,7 +28,12 @@ func newPoweroff(ctx *cli.Context) *cobra.Command {
 			if len(*uhostIDs) > 1 {
 				confirmText = "Danger, it may affect data integrity. Are you sure you want to poweroff those uhosts?"
 			}
-			if !ctx.Confirm(*yes, confirmText) {
+			ok, err := ctx.Confirm(*yes, confirmText)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
 				return
 			}
 			for _, id := range *uhostIDs {

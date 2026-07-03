@@ -24,7 +24,7 @@ func newUpdate(ctx *cli.Context) *cobra.Command {
 		Example: `ucloud firewall update --fw-id firewall-2xxxx/test2 --name test_update.1 --remark "this is a remark"`,
 		Run: func(c *cobra.Command, args []string) {
 			if *req.Name == "" && *req.Tag == "" && *req.Remark == "" {
-				fmt.Fprintln(ctx.Err(), "Error: name, group and remark can't be all empty")
+				ctx.HandleError(fmt.Errorf("name, group and remark can't be all empty"))
 				return
 			}
 			if *req.Name == "" {

@@ -25,7 +25,12 @@ func newDetach(ctx *cli.Context) *cobra.Command {
 		Long:  "Detach udisk instances from an uhost",
 		Run: func(cmd *cobra.Command, args []string) {
 			text := `Please confirm that you have already unmounted file system corresponding to this hard drive,(See "https://docs.ucloud.cn/storage_cdn/udisk/userguide/umount" for help), otherwise it will cause file system damage and UHost cannot be normally shut down. Sure to detach?`
-			if !ctx.Confirm(*yes, text) {
+			ok, err := ctx.Confirm(*yes, text)
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
 				return
 			}
 			w := ctx.ProgressWriter()
@@ -34,7 +39,7 @@ func newDetach(ctx *cli.Context) *cobra.Command {
 				id = ctx.PickResourceID(id)
 				err := DetachUdisk(ctx, *async, id, w)
 				if err != nil {
-					fmt.Fprintln(ctx.Err(), err)
+					ctx.HandleError(err)
 					continue
 				}
 				results = append(results, cli.OpResultRow{ResourceID: id, Action: "detach", Status: "Detaching"})

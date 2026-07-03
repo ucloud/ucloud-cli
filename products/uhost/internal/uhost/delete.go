@@ -29,7 +29,11 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 		// SilenceUsage: a delete that fails at runtime must not dump flag usage.
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !ctx.Confirm(*yes, "Are you sure you want to delete the host(s)?") {
+			ok, err := ctx.Confirm(*yes, "Are you sure you want to delete the host(s)?")
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			if *isDestroy {

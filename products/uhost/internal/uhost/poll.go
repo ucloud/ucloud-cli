@@ -1,12 +1,15 @@
 package uhost
 
 import (
+	"errors"
 	"fmt"
 
 	uhostsdk "github.com/ucloud/ucloud-sdk-go/services/uhost"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
+
+var errStopDeclined = errors.New("skip, you do not agree to stop uhost")
 
 // stopUhostIns stops a uhost and (unless async) polls it to Stopped. Mirrors
 // cmd/uhost.go stopUhostIns (sequential base.NewPoller → ctx.PollerTo.Spoll).
@@ -42,8 +45,12 @@ func checkAndCloseUhost(ctx *cli.Context, client *uhostsdk.UHostClient, yes, asy
 	inst, ok := host.(*uhostsdk.UHostInstanceSet)
 	if ok {
 		if inst.State == "Running" {
-			if !ctx.Confirm(yes, fmt.Sprintf("uhost[%s] will be stopped, can we do this?", uhostID)) {
-				return fmt.Errorf("skip, you do not agree to stop uhost")
+			ok, err := ctx.Confirm(yes, fmt.Sprintf("uhost[%s] will be stopped, can we do this?", uhostID))
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return errStopDeclined
 			}
 			_req := client.NewStopUHostInstanceRequest()
 			_req.ProjectId = &project

@@ -40,7 +40,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				req.UHostId = &id
 				host, err := describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)(id, nil)
 				if err != nil {
-					fmt.Fprintln(ctx.Err(), err)
+					ctx.HandleError(err)
 					return
 				}
 				inst := host.(*uhostsdk.UHostInstanceSet)
@@ -52,7 +52,11 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
 				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
 					if inst.State == HOST_RUNNING {
-						ret := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
+						ret, err := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
+						if err != nil {
+							ctx.HandleError(err)
+							return
+						}
 						if ret {
 							inst.State = HOST_STOPPED
 						}
@@ -189,16 +193,22 @@ func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.
 		stopReq.ProjectId = req.ProjectId
 		stopReq.Region = req.Region
 		stopReq.Zone = req.Zone
-		promptStopUhostIns(ctx, client, stopReq, yes, async, promptText)
+		if _, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// promptStopUhostIns prompts (unless yes) then stops the uhost. Mirrors
-// cmd/uhost.go promptStopUhostIns.
-func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes, async bool, promptText string) bool {
-	if !ctx.Confirm(yes, promptText) {
-		return false
+// promptStopUhostIns prompts (unless yes) then stops the uhost. Returns
+// (stopped, err): err != nil means non-interactive without --yes.
+func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes, async bool, promptText string) (bool, error) {
+	ok, err := ctx.Confirm(yes, promptText)
+	if err != nil {
+		return false, err
 	}
-	return stopUhostIns(ctx, client, req, false)
+	if !ok {
+		return false, nil
+	}
+	return stopUhostIns(ctx, client, req, false), nil
 }

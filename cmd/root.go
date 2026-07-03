@@ -258,6 +258,14 @@ func Execute() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+	// A product command that reported an error via ctx.HandleError but used
+	// cobra Run (no return value) would otherwise exit 0. Set a non-zero code
+	// here. Exclude completion invocations: their dynamic-completion helpers
+	// call ctx.HandleError on transient API failures but must still yield
+	// candidates (or none) with rc=0 per shell-completion convention.
+	if productCtx != nil && productCtx.Failed() && !isCompletionInvocation(cmd) {
+		os.Exit(1)
+	}
 }
 
 func init() {
@@ -422,6 +430,47 @@ func isAuthSkippedCmd(cmd *cobra.Command) bool {
 	}
 	if cmd.Parent() != nil && (cmd.Parent().Name() == "config" || cmd.Parent().Name() == "auth") {
 		return true
+	}
+	return false
+}
+
+// isCompletionInvocation reports whether this process is a shell-completion
+// request, whose exit code must stay 0 regardless of transient
+// completion-helper errors (shell-completion convention).
+//
+// Two cases are covered:
+//   - The cobra dynamic-completion hot path (ucloud __complete / __completeNoDesc
+//     ...): always invoked flag-free by the shell, so a literal os.Args[1] check
+//     is sufficient and cheap.
+//   - The user-typed `completion` subcommand (e.g. `ucloud completion zsh`),
+//     which may carry leading global flags (`ucloud --debug completion zsh`) so a
+//     positional os.Args check is not enough. We re-resolve the target command
+//     via cobra Find (which strips flags) and treat it as completion when the
+//     resolved command or any ancestor is a completion command. Find is called
+//     after cmd.Execute() has run, by which point cobra has lazily registered the
+//     default `completion` command onto the tree.
+func isCompletionInvocation(root *cobra.Command) bool {
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "__complete", "__completeNoDesc":
+			return true
+		}
+	}
+	if t, _, err := root.Find(os.Args[1:]); err == nil && isCompletionCommand(t) {
+		return true
+	}
+	return false
+}
+
+// isCompletionCommand reports whether c or any of its ancestors is a
+// shell-completion command (the cobra `completion` generator or the dynamic
+// `__complete`/`__completeNoDesc` helpers).
+func isCompletionCommand(c *cobra.Command) bool {
+	for ; c != nil; c = c.Parent() {
+		switch c.Name() {
+		case "__complete", "__completeNoDesc", "completion":
+			return true
+		}
 	}
 	return false
 }

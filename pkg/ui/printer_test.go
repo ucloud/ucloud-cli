@@ -29,25 +29,29 @@ func TestConfirm(t *testing.T) {
 	var buf bytes.Buffer
 
 	// yes=true should always return true without reading input
-	if !ui.Confirm(nil, &buf, true, "x") {
-		t.Fatal("Confirm with yes=true should return true")
+	ok, err := ui.Confirm(nil, &buf, true, false, "x")
+	if err != nil || !ok {
+		t.Fatalf("Confirm with yes=true should return (true,nil), got (%v,%v)", ok, err)
 	}
 
 	// "y" input should return true
-	if !ui.Confirm(strings.NewReader("y\n"), &buf, false, "ok?") {
-		t.Fatal("Confirm with 'y' input should return true")
+	ok, err = ui.Confirm(strings.NewReader("y\n"), &buf, false, true, "ok?")
+	if err != nil || !ok {
+		t.Fatalf("Confirm with 'y' input should return (true,nil), got (%v,%v)", ok, err)
 	}
 
 	// "yes" input should return true
 	buf.Reset()
-	if !ui.Confirm(strings.NewReader("yes\n"), &buf, false, "ok?") {
-		t.Fatal("Confirm with 'yes' input should return true")
+	ok, err = ui.Confirm(strings.NewReader("yes\n"), &buf, false, true, "ok?")
+	if err != nil || !ok {
+		t.Fatalf("Confirm with 'yes' input should return (true,nil), got (%v,%v)", ok, err)
 	}
 
 	// "n" input should return false
 	buf.Reset()
-	if ui.Confirm(strings.NewReader("n\n"), &buf, false, "ok?") {
-		t.Fatal("Confirm with 'n' input should return false")
+	ok, err = ui.Confirm(strings.NewReader("n\n"), &buf, false, true, "ok?")
+	if err != nil || ok {
+		t.Fatalf("Confirm with 'n' input should return (false,nil), got (%v,%v)", ok, err)
 	}
 }
 

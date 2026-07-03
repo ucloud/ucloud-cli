@@ -2,6 +2,7 @@ package cli
 
 import (
 	"io"
+	"sync/atomic"
 
 	"github.com/spf13/cobra"
 
@@ -149,18 +150,22 @@ func (c *Context) PrintList(dataSet interface{}) {
 // PrintJSON renders dataSet as JSON to the ctx writer.
 func (c *Context) PrintJSON(dataSet interface{}) error { return ui.PrintJSON(dataSet, c.out) }
 
-// Confirm prompts the user for a yes/no confirmation. The prompt is written to
-// the progress writer (stdout in table mode, stderr in json/yaml mode) so it
-// never corrupts machine-readable output on stdout; the answer is read from the
-// ctx input stream.
-func (c *Context) Confirm(yes bool, text string) bool {
-	return ui.Confirm(c.in, c.ProgressWriter(), yes, text)
+// Confirm prompts for a yes/no confirmation, returning three outcomes:
+// (true,nil) confirmed / (false,nil) declined / (false,err) non-interactive
+// without --yes. Interactivity is judged on the input stream (c.in), so tests
+// injecting a buffer are non-interactive. The prompt goes to the progress
+// writer (stderr in json/yaml) to keep stdout machine-clean.
+func (c *Context) Confirm(yes bool, text string) (bool, error) {
+	return ui.Confirm(c.in, c.ProgressWriter(), yes, ui.IsReaderTTY(c.in), text)
 }
 
 // HandleError renders err (business RetCode / transport error) to stderr — never
 // stdout, so machine output on stdout stays clean — and records it to the
 // cli.log file / telemetry.
-func (c *Context) HandleError(err error) { base.HandleErrorTo(c.err, err) }
+func (c *Context) HandleError(err error) {
+	atomic.AddInt32(&c.errCount, 1)
+	base.HandleErrorTo(c.err, err)
+}
 
 // LogInfo / LogPrint / LogWarn / LogError forward to the platform logger
 // (cli.log + optional telemetry, with redaction) for non-request product

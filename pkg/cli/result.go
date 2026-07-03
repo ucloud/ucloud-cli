@@ -34,5 +34,8 @@ func (c *Context) EmitResult(rows ...OpResultRow) {
 	if c.format == OutputTable {
 		return
 	}
+	if rows == nil {
+		rows = []OpResultRow{}
+	}
 	c.PrintList(rows)
 }

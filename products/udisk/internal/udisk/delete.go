@@ -22,7 +22,12 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 		Short: "Delete udisk instances",
 		Long:  "Delete udisk instances",
 		Run: func(cmd *cobra.Command, args []string) {
-			if !ctx.Confirm(*yes, fmt.Sprintf("Are you sure to delete udisk(s)?")) {
+			ok, err := ctx.Confirm(*yes, "Are you sure to delete udisk(s)?")
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
 				return
 			}
 			w := ctx.ProgressWriter()

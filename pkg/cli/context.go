@@ -2,6 +2,7 @@ package cli
 
 import (
 	"io"
+	"sync/atomic"
 
 	"github.com/ucloud/ucloud-cli/base"
 )
@@ -38,6 +39,13 @@ type Context struct {
 	// allRegions is the runtime all-region lister (returns an error, unlike the
 	// completion providers) for non-standard flags like uhost --all-region.
 	allRegions func() ([]string, error)
+
+	// errCount tallies HandleError calls this invocation so the host (cmd) can
+	// set a non-zero exit code when any product error occurred (aws/gcloud
+	// convention). Atomic because product commands can call HandleError from
+	// concurrent goroutines (e.g. uhost create's per-instance EIP binding in the
+	// count>5 fan-out).
+	errCount int32
 }
 
 // Deps carries constructor arguments for NewContext.
@@ -86,3 +94,6 @@ func (c *Context) Format() OutputFormat { return c.format }
 // PersistentPreRun once --output has been parsed, because the Context is built
 // at command-registration time, before cobra parses flags.
 func (c *Context) SetFormat(f OutputFormat) { c.format = f }
+
+// Failed reports whether any error was recorded via HandleError this invocation.
+func (c *Context) Failed() bool { return atomic.LoadInt32(&c.errCount) > 0 }

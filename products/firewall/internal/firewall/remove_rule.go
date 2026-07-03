@@ -25,7 +25,7 @@ func newDeleteRule(ctx *cli.Context) *cobra.Command {
 		Example: `ucloud firewall remove-rule --fw-id firewall-2cxxxz/test.lxj2 --rules "TCP|24|0.0.0.0/0|ACCEPT|HIGH" --rules-file firewall_rules.txt`,
 		Run: func(c *cobra.Command, args []string) {
 			if req.Rule == nil && rulesFilePath == "" {
-				fmt.Fprintln(ctx.Err(), "Error: flags rules and rules-file can't be both empty")
+				ctx.HandleError(fmt.Errorf("flags rules and rules-file can't be both empty"))
 				return
 			}
 			results := []cli.OpResultRow{}
@@ -59,7 +59,7 @@ func newDeleteRule(ctx *cli.Context) *cobra.Command {
 					req.Rule = append(req.Rule, r)
 				}
 				if len(req.Rule) == 0 {
-					fmt.Fprintf(ctx.Err(), "Error: rules can't be all deleted\n")
+					ctx.HandleError(fmt.Errorf("rules can't be all deleted"))
 					return
 				}
 				_, err = client.UpdateFirewall(req)

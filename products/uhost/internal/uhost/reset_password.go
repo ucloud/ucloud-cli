@@ -1,6 +1,7 @@
 package uhost
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -28,7 +29,10 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 				req.UHostId = &id
 				err := checkAndCloseUhost(ctx, client, *yes, false, id, *req.ProjectId, *req.Region, *req.Zone)
 				if err != nil {
-					fmt.Fprintln(ctx.Err(), err)
+					if errors.Is(err, errStopDeclined) {
+						continue
+					}
+					ctx.HandleError(err)
 					continue
 				}
 				host, err := describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)(id, nil)

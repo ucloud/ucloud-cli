@@ -1,10 +1,25 @@
 package cli_test
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
+
+func TestFailedFalseUntilHandleError(t *testing.T) {
+	var out, errw bytes.Buffer
+	ctx := cli.NewContext(cli.Deps{Out: &out, Err: &errw, Format: cli.OutputJSON})
+
+	if ctx.Failed() {
+		t.Fatal("fresh context must not be Failed()")
+	}
+	ctx.HandleError(fmt.Errorf("boom"))
+	if !ctx.Failed() {
+		t.Fatal("after HandleError, Failed() must be true")
+	}
+}
 
 func TestPickResourceID(t *testing.T) {
 	if cli.PickResourceID("udb-x/n") != "udb-x" {
