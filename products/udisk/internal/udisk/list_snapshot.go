@@ -53,8 +53,6 @@ func newSnapshotList(ctx *cli.Context) *cobra.Command {
 	// parse; dereferencing StringSlice() here would freeze it to the initial nil
 	// slice and drop the --snapshot-id filter.
 	flags.StringSliceVar(&req.SnapshotIds, "snapshot-id", nil, "Optional. Resource ID of snapshots to list")
-	flags.StringSliceVar(&req.SnapshotIds, "snaphost-id", nil, "Deprecated alias for --snapshot-id")
-	flags.MarkHidden("snaphost-id")
 	req.UHostId = flags.String("uhost-id", "", "Optional. Snapshots of the uhost")
 	req.DiskId = flags.String("disk-id", "", "Optional. Snapshots of the udisk")
 	req.Offset = cmd.Flags().Int("offset", 0, "Optional. Offset")

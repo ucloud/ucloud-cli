@@ -44,8 +44,6 @@ func newSnapshotDelete(ctx *cli.Context) *cobra.Command {
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	snapshotIds = flags.StringSlice("snapshot-id", nil, "Required. Resource ID of snapshots to delete")
-	flags.StringSliceVar(snapshotIds, "snaphost-id", nil, "Deprecated alias for --snapshot-id")
-	flags.MarkHidden("snaphost-id")
-	cmd.MarkFlagsOneRequired("snapshot-id", "snaphost-id")
+	cmd.MarkFlagRequired("snapshot-id")
 	return cmd
 }
