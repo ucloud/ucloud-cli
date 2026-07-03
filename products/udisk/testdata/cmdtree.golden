@@ -40,7 +40,8 @@ ucloud udisk delete	use=delete	short=Delete udisk instances
 ucloud udisk delete-snapshot	use=delete-snapshot	short=Delete snapshots
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
-  flag=snapshot-id	short=	default=[]	required=true
+  flag=snaphost-id	short=	default=[]	required=
+  flag=snapshot-id	short=	default=[]	required=
   flag=zone	short=	default=	required=
 ucloud udisk detach	use=detach	short=Detach udisk instances from an uhost
   flag=async	short=a	default=false	required=
@@ -69,6 +70,7 @@ ucloud udisk list-snapshot	use=list-snapshot	short=List snapshots
   flag=offset	short=	default=0	required=
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=snaphost-id	short=	default=[]	required=
   flag=snapshot-id	short=	default=[]	required=
   flag=uhost-id	short=	default=	required=
   flag=zone	short=	default=	required=
