@@ -11,28 +11,33 @@ import (
 
 var errStopDeclined = errors.New("skip, you do not agree to stop uhost")
 
+type stopUhostResult struct {
+	requested bool
+	stopped   bool
+}
+
 // stopUhostIns stops a uhost and (unless async) polls it to Stopped. Mirrors
 // cmd/uhost.go stopUhostIns (sequential base.NewPoller → ctx.PollerTo.Spoll).
-func stopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, async bool) bool {
+func stopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, async bool) stopUhostResult {
 	w := ctx.ProgressWriter()
 	resp, err := client.StopUHostInstance(req)
 	if err != nil {
 		ctx.HandleError(err)
-		return false
+		return stopUhostResult{}
 	}
 
 	text := fmt.Sprintf("uhost[%v] is shutting down", resp.UHostId)
 	if async {
 		fmt.Fprintln(w, text)
-		return false
+		return stopUhostResult{requested: true}
 	}
 	// base.Poller.Poll returned a bool (reached target state) that cmd/uhost.go
 	// fed back into resize (inst.State = Stopped). The platform Spoll narrates to
-	// the writer but returns nothing, so we return true here: a successful
-	// (non-async) stop request that we then polled is treated as "stopped" for
-	// the resize state-transition, which matches the original intent.
+	// the writer but returns nothing, so a successful synchronous stop request
+	// that we then polled is treated as "stopped" for the resize state-transition,
+	// which matches the original intent.
 	ctx.PollerTo(w, describeUHostByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.UHostId, text, []string{HOST_STOPPED, HOST_FAIL})
-	return true
+	return stopUhostResult{requested: true, stopped: true}
 }
 
 // checkAndCloseUhost stops the uhost (with optional prompt) if it is running.

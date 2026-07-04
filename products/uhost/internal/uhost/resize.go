@@ -52,15 +52,17 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
 				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
 					if inst.State == HOST_RUNNING {
-						ret, err := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
+						stop, err := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
 						if err != nil {
 							ctx.HandleError(err)
 							return
 						}
-						if !ret {
+						if !stop.proceed {
 							continue
 						}
-						inst.State = HOST_STOPPED
+						if stop.stopped {
+							inst.State = HOST_STOPPED
+						}
 					}
 					resp, err := client.ResizeUHostInstance(req)
 					if err != nil {
@@ -197,24 +199,32 @@ func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.
 		stopReq.ProjectId = req.ProjectId
 		stopReq.Region = req.Region
 		stopReq.Zone = req.Zone
-		stopped, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText)
+		stop, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText)
 		if err != nil {
 			return false, err
 		}
-		return stopped, nil
+		return stop.proceed, nil
 	}
 	return true, nil
 }
 
-// promptStopUhostIns prompts (unless yes) then stops the uhost. Returns
-// (stopped, err): err != nil means non-interactive without --yes.
-func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes, async bool, promptText string) (bool, error) {
+type stopPromptResult struct {
+	proceed bool
+	stopped bool
+}
+
+// promptStopUhostIns prompts (unless yes) then stops the uhost. proceed is
+// false only when the user declined or StopUHostInstance failed. stopped is
+// true only for a confirmed synchronous stop that was polled to Stopped; async
+// stops set proceed=true, stopped=false so resize is not mistaken for declined.
+func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes, async bool, promptText string) (stopPromptResult, error) {
 	ok, err := ctx.Confirm(yes, promptText)
 	if err != nil {
-		return false, err
+		return stopPromptResult{}, err
 	}
 	if !ok {
-		return false, nil
+		return stopPromptResult{}, nil
 	}
-	return stopUhostIns(ctx, client, req, false), nil
+	stop := stopUhostIns(ctx, client, req, async)
+	return stopPromptResult{proceed: stop.requested, stopped: stop.stopped}, nil
 }
