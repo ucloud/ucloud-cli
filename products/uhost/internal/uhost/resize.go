@@ -57,9 +57,10 @@ func newResize(ctx *cli.Context) *cobra.Command {
 							ctx.HandleError(err)
 							return
 						}
-						if ret {
-							inst.State = HOST_STOPPED
+						if !ret {
+							continue
 						}
+						inst.State = HOST_STOPPED
 					}
 					resp, err := client.ResizeUHostInstance(req)
 					if err != nil {
@@ -162,9 +163,12 @@ func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	w := ctx.ProgressWriter()
 	req.UHostId = &host.UHostId
 	if host.State == HOST_RUNNING {
-		err := tryStopUhost(ctx, client, req, host.UHostId, promptText, yes, async)
+		proceed, err := tryStopUhost(ctx, client, req, host.UHostId, promptText, yes, async)
 		if err != nil {
 			return fmt.Errorf("try to stop uhost error :%w", err)
+		}
+		if !proceed {
+			return nil
 		}
 	}
 	req.DryRun = sdk.Bool(false)
@@ -181,11 +185,11 @@ func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	return nil
 }
 
-func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.ResizeAttachedDiskRequest, uhostID, promptText string, yes, async bool) error {
+func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.ResizeAttachedDiskRequest, uhostID, promptText string, yes, async bool) (bool, error) {
 	req.DryRun = sdk.Bool(true)
 	resp, err := client.ResizeAttachedDisk(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if resp.NeedRestart {
 		stopReq := client.NewStopUHostInstanceRequest()
@@ -193,11 +197,13 @@ func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.
 		stopReq.ProjectId = req.ProjectId
 		stopReq.Region = req.Region
 		stopReq.Zone = req.Zone
-		if _, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText); err != nil {
-			return err
+		stopped, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText)
+		if err != nil {
+			return false, err
 		}
+		return stopped, nil
 	}
-	return nil
+	return true, nil
 }
 
 // promptStopUhostIns prompts (unless yes) then stops the uhost. Returns
