@@ -52,7 +52,7 @@ func newResize(ctx *cli.Context) *cobra.Command {
 				confirmText := "Resize uhost must be done after the uhost is stopped. Do you want to stop this uhost?"
 				if req.CPU != nil || req.Memory != nil || *req.NetCapValue != 0 {
 					if inst.State == HOST_RUNNING {
-						stop, err := promptStopUhostIns(ctx, client, stopReq, *yes, *async, confirmText)
+						stop, err := promptStopUhostIns(ctx, client, stopReq, *yes, confirmText)
 						if err != nil {
 							ctx.HandleError(err)
 							return
@@ -165,7 +165,7 @@ func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	w := ctx.ProgressWriter()
 	req.UHostId = &host.UHostId
 	if host.State == HOST_RUNNING {
-		proceed, err := tryStopUhost(ctx, client, req, host.UHostId, promptText, yes, async)
+		proceed, err := tryStopUhost(ctx, client, req, host.UHostId, promptText, yes)
 		if err != nil {
 			return fmt.Errorf("try to stop uhost error :%w", err)
 		}
@@ -187,7 +187,7 @@ func resizeAttachedDisk(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	return nil
 }
 
-func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.ResizeAttachedDiskRequest, uhostID, promptText string, yes, async bool) (bool, error) {
+func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.ResizeAttachedDiskRequest, uhostID, promptText string, yes bool) (bool, error) {
 	req.DryRun = sdk.Bool(true)
 	resp, err := client.ResizeAttachedDisk(req)
 	if err != nil {
@@ -199,7 +199,7 @@ func tryStopUhost(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.
 		stopReq.ProjectId = req.ProjectId
 		stopReq.Region = req.Region
 		stopReq.Zone = req.Zone
-		stop, err := promptStopUhostIns(ctx, client, stopReq, yes, async, promptText)
+		stop, err := promptStopUhostIns(ctx, client, stopReq, yes, promptText)
 		if err != nil {
 			return false, err
 		}
@@ -213,11 +213,10 @@ type stopPromptResult struct {
 	stopped bool
 }
 
-// promptStopUhostIns prompts (unless yes) then stops the uhost. proceed is
-// false only when the user declined or StopUHostInstance failed. stopped is
-// true only for a confirmed synchronous stop that was polled to Stopped; async
-// stops set proceed=true, stopped=false so resize is not mistaken for declined.
-func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes, async bool, promptText string) (stopPromptResult, error) {
+// promptStopUhostIns prompts (unless yes) then stops the uhost. proceed is false
+// only when the user declined or StopUHostInstance failed. Resize prerequisites
+// always wait for the stop; --async only controls the resize operation itself.
+func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uhostsdk.StopUHostInstanceRequest, yes bool, promptText string) (stopPromptResult, error) {
 	ok, err := ctx.Confirm(yes, promptText)
 	if err != nil {
 		return stopPromptResult{}, err
@@ -225,6 +224,6 @@ func promptStopUhostIns(ctx *cli.Context, client *uhostsdk.UHostClient, req *uho
 	if !ok {
 		return stopPromptResult{}, nil
 	}
-	stop := stopUhostIns(ctx, client, req, async)
+	stop := stopUhostIns(ctx, client, req, false)
 	return stopPromptResult{proceed: stop.requested, stopped: stop.stopped}, nil
 }
