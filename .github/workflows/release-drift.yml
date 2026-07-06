@@ -2,7 +2,9 @@
 #
 # Detects the failure mode where master has releasable commits after the latest
 # tag but no Release workflow produced the next patch version. This guard only
-# alerts; release.yml remains the single writer of tags and GitHub Releases.
+# alerts; release.yml remains the single writer of tags and GitHub Releases. It
+# skips while Release is already queued/running and gives fresh master commits a
+# short grace window to avoid noisy failures during normal release serialization.
 
 name: Release Drift Guard
 
@@ -12,6 +14,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -32,8 +35,34 @@ jobs:
           GOPROXY: https://goproxy.cn,direct
 
       - name: Detect unreleased master changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_GRACE_SECONDS: "1200"
         run: |
           set -euo pipefail
+
+          running_releases=$(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow Release \
+              --branch master \
+              --limit 20 \
+              --json status \
+              --jq '[.[] | select(.status=="queued" or .status=="in_progress" or .status=="waiting" or .status=="requested" or .status=="pending")] | length'
+          )
+
+          if [ "$running_releases" -gt 0 ]; then
+            echo "Release workflow already queued/running on master; skipping drift check."
+            exit 0
+          fi
+
+          head_ts=$(git log -1 --format=%ct HEAD)
+          now_ts=$(date +%s)
+          head_age=$((now_ts - head_ts))
+          if [ "$head_age" -lt "$RELEASE_GRACE_SECONDS" ]; then
+            echo "master HEAD is ${head_age}s old, within ${RELEASE_GRACE_SECONDS}s release grace window; skipping drift check."
+            exit 0
+          fi
 
           SVU="$(go env GOPATH)/bin/svu"
           CURRENT="$("$SVU" current)"
