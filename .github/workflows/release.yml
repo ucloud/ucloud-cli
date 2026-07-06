@@ -19,12 +19,9 @@
 #   5. If there are no new releasable commits (feat/fix/perf/refactor/breaking),
 #      the job exits early without creating a release.
 #
-# First-launch guard:
-#   The `environment: release` line below requires manual approval via
-#   GitHub → Settings → Environments → release before any run proceeds.
-#   Once the monorepo branch has landed on master and one release has been
-#   verified, remove the `environment: release` line in a follow-up PR to
-#   enable fully automatic releases.
+# Release is intentionally automatic after master updates. Product-autonomous
+# PRs are admitted by PR Gate, then the master push from the automation identity
+# triggers this workflow.
 
 name: Release
 
@@ -40,9 +37,6 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # FIRST-LAUNCH GUARD: requires manual approval via GitHub Environment.
-    # Remove this line after the first verified release.
-    environment: release
     permissions:
       contents: write   # push tags + create GitHub Releases
 

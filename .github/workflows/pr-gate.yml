@@ -18,6 +18,10 @@
 #
 # Repo settings that this gate RELIES ON:
 #   - Settings → General → "Allow auto-merge" ✓ + "Allow squash merging" ✓.
+#   - Repository secret AUTO_MERGE_TOKEN is a bot/GitHub App token with
+#     contents:write + pull-requests:write. Do NOT use GITHUB_TOKEN for
+#     auto-merge: GitHub suppresses workflow runs triggered by GITHUB_TOKEN
+#     events, so a GITHUB_TOKEN-merged PR would not fire the master Release.
 #   - Required approvals = 0. Do NOT set a global "require N approvals" — that
 #     would also block product autonomy. Platform approval is enforced by
 #     owner-gate (admin review), not by branch protection's approval count.
@@ -190,6 +194,8 @@ jobs:
   auto-merge:
     # Native GitHub auto-merge, only for product-autonomous eligible PRs. GitHub
     # enforces required checks + (any) required approvals before the actual merge.
+    # Use a real automation identity instead of GITHUB_TOKEN so the resulting
+    # master push can trigger Release.
     if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
     needs: [owner-gate]
     runs-on: ubuntu-latest
@@ -201,9 +207,18 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Require automation token
+        env:
+          AUTO_MERGE_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$AUTO_MERGE_TOKEN" ]; then
+            echo "::error::AUTO_MERGE_TOKEN is required for product auto-merge. Configure a bot/GitHub App token with contents:write and pull-requests:write so the post-merge master push triggers Release."
+            exit 1
+          fi
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
         run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY"
 
   check-product:
