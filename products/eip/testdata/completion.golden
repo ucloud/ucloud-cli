@@ -1,0 +1,24 @@
+ucloud eip allocate	charge-type	static	Dynamic,Month,Trial,Year
+ucloud eip allocate	line	static	BGP,International
+ucloud eip allocate	project-id	dynamic
+ucloud eip allocate	region	dynamic
+ucloud eip allocate	traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
+ucloud eip bind	eip-id	dynamic
+ucloud eip bind	resource-type	static	dbaudit,fortresshost,hadoophost,natgw,ucdr,udb,udhost,udockhost,uhost,ulb,upm,vpngw,vrouter
+ucloud eip join-shared-bw	eip-id	dynamic
+ucloud eip join-shared-bw	shared-bw-id	dynamic
+ucloud eip leave-shared-bw	eip-id	dynamic
+ucloud eip leave-shared-bw	shared-bw-id	dynamic
+ucloud eip leave-shared-bw	traffic-mode	static	Bandwidth,Traffic
+ucloud eip list	list-all	static	false,true
+ucloud eip list	project-id	dynamic
+ucloud eip list	region	dynamic
+ucloud eip modify-bw	eip-id	dynamic
+ucloud eip modify-traffic-mode	eip-id	dynamic
+ucloud eip modify-traffic-mode	traffic-mode	static	Bandwidth,PostAccurateBandwidth,Traffic
+ucloud eip release	eip-id	dynamic
+ucloud eip release	project-id	dynamic
+ucloud eip release	region	dynamic
+ucloud eip unbind	eip-id	dynamic
+ucloud eip unbind	project-id	dynamic
+ucloud eip unbind	region	dynamic

@@ -25,6 +25,8 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 // NewCmdDoc ucloud doc
@@ -58,7 +60,7 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 				}
 			case "douku":
 				prefix := "cli/cmd/"
-				err := doc.GenDoukuTree(rootCmd, dir, prefix)
+				err := genDoukuTree(rootCmd, dir, prefix)
 				printCmdIndex(rootCmd, 0, "/cli/cmd")
 				if err != nil {
 					log.Fatal(err)
@@ -72,9 +74,9 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 	cmd.Flags().StringVar(&dir, "dir", "", "Required. The directory where documents of commands are stored")
 	cmd.Flags().StringVar(&format, "format", "douku", "Required. Format of the doucments. Accept values: markdown, rst and douku")
 
-	cmd.Flags().SetFlagValues("format", "douku", "markdown", "rst")
-	cmd.Flags().SetFlagValuesFunc("dir", func() []string {
-		return base.GetFileList("")
+	command.SetFlagValues(cmd, "format", "douku", "markdown", "rst")
+	command.SetCompletion(cmd, "dir", func() []string {
+		return common.GetFileList("")
 	})
 
 	cmd.MarkFlagRequired("dir")

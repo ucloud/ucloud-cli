@@ -1,0 +1,8 @@
+ucloud uphost	use=uphost	short=List UPHost instances
+ucloud uphost list	use=list	short=List UPHost instances
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uphost-id	short=	default=[]	required=
+  flag=zone	short=	default=	required=

@@ -27,6 +27,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -170,9 +172,9 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 	flags := createCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(createPathxReq, flags)
-	bindRegion(createPathxReq, flags)
-	bindZone(createPathxReq, flags)
+	bindProjectID(createPathxReq, createCmd)
+	bindRegion(createPathxReq, createCmd)
+	bindZone(createPathxReq, createCmd)
 
 	createPathxReq.Bandwidth = flags.String("bandwidth", "0",
 		"Required. Shared bandwidth of the resource")
@@ -202,11 +204,11 @@ func NewCmdUGA3Create(out io.Writer) *cobra.Command {
 	flags.StringVar(&protocol, "protocol", "TCP", "Its values can be TCP and UDP, but currently only supports TCP")
 
 	createCmd.MarkFlagRequired("bandwidth")
-	flags.SetFlagValues("area-code",
+	command.SetFlagValues(createCmd, "area-code",
 		"BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
-	flags.SetFlagValues("charge-type", "Month", "Year", "Hour")
-	flags.SetFlagValues("accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
-	flags.SetFlagValues("protocol", "TCP", "UDP")
+	command.SetFlagValues(createCmd, "charge-type", "Month", "Year", "Hour")
+	command.SetFlagValues(createCmd, "accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
+	command.SetFlagValues(createCmd, "protocol", "TCP", "UDP")
 	return createCmd
 }
 
@@ -260,13 +262,13 @@ func NewCmdUGA3Delete(out io.Writer) *cobra.Command {
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of pathx, and the deletion will be performed according to this")
 
-	bindProjectID(deleteUga3PortReq, flags)
-	bindRegion(deleteUga3PortReq, flags)
-	bindZone(deleteUga3PortReq, flags)
+	bindProjectID(deleteUga3PortReq, removeCmd)
+	bindRegion(deleteUga3PortReq, removeCmd)
+	bindZone(deleteUga3PortReq, removeCmd)
 
 	removeCmd.MarkFlagRequired("id")
 	yes = removeCmd.Flags().BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(removeCmd, "id", func() []string {
 		return getPathxList(*deleteUga3PortReq.ProjectId, *deleteUga3PortReq.Region, *deleteUga3PortReq.Zone)
 	})
 	return removeCmd
@@ -418,9 +420,9 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 	flags := modifyCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(modifyInstanceReq, flags)
-	bindRegion(modifyInstanceReq, flags)
-	bindZone(modifyInstanceReq, flags)
+	bindProjectID(modifyInstanceReq, modifyCmd)
+	bindRegion(modifyInstanceReq, modifyCmd)
+	bindZone(modifyInstanceReq, modifyCmd)
 
 	flags.StringVar(&instanceId, "id", "",
 		"Required. It is the resource ID of the pathx")
@@ -444,7 +446,7 @@ func NewCmdUGA3Modify(out io.Writer) *cobra.Command {
 	flags.StringVar(&protocol, "protocol", "TCP", "Its values can be TCP and UDP, but currently only supports TCP")
 
 	modifyCmd.MarkFlagRequired("id")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(modifyCmd, "id", func() []string {
 		return getPathxList(*modifyInstanceReq.ProjectId, *modifyInstanceReq.Region, *modifyInstanceReq.Zone)
 	})
 	return modifyCmd
@@ -492,7 +494,7 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 				row.OriginAreaCode = item.OriginAreaCode
 				row.IPList = strings.Join(item.IPList, ",")
 				row.Domain = item.Domain
-				row.CreateTime = base.FormatDate(item.CreateTime)
+				row.CreateTime = common.FormatDate(item.CreateTime)
 
 				var egressIps []string
 				for _, egressIp := range item.EgressIpList {
@@ -510,13 +512,13 @@ func NewCmdUGA3List(out io.Writer) *cobra.Command {
 	flags := listCmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(getPathxListReq, flags)
-	bindRegion(getPathxListReq, flags)
-	bindZone(getPathxListReq, flags)
+	bindProjectID(getPathxListReq, listCmd)
+	bindRegion(getPathxListReq, listCmd)
+	bindZone(getPathxListReq, listCmd)
 
 	flags.StringVar(&instanceId, "id", "", "Required. It is the resource ID of pathx resource")
 	flags.BoolVar(&detail, "detail", false, "Optional. If it is specified,the details will be printed")
-	flags.SetFlagValuesFunc("id", func() []string {
+	command.SetCompletion(listCmd, "id", func() []string {
 		return getPathxList(*getPathxListReq.ProjectId, *getPathxListReq.Region, *getPathxListReq.Zone)
 	})
 	return listCmd
@@ -536,8 +538,8 @@ func printPathxDetail(instanceInfo pathx.ForwardInfo, out io.Writer) {
 		{Attribute: "IPList", Content: strings.Join(instanceInfo.IPList, ",")},
 		{Attribute: "Domain", Content: instanceInfo.Domain},
 		{Attribute: "Remark", Content: instanceInfo.Remark},
-		{Attribute: "CreateTime", Content: base.FormatDateTime(instanceInfo.CreateTime)},
-		{Attribute: "ExpireTime", Content: base.FormatDateTime(instanceInfo.ExpireTime)},
+		{Attribute: "CreateTime", Content: common.FormatDateTime(instanceInfo.CreateTime)},
+		{Attribute: "ExpireTime", Content: common.FormatDateTime(instanceInfo.ExpireTime)},
 	}
 	for _, attr := range attrs {
 		fmt.Fprintf(out, "%-22s: %s", attr.Attribute, attr.Content)
@@ -657,9 +659,9 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(priceReq, flags)
-	bindRegion(priceReq, flags)
-	bindZone(priceReq, flags)
+	bindProjectID(priceReq, cmd)
+	bindRegion(priceReq, cmd)
+	bindZone(priceReq, cmd)
 
 	priceReq.Bandwidth = flags.Int("bandwidth", 1,
 		"Required. The bandwidth of acceleration area to get price")
@@ -675,9 +677,9 @@ func NewPathxPriceList(out io.Writer) *cobra.Command {
 
 	_ = cmd.MarkFlagRequired("bandwidth")
 	_ = cmd.MarkFlagRequired("area-code")
-	_ = flags.SetFlagValues("area-code", "BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
-	_ = flags.SetFlagValues("charge-type", "Year", "Month", "Hour")
-	_ = flags.SetFlagValues("accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
+	command.SetFlagValues(cmd, "area-code", "BKK", "DXB", "FRA", "SGN", "HKG", "CGK", "LOS", "LHR", "LAX", "MNL", "DME", "BOM", "MSP", "ICN", "PVG", "SIN", "NRT", "IAD", "TPE")
+	command.SetFlagValues(cmd, "charge-type", "Year", "Month", "Hour")
+	command.SetFlagValues(cmd, "accel", "Global", "AP", "EU", "ME", "OA", "AF", "NA", "SA")
 	return cmd
 }
 
@@ -817,9 +819,9 @@ func NewCmdPathxAreaList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(areaGetReq, flags)
-	bindRegion(areaGetReq, flags)
-	bindZone(areaGetReq, flags)
+	bindProjectID(areaGetReq, cmd)
+	bindRegion(areaGetReq, cmd)
+	bindZone(areaGetReq, cmd)
 
 	flags.StringVar(&timeRange, "time-range", "",
 		"Optional. The default value is 1 day. Acceptable values:'Hour','Day','Week',and its value is not case sensitive")
@@ -1002,7 +1004,7 @@ func NewCmdUpathList(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UPathId = flags.String("upath-id", "", "Optional. Resource ID of upath instance to list")
 
 	return cmd
@@ -1072,7 +1074,7 @@ func NewCmdUGAList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.UGAId = flags.String("uga-id", "", "Optional. Resource ID of uga instance")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 
 	return cmd
 }
@@ -1122,13 +1124,13 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 
 			ins := resp.UGAList[0]
 			list := []base.DescribeTableRow{
-				{"ResourceID", ins.UGAId},
-				{"UGAName", ins.UGAName},
-				{"Origin", fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
-				{"CName", ins.CName},
-				{"AcceleratedPath", getUpathStr(ins.UPathSet)},
-				{"OutIP", getOutIPStr(ins.OutPublicIpList)},
-				{"Port", getPortStr(ins.TaskSet)},
+				{Attribute: "ResourceID", Content: ins.UGAId},
+				{Attribute: "UGAName", Content: ins.UGAName},
+				{Attribute: "Origin", Content: fmt.Sprintf("%s%s", ins.Domain, strings.Join(ins.IPList, ","))},
+				{Attribute: "CName", Content: ins.CName},
+				{Attribute: "AcceleratedPath", Content: getUpathStr(ins.UPathSet)},
+				{Attribute: "OutIP", Content: getOutIPStr(ins.OutPublicIpList)},
+				{Attribute: "Port", Content: getPortStr(ins.TaskSet)},
 			}
 			base.PrintList(list, out)
 		},
@@ -1138,10 +1140,10 @@ func NewCmdUGADescribe(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance")
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 
 	cmd.MarkFlagRequired("uga-id")
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1239,7 +1241,7 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.Name = flags.String("name", "", "Required. Name of uga instance to create")
 	req.IPList = flags.String("origin-ip", "", "Required if origin-domain is empty. IP address of origin. multiple IP address separated by ','")
 	req.Domain = flags.String("origin-domain", "", "Required if origin-ip is empty.")
@@ -1254,9 +1256,9 @@ func NewCmdUGACreate(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("port")
 	cmd.MarkFlagRequired("upath-id")
 
-	flags.SetFlagValues("origin-location", "中国", "洛杉矶", "法兰克福", "中国香港", "雅加达", "孟买", "东京", "莫斯科", "新加坡", "曼谷", "中国台北", "华盛顿", "首尔")
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("upath-id", func() []string {
+	command.SetFlagValues(cmd, "origin-location", "中国", "洛杉矶", "法兰克福", "中国香港", "雅加达", "孟买", "东京", "莫斯科", "新加坡", "曼谷", "中国台北", "华盛顿", "首尔")
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "upath-id", func() []string {
 		return getUpathIDList(*req.ProjectId)
 	})
 
@@ -1288,11 +1290,11 @@ func NewCmdUGADelete(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	flags.StringSliceVar(&idNames, "uga-id", nil, "Required. Resource ID of uga instances to delete. Multiple resource ids separated by comma")
 
 	cmd.MarkFlagRequired("uga-id")
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1341,7 +1343,7 @@ func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance to add port")
 	flags.StringVar(&protocol, "protocol", "", fmt.Sprintf("Required. accept values: %s", strings.Join(protocols, ",")))
 	flags.StringSliceVar(&ports, "port", nil, "Required. Single port or port range, separated by ',', for example 80,3000-3010")
@@ -1350,8 +1352,8 @@ func NewCmdUGAAddPort(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uga-id")
 	cmd.MarkFlagRequired("port")
 
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 
@@ -1400,7 +1402,7 @@ func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	bindProjectID(req, flags)
+	bindProjectID(req, cmd)
 	req.UGAId = flags.String("uga-id", "", "Required. Resource ID of uga instance to delete port")
 	flags.StringVar(&protocol, "protocol", "", fmt.Sprintf("Required. accept values: %s", strings.Join(protocols, ",")))
 	flags.StringSliceVar(&ports, "port", nil, "Required. Single port or port range, separated by ',', for example 80,3000-3010")
@@ -1409,8 +1411,8 @@ func NewCmdUGARemovePort(out io.Writer) *cobra.Command {
 	cmd.MarkFlagRequired("uga-id")
 	cmd.MarkFlagRequired("port")
 
-	flags.SetFlagValues("protocol", protocols...)
-	flags.SetFlagValuesFunc("uga-id", func() []string {
+	command.SetFlagValues(cmd, "protocol", protocols...)
+	command.SetCompletion(cmd, "uga-id", func() []string {
 		return getUGAIDList(*req.ProjectId)
 	})
 

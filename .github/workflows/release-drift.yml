@@ -1,0 +1,85 @@
+# Release Drift Guard
+#
+# Detects the failure mode where master has releasable commits after the latest
+# tag but no Release workflow produced the next patch version. This guard only
+# alerts; release.yml remains the single writer of tags and GitHub Releases. It
+# skips while Release is already queued/running and gives fresh master commits a
+# short grace window to avoid noisy failures during normal release serialization.
+
+name: Release Drift Guard
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  release-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install svu
+        run: go install github.com/caarlos0/svu@latest
+        env:
+          GOPROXY: https://goproxy.cn,direct
+
+      - name: Detect unreleased master changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_GRACE_SECONDS: "1200"
+        run: |
+          set -euo pipefail
+
+          running_releases=$(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow Release \
+              --branch master \
+              --limit 20 \
+              --json status \
+              --jq '[.[] | select(.status=="queued" or .status=="in_progress" or .status=="waiting" or .status=="requested" or .status=="pending")] | length'
+          )
+
+          if [ "$running_releases" -gt 0 ]; then
+            echo "Release workflow already queued/running on master; skipping drift check."
+            exit 0
+          fi
+
+          head_ts=$(git log -1 --format=%ct HEAD)
+          now_ts=$(date +%s)
+          head_age=$((now_ts - head_ts))
+          if [ "$head_age" -lt "$RELEASE_GRACE_SECONDS" ]; then
+            echo "master HEAD is ${head_age}s old, within ${RELEASE_GRACE_SECONDS}s release grace window; skipping drift check."
+            exit 0
+          fi
+
+          SVU="$(go env GOPATH)/bin/svu"
+          CURRENT="$("$SVU" current)"
+          DETECT="$("$SVU" next)"
+          LOG="$(git log --format='%B' "$CURRENT"..HEAD)"
+
+          RELEASABLE=""
+          if grep -qE '^(refactor|perf)(\([^)]+\))?!?:' <<<"$LOG"; then
+            RELEASABLE="refactor/perf"
+          fi
+
+          if [ "$DETECT" != "$CURRENT" ] || [ -n "$RELEASABLE" ]; then
+            echo "::error::master has releasable commits after $CURRENT, but no release tag covers HEAD. Run the Release workflow on master."
+            echo "current=$CURRENT"
+            echo "detected=$DETECT"
+            git log --oneline "$CURRENT"..HEAD
+            exit 1
+          fi
+
+          echo "Release is up to date at $CURRENT."

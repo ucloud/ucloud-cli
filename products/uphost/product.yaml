@@ -1,0 +1,7 @@
+# products/uphost/product.yaml — uphost 产品元数据(归属真源,owner 自治维护)
+name: uphost
+owners:
+  - Episkey-G
+commands:
+  - uphost
+enabled: true

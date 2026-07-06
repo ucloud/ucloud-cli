@@ -28,7 +28,9 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -107,7 +109,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 					UsedSize:   fmt.Sprintf("%dMB", ins.UsedSize),
 					State:      ins.State,
 					Zone:       ins.Zone,
-					CreateTime: base.FormatDate(ins.CreateTime),
+					CreateTime: common.FormatDate(ins.CreateTime),
 				}
 				addrs := []string{}
 				for _, addr := range ins.Address {
@@ -127,7 +129,7 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 						State:      slave.State,
 						Zone:       slave.Zone,
 						Address:    fmt.Sprintf("%s:%d", slave.VirtualIP, slave.Port),
-						CreateTime: base.FormatDate(slave.CreateTime),
+						CreateTime: common.FormatDate(slave.CreateTime),
 					}
 					list = append(list, srow)
 				}
@@ -140,14 +142,14 @@ func NewCmdRedisList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.ResourceId = flags.String("umem-id", "", "Optional. Resource ID of the redis to list")
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 	req.Protocol = sdk.String("redis")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -223,20 +225,20 @@ func NewCmdRedisCreate(out io.Writer) *cobra.Command {
 	flags.IntVar(&p.blockCnt, "block-cnt", 2, "Optional. Block count. Default value 2(for distributed redis type).")
 	flags.IntVar(&p.proxySize, "proxy-size", 2, "Optional. Proxy size. Default value 2(for distributed redis type) Unit Core")
 
-	bindRegionS(&p.region, flags)
-	bindZoneS(&p.zone, &p.region, flags)
-	bindProjectIDS(&p.projectID, flags)
+	bindRegionS(&p.region, cmd)
+	bindZoneS(&p.zone, &p.region, cmd)
+	bindProjectIDS(&p.projectID, cmd)
 	flags.StringVar(&p.chargeType, "charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	flags.IntVar(&p.quantity, "quantity", 1, "Optional. The duration of the instance. N years/months.")
 	flags.StringVar(&p.group, "group", "", "Optional. Business group")
 
-	flags.SetFlagValues("version", "4.0", "5.0", "6.0", "7.0")
-	flags.SetFlagValues("type", "master-replica", "distributed")
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetFlagValues(cmd, "version", "4.0", "5.0", "6.0", "7.0")
+	command.SetFlagValues(cmd, "type", "master-replica", "distributed")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(p.projectID, p.region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(p.vpcID, p.projectID, p.region)
 	})
 
@@ -353,13 +355,13 @@ func NewCmdRedisDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
-	bindRegionS(&p.region, flags)
-	bindZoneS(&p.zone, &p.region, flags)
-	bindProjectIDS(&p.projectID, flags)
+	bindRegionS(&p.region, cmd)
+	bindZoneS(&p.zone, &p.region, cmd)
+	bindProjectIDS(&p.projectID, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(p.projectID, p.region)
 	})
 
@@ -419,12 +421,12 @@ func NewCmdRedisRestart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to restart")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZone(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getRedisIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -513,7 +515,7 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 					Size:       fmt.Sprintf("%dGB", ins.Size),
 					UsedSize:   fmt.Sprintf("%dMB", ins.UsedSize),
 					State:      ins.State,
-					CreateTime: base.FormatDate(ins.CreateTime),
+					CreateTime: common.FormatDate(ins.CreateTime),
 					Address:    fmt.Sprintf("%s:%d", ins.VirtualIP, ins.Port),
 				}
 				list = append(list, row)
@@ -526,9 +528,9 @@ func NewCmdMemcacheList(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	req.GroupId = flags.String("umem-id", "", "Optional. Resource ID of the redis to list")
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
+	bindProjectID(req, cmd)
 	bindOffset(req, flags)
 	bindLimit(req, flags)
 
@@ -568,9 +570,9 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req.Size = flags.Int("size-gb", 1, "Optional. Memory size of memcache instance. Unit GB. Accpet values:1,2,4,8,16,32")
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID. See 'ucloud vpc list'")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID. See 'ucloud subnet list'")
-	bindRegionS(&region, flags)
-	bindZoneS(&zone, &region, flags)
-	bindProjectIDS(&projectID, flags)
+	bindRegionS(&region, cmd)
+	bindZoneS(&zone, &region, cmd)
+	bindProjectIDS(&projectID, cmd)
 	req.ChargeType = flags.String("charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly; 'Dynamic', pay hourly; 'Trial', free trial(need permission)")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months.")
 	req.Tag = flags.String("group", "", "Optional. Business group")
@@ -580,12 +582,12 @@ func NewCmdMemcacheCreate(out io.Writer) *cobra.Command {
 	req.Zone = &zone
 	req.ProjectId = &projectID
 
-	flags.SetFlagValues("size-gb", "1", "2", "4", "8", "16", "32")
-	flags.SetFlagValues("charge-type", "Month", "Dynamic", "Year")
-	flags.SetFlagValuesFunc("vpc-id", func() []string {
+	command.SetFlagValues(cmd, "size-gb", "1", "2", "4", "8", "16", "32")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Dynamic", "Year")
+	command.SetCompletion(cmd, "vpc-id", func() []string {
 		return getAllVPCIdNames(projectID, region)
 	})
-	flags.SetFlagValuesFunc("subnet-id", func() []string {
+	command.SetCompletion(cmd, "subnet-id", func() []string {
 		return getAllSubnetIDNames(*req.VPCId, projectID, region)
 	})
 
@@ -621,13 +623,13 @@ func NewCmdMemcacheDelete(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of memcache intances to delete")
-	bindProjectID(req, flags)
-	bindRegion(req, flags)
-	bindZoneEmpty(req, flags)
+	bindProjectID(req, cmd)
+	bindRegion(req, cmd)
+	bindZoneEmpty(req, cmd)
 
 	cmd.MarkFlagRequired("umem-id")
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getMemcacheIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -659,11 +661,11 @@ func NewCmdMemcacheRestart(out io.Writer) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of memcache to restart")
-	bindRegion(req, flags)
-	bindZone(req, flags)
-	bindProjectID(req, flags)
+	bindRegion(req, cmd)
+	bindZone(req, cmd)
+	bindProjectID(req, cmd)
 
-	flags.SetFlagValuesFunc("umem-id", func() []string {
+	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getMemcacheIDList(*req.ProjectId, *req.Region)
 	})
 
@@ -709,7 +711,7 @@ func describeMemcacheByID(memcacheID string, commonBase *request.CommonBase) (in
 		return nil, err
 	}
 	if len(resp.DataSet) < 1 {
-		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", memcacheID))
+		return nil, fmt.Errorf("resource [%s] may not exist", memcacheID)
 	}
 	return &resp.DataSet[0], nil
 }
@@ -726,7 +728,7 @@ func describeRedisByID(redisID string, commonBase *request.CommonBase) (interfac
 		return nil, err
 	}
 	if len(resp.DataSet) < 1 {
-		return nil, fmt.Errorf(fmt.Sprintf("resource [%s] may not exist", redisID))
+		return nil, fmt.Errorf("resource [%s] may not exist", redisID)
 	}
 	return &resp.DataSet[0], nil
 }

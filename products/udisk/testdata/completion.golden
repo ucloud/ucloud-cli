@@ -1,0 +1,14 @@
+ucloud udisk attach	udisk-id	dynamic
+ucloud udisk attach	uhost-id	dynamic
+ucloud udisk clone	charge-type	static	Dynamic,Month,Trial,Year
+ucloud udisk clone	enable-data-ark	static	false,true
+ucloud udisk clone	source-id	dynamic
+ucloud udisk create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud udisk create	enable-data-ark	static	false,true
+ucloud udisk create	udisk-type	static	Oridinary,SSD
+ucloud udisk delete	udisk-id	dynamic
+ucloud udisk detach	udisk-id	dynamic
+ucloud udisk expand	udisk-id	dynamic
+ucloud udisk list	udisk-type	static	Oridinary-Data-Disk,Oridinary-System-Disk,SSD-Data-Disk
+ucloud udisk restore	snapshot-id	dynamic
+ucloud udisk snapshot	udisk-id	dynamic

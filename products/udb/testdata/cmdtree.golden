@@ -1,0 +1,235 @@
+ucloud mysql	use=mysql	short=Manipulate MySQL on UCloud platform
+ucloud mysql backup	use=backup	short=List and manipulate backups of MySQL instance
+ucloud mysql backup create	use=create	short=Create backups for MySQL instance manually
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql backup delete	use=delete	short=Delete backups of MySQL instance
+  flag=backup-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql backup download	use=download	short=Display download url of backup
+  flag=backup-id	short=	default=-1	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql backup list	use=list	short=List backups of MySQL instance
+  flag=backup-id	short=	default=	required=
+  flag=backup-type	short=	default=	required=
+  flag=begin-time	short=	default=	required=
+  flag=db-type	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf	use=conf	short=List and manipulate configuration files of MySQL instances
+ucloud mysql conf apply	use=apply	short=Apply configuration for UDB instances
+  flag=async	short=a	default=false	required=
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=restart-after-apply	short=	default=true	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf clone	use=clone	short=Create configuration file by cloning existed configuration
+  flag=db-version	short=	default=	required=
+  flag=description	short=	default= 	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-conf-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql conf delete	use=delete	short=Delete configuration of udb by conf-id
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf describe	use=describe	short=Display details about a configuration file of MySQL instance
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf download	use=download	short=Download UDB configuration
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf list	use=list	short=List configuartion files of MySQL instances
+  flag=conf-id	short=	default=0	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf update	use=update	short=Update parameters of DB's configuration
+  flag=conf-id	short=	default=	required=true
+  flag=file	short=	default=	required=
+  flag=key	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=value	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql conf upload	use=upload	short=Create configuration file by uploading local DB configuration file
+  flag=conf-file	short=	default=	required=true
+  flag=db-version	short=	default=	required=true
+  flag=description	short=	default= 	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db	use=db	short=Manange MySQL instances
+ucloud mysql db create	use=create	short=Create MySQL instance on UCloud platform
+  flag=alarm-template-id	short=	default=	required=
+  flag=async	short=	default=false	required=
+  flag=backup-count	short=	default=7	required=
+  flag=backup-duration	short=	default=24	required=
+  flag=backup-id	short=	default=-1	required=
+  flag=backup-time	short=	default=1	required=
+  flag=backup-url	short=	default=	required=
+  flag=backup-zone	short=	default=	required=
+  flag=case-sensitivity	short=	default=-1	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=db-sub-version	short=	default=	required=
+  flag=disable-semisync	short=	default=false	required=
+  flag=disk-size-gb	short=	default=20	required=
+  flag=label	short=	default=[]	required=
+  flag=machine-type	short=	default=	required=true
+  flag=mode	short=	default=HA	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-id	short=	default=	required=
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=3306	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=semisync-flag	short=	default=0	required=
+  flag=spec-class	short=	default=O	required=
+  flag=storage-class	short=	default=CLOUD_RSSD	required=
+  flag=subnet-id	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=version	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db create-slave	use=create-slave	short=Create slave database
+  flag=async	short=	default=false	required=
+  flag=disk-type	short=	default=Normal	required=
+  flag=is-lock	short=	default=false	required=
+  flag=master-udb-id	short=	default=	required=true
+  flag=memory-size-gb	short=	default=1	required=
+  flag=name	short=	default=	required=true
+  flag=port	short=	default=3306	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db delete	use=delete	short=Delete MySQL instances by udb-id
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db list	use=list	short=List MySQL instances
+  flag=include-slaves	short=	default=false	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db list-machine-type	use=list-machine-type	short=List available MySQL machine types
+  flag=mode	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db promote-slave	use=promote-slave	short=Promote slave db to master
+  flag=is-force	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db reset-password	use=reset-password	short=Reset password of MySQL instances
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db resize	use=resize	short=Reszie MySQL instances, such as memory size, disk size and disk type
+  flag=async	short=a	default=false	required=
+  flag=disk-size-gb	short=	default=0	required=
+  flag=disk-type	short=	default=	required=
+  flag=memory-size-gb	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=start-after-upgrade	short=	default=true	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud mysql db restart	use=restart	short=Restart MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db restore	use=restore	short=Create MySQL instance and restore the newly created db to the specified DB at a specified point in time
+  flag=async	short=a	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=disk-type	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=restore-to-time	short=	default=	required=true
+  flag=src-udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db start	use=start	short=Start MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql db stop	use=stop	short=Stop MySQL instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs	use=logs	short=List and manipulate logs of MySQL instance
+ucloud mysql logs archive	use=archive	short=Archive the log of mysql as a compressed file
+  flag=begin-time	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=log-type	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs delete	use=delete	short=Delete log archives(log files)
+  flag=archive-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud mysql logs download	use=download	short=Display url of an archive(log file)
+  flag=archive-id	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud mysql logs list	use=list	short=List mysql log archives(log files)
+  flag=begin-time	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=log-type	short=	default=[]	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=

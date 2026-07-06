@@ -25,6 +25,7 @@ import (
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
 	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 const configDesc = `Public-key and private-key could be acquired from https://console.ucloud.cn/uaccount/api_manage`
@@ -346,12 +347,12 @@ func NewCmdConfig() *cobra.Command {
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 	flags.StringVar(&upload, "agree-upload-log", "false", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
-	flags.SetFlagValues("active", "true", "false")
-	flags.SetFlagValues("agree-upload-log", "true", "false")
-	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("project-id", getProjectList)
-	flags.SetFlagValuesFunc("zone", func() []string {
+	command.SetFlagValues(cmd, "active", "true", "false")
+	command.SetFlagValues(cmd, "agree-upload-log", "true", "false")
+	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(cfg.Region)
 	})
 
@@ -427,12 +428,12 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 	flags.StringVar(&upload, "agree-upload-log", "false", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
-	flags.SetFlagValues("active", "true", "false")
-	flags.SetFlagValues("agree-upload-log", "true", "false")
-	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("project-id", getProjectList)
-	flags.SetFlagValuesFunc("zone", func() []string {
+	command.SetFlagValues(cmd, "active", "true", "false")
+	command.SetFlagValues(cmd, "agree-upload-log", "true", "false")
+	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(cfg.Region)
 	})
 
@@ -565,14 +566,14 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
 	flags.StringVar(&upload, "agree-upload-log", "", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
-	flags.SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
-	flags.SetFlagValuesFunc("region", getRegionList)
-	flags.SetFlagValuesFunc("project-id", getProjectList)
-	flags.SetFlagValuesFunc("zone", func() []string {
+	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "region", getRegionList)
+	command.SetCompletion(cmd, "project-id", getProjectList)
+	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(cfg.Region)
 	})
-	flags.SetFlagValues("active", "true", "false")
-	flags.SetFlagValues("agree-upload-log", "true", "false")
+	command.SetFlagValues(cmd, "active", "true", "false")
+	command.SetFlagValues(cmd, "agree-upload-log", "true", "false")
 
 	cmd.MarkFlagRequired("profile")
 
@@ -621,6 +622,6 @@ func NewCmdConfigDelete() *cobra.Command {
 	}
 	cmd.Flags().StringSliceVar(&profileList, "profile", nil, "Required. Name of settings item")
 	cmd.MarkFlagRequired("profile")
-	cmd.Flags().SetFlagValuesFunc("profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
 	return cmd
 }

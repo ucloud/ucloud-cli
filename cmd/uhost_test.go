@@ -2,232 +2,118 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
+
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+
 	"github.com/ucloud/ucloud-cli/base"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/products/uhost"
 )
 
-type listUhostTest struct {
-	expectedUhosts []string
-	expectedOut    string
-}
+// uhost_test.go drives the live UHost flow through the migrated products/uhost
+// command tree (uhost moved out of cmd in Part 6). It hits the real API and
+// needs valid credentials, so it is gated by name — run the rest of the suite
+// with `go test ./... -skip TestUhost`. The image-id lookup the old test did via
+// the cmd-local NewCmdUImageList/ImageRow shim is now a direct DescribeImage SDK
+// call (image is served by the uhost SDK). create/delete narration now flows
+// through ctx.NewProgress → ctx.ProgressWriter (the ctx Out buffer in table
+// mode) instead of the global ux.Doc, so the test captures the ctx Out buffer.
 
-func (test listUhostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostList(buf)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command:%v", err)
-	}
-}
-
-type listImageTest struct {
-	flags []string
-}
-
-func (test *listImageTest) run(t *testing.T) string {
-	global.JSON = true
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUImageList(buf)
-	cmd.Flags().Parse(test.flags)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-
-	var images []ImageRow
-	err := json.Unmarshal(buf.Bytes(), &images)
-	if err != nil {
-		t.Fatalf("unexpected error of fetching image list: %v", err)
-	}
-	if len(images) == 0 {
-		t.Fatalf("image list is empty")
-	}
-	// for _, image := range images {
-	// 	// image.ImageName
-	// }
-	return images[0].ImageID
-}
-
-type createUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *createUHostTest) run(t *testing.T) {
-	cmd := NewCmdUHostCreate()
-	cmd.Flags().Parse(test.flags)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-	lines := ux.Doc.Content()
-	content := strings.Join(lines, "\n")
-	list := test.expectedOutRegexp.FindStringSubmatch(content)
-	if list == nil {
-		t.Errorf("unexpect output:%s", content)
-	} else {
-		if len(list) == 2 {
-			test.uhostIDs = append(test.uhostIDs, list[1])
+// subCmd returns the child of root whose Use matches name.
+func subCmd(t *testing.T, root *cobra.Command, name string) *cobra.Command {
+	for _, c := range root.Commands() {
+		if c.Use == name {
+			return c
 		}
 	}
+	t.Fatalf("uhost subcommand %q not found", name)
+	return nil
 }
 
-type deleteUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *deleteUHostTest) run(t *testing.T) {
-	cmd := NewCmdUHostDelete()
-	cmd.Flags().Parse(test.flags)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
+// fetchLiveImageID returns the first Available Base image id via DescribeImage.
+func fetchLiveImageID(t *testing.T) string {
+	req := base.BizClient.NewDescribeImageRequest()
+	req.ImageType = sdk.String("Base")
+	resp, err := base.BizClient.DescribeImage(req)
+	if err != nil {
+		t.Fatalf("unexpected error fetching image list: %v", err)
 	}
-	lines := ux.Doc.Content()
-	content := strings.Join(lines, "\n")
-	list := test.expectedOutRegexp.FindStringSubmatch(content)
-	if list == nil {
-		t.Errorf("unexpect output:%s", content)
+	for _, image := range resp.ImageSet {
+		if image.State == "Available" {
+			return image.ImageId
+		}
 	}
-}
-
-type stopUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *stopUHostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostStop(buf)
-	cmd.Flags().Parse(test.flags)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-	list := test.expectedOutRegexp.FindStringSubmatch(buf.String())
-	if list == nil {
-		t.Errorf("unexpect output:%s", buf.String())
-	}
-}
-
-type startUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *startUHostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostStart(buf)
-	cmd.Flags().Parse(test.flags)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-	list := test.expectedOutRegexp.FindStringSubmatch(buf.String())
-	if list == nil {
-		t.Errorf("unexpect output:%s", buf.String())
-	}
-}
-
-type restartUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *restartUHostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostReboot(buf)
-	cmd.Flags().Parse(test.flags)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-	list := test.expectedOutRegexp.FindStringSubmatch(buf.String())
-	if list == nil {
-		t.Errorf("unexpect output:%s", buf.String())
-	}
-}
-
-type poweroffUHostTest struct {
-	flags             []string
-	uhostIDs          []string
-	expectedOutRegexp *regexp.Regexp
-}
-
-func (test *poweroffUHostTest) run(t *testing.T) {
-	buf := new(bytes.Buffer)
-	cmd := NewCmdUHostPoweroff(buf)
-	cmd.Flags().Parse(test.flags)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error executing command: %v, flags: %v", err, test.flags)
-	}
-	list := test.expectedOutRegexp.FindStringSubmatch(buf.String())
-	if list == nil {
-		t.Errorf("unexpect output:%s", buf.String())
-	}
+	t.Fatalf("image list is empty")
+	return ""
 }
 
 func TestUhost(t *testing.T) {
 	base.InitConfig()
-	listImageT := listImageTest{
-		flags: []string{"--json"},
-	}
-	imageID := listImageT.run(t)
+	var out bytes.Buffer
+	// Buffer-backed ctx (table mode): create/delete narration via ctx.NewProgress
+	// routes to ProgressWriter == Out; the cmd-package completion providers + real
+	// config preserve the live behaviour.
+	ctx := cli.NewContext(cli.Deps{
+		In:          strings.NewReader(""),
+		Out:         &out,
+		Err:         &out,
+		Format:      cli.OutputTable,
+		Config:      base.ConfigIns,
+		RegionList:  getRegionList,
+		ZoneList:    getZoneList,
+		ProjectList: getProjectList,
+		AllRegions:  getAllRegions,
+	})
+	root := uhost.New().NewCommand(ctx)
 
-	createT := createUHostTest{expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] which attached a data disk and binded an eip is initializing\.\.\.done`),
-		flags: []string{
-			"--cpu=1",
-			"--memory-gb=1",
-			"--image-id=" + imageID,
-			"--password=testlxj@123",
-			"--hot-plug=false",
-			"--create-eip-bandwidth-mb=10",
-		},
-	}
-	createT.run(t)
+	imageID := fetchLiveImageID(t)
 
-	restartT := restartUHostTest{
-		flags:             []string{fmt.Sprintf("--uhost-id=%s", strings.Join(createT.uhostIDs, ","))},
-		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is restarting\.\.\.done`),
+	run := func(name string, flags []string) string {
+		out.Reset()
+		c := subCmd(t, root, name)
+		c.Flags().Parse(flags)
+		if err := c.Execute(); err != nil {
+			t.Fatalf("unexpected error executing %s: %v, flags: %v", name, err, flags)
+		}
+		return out.String()
 	}
-	restartT.run(t)
 
-	poweroffT := poweroffUHostTest{
-		flags:             []string{"--yes", fmt.Sprintf("--uhost-id=%s", strings.Join(createT.uhostIDs, ","))},
-		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is power off`),
+	createOut := run("create", []string{
+		"--cpu=1",
+		"--memory-gb=1",
+		"--image-id=" + imageID,
+		"--password=testlxj@123",
+		"--hot-plug=false",
+		"--create-eip-bandwidth-mb=10",
+	})
+	createRe := regexp.MustCompile(`uhost\[([\w-]+)\] which attached a data disk and binded an eip is initializing\.\.\.done`)
+	m := createRe.FindStringSubmatch(createOut)
+	if m == nil {
+		t.Errorf("unexpect create output:%s", createOut)
+		return
 	}
-	poweroffT.run(t)
+	uhostID := m[1]
+	idFlag := fmt.Sprintf("--uhost-id=%s", uhostID)
+
+	assertRun := func(name string, flags []string, re *regexp.Regexp) {
+		content := run(name, flags)
+		if re.FindStringSubmatch(content) == nil {
+			t.Errorf("unexpect %s output:%s", name, content)
+		}
+	}
+
+	assertRun("restart", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is restarting\.\.\.done`))
+	assertRun("poweroff", []string{"--yes", idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is power off`))
 
 	time.Sleep(time.Second * 5)
-	startT := startUHostTest{
-		flags:             []string{fmt.Sprintf("--uhost-id=%s", strings.Join(createT.uhostIDs, ","))},
-		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is starting\.\.\.done`),
-	}
-	startT.run(t)
-
-	stopT := stopUHostTest{
-		flags:             []string{fmt.Sprintf("--uhost-id=%s", strings.Join(createT.uhostIDs, ","))},
-		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`),
-	}
-
-	stopT.run(t)
-
-	deleteT := deleteUHostTest{
-		uhostIDs:          createT.uhostIDs,
-		expectedOutRegexp: regexp.MustCompile(`uhost\[([\w-]+)\] deleted`),
-		flags:             []string{"--yes"},
-	}
-	deleteT.flags = append(deleteT.flags, fmt.Sprintf("--uhost-id=%s", strings.Join(deleteT.uhostIDs, ",")))
-	deleteT.run(t)
-
+	assertRun("start", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is starting\.\.\.done`))
+	assertRun("stop", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`))
+	assertRun("delete", []string{"--yes", idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] deleted`))
 }

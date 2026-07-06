@@ -1,8 +1,6 @@
 package base
 
 import (
-	"bufio"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,7 +21,9 @@ import (
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
+	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -39,18 +39,6 @@ var Cxt = model.GetContext(os.Stdout)
 // SdkClient 用于上报数据
 var SdkClient *sdk.Client
 
-// GetHomePath 获取家目录
-func GetHomePath() string {
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	return os.Getenv("HOME")
-}
-
 // MosaicString 对字符串敏感部分打马赛克 如公钥私钥
 func MosaicString(str string, beginChars, lastChars int) string {
 	r := len(str) - lastChars - beginChars
@@ -60,49 +48,9 @@ func MosaicString(str string, beginChars, lastChars int) string {
 	return strings.Repeat("*", len(str))
 }
 
-// AppendToFile 添加到文件中
-func AppendToFile(name string, content string) error {
-	f, err := os.OpenFile(name, os.O_RDWR|os.O_APPEND, 0)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(fmt.Sprintf("\n%s\n", content))
-	return err
-}
-
-// LineInFile 检查某一行是否在某文件中
-func LineInFile(fileName string, lookFor string) bool {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-	r := bufio.NewReader(f)
-	prefix := []byte{}
-	for {
-		line, isPrefix, err := r.ReadLine()
-		if err == io.EOF {
-			return false
-		}
-		if err != nil {
-			return false
-		}
-		if isPrefix {
-			prefix = append(prefix, line...)
-			continue
-		}
-		line = append(prefix, line...)
-		if string(line) == lookFor {
-			return true
-		}
-		prefix = prefix[:0]
-	}
-}
-
 // GetConfigDir 获取配置文件所在目录
 func GetConfigDir() string {
-	path := GetHomePath() + "/" + ConfigPath
+	path := common.GetHomePath() + "/" + ConfigPath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)
 		if err != nil {
@@ -119,13 +67,18 @@ func HandleBizError(resp response.Common) error {
 	return fmt.Errorf(format, resp.GetRetCode(), resp.GetMessage())
 }
 
-// HandleError 处理错误，业务错误 和 HTTP错误
-func HandleError(err error) {
+// HandleError 处理错误，业务错误 和 HTTP错误. The console copy goes to the global
+// writer (stdout); product code uses ctx.HandleError → HandleErrorTo(stderr).
+func HandleError(err error) { HandleErrorTo(out, err) }
+
+// HandleErrorTo is HandleError with a caller-chosen console writer w, so product
+// commands can route errors to stderr and keep stdout machine-clean.
+func HandleErrorTo(w io.Writer, err error) {
 	if uErr, ok := err.(uerr.Error); ok && uErr.Code() != 0 {
 		format := "Something wrong. RetCode:%d. Message:%s\n"
-		LogError(fmt.Sprintf(format, uErr.Code(), uErr.Message()))
+		LogErrorTo(w, fmt.Sprintf(format, uErr.Code(), uErr.Message()))
 	} else {
-		LogError(fmt.Sprintf("%v", err))
+		LogErrorTo(w, fmt.Sprintf("%v", err))
 	}
 }
 
@@ -296,19 +249,6 @@ func calcWidth(text string) int {
 	return width
 }
 
-// FormatDate 格式化时间,把以秒为单位的时间戳格式化未年月日
-func FormatDate(seconds int) string {
-	return time.Unix(int64(seconds), 0).Format("2006-01-02")
-}
-
-// DateTimeLayout 时间格式
-const DateTimeLayout = "2006-01-02/15:04:05"
-
-// FormatDateTime 格式化时间,把以秒为单位的时间戳格式化未年月日/时分秒
-func FormatDateTime(seconds int) string {
-	return time.Unix(int64(seconds), 0).Format("2006-01-02/15:04:05")
-}
-
 // RegionLabel regionlable
 var RegionLabel = map[string]string{
 	"cn-bj1":       "Beijing1",
@@ -407,6 +347,18 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 		pollRetChan <- ret
 	}()
 
+	if !ui.IsTTY(p.Out) {
+		// non-TTY (piped/redirected): no spinner animation, single terminal-state
+		// line — mirrors Spoll's suppression so machine output stays clean.
+		ret := <-pollRetChan
+		if ret.Timeout {
+			fmt.Fprintf(p.Out, "%s...timeout\n", pollText)
+		} else {
+			fmt.Fprintf(p.Out, "%s...done\n", pollText)
+		}
+		return &ret
+	}
+
 	spin := ux.NewDotSpin(p.Out, pollText)
 	block.SetSpin(spin)
 
@@ -473,6 +425,15 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 		done <- true
 	}()
 
+	if !ui.IsTTY(p.Out) {
+		// non-TTY (piped/redirected): no spinner animation, single terminal-state line
+		if <-done {
+			fmt.Fprintf(p.Out, "%s...done\n", pollText)
+		} else {
+			fmt.Fprintf(p.Out, "%s...timeout\n", pollText)
+		}
+		return
+	}
 	spinner := ux.NewDotSpinner(p.Out)
 	spinner.Start(pollText)
 	ret := <-done
@@ -573,19 +534,6 @@ func PickResourceID(str string) string {
 	return str
 }
 
-// WriteJSONFile 写json文件
-func WriteJSONFile(list interface{}, filePath string) error {
-	byts, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filePath, byts, 0600)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // WriteJSONFileAtomic 原子写 json 文件：同目录临时文件 + Sync + Rename（D3；对照 botocore#3213 损坏事故）
 func WriteJSONFileAtomic(list interface{}, filePath string) error {
 	byts, err := json.Marshal(list)
@@ -614,44 +562,6 @@ func WriteJSONFileAtomic(list interface{}, filePath string) error {
 		return err
 	}
 	return os.Rename(tmp.Name(), filePath)
-}
-
-// GetFileList 补全文件名
-func GetFileList(suffix string) []string {
-	cmdLine := strings.TrimSpace(os.Getenv("COMP_LINE"))
-	words := strings.Split(cmdLine, " ")
-	last := words[len(words)-1]
-	pathPrefix := "."
-
-	if !strings.HasPrefix(last, "-") {
-		pathPrefix = last
-	}
-	hasTilde := false
-	//https://tiswww.case.edu/php/chet/bash/bashref.html#Tilde-Expansion
-	if strings.HasPrefix(pathPrefix, "~") {
-		pathPrefix = strings.Replace(pathPrefix, "~", GetHomePath(), 1)
-		hasTilde = true
-	}
-	files, err := ioutil.ReadDir(pathPrefix)
-	if err != nil {
-		return nil
-	}
-	names := []string{}
-	for _, f := range files {
-		name := f.Name()
-		if !strings.HasSuffix(name, suffix) {
-			continue
-		}
-		if hasTilde {
-			pathPrefix = strings.Replace(pathPrefix, GetHomePath(), "~", 1)
-		}
-		if strings.HasSuffix(pathPrefix, "/") {
-			names = append(names, pathPrefix+name)
-		} else {
-			names = append(names, pathPrefix+"/"+name)
-		}
-	}
-	return names
 }
 
 // Confirm 二次确认
@@ -732,9 +642,4 @@ func getDefaultProject(cookie, csrfToken string) (string, string, error) {
 		}
 	}
 	return "", "", fmt.Errorf("default project not found")
-}
-
-func IsBase64Encoded(data []byte) bool {
-	_, err := base64.StdEncoding.DecodeString(string(data))
-	return err == nil
 }

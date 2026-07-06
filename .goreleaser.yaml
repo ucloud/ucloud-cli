@@ -1,0 +1,71 @@
+version: 2
+
+builds:
+  - id: ucloud
+    main: .
+    binary: ucloud
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/ucloud/ucloud-cli/base.Version={{.Version}}
+
+archives:
+  - id: ucloud
+    ids:
+      - ucloud
+    formats:
+      - zip
+    name_template: "ucloud-{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: git
+  sort: asc
+  # Render each entry as the bare commit subject (e.g. "feat(udb): ...") instead
+  # of goreleaser's default "<40-char-sha> <subject>". The subject already carries
+  # the Conventional-Commit type+scope, and the groups below bucket by type, so the
+  # raw SHA prefix is just noise. Traceability stays available via the Release's
+  # auto-generated compare link on GitHub.
+  format: "{{ .Message }}"
+  # Customer-facing release notes: surface only user-perceivable change types
+  # (feat/fix/perf/docs). Internal-only commit types are filtered out below so a
+  # release — especially a large internal refactor — doesn't bury users in noise.
+  # Those commits still live in git history and the Release's compare link.
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?\!?:.+'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^fix(\(.+\))?\!?:.+'
+      order: 1
+    - title: Performance Improvements
+      regexp: '^perf(\(.+\))?\!?:.+'
+      order: 2
+    - title: Documentation
+      regexp: '^docs(\(.+\))?\!?:.+'
+      order: 3
+  filters:
+    exclude:
+      - '^Merge '
+      - '^refactor(\(.+\))?\!?:'
+      - '^test(\(.+\))?\!?:'
+      - '^style(\(.+\))?\!?:'
+      - '^chore(\(.+\))?\!?:'
+      - '^ci(\(.+\))?\!?:'
+      - '^build(\(.+\))?\!?:'
+
+# release: the target repo (owner/name) is intentionally NOT hardcoded — goreleaser
+# auto-detects it from GITHUB_REPOSITORY / the git remote, so the same config
+# publishes to whichever repo runs it (a fork when testing, ucloud/ucloud-cli in
+# production). Hardcoding it would let a fork's release accidentally target upstream.

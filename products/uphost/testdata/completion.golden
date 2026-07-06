@@ -1,0 +1,3 @@
+ucloud uphost list	project-id	dynamic
+ucloud uphost list	region	dynamic
+ucloud uphost list	zone	dynamic

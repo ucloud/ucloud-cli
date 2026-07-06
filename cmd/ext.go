@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -22,6 +23,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
@@ -73,14 +75,14 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 				ins, err := describeUHostByID(uhostID, project, region, zone)
 				if err != nil {
 					errStr := fmt.Sprintf("describe uhost %s failed: %v", uhostID, err)
-					base.HandleError(fmt.Errorf(errStr))
+					base.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
 				uhostIns, ok := ins.(*uhost.UHostInstanceSet)
 				if !ok {
 					errStr := fmt.Sprintf("uhost %s does not exist", uhostID)
-					base.HandleError(fmt.Errorf(errStr))
+					base.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
@@ -110,7 +112,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						} else {
 							errStr := "create-eip-share-bandwidth-id should not be empty when create-eip-traffic-mode is assigned 'ShareBandwidth'"
 							logs = append(logs, errStr)
-							base.HandleError(fmt.Errorf(errStr))
+							base.HandleError(errors.New(errStr))
 							return
 						}
 					}
@@ -119,12 +121,12 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					if err != nil {
 						errStr := fmt.Sprintf("allocate EIP failed: %v", err)
 						logs = append(logs, errStr)
-						base.HandleError(fmt.Errorf(errStr))
+						base.HandleError(errors.New(errStr))
 						continue
 					}
 					if len(resp.EIPSet) != 1 {
 						errStr := fmt.Sprintf("allocate EIP failed, length of eip set is not 1")
-						base.HandleError(fmt.Errorf(errStr))
+						base.HandleError(errors.New(errStr))
 						logs = append(logs, errStr)
 						continue
 					}
@@ -162,7 +164,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						if err != nil {
 							errStr := fmt.Sprintf("release eip %s failed: %v", ip.IPId, err)
 							logs = append(logs, errStr)
-							base.HandleError(fmt.Errorf(errStr))
+							base.HandleError(errors.New(errStr))
 							continue
 						}
 						releaseRet := fmt.Sprintf("released eip %s|%s", ip.IPId, ip.IP)
@@ -188,14 +190,14 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	flags.StringVar(&chargeType, "create-eip-charge-type", "Month", "Optional. Enumeration value.'Year',pay yearly;'Month',pay monthly;'Dynamic', pay hourly")
 	flags.IntVar(&quntity, "create-eip-quantity", 1, "Optional. The duration of the instance. N years/months.")
 
-	flags.SetFlagValues("create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	flags.SetFlagValues("create-eip-charge-type", "Month", "Year", "Dynamic", "Trial")
+	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
+	command.SetFlagValues(cmd, "create-eip-charge-type", "Month", "Year", "Dynamic", "Trial")
 
-	bindProjectIDS(&project, flags)
-	bindRegionS(&region, flags)
-	bindZoneEmptyS(&zone, &region, flags)
+	bindProjectIDS(&project, cmd)
+	bindRegionS(&region, cmd)
+	bindZoneEmptyS(&zone, &region, cmd)
 
-	flags.SetFlagValuesFunc("uhost-id", func() []string {
+	command.SetCompletion(cmd, "uhost-id", func() []string {
 		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, project, region, zone)
 	})
 

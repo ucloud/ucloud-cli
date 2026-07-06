@@ -1,0 +1,161 @@
+ucloud uhost	use=uhost	short=List,create,delete,stop,restart,poweroff or resize UHost instance
+ucloud uhost clone	use=clone	short=Create an uhost with the same configuration as another uhost, excluding bound eip and udisk
+  flag=async	short=	default=false	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost create	use=create	short=Create UHost instance
+  flag=async	short=	default=false	required=
+  flag=bind-eip	short=	default=[]	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=concurrent	short=	default=20	required=
+  flag=count	short=	default=1	required=
+  flag=cpu	short=	default=4	required=true
+  flag=create-eip-bandwidth-mb	short=	default=0	required=
+  flag=create-eip-line	short=	default=	required=
+  flag=create-eip-name	short=	default=	required=
+  flag=create-eip-remark	short=	default=	required=
+  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
+  flag=data-disk-backup-type	short=	default=NONE	required=
+  flag=data-disk-size-gb	short=	default=20	required=
+  flag=data-disk-type	short=	default=CLOUD_SSD	required=
+  flag=firewall-id	short=	default=	required=
+  flag=gpu	short=	default=0	required=
+  flag=gpu-type	short=	default=	required=
+  flag=group	short=	default=Default	required=
+  flag=hot-plug	short=	default=true	required=
+  flag=image-id	short=	default=	required=true
+  flag=isolation-group	short=	default=	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=machine-type	short=	default=N	required=
+  flag=memory-gb	short=	default=8	required=true
+  flag=minimal-cpu-platform	short=	default=	required=
+  flag=name	short=	default=UHost	required=
+  flag=net-capability	short=	default=Normal	required=
+  flag=os-disk-backup-type	short=	default=NONE	required=
+  flag=os-disk-size-gb	short=	default=20	required=
+  flag=os-disk-type	short=	default=CLOUD_SSD	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=security-group-id	short=	default=[]	required=
+  flag=shared-bw-id	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=type	short=	default=	required=
+  flag=user-data	short=	default=	required=
+  flag=user-data-base64	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uhost create-image	use=create-image	short=Create image from an uhost instance
+  flag=async	short=a	default=false	required=
+  flag=image-desc	short=	default=	required=
+  flag=image-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost delete	use=delete	short=Delete Uhost instance
+  flag=delete-cloud-disk	short=	default=true	required=
+  flag=destroy	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-eip	short=	default=true	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost isolation-group	use=isolation-group	short=List and manipulate isolation group of uhost
+ucloud uhost isolation-group create	use=create	short=Create isolation group instance
+  flag=group-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+ucloud uhost isolation-group delete	use=delete	short=Delete isolation group instances
+  flag=group-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uhost isolation-group list	use=list	short=List isolation group of uhost
+  flag=group-id	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uhost leave-isolation-group	use=leave-isolation-group	short=Detach uhost from its isolation group
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost list	use=list	short=List all UHost Instances
+  flag=all-region	short=	default=false	required=
+  flag=group	short=	default=	required=
+  flag=isolation-group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=page-off	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=
+  flag=uhost-id-only	short=	default=false	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uhost poweroff	use=poweroff	short=Analog power off Uhost instnace
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost reinstall-os	use=reinstall-os	short=Reinstall the operating system of the UHost instance
+  flag=async	short=a	default=false	required=
+  flag=image-id	short=	default=	required=
+  flag=keep-data-disk	short=	default=false	required=
+  flag=key-pair-id	short=	default=	required=
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost reset-password	use=reset-password	short=Reset the administrator password for the UHost instances.
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost resize	use=resize	short=Resize uhost instance,such as cpu core count, memory size and disk size
+  flag=async	short=a	default=false	required=
+  flag=cpu	short=	default=0	required=
+  flag=data-disk-id	short=	default=	required=
+  flag=data-disk-size-gb	short=	default=0	required=
+  flag=memory-gb	short=	default=0	required=
+  flag=net-cap	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=system-disk-size-gb	short=	default=0	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud uhost restart	use=restart	short=Restart uhost instance
+  flag=async	short=	default=false	required=
+  flag=disk-password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost start	use=start	short=Start Uhost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud uhost stop	use=stop	short=Shut down uhost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=

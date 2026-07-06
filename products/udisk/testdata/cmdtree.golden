@@ -1,0 +1,88 @@
+ucloud udisk	use=udisk	short=Read and manipulate udisk instances
+ucloud udisk attach	use=attach	short=Attach udisk instances to an uhost
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk clone	use=clone	short=Clone an udisk
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=enable-data-ark	short=	default=false	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=source-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk create	use=create	short=Create udisk instance
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Dynamic	required=
+  flag=count	short=	default=1	required=
+  flag=enable-data-ark	short=	default=false	required=
+  flag=group	short=	default=Default	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=10	required=true
+  flag=snapshot-id	short=	default=	required=
+  flag=udisk-type	short=	default=Oridinary	required=
+  flag=zone	short=	default=	required=
+ucloud udisk delete	use=delete	short=Delete udisk instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud udisk delete-snapshot	use=delete-snapshot	short=Delete snapshots
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snapshot-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk detach	use=detach	short=Detach udisk instances from an uhost
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud udisk expand	use=expand	short=Expand udisk size
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=0	required=true
+  flag=udisk-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud udisk list	use=list	short=List udisk instance
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=	required=
+  flag=udisk-type	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud udisk list-snapshot	use=list-snapshot	short=List snapshots
+  flag=disk-id	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snapshot-id	short=	default=[]	required=
+  flag=uhost-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud udisk restore	use=restore	short=Restore udisk from snapshot
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=snapshot-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud udisk snapshot	use=snapshot	short=Create shapshots for udisks
+  flag=async	short=a	default=false	required=
+  flag=comment	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udisk-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=

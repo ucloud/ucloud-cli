@@ -1,30 +1,104 @@
+# Merge-to-release automation
+#
+# Flow:
+#   1. A PR merges to master (or workflow_dispatch for the first guarded run).
+#   2. Version policy: every release is a PATCH bump (0.3.3 → 0.3.4 → 0.3.5),
+#      regardless of whether the commits are feat or fix — we intentionally do
+#      NOT auto-minor on feat. svu is used in two roles here:
+#        - `svu next`  → DETECTOR: if it equals `svu current`, svu sees no
+#                        releasable feat/fix/breaking commit since the last tag.
+#                        We additionally treat refactor/perf commits as
+#                        releasable (a `git log` grep), so platform refactors
+#                        ship too; pure docs/chore/test/ci/style/build still skip.
+#        - `svu patch` → the actual version: always current + 0.0.1.
+#   3. If there are releasable commits, the job tags HEAD with that patch version
+#      and pushes the tag — all in the SAME job that runs goreleaser.
+#      This avoids the "default GITHUB_TOKEN-pushed tag doesn't trigger a
+#      downstream workflow" trap: tag + release happen in one atomic job.
+#   4. goreleaser builds the binaries and creates the GitHub Release.
+#   5. If there are no new releasable commits (feat/fix/perf/refactor/breaking),
+#      the job exits early without creating a release.
+#
+# Release is intentionally automatic after master updates. Product-autonomous
+# PRs are admitted by PR Gate, then the master push from the automation identity
+# triggers this workflow.
+
 name: Release
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [master]
+  workflow_dispatch: {}   # manual trigger for the first guarded run
+
+concurrency:
+  group: release
+  cancel-in-progress: false   # never cancel an in-flight release
 
 jobs:
   release:
-    if: contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # push tags + create GitHub Releases
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # svu and goreleaser both need full tag history
 
-    - name: Set up go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19.2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
 
-    - name: Build
-      run: bash hack/github-release.sh
+      - name: Install svu
+        run: go install github.com/caarlos0/svu@latest
+        env:
+          GOPROXY: https://goproxy.cn,direct
 
-    - name: Create release
-      uses: softprops/action-gh-release@v1
-      with:
-        token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
-        files: |
-          out/*.zip
+      - name: Compute next version & tag
+        id: ver
+        run: |
+          SVU="$(go env GOPATH)/bin/svu"
+          CURRENT="$("$SVU" current)"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          # DETECTOR: is there anything releasable since the last tag ($CURRENT)?
+          #   - `svu next` catches feat/fix/breaking (next != current ⇒ releasable).
+          #   - We ADD refactor/perf so platform refactors also ship. Pure
+          #     docs/chore/test/ci/style/build merges still skip.
+          # We never publish `svu next` itself — the version policy is patch-only
+          # (every release is current + 0.0.1; see header).
+          DETECT="$("$SVU" next)"
+          # Also releasable if a refactor/perf commit exists since $CURRENT.
+          # Scan %B (full message, not just %s) so a type that only shows up in a
+          # merge-commit body / PR title is still caught. Capture first and match
+          # via here-string (NO pipe): `grep -q` exits on first hit; a piped
+          # `git log` would then take SIGPIPE and — under bash -o pipefail (the
+          # GitHub Actions default) — flip the whole pipeline non-zero, which
+          # would falsely read as "nothing releasable" and skip. The here-string
+          # avoids the pipe entirely (no-match just makes the `if` false).
+          RELEASABLE=""
+          LOG="$(git log --format='%B' "$CURRENT"..HEAD)"
+          if grep -qE '^(refactor|perf)(\([^)]+\))?!?:' <<<"$LOG"; then
+            RELEASABLE="refactor/perf"
+          fi
+          if [ "$DETECT" != "$CURRENT" ] || [ -n "$RELEASABLE" ]; then
+            NEXT="$("$SVU" patch)"   # force a patch bump regardless of commit type
+            echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$NEXT"
+            git push origin "$NEXT"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new releasable commits since $CURRENT — skipping release."
+            echo "next=$CURRENT" >> "$GITHUB_OUTPUT"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
 
+      - uses: goreleaser/goreleaser-action@v6
+        if: steps.ver.outputs.released == 'true'
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOPROXY: https://goproxy.cn,direct

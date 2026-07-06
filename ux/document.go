@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattn/go-isatty"
+
 	"github.com/ucloud/ucloud-cli/ansi"
 )
 
@@ -31,12 +33,20 @@ func (d *document) reset() {
 	}
 	d.mux.RUnlock()
 	if size != 0 {
-		fmt.Printf(ansi.CursorLeft + ansi.CursorPrevLine(size) + ansi.EraseDown)
+		fmt.Fprint(d.out, ansi.CursorLeft+ansi.CursorPrevLine(size)+ansi.EraseDown)
 	}
 }
 
 func (d *document) Disable() {
 	d.disable = true
+}
+
+// Disabled reports whether live rendering is off — either because Disable() was
+// called (the aggregate count>5 path) or because NewDocument bound a non-TTY
+// writer. Callers use this to know block content will NOT be shown, so they must
+// surface errors to stderr themselves (aws/gcloud: errors always on stderr).
+func (d *document) Disabled() bool {
+	return d.disable
 }
 
 func (d *document) SetWriter(out io.Writer) {
@@ -115,6 +125,30 @@ func newDocument(out io.Writer) *document {
 
 // Doc global document
 var Doc = newDocument(os.Stdout)
+
+// Document is the exported alias of the internal document type so platform
+// packages (pkg/cli) can hold a writer-bound document without products ever
+// naming ux. Products use ctx.NewProgress instead (batch-1 plan D-A / Task 0.4).
+type Document = document
+
+// NewDocument returns a document bound to out. When out is not a TTY (pipe,
+// file, or json/yaml mode) rendering is auto-disabled, so no spinner frames leak
+// into machine output — mirroring pkg/ui.IsTTY / base.Poller.Spoll suppression.
+// The global Doc keeps its legacy always-render behavior (built via newDocument).
+func NewDocument(out io.Writer) *Document {
+	doc := newDocument(out)
+	if !isTTYWriter(out) {
+		doc.disable = true
+	}
+	return doc
+}
+
+// isTTYWriter reports whether out is a real terminal. Kept local (using
+// go-isatty directly) so ux need not import pkg/ui; mirrors pkg/ui.IsTTY.
+func isTTYWriter(out io.Writer) bool {
+	f, ok := out.(*os.File)
+	return ok && isatty.IsTerminal(f.Fd())
+}
 
 // Block in document, including a spinner and some text
 type Block struct {

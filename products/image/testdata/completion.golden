@@ -1,0 +1,9 @@
+ucloud image copy	project-id	dynamic
+ucloud image copy	region	dynamic
+ucloud image copy	source-image-id	dynamic
+ucloud image copy	target-project	dynamic
+ucloud image copy	target-region	dynamic
+ucloud image copy	zone	dynamic
+ucloud image create	uhost-id	dynamic
+ucloud image delete	image-id	dynamic
+ucloud image list	image-type	static	Base,Business,Custom
