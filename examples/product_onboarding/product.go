@@ -3,7 +3,7 @@
 //
 // It is NOT a real product: it is deliberately placed under examples/ (outside
 // products/) so the platform's gen-products/check-product tooling ignores it,
-// and it is never registered into the CLI (no products.yaml entry). It exists
+// and it is never registered into the CLI (no product.yaml entry). It exists
 // for two reasons:
 //
 //  1. Documentation. A new product author copies this directory as a starting
@@ -47,7 +47,8 @@ const productName = "example"
 const resourceIDFlag = productName + "-id" // "example-id"
 
 // Product implements cli.Product. The platform calls New() to obtain it, then
-// Metadata() to learn who owns it, then NewCommand(ctx) to mount its subtree.
+// Metadata() to learn which top-level command names it owns, then NewCommand(ctx)
+// to mount its subtrees.
 type Product struct{}
 
 // New returns the product instance. The platform's generated registration code
@@ -55,25 +56,25 @@ type Product struct{}
 // and by NewCommand below.
 func New() cli.Product { return &Product{} }
 
-// Metadata identifies the product and its owners. Commands is informational
-// (the real tree is built by NewCommand); Version is filled at build time for a
-// real product.
+// Metadata identifies the product and its owners. Commands is the list of
+// top-level command names owned by this product; Version is filled at build
+// time for a real product.
 func (p *Product) Metadata() cli.Metadata {
 	return cli.Metadata{
 		Name:     productName,
 		Owners:   []string{"platform-onboarding@ucloud.cn"},
-		Commands: []string{"list", "describe", "create", "delete", "start", "stop", "restart"},
+		Commands: []string{productName},
 		Version:  "0.0.0",
 	}
 }
 
-// NewCommand builds the product's cobra subtree. This is the only wiring a
-// product owns: construct the root command and AddCommand one cobra.Command per
-// verb. Each verb constructor receives ctx so it can build authed SDK clients
-// (via cli.NewServiceClient) and bind common flags. NewCommand hands the tree
-// assembly to newCommand (cmd.go).
-func (p *Product) NewCommand(ctx *cli.Context) *cobra.Command {
-	return newCommand(ctx)
+// NewCommand builds the product's cobra subtrees. Single-command products
+// return one command; multi-command products return one command per top-level
+// CLI entry. Each verb constructor receives ctx so it can build authed SDK
+// clients (via cli.NewServiceClient) and bind common flags. NewCommand hands
+// this example's tree assembly to newCommand (cmd.go).
+func (p *Product) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{newCommand(ctx)}
 }
 
 // Compile-time assurance that Product satisfies the platform interface. If

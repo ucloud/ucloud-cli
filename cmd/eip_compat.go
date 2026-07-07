@@ -15,7 +15,7 @@
 package cmd
 
 // eip_compat.go is a cross-batch transition shim. The eip product moved to
-// products/eip (Part 4), but several commands still in package cmd call the
+// products/unet/internal/eip, but several commands still in package cmd call the
 // old cmd-local eip helpers. These copies keep package cmd compiling until
 // those consumers migrate. Logic is identical to the originals in the deleted
 // cmd/eip.go (base.BizClient path).

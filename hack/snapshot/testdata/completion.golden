@@ -19,20 +19,20 @@ ucloud bw shared resize	region	dynamic
 ucloud bw shared resize	shared-bw-id	dynamic
 ucloud config	active	static	false,true
 ucloud config	agree-upload-log	static	false,true
-ucloud config	profile	static	
+ucloud config	profile	static
 ucloud config	project-id	dynamic
 ucloud config	region	dynamic
 ucloud config	zone	dynamic
 ucloud config add	active	static	false,true
 ucloud config add	agree-upload-log	static	false,true
-ucloud config add	profile	static	
+ucloud config add	profile	static
 ucloud config add	project-id	dynamic
 ucloud config add	region	dynamic
 ucloud config add	zone	dynamic
-ucloud config delete	profile	static	
+ucloud config delete	profile	static
 ucloud config update	active	static	false,true
 ucloud config update	agree-upload-log	static	false,true
-ucloud config update	profile	static	
+ucloud config update	profile	static
 ucloud config update	project-id	dynamic
 ucloud config update	region	dynamic
 ucloud config update	zone	dynamic
@@ -42,7 +42,7 @@ ucloud ext uhost switch-eip	project-id	dynamic
 ucloud ext uhost switch-eip	region	dynamic
 ucloud ext uhost switch-eip	uhost-id	dynamic
 ucloud ext uhost switch-eip	zone	dynamic
-ucloud gendoc	dir	static	
+ucloud gendoc	dir	static
 ucloud gendoc	format	static	douku,markdown,rst
 ucloud gssh create	bandwidth-package	static	0,20,40
 ucloud gssh create	charge-type	static	Dynamic,Month,Trial,Year
@@ -170,12 +170,12 @@ ucloud ulb delete	ulb-id	dynamic
 ucloud ulb list	project-id	dynamic
 ucloud ulb list	region	dynamic
 ucloud ulb list	vpc-id	dynamic
-ucloud ulb ssl add	all-in-one-file	static	
-ucloud ulb ssl add	ca-certificate-file	static	
-ucloud ulb ssl add	private-key-file	static	
+ucloud ulb ssl add	all-in-one-file	static
+ucloud ulb ssl add	ca-certificate-file	static
+ucloud ulb ssl add	private-key-file	static
 ucloud ulb ssl add	project-id	dynamic
 ucloud ulb ssl add	region	dynamic
-ucloud ulb ssl add	site-certificate-file	static	
+ucloud ulb ssl add	site-certificate-file	static
 ucloud ulb ssl bind	project-id	dynamic
 ucloud ulb ssl bind	region	dynamic
 ucloud ulb ssl bind	ssl-id	dynamic

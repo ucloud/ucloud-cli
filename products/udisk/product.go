@@ -16,4 +16,6 @@ func (product) Metadata() cli.Metadata {
 	return cli.Metadata{Name: "udisk", Commands: []string{"udisk"}}
 }
 
-func (product) NewCommand(ctx *cli.Context) *cobra.Command { return internaludisk.NewCommand(ctx) }
+func (product) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{internaludisk.NewCommand(ctx)}
+}

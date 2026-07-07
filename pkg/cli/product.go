@@ -7,7 +7,7 @@ import "github.com/spf13/cobra"
 // basis for golden partitioning: the platform golden (hack/snapshot/testdata)
 // prunes exactly these subtrees, and the product's own goldens
 // (products/<name>/testdata) cover them. It must match product.yaml (rule-8).
-// The actual cobra command tree is built by NewCommand.
+// The actual cobra command trees are built by NewCommand.
 type Metadata struct {
 	Name     string
 	Owners   []string
@@ -16,8 +16,8 @@ type Metadata struct {
 }
 
 // Product is a self-contained product module the platform registers.
-// NewCommand builds the product's cobra command subtree given a Context.
+// NewCommand builds all top-level cobra command subtrees this product owns.
 type Product interface {
 	Metadata() Metadata
-	NewCommand(ctx *Context) *cobra.Command
+	NewCommand(ctx *Context) []*cobra.Command
 }

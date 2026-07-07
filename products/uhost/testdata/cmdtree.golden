@@ -1,3 +1,36 @@
+ucloud image	use=image	short=List and manipulate images
+ucloud image copy	use=copy	short=Copy custom images
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=source-image-id	short=	default=[]	required=true
+  flag=target-image-desc	short=	default=	required=
+  flag=target-image-name	short=	default=	required=
+  flag=target-project	short=	default=	required=
+  flag=target-region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud image create	use=create	short=Create image from an uhost instance
+  flag=async	short=a	default=false	required=
+  flag=image-desc	short=	default=	required=
+  flag=image-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=uhost-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud image delete	use=delete	short=Delete custom images
+  flag=image-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud image list	use=list	short=List image
+  flag=image-id	short=	default=	required=
+  flag=image-type	short=	default=Base	required=
+  flag=limit	short=	default=500	required=
+  flag=offset	short=	default=0	required=
+  flag=os-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
 ucloud uhost	use=uhost	short=List,create,delete,stop,restart,poweroff or resize UHost instance
 ucloud uhost clone	use=clone	short=Create an uhost with the same configuration as another uhost, excluding bound eip and udisk
   flag=async	short=	default=false	required=

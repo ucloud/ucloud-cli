@@ -16,4 +16,6 @@ func (product) Metadata() cli.Metadata {
 	return cli.Metadata{Name: "uphost", Commands: []string{"uphost"}}
 }
 
-func (product) NewCommand(ctx *cli.Context) *cobra.Command { return internaluphost.NewCommand(ctx) }
+func (product) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{internaluphost.NewCommand(ctx)}
+}

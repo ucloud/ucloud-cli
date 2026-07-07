@@ -16,4 +16,6 @@ func (product) Metadata() cli.Metadata {
 	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
 }
 
-func (product) NewCommand(ctx *cli.Context) *cobra.Command { return mysql.NewCommand(ctx) }
+func (product) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{mysql.NewCommand(ctx)}
+}

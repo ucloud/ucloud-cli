@@ -1,3 +1,60 @@
+ucloud eip	use=eip	short=List,allocate and release EIP
+ucloud eip allocate	use=allocate	short=Allocate EIP
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=charge-type	short=	default=Month	required=
+  flag=count	short=	default=1	required=
+  flag=group	short=	default=Default	required=
+  flag=line	short=	default=	required=
+  flag=name	short=	default=EIP	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=share-bandwidth-id	short=	default=	required=
+  flag=traffic-mode	short=	default=Bandwidth	required=
+ucloud eip bind	use=bind	short=Bind EIP with uhost
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=	required=true
+  flag=resource-type	short=	default=uhost	required=
+ucloud eip join-shared-bw	use=join-shared-bw	short=Join shared bandwidth
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=true
+ucloud eip leave-shared-bw	use=leave-shared-bw	short=Leave shared bandwidth
+  flag=bandwidth-mb	short=	default=1	required=
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=
+  flag=traffic-mode	short=	default=Bandwidth	required=
+ucloud eip list	use=list	short=List all EIP instances
+  flag=limit	short=	default=50	required=
+  flag=list-all	short=	default=false	required=
+  flag=offset	short=	default=0	required=
+  flag=page-off	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip modify-bw	use=modify-bw	short=Modify bandwith of EIP instances
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip modify-traffic-mode	use=modify-traffic-mode	short=Modify charge mode of EIP instances
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=traffic-mode	short=	default=	required=true
+ucloud eip release	use=release	short=Release EIP
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud eip unbind	use=unbind	short=Unbind EIP with uhost
+  flag=eip-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
 ucloud firewall	use=firewall	short=List and manipulate extranet firewall
 ucloud firewall add-rule	use=add-rule	short=Add rule to firewall instance
   flag=fw-id	short=	default=[]	required=true
