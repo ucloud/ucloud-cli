@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	internalimage "github.com/ucloud/ucloud-cli/products/uhost/internal/image"
 	internaluhost "github.com/ucloud/ucloud-cli/products/uhost/internal/uhost"
 )
 
@@ -13,7 +14,12 @@ type product struct{}
 func New() cli.Product { return product{} }
 
 func (product) Metadata() cli.Metadata {
-	return cli.Metadata{Name: "uhost", Commands: []string{"uhost"}}
+	return cli.Metadata{Name: "uhost", Commands: []string{"uhost", "image"}}
 }
 
-func (product) NewCommand(ctx *cli.Context) *cobra.Command { return internaluhost.NewCommand(ctx) }
+func (product) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{
+		internaluhost.NewCommand(ctx),
+		internalimage.NewCommand(ctx),
+	}
+}

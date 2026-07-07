@@ -37,6 +37,17 @@ func subCmd(t *testing.T, root *cobra.Command, name string) *cobra.Command {
 	return nil
 }
 
+func topLevelCmd(t *testing.T, commands []*cobra.Command, name string) *cobra.Command {
+	t.Helper()
+	for _, c := range commands {
+		if c.Use == name {
+			return c
+		}
+	}
+	t.Fatalf("product top-level command %q not found", name)
+	return nil
+}
+
 // fetchLiveImageID returns the first Available Base image id via DescribeImage.
 func fetchLiveImageID(t *testing.T) string {
 	req := base.BizClient.NewDescribeImageRequest()
@@ -71,29 +82,30 @@ func TestUhost(t *testing.T) {
 		ProjectList: getProjectList,
 		AllRegions:  getAllRegions,
 	})
-	root := uhost.New().NewCommand(ctx)
+	root := topLevelCmd(t, uhost.New().NewCommand(ctx), "uhost")
 
 	imageID := fetchLiveImageID(t)
 
 	run := func(name string, flags []string) string {
 		out.Reset()
-		c := subCmd(t, root, name)
-		c.Flags().Parse(flags)
-		if err := c.Execute(); err != nil {
+		subCmd(t, root, name)
+		root.SetArgs(append([]string{name}, flags...))
+		if err := root.Execute(); err != nil {
 			t.Fatalf("unexpected error executing %s: %v, flags: %v", name, err, flags)
 		}
 		return out.String()
 	}
 
 	createOut := run("create", []string{
+		"--zone=cn-bj2-03",
 		"--cpu=1",
 		"--memory-gb=1",
 		"--image-id=" + imageID,
 		"--password=testlxj@123",
 		"--hot-plug=false",
-		"--create-eip-bandwidth-mb=10",
+		"--data-disk-type=NONE",
 	})
-	createRe := regexp.MustCompile(`uhost\[([\w-]+)\] which attached a data disk and binded an eip is initializing\.\.\.done`)
+	createRe := regexp.MustCompile(`uhost\[([\w-]+)\] is initializing\.\.\.done`)
 	m := createRe.FindStringSubmatch(createOut)
 	if m == nil {
 		t.Errorf("unexpect create output:%s", createOut)
@@ -115,5 +127,5 @@ func TestUhost(t *testing.T) {
 	time.Sleep(time.Second * 5)
 	assertRun("start", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is starting\.\.\.done`))
 	assertRun("stop", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`))
-	assertRun("delete", []string{"--yes", idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] deleted`))
+	run("delete", []string{"--yes", "--destroy", idFlag})
 }

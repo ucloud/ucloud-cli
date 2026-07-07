@@ -59,7 +59,7 @@ func classifyFlag(c *cobra.Command, flagName string) completionResult {
 //
 // Format (one line per flag that has a registered completion func):
 //
-//	<CommandPath>\t<flagName>\tstatic\t<comma-joined sorted candidates>
+//	<CommandPath>\t<flagName>\tstatic[\t<comma-joined sorted candidates>]
 //	<CommandPath>\t<flagName>\tdynamic
 //
 // Flags with no registered completion are omitted.
@@ -92,6 +92,10 @@ func RenderCompletionPlatform(root *cobra.Command, skip map[string]bool) string 
 				// Static enum — sort candidates for determinism.
 				sorted := append([]string(nil), r.candidates...)
 				sort.Strings(sorted)
+				if len(sorted) == 0 {
+					fmt.Fprintf(&b, "%s\t%s\tstatic\n", c.CommandPath(), f.Name)
+					continue
+				}
 				fmt.Fprintf(&b, "%s\t%s\tstatic\t%s\n", c.CommandPath(), f.Name, strings.Join(sorted, ","))
 			}
 		}

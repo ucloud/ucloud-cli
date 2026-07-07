@@ -178,12 +178,12 @@ func addPlatformCommands(root *cobra.Command) {
 }
 
 // addProductCommands registers product-package commands onto root.
-// Each cli.Product contributes one top-level cobra command. This runs
+// Each cli.Product contributes one or more top-level cobra commands. This runs
 // after addPlatformCommands so product commands sort after platform ones
 // when cobra.EnableCommandSorting is false.
 func addProductCommands(root *cobra.Command, products []cli.Product, ctx *cli.Context) {
 	for _, p := range products {
-		root.AddCommand(p.NewCommand(ctx))
+		root.AddCommand(p.NewCommand(ctx)...)
 	}
 }
 

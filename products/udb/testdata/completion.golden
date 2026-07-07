@@ -42,11 +42,11 @@ ucloud mysql conf list	project-id	dynamic
 ucloud mysql conf list	region	dynamic
 ucloud mysql conf list	zone	dynamic
 ucloud mysql conf update	conf-id	dynamic
-ucloud mysql conf update	file	static	
+ucloud mysql conf update	file	static
 ucloud mysql conf update	project-id	dynamic
 ucloud mysql conf update	region	dynamic
 ucloud mysql conf update	zone	dynamic
-ucloud mysql conf upload	conf-file	static	
+ucloud mysql conf upload	conf-file	static
 ucloud mysql conf upload	db-version	static	mysql-5.7,mysql-8.0,mysql-8.4,percona-5.7
 ucloud mysql conf upload	project-id	dynamic
 ucloud mysql conf upload	region	dynamic

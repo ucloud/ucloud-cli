@@ -1,0 +1,74 @@
+package cmd
+
+import (
+	"sort"
+	"testing"
+
+	"github.com/spf13/cobra"
+
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+)
+
+type multiCommandProductForTest struct{}
+
+func (p multiCommandProductForTest) Metadata() cli.Metadata {
+	return cli.Metadata{Name: "multi", Commands: []string{"alpha", "beta"}}
+}
+
+func (p multiCommandProductForTest) NewCommand(ctx *cli.Context) []*cobra.Command {
+	return []*cobra.Command{
+		{Use: "alpha"},
+		{Use: "beta"},
+	}
+}
+
+func TestRegisteredProductsUseRealProductDomains(t *testing.T) {
+	products := registeredProducts()
+
+	byName := make(map[string]cli.Product, len(products))
+	for _, p := range products {
+		byName[p.Metadata().Name] = p
+	}
+
+	for _, oldName := range []string{"eip", "firewall", "image"} {
+		if _, ok := byName[oldName]; ok {
+			t.Fatalf("registeredProducts includes command-level product %q; want it merged into its real product domain", oldName)
+		}
+	}
+
+	assertProductCommands(t, byName, "unet", []string{"eip", "firewall"})
+	assertProductCommands(t, byName, "uhost", []string{"image", "uhost"})
+}
+
+func TestAddProductCommandsRegistersAllProductCommands(t *testing.T) {
+	root := &cobra.Command{Use: "ucloud"}
+
+	addProductCommands(root, []cli.Product{multiCommandProductForTest{}}, cli.NewContext(cli.Deps{}))
+
+	for _, name := range []string{"alpha", "beta"} {
+		if _, _, err := root.Find([]string{name}); err != nil {
+			t.Fatalf("product command %q was not registered: %v", name, err)
+		}
+	}
+}
+
+func assertProductCommands(t *testing.T, products map[string]cli.Product, name string, want []string) {
+	t.Helper()
+
+	p, ok := products[name]
+	if !ok {
+		t.Fatalf("registeredProducts missing product %q", name)
+	}
+
+	got := append([]string(nil), p.Metadata().Commands...)
+	sort.Strings(got)
+	sort.Strings(want)
+	if len(got) != len(want) {
+		t.Fatalf("product %q commands = %v, want %v", name, got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("product %q commands = %v, want %v", name, got, want)
+		}
+	}
+}
