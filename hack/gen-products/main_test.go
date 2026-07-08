@@ -40,7 +40,7 @@ func TestGenerateEmpty(t *testing.T) {
 // emits the correct import path and constructor call.
 func TestGenerateWithProduct(t *testing.T) {
 	products := []Product{
-		{Name: "udb", Dir: "products/udb", Enabled: true},
+		{Name: "mysql", Dir: "products/mysql", Enabled: true},
 	}
 
 	src, err := generate(products)
@@ -50,11 +50,11 @@ func TestGenerateWithProduct(t *testing.T) {
 
 	s := string(src)
 
-	if !strings.Contains(s, `"github.com/ucloud/ucloud-cli/products/udb"`) {
-		t.Errorf("missing import path for products/udb; got:\n%s", s)
+	if !strings.Contains(s, `"github.com/ucloud/ucloud-cli/products/mysql"`) {
+		t.Errorf("missing import path for products/mysql; got:\n%s", s)
 	}
-	if !strings.Contains(s, "udb.New()") {
-		t.Errorf("missing udb.New() in return slice; got:\n%s", s)
+	if !strings.Contains(s, "mysql.New()") {
+		t.Errorf("missing mysql.New() in return slice; got:\n%s", s)
 	}
 	if !strings.Contains(s, "func registeredProducts() []cli.Product") {
 		t.Errorf("missing registeredProducts signature; got:\n%s", s)

@@ -1,16 +1,18 @@
 # Release Drift Guard
 #
-# Detects the failure mode where master has releasable commits after the latest
-# tag but no Release workflow produced the next patch version. This guard only
+# Detects the failure mode where the weekly Release workflow misses its release
+# window while master already had releasable commits waiting. This guard only
 # alerts; release.yml remains the single writer of tags and GitHub Releases. It
-# skips while Release is already queued/running and gives fresh master commits a
-# short grace window to avoid noisy failures during normal release serialization.
+# runs after the weekly release window, skips while Release is already
+# queued/running, and gives fresh master commits a grace window so changes that
+# land after the release window wait for the next week instead of failing drift.
 
 name: Release Drift Guard
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    # Tuesdays 03:00 Asia/Shanghai (Monday 19:00 UTC), four hours after Release.
+    - cron: "0 19 * * 1"
   workflow_dispatch: {}
 
 permissions:
@@ -37,7 +39,7 @@ jobs:
       - name: Detect unreleased master changes
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_GRACE_SECONDS: "1200"
+          RELEASE_GRACE_SECONDS: "14400"
         run: |
           set -euo pipefail
 
@@ -75,7 +77,7 @@ jobs:
           fi
 
           if [ "$DETECT" != "$CURRENT" ] || [ -n "$RELEASABLE" ]; then
-            echo "::error::master has releasable commits after $CURRENT, but no release tag covers HEAD. Run the Release workflow on master."
+            echo "::error::master has releasable commits after $CURRENT outside the weekly release grace window, but no release tag covers HEAD. Check the weekly Release workflow or run it manually."
             echo "current=$CURRENT"
             echo "detected=$DETECT"
             git log --oneline "$CURRENT"..HEAD

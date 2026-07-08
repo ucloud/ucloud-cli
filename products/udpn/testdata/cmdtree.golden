@@ -1,0 +1,22 @@
+ucloud udpn	use=udpn	short=List and manipulate udpn instances
+ucloud udpn create	use=create	short=Create UDPN tunnel
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=charge-type	short=	default=	required=
+  flag=peer1	short=	default=	required=true
+  flag=peer2	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+ucloud udpn delete	use=delete	short=delete udpn instances
+  flag=project-id	short=	default=	required=
+  flag=udpn-id	short=	default=[]	required=true
+ucloud udpn list	use=list	short=List udpn instances
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udpn-id	short=	default=	required=
+ucloud udpn modify-bw	use=modify-bw	short=Modify bandwidth of UDPN tunnel
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udpn-id	short=	default=[]	required=true

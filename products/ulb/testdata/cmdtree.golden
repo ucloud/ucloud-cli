@@ -1,0 +1,172 @@
+ucloud ulb	use=ulb	short=List and manipulate ULB instances
+ucloud ulb create	use=create	short=Create ULB instance
+  flag=bind-eip	short=	default=	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=create-eip-bandwidth-mb	short=	default=0	required=
+  flag=create-eip-line	short=	default=	required=
+  flag=create-eip-name	short=	default=	required=
+  flag=create-eip-remark	short=	default=	required=
+  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
+  flag=group	short=	default=Default	required=
+  flag=mode	short=	default=outer	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud ulb delete	use=delete	short=Delete ULB instances by resource ID
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=[]	required=true
+ucloud ulb list	use=list	short=List ULB instances
+  flag=group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=ulb-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud ulb ssl	use=ssl	short=List and manipulate SSL Certificates for ULB
+ucloud ulb ssl add	use=add	short=Add SSL Certificate
+  flag=all-in-one-file	short=	default=	required=
+  flag=ca-certificate-file	short=	default=	required=
+  flag=format	short=	default=Pem	required=
+  flag=name	short=	default=	required=true
+  flag=private-key-file	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=site-certificate-file	short=	default=	required=
+ucloud ulb ssl bind	use=bind	short=Bind SSL Certificate with VServer
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb ssl delete	use=delete	short=Delete SSL Certificates by resource id(ssl id)
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=[]	required=
+ucloud ulb ssl describe	use=describe	short=Display all data associated with SSL Certificate
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+ucloud ulb ssl list	use=list	short=List SSL Certificates
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=
+ucloud ulb ssl unbind	use=unbind	short=Unbind SSL Certificate with VServer
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ssl-id	short=	default=	required=true
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb update	use=update	short=Update ULB instance
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=ulb-id	short=	default=[]	required=true
+ucloud ulb vserver	use=vserver	short=List and manipulate ULB Vserver instances
+ucloud ulb vserver backend	use=backend	short=List and manipulate VServer backend nodes
+ucloud ulb vserver backend add	use=add	short=Add backend nodes for ULB Vserver instance
+  flag=backend-mode	short=	default=enable	required=
+  flag=port	short=	default=80	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=true
+  flag=resource-type	short=	default=UHost	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+  flag=weight	short=	default=1	required=
+ucloud ulb vserver backend delete	use=delete	short=Delete ULB VServer backend nodes
+  flag=backend-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+ucloud ulb vserver backend list	use=list	short=List ULB VServer backend nodes
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver backend update	use=update	short=Update attributes of ULB backend nodes
+  flag=backend-id	short=	default=[]	required=true
+  flag=backend-mode	short=	default=	required=
+  flag=port	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=weight	short=	default=-1	required=
+ucloud ulb vserver create	use=create	short=Create ULB VServer instance
+  flag=client-timeout-seconds	short=	default=60	required=
+  flag=health-check-domain	short=	default=	required=
+  flag=health-check-mode	short=	default=Port	required=
+  flag=health-check-path	short=	default=	required=
+  flag=lb-method	short=	default=Roundrobin	required=
+  flag=listen-type	short=	default=RequestProxy	required=
+  flag=name	short=	default=	required=
+  flag=port	short=	default=80	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=HTTP	required=
+  flag=region	short=	default=	required=
+  flag=session-maintain-key	short=	default=	required=
+  flag=session-maintain-mode	short=	default=None	required=
+  flag=ssl-id	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+ucloud ulb vserver delete	use=delete	short=Delete ULB VServer instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=[]	required=true
+ucloud ulb vserver list	use=list	short=List ULB Vserver instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=
+ucloud ulb vserver policy	use=policy	short=List and manipulate forward policy for VServer
+ucloud ulb vserver policy add	use=add	short=Add content forward policy for VServer
+  flag=backend-id	short=	default=[]	required=true
+  flag=expression	short=	default=	required=true
+  flag=forward-method	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver policy delete	use=delete	short=Delete content forward policies of ULB VServer
+  flag=policy-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vserver-id	short=	default=	required=
+ucloud ulb vserver policy list	use=list	short=List content forward policies of the VServer instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver policy update	use=update	short=Update content forward policies of ULB VServer
+  flag=add-backend-id	short=	default=[]	required=
+  flag=backend-id	short=	default=[]	required=
+  flag=expression	short=	default=	required=
+  flag=forward-method	short=	default=	required=
+  flag=policy-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remove-backend-id	short=	default=[]	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=	required=true
+ucloud ulb vserver update	use=update	short=Update attributes of VServer instances
+  flag=client-timeout-seconds	short=	default=-1	required=
+  flag=health-check-domain	short=	default=	required=
+  flag=health-check-mode	short=	default=	required=
+  flag=health-check-path	short=	default=	required=
+  flag=lb-method	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=session-maintain-key	short=	default=	required=
+  flag=session-maintain-mode	short=	default=	required=
+  flag=ulb-id	short=	default=	required=true
+  flag=vserver-id	short=	default=[]	required=true

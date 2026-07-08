@@ -39,7 +39,7 @@ func TestWriteCompletionBaseline(t *testing.T) {
 	// (SetFlagValues closures are immune; SetCompletion closures dereference them).
 	//
 	// Platform (cmd) dynamic completions dereference base.BizClient directly, so
-	// nil-ing it makes them panic. Product (products/udb) dynamic completions go
+	// nil-ing it makes them panic. Product (products/mysql) dynamic completions go
 	// through cli.NewServiceClient → ctor(base.ClientConfig, base.BuildCredential())
 	// → SDK call, which ignores base.BizClient; nil-ing base.ClientConfig makes the
 	// SDK request build panic instead of issuing a real (non-deterministic, slow)

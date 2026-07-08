@@ -1,0 +1,11 @@
+ucloud gssh create	bandwidth-package	static	0,20,40
+ucloud gssh create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud gssh create	forward-region	static	cn-bj2,cn-gd,cn-sh2
+ucloud gssh create	instance-type	static	Basic,Enterprise,Free,Ultimate
+ucloud gssh create	location	static	Frankfurt,HongKong,Lagos,LosAngeles,Singapore,Tokyo,Washington
+ucloud gssh create	project-id	dynamic
+ucloud gssh create	target-ip	dynamic
+ucloud gssh delete	gssh-id	dynamic
+ucloud gssh delete	project-id	dynamic
+ucloud gssh update	gssh-id	dynamic
+ucloud gssh update	project-id	dynamic

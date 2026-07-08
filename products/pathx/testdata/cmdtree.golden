@@ -1,0 +1,93 @@
+ucloud pathx	use=pathx	short=Manipulate uga and upath instances
+ucloud pathx area	use=area	short=List origin area or acceleration area information
+ucloud pathx area list	use=list	short=List origin area or acceleration area information
+  flag=accel	short=	default=	required=
+  flag=no-accel	short=	default=false	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=time-range	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx create	use=create	short=Create the pathx resource and port
+  flag=accel	short=	default=	required=
+  flag=area-code	short=	default=	required=
+  flag=bandwidth	short=	default=0	required=true
+  flag=charge-type	short=	default=	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-port	short=	default=[]	required=
+  flag=port	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=TCP	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx delete	use=delete	short=Delete the pathx resource and port
+  flag=id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pathx list	use=list	short=List all the pathx resource of project
+  flag=detail	short=	default=false	required=
+  flag=id	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx modify	use=modify	short=Modify the pathx associated information. Example bandwidth or origin information or resource information
+  flag=bandwidth	short=	default=0	required=
+  flag=id	short=	default=	required=true
+  flag=name	short=	default=	required=
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-port	short=	default=[]	required=
+  flag=port	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=TCP	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx price	use=price	short=List all the acceleration area price
+ucloud pathx price list	use=list	short=List all the pathx acceleration area price
+  flag=accel	short=	default=	required=
+  flag=area-code	short=	default=	required=true
+  flag=bandwidth	short=	default=1	required=true
+  flag=charge-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pathx uga	use=uga	short=Create,list,update and delete pathx uga instances
+ucloud pathx uga add-port	use=add-port	short=Add port for uga instance
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga create	use=create	short=Create uga instance
+  flag=name	short=	default=	required=true
+  flag=origin-domain	short=	default=	required=
+  flag=origin-ip	short=	default=	required=
+  flag=origin-location	short=	default=	required=true
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=upath-id	short=	default=[]	required=true
+ucloud pathx uga delete	use=delete	short=Delete uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=[]	required=true
+ucloud pathx uga delete-port	use=delete-port	short=Delete port for uga instance
+  flag=port	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga describe	use=describe	short=Display detail informations about uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=	required=true
+ucloud pathx uga list	use=list	short=list uga instances
+  flag=project-id	short=	default=	required=
+  flag=uga-id	short=	default=	required=
+ucloud pathx upath	use=upath	short=List pathx upath instances
+ucloud pathx upath list	use=list	short=list upath instances
+  flag=project-id	short=	default=	required=
+  flag=upath-id	short=	default=	required=
