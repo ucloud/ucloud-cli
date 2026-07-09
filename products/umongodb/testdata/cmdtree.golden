@@ -1,0 +1,97 @@
+ucloud umongodb	use=umongodb	short=Manipulate MongoDB on UCloud platform
+ucloud umongodb create-replset	use=create-replset	short=Create a MongoDB replica set
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=disk-space-gb	short=	default=0	required=true
+  flag=machine-type-id	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=node-count	short=	default=3	required=
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=27017	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=template-id	short=	default=	required=
+  flag=version	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb create-sharded	use=create-sharded	short=Create a MongoDB sharded cluster
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=disk-space-gb	short=	default=0	required=true
+  flag=machine-type-id	short=	default=	required=true
+  flag=mongos-machine-type-id	short=	default=	required=
+  flag=mongos-node-count	short=	default=0	required=
+  flag=name	short=	default=	required=true
+  flag=node-count	short=	default=0	required=true
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=27017	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=shard-count	short=	default=0	required=true
+  flag=subnet-id	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=template-id	short=	default=	required=
+  flag=version	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb delete-replset	use=delete-replset	short=Delete MongoDB replica set instances
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=skip-stop	short=	default=false	required=
+  flag=umongodb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb delete-sharded	use=delete-sharded	short=Delete MongoDB sharded cluster instances
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=skip-stop	short=	default=false	required=
+  flag=umongodb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb describe	use=describe	short=Show details of one MongoDB instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umongodb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud umongodb list	use=list	short=List MongoDB instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb list-machine-specs	use=list-machine-specs	short=List MongoDB machine specifications
+  flag=class-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb list-templates	use=list-templates	short=List MongoDB config templates
+  flag=cluster-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=version	short=	default=	required=
+ucloud umongodb list-versions	use=list-versions	short=List available MongoDB versions
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umongodb restart	use=restart	short=Restart MongoDB instances
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umongodb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud umongodb start	use=start	short=Start MongoDB instances
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umongodb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud umongodb stop	use=stop	short=Stop MongoDB instances
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umongodb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
