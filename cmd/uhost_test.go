@@ -1,3 +1,6 @@
+//go:build live
+// +build live
+
 package cmd
 
 import (
@@ -8,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -18,35 +19,15 @@ import (
 )
 
 // uhost_test.go drives the live UHost flow through the migrated products/uhost
-// command tree (uhost moved out of cmd in Part 6). It hits the real API and
-// needs valid credentials, so it is gated by name — run the rest of the suite
-// with `go test ./... -skip TestUhost`. The image-id lookup the old test did via
+// command tree (uhost moved out of cmd in Part 6). It hits the real API,
+// creates paid resources, and needs valid credentials, so it is gated behind
+// the `live` build tag. Run it explicitly with:
+// `go test -tags live ./cmd -run '^TestUhost$' -count=1`.
+// The image-id lookup the old test did via
 // the cmd-local NewCmdUImageList/ImageRow shim is now a direct DescribeImage SDK
 // call (image is served by the uhost SDK). create/delete narration now flows
 // through ctx.NewProgress → ctx.ProgressWriter (the ctx Out buffer in table
 // mode) instead of the global ux.Doc, so the test captures the ctx Out buffer.
-
-// subCmd returns the child of root whose Use matches name.
-func subCmd(t *testing.T, root *cobra.Command, name string) *cobra.Command {
-	for _, c := range root.Commands() {
-		if c.Use == name {
-			return c
-		}
-	}
-	t.Fatalf("uhost subcommand %q not found", name)
-	return nil
-}
-
-func topLevelCmd(t *testing.T, commands []*cobra.Command, name string) *cobra.Command {
-	t.Helper()
-	for _, c := range commands {
-		if c.Use == name {
-			return c
-		}
-	}
-	t.Fatalf("product top-level command %q not found", name)
-	return nil
-}
 
 // fetchLiveImageID returns the first Available Base image id via DescribeImage.
 func fetchLiveImageID(t *testing.T) string {
