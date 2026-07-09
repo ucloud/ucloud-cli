@@ -1,0 +1,10 @@
+ucloud usnap create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud usnap create	project-id	dynamic
+ucloud usnap create	region	dynamic
+ucloud usnap create	zone	dynamic
+ucloud usnap delete	project-id	dynamic
+ucloud usnap delete	region	dynamic
+ucloud usnap delete	zone	dynamic
+ucloud usnap describe	project-id	dynamic
+ucloud usnap describe	region	dynamic
+ucloud usnap describe	zone	dynamic

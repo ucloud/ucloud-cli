@@ -1,0 +1,25 @@
+ucloud upfs	use=upfs	short=Manage UPFS (UCloud Parallel File Storage) volumes
+ucloud upfs create	use=create	short=Create a UPFS volume
+  flag=charge-type	short=	default=Dynamic	required=
+  flag=group	short=	default=Default	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol-type	short=	default=POSIX	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=size-gb	short=	default=500	required=true
+  flag=zone	short=	default=	required=
+ucloud upfs delete	use=delete	short=Delete UPFS volume(s)
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=volume-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud upfs describe	use=describe	short=Describe UPFS volume(s)
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=volume-id	short=	default=	required=
+  flag=zone	short=	default=	required=

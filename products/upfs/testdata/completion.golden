@@ -1,0 +1,11 @@
+ucloud upfs create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud upfs create	project-id	dynamic
+ucloud upfs create	protocol-type	static	POSIX
+ucloud upfs create	region	dynamic
+ucloud upfs create	zone	dynamic
+ucloud upfs delete	project-id	dynamic
+ucloud upfs delete	region	dynamic
+ucloud upfs delete	zone	dynamic
+ucloud upfs describe	project-id	dynamic
+ucloud upfs describe	region	dynamic
+ucloud upfs describe	zone	dynamic
