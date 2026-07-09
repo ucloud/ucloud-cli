@@ -11,20 +11,30 @@ import (
 // AddChildrenForSnapshot builds the full command tree for the structure golden,
 // without InitConfig/network side effects. Test-only helper.
 //
-// Some NewCmdXxx constructors call base.BizClient.NewXxxRequest() and
-// base.ClientConfig fields at construction time, so both must be non-nil.
-// We initialise them with zero-credential stubs when InitConfig was skipped.
+// Some NewCmdXxx constructors create service-specific SDK requests at
+// construction time, so runtime SDK config and credential must be non-nil. We
+// initialise them with zero-credential stubs when InitConfig was skipped.
 func AddChildrenForSnapshot(root *cobra.Command) {
+	runtimeAutoStub = true
 	if base.ClientConfig == nil {
 		base.ClientConfig = &sdk.Config{BaseUrl: base.DefaultBaseURL}
 	}
 	if base.AuthCredential == nil {
 		base.AuthCredential = &base.CredentialConfig{}
 	}
-	if base.BizClient == nil {
-		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential, nil)
-	}
+	setActiveRuntimeFromBaseGlobals()
 	addChildren(root)
+}
+
+// DisableRuntimeForSnapshotCompletion poisons runtime-backed dynamic
+// completions after command construction, so snapshot rendering does not issue
+// real network calls. It mirrors the old test behavior of nil-ing base.BizClient
+// after AddChildrenForSnapshot.
+func DisableRuntimeForSnapshotCompletion() {
+	base.ClientConfig = nil
+	base.AuthCredential = nil
+	runtimeAutoStub = false
+	activeRuntime = buildRuntimeFromBaseGlobals()
 }
 
 // ProductsForSnapshot exposes the registered product list to the snapshot

@@ -35,20 +35,11 @@ const completionGoldenPath = "testdata/completion.golden"
 func TestWriteCompletionBaseline(t *testing.T) {
 	root := cmd.NewCmdRoot()
 	cmd.AddChildrenForSnapshot(root)
-	// Nil out the network-backing globals so dynamic completions panic-on-invoke
-	// (SetFlagValues closures are immune; SetCompletion closures dereference them).
-	//
-	// Platform (cmd) dynamic completions dereference base.BizClient directly, so
-	// nil-ing it makes them panic. Product (products/mysql) dynamic completions go
-	// through cli.NewServiceClient → ctor(base.ClientConfig, base.BuildCredential())
-	// → SDK call, which ignores base.BizClient; nil-ing base.ClientConfig makes the
-	// SDK request build panic instead of issuing a real (non-deterministic, slow)
-	// network call. AuthCredential is nil'd alongside for symmetry. This must run
-	// AFTER AddChildrenForSnapshot, since some constructors build requests at
-	// construction time and need the non-nil stubs.
-	base.BizClient = nil
-	base.ClientConfig = nil
-	base.AuthCredential = nil
+	// Disable network-backing runtime state after command construction so
+	// dynamic completions panic-on-invoke instead of issuing real network calls.
+	// SetFlagValues closures are immune; SetCompletion closures dereference the
+	// runtime-backed clients.
+	cmd.DisableRuntimeForSnapshotCompletion()
 	got := RenderCompletionPlatform(root, productSkipSet())
 
 	compareOrWrite(t, completionGoldenPath, got, "WRITE_COMPLETION_GOLDEN")
@@ -176,9 +167,7 @@ func TestProductGoldens(t *testing.T) {
 func TestProductCompletionGoldens(t *testing.T) {
 	root := cmd.NewCmdRoot()
 	cmd.AddChildrenForSnapshot(root)
-	base.BizClient = nil
-	base.ClientConfig = nil
-	base.AuthCredential = nil
+	cmd.DisableRuntimeForSnapshotCompletion()
 	for _, p := range cmd.ProductsForSnapshot() {
 		meta := p.Metadata()
 		t.Run(meta.Name, func(t *testing.T) {
@@ -207,9 +196,7 @@ func TestGoldenPartition(t *testing.T) {
 
 	root2 := cmd.NewCmdRoot()
 	cmd.AddChildrenForSnapshot(root2)
-	base.BizClient = nil
-	base.ClientConfig = nil
-	base.AuthCredential = nil
+	cmd.DisableRuntimeForSnapshotCompletion()
 	fullC := RenderCompletion(root2)
 	partsC := RenderCompletionPlatform(root2, productSkipSet())
 	for _, p := range cmd.ProductsForSnapshot() {

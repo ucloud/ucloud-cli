@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	svcuhost "github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/base"
@@ -33,9 +34,10 @@ import (
 
 // fetchLiveImageID returns the first Available Base image id via DescribeImage.
 func fetchLiveImageID(t *testing.T) string {
-	req := base.BizClient.NewDescribeImageRequest()
+	client := newServiceClient(svcuhost.NewClient)
+	req := client.NewDescribeImageRequest()
 	req.ImageType = sdk.String("Base")
-	resp, err := base.BizClient.DescribeImage(req)
+	resp, err := client.DescribeImage(req)
 	if err != nil {
 		t.Fatalf("unexpected error fetching image list: %v", err)
 	}

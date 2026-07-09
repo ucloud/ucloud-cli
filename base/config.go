@@ -91,9 +91,6 @@ var ClientConfig *sdk.Config
 // AuthCredential 创建sdk client参数
 var AuthCredential *CredentialConfig
 
-// BizClient 用于调用业务接口
-var BizClient *Client
-
 // Global 全局flag
 var Global GlobalFlag
 
@@ -704,8 +701,10 @@ func GetUserInfo() (*uaccount.UserInfo, error) {
 		return user, nil
 	}
 
-	req := BizClient.NewGetUserInfoRequest()
-	resp, err := BizClient.GetUserInfo(req)
+	client := uaccount.NewClient(ClientConfig, BuildCredential())
+	AttachHandlers(client)
+	req := client.NewGetUserInfoRequest()
+	resp, err := client.GetUserInfo(req)
 
 	if err != nil {
 		return nil, err
@@ -781,13 +780,14 @@ func adaptOldConfig() error {
 	return AggConfigListIns.Append(ac)
 }
 
-// GetBizClient 初始化BizClient
-func GetBizClient(ac *AggConfig) (*Client, error) {
+// BuildClientRuntime builds SDK config and credential config for a profile
+// without creating an aggregate business client.
+func BuildClientRuntime(ac *AggConfig) (*sdk.Config, *CredentialConfig, error) {
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", ac.Timeout))
 	if err != nil {
 		err = fmt.Errorf("parse timeout %ds failed: %v", ac.Timeout, err)
 	}
-	ClientConfig = &sdk.Config{
+	cfg := &sdk.Config{
 		BaseUrl:    ac.BaseURL,
 		Timeout:    timeout,
 		UserAgent:  UserAgent,
@@ -796,17 +796,7 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		ProjectId:  ac.ProjectID,
 		MaxRetries: *ac.MaxRetryTimes,
 	}
-	// AuthCredential must keep a STABLE pointer identity for the whole process:
-	// product service clients (cli.NewServiceClient) capture this pointer at
-	// command-tree registration and read AccessToken lazily per request, so a
-	// token refresh here must be visible to them. Overwrite the pointed-to object
-	// in place instead of replacing the pointer — otherwise those already-built
-	// clients keep sending the pre-refresh (possibly expired) Bearer and only
-	// recover via the reactive retry handler at the cost of a wasted round-trip.
-	if AuthCredential == nil {
-		AuthCredential = &CredentialConfig{}
-	}
-	*AuthCredential = CredentialConfig{
+	cred := &CredentialConfig{
 		PublicKey:    ac.PublicKey,
 		PrivateKey:   ac.PrivateKey,
 		Cookie:       ac.Cookie,
@@ -816,7 +806,27 @@ func GetBizClient(ac *AggConfig) (*Client, error) {
 		RefreshToken: ac.RefreshToken,
 		ExpiresAt:    ac.ExpiresAt,
 	}
-	return NewClient(ClientConfig, AuthCredential, ac), err
+	return cfg, cred, err
+}
+
+// InitClientRuntime initializes package-level SDK config and credential
+// pointers for legacy callers, while keeping AuthCredential pointer identity
+// stable for service clients that captured it at command registration time.
+func InitClientRuntime(ac *AggConfig) error {
+	cfg, cred, err := BuildClientRuntime(ac)
+	ClientConfig = cfg
+	// AuthCredential must keep a STABLE pointer identity for the whole process:
+	// service clients (cli.NewServiceClient/runtime clients) capture this pointer at
+	// command-tree registration and read AccessToken lazily per request, so a
+	// token refresh here must be visible to them. Overwrite the pointed-to object
+	// in place instead of replacing the pointer — otherwise those already-built
+	// clients keep sending the pre-refresh (possibly expired) Bearer and only
+	// recover via the reactive retry handler at the cost of a wasted round-trip.
+	if AuthCredential == nil {
+		AuthCredential = &CredentialConfig{}
+	}
+	*AuthCredential = *cred
+	return err
 }
 
 func InitConfigInCloudShell() error {
@@ -850,11 +860,9 @@ func InitConfigInCloudShell() error {
 		return err
 	}
 	ConfigIns = ins
-	bc, err := GetBizClient(ConfigIns)
-	if err != nil {
+	if err := InitClientRuntime(ConfigIns); err != nil {
 		return err
 	}
-	BizClient = bc
 	return AggConfigM.Save()
 }
 
@@ -884,11 +892,8 @@ func InitConfig() {
 	mergeConfigIns(ConfigIns)
 	logCmd()
 
-	bc, err := GetBizClient(ConfigIns)
-	if err != nil {
+	if err := InitClientRuntime(ConfigIns); err != nil {
 		HandleError(err)
-	} else {
-		BizClient = bc
 	}
 }
 

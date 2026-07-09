@@ -2,16 +2,16 @@ package base
 
 import "testing"
 
-// TestGetBizClientKeepsAuthCredentialIdentity locks the invariant that a token
-// refresh via GetBizClient overwrites the existing *AuthCredential in place
+// TestInitClientRuntimeKeepsAuthCredentialIdentity locks the invariant that a token
+// refresh via InitClientRuntime overwrites the existing *AuthCredential in place
 // instead of swapping the package pointer.
 //
 // Product service clients (cli.NewServiceClient) capture the AuthCredential
 // pointer at command-tree registration and read AccessToken lazily per request.
-// If GetBizClient replaced the pointer, those already-built clients would keep
+// If InitClientRuntime replaced the pointer, those already-built clients would keep
 // sending the pre-refresh (expired) Bearer on the first request and only recover
 // through the reactive retry handler at the cost of a wasted round-trip.
-func TestGetBizClientKeepsAuthCredentialIdentity(t *testing.T) {
+func TestInitClientRuntimeKeepsAuthCredentialIdentity(t *testing.T) {
 	savedCred, savedCfg := AuthCredential, ClientConfig
 	t.Cleanup(func() { AuthCredential, ClientConfig = savedCred, savedCfg })
 
@@ -28,8 +28,8 @@ func TestGetBizClientKeepsAuthCredentialIdentity(t *testing.T) {
 		AuthMode:      AuthModeOAuth,
 		AccessToken:   "fresh-token",
 	}
-	if _, err := GetBizClient(ac); err != nil {
-		t.Fatalf("GetBizClient returned error: %v", err)
+	if err := InitClientRuntime(ac); err != nil {
+		t.Fatalf("InitClientRuntime returned error: %v", err)
 	}
 
 	if AuthCredential != captured {

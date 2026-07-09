@@ -65,6 +65,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 		Long:    "Switch EIP for UHost instances",
 		Example: "ucloud ext uhost switch-eip --uhost-id uhost-1n1sxx2,uhost-li4jxx1 --create-eip-bandwidth-mb 2",
 		Run: func(c *cobra.Command, args []string) {
+			unetClient := newServiceClient(unet.NewClient)
 			project = base.PickResourceID(project)
 			eipAddrMap := make(map[string]bool)
 			for _, addr := range eipAddrs {
@@ -96,7 +97,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						continue
 					}
 					//申请EIP
-					req := base.BizClient.NewAllocateEIPRequest()
+					req := unetClient.NewAllocateEIPRequest()
 					req.Region = &region
 					req.ProjectId = &project
 					if strings.HasPrefix(region, "cn") {
@@ -119,7 +120,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						}
 					}
 					logs = append(logs, fmt.Sprintf("api AllocateEIP, request:%v", base.ToQueryMap(req)))
-					resp, err := base.BizClient.AllocateEIP(req)
+					resp, err := unetClient.AllocateEIP(req)
 					if err != nil {
 						errStr := fmt.Sprintf("allocate EIP failed: %v", err)
 						logs = append(logs, errStr)
@@ -157,12 +158,12 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					}
 
 					if release {
-						req := base.BizClient.NewReleaseEIPRequest()
+						req := unetClient.NewReleaseEIPRequest()
 						req.ProjectId = &project
 						req.Region = &region
 						req.EIPId = sdk.String(ip.IPId)
 						logs = append(logs, fmt.Sprintf("api ReleaseEIP, request:%v", base.ToQueryMap(req)))
-						_, err := base.BizClient.ReleaseEIP(req)
+						_, err := unetClient.ReleaseEIP(req)
 						if err != nil {
 							errStr := fmt.Sprintf("release eip %s failed: %v", ip.IPId, err)
 							logs = append(logs, errStr)
@@ -209,13 +210,14 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 }
 
 func extDescribeUHostByID(uhostID, projectID, region, zone string) (interface{}, error) {
-	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	client := newServiceClient(uhost.NewClient)
+	req := client.NewDescribeUHostInstanceRequest()
 	req.UHostIds = []string{uhostID}
 	req.ProjectId = &projectID
 	req.Region = &region
 	req.Zone = &zone
 
-	resp, err := base.BizClient.DescribeUHostInstance(req)
+	resp, err := client.DescribeUHostInstance(req)
 	if err != nil {
 		return nil, err
 	}
@@ -227,12 +229,13 @@ func extDescribeUHostByID(uhostID, projectID, region, zone string) (interface{},
 }
 
 func extUHostList(states []string, project, region, zone string) []string {
-	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	client := newServiceClient(uhost.NewClient)
+	req := client.NewDescribeUHostInstanceRequest()
 	req.ProjectId = sdk.String(project)
 	req.Region = sdk.String(region)
 	req.Zone = sdk.String(zone)
 	req.Limit = sdk.Int(50)
-	resp, err := base.BizClient.DescribeUHostInstance(req)
+	resp, err := client.DescribeUHostInstance(req)
 	if err != nil {
 		return nil
 	}
@@ -267,14 +270,15 @@ func extEIPIDByIP(ip net.IP, projectID, region string) (string, error) {
 }
 
 func extFetchAllEIP(projectID, region string) ([]unet.UnetEIPSet, error) {
-	req := base.BizClient.NewDescribeEIPRequest()
+	client := newServiceClient(unet.NewClient)
+	req := client.NewDescribeEIPRequest()
 	list := []unet.UnetEIPSet{}
 	req.ProjectId = sdk.String(projectID)
 	req.Region = sdk.String(region)
 	for offset, step := 0, 100; ; offset += step {
 		req.Offset = &offset
 		req.Limit = &step
-		resp, err := base.BizClient.DescribeEIP(req)
+		resp, err := client.DescribeEIP(req)
 		if err != nil {
 			return nil, err
 		}
@@ -299,14 +303,15 @@ func extAttachEIPWithLogs(resourceID, resourceType, eipID, projectID, region *st
 			*eipID = id
 		}
 	}
-	req := base.BizClient.NewBindEIPRequest()
+	client := newServiceClient(unet.NewClient)
+	req := client.NewBindEIPRequest()
 	req.ResourceId = resourceID
 	req.ResourceType = resourceType
 	req.EIPId = sdk.String(base.PickResourceID(*eipID))
 	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
 	req.Region = region
 	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", base.ToQueryMap(req)))
-	_, err := base.BizClient.BindEIP(req)
+	_, err := client.BindEIP(req)
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("bind eip failed: %v", err))
 		return logs, err
@@ -327,14 +332,15 @@ func extDetachEIPWithLogs(resourceID, resourceType, eipID, projectID, region str
 			eipID = id
 		}
 	}
-	req := base.BizClient.NewUnBindEIPRequest()
+	client := newServiceClient(unet.NewClient)
+	req := client.NewUnBindEIPRequest()
 	req.ResourceId = &resourceID
 	req.ResourceType = &resourceType
 	req.EIPId = &eipID
 	req.ProjectId = sdk.String(base.PickResourceID(projectID))
 	req.Region = &region
 	logs = append(logs, fmt.Sprintf("api: UnBindEIP, request: %v", base.ToQueryMap(req)))
-	_, err := base.BizClient.UnBindEIP(req)
+	_, err := client.UnBindEIP(req)
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("unbind eip failed: %v", err))
 		return logs, err

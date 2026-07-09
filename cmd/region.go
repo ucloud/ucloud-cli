@@ -59,8 +59,9 @@ type RegionTable struct {
 }
 
 func getDefaultRegion() (string, string, error) {
-	req := &uaccount.GetRegionRequest{}
-	resp, err := base.BizClient.GetRegion(req)
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetRegionRequest()
+	resp, err := client.GetRegion(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -83,8 +84,9 @@ type Region struct {
 }
 
 func fetchRegion() (*Region, error) {
-	req := base.BizClient.NewGetRegionRequest()
-	resp, err := base.BizClient.GetRegion(req)
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetRegionRequest()
+	resp, err := client.GetRegion(req)
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +104,12 @@ func fetchRegion() (*Region, error) {
 }
 
 func fetchRegionWithConfig(cfg *base.AggConfig) (*Region, error) {
-	bc, err := base.GetBizClient(cfg)
-	req := bc.NewGetRegionRequest()
+	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := bc.GetRegion(req)
+	req := client.NewGetRegionRequest()
+	resp, err := client.GetRegion(req)
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +170,10 @@ func getZoneList(region string) []string {
 var errNoDefaultProject = errors.New("No default project")
 
 func getDefaultProject() (string, string, error) {
-	req := base.BizClient.NewGetProjectListRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetProjectListRequest()
 
-	resp, err := base.BizClient.GetProjectList(req)
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -183,13 +186,13 @@ func getDefaultProject() (string, string, error) {
 }
 
 func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
-	bc, err := base.GetBizClient(cfg)
+	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return "", "", err
 	}
 
-	req := bc.NewGetProjectListRequest()
-	resp, err := bc.GetProjectList(req)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -203,13 +206,13 @@ func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
 
 // fetchProjectListWithConfig 用指定 profile 的凭证拉取完整项目列表（含默认标记）
 func fetchProjectListWithConfig(cfg *base.AggConfig) ([]uaccount.ProjectListInfo, error) {
-	bc, err := base.GetBizClient(cfg)
+	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
 	}
 
-	req := bc.NewGetProjectListRequest()
-	resp, err := bc.GetProjectList(req)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return nil, err
 	}
@@ -217,13 +220,13 @@ func fetchProjectListWithConfig(cfg *base.AggConfig) ([]uaccount.ProjectListInfo
 }
 
 func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
-	bc, err := base.GetBizClient(cfg)
+	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
 	}
 
-	req := bc.NewGetProjectListRequest()
-	resp, err := bc.GetProjectList(req)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return nil, err
 	}
@@ -260,9 +263,10 @@ func isUserCertified(userInfo *uaccount.UserInfo) bool {
 }
 
 func getUserInfo() (*uaccount.UserInfo, error) {
-	req := base.BizClient.NewGetUserInfoRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetUserInfoRequest()
 	var userInfo uaccount.UserInfo
-	resp, err := base.BizClient.GetUserInfo(req)
+	resp, err := client.GetUserInfo(req)
 
 	if err != nil {
 		return nil, err

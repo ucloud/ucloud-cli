@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
@@ -100,14 +101,15 @@ func NewCmdAPI(out io.Writer) *cobra.Command {
 					}
 				}
 			}
-			req := base.BizClient.UAccountClient.NewGenericRequest()
+			client := newServiceClient(uaccount.NewClient)
+			req := client.NewGenericRequest()
 			err = req.SetPayload(params)
 			if err != nil {
 				fmt.Fprintf(out, "error: %v\n", err)
 				return
 			}
 
-			resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
+			resp, err := client.GenericInvoke(req)
 			if err != nil {
 				fmt.Fprintf(out, "error: %v\n", err)
 				return
@@ -168,7 +170,8 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 	doc := ui.NewDocument(out)
 	refresh := ui.NewRefresh(out)
 
-	req := base.BizClient.UAccountClient.NewGenericRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGenericRequest()
 	err := req.SetPayload(params)
 	if err != nil {
 		return fmt.Errorf("fail to set payload: %w", err)
@@ -185,7 +188,7 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 					wg.Done()
 				}()
 				success := true
-				resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
+				resp, err := client.GenericInvoke(req)
 				block := ui.NewBlock()
 				doc.Append(block)
 				logs := []string{"=================================================="}

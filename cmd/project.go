@@ -56,14 +56,15 @@ func NewCmdProjectList(out io.Writer) *cobra.Command {
 
 // NewCmdProjectCreate ucloud project create
 func NewCmdProjectCreate() *cobra.Command {
-	req := base.BizClient.NewCreateProjectRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewCreateProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Create project",
 		Long:    "Create project",
 		Example: "ucloud project create --name xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.CreateProject(req)
+			resp, err := client.CreateProject(req)
 			if err != nil {
 				base.Cxt.PrintErr(err)
 			} else {
@@ -83,14 +84,15 @@ func NewCmdProjectCreate() *cobra.Command {
 
 // NewCmdProjectUpdate ucloud project update
 func NewCmdProjectUpdate() *cobra.Command {
-	req := base.BizClient.NewModifyProjectRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewModifyProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "update",
 		Short:   "Update project name",
 		Long:    "Update project name",
 		Example: "ucloud project update --id org-xxx --name new_name",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.ModifyProject(req)
+			resp, err := client.ModifyProject(req)
 			if err != nil {
 				base.Cxt.PrintErr(err)
 			} else {
@@ -111,14 +113,15 @@ func NewCmdProjectUpdate() *cobra.Command {
 
 // NewCmdProjectDelete ucloud project delete
 func NewCmdProjectDelete() *cobra.Command {
-	req := base.BizClient.NewTerminateProjectRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewTerminateProjectRequest()
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete project",
 		Long:    "Delete project",
 		Example: "ucloud project delete --id org-xxx",
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := base.BizClient.TerminateProject(req)
+			resp, err := client.TerminateProject(req)
 			if err != nil {
 				base.Cxt.PrintErr(err)
 			} else {
@@ -136,8 +139,9 @@ func NewCmdProjectDelete() *cobra.Command {
 }
 
 func listProject(out io.Writer) error {
-	req := &uaccount.GetProjectListRequest{}
-	resp, err := base.BizClient.GetProjectList(req)
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return err
 	}
@@ -152,8 +156,9 @@ func listProject(out io.Writer) error {
 }
 
 func getProjectList() []string {
-	req := &uaccount.GetProjectListRequest{}
-	resp, err := base.BizClient.GetProjectList(req)
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return nil
 	}

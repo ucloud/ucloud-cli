@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/helpers/waiter"
@@ -602,12 +603,12 @@ func getDefaultRegion(cookie, csrfToken string) (string, string, error) {
 		Timeout:       DefaultTimeoutSec,
 		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 	}
-	bc, err := GetBizClient(cfg)
-	req := bc.NewGetRegionRequest()
+	client, err := newUAccountClientForConfig(cfg)
 	if err != nil {
 		return "", "", err
 	}
-	resp, err := bc.GetRegion(req)
+	req := client.NewGetRegionRequest()
+	resp, err := client.GetRegion(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -627,13 +628,13 @@ func getDefaultProject(cookie, csrfToken string) (string, string, error) {
 		Timeout:       DefaultTimeoutSec,
 		MaxRetryTimes: sdk.Int(DefaultMaxRetryTimes),
 	}
-	bc, err := GetBizClient(cfg)
+	client, err := newUAccountClientForConfig(cfg)
 	if err != nil {
 		return "", "", err
 	}
 
-	req := bc.NewGetProjectListRequest()
-	resp, err := bc.GetProjectList(req)
+	req := client.NewGetProjectListRequest()
+	resp, err := client.GetProjectList(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -643,4 +644,11 @@ func getDefaultProject(cookie, csrfToken string) (string, string, error) {
 		}
 	}
 	return "", "", fmt.Errorf("default project not found")
+}
+
+func newUAccountClientForConfig(cfg *AggConfig) (*uaccount.UAccountClient, error) {
+	sdkConfig, credConfig, err := BuildClientRuntime(cfg)
+	client := uaccount.NewClient(sdkConfig, BuildCredentialFrom(credConfig))
+	AttachHandlersWith(client, credConfig, cfg, AggConfigListIns)
+	return client, err
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	uhttp "github.com/ucloud/ucloud-sdk-go/private/protocol/http"
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 )
 
 func injectorHeaders(t *testing.T, cred *CredentialConfig) map[string]string {
@@ -82,21 +83,32 @@ func bizRecorderServer(t *testing.T, rec *recordedRequest) *httptest.Server {
 
 func callGetRegion(t *testing.T, ac *AggConfig, rec *recordedRequest) {
 	t.Helper()
-	// GetBizClient 会改写包级全局 ClientConfig/AuthCredential，恢复现场避免测试顺序耦合
+	// InitClientRuntime 会改写包级全局 ClientConfig/AuthCredential，恢复现场避免测试顺序耦合
 	oldClientConfig, oldAuthCredential := ClientConfig, AuthCredential
 	t.Cleanup(func() {
 		ClientConfig, AuthCredential = oldClientConfig, oldAuthCredential
 	})
-	bc, err := GetBizClient(ac)
-	if err != nil {
+	if err := InitClientRuntime(ac); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := bc.GetRegion(bc.NewGetRegionRequest()); err != nil {
+	client := uaccount.NewClient(ClientConfig, BuildCredential())
+	AttachHandlersWith(client, AuthCredential, ac, AggConfigListIns)
+	if _, err := client.GetRegion(client.NewGetRegionRequest()); err != nil {
 		t.Fatalf("GetRegion failed: %v", err)
 	}
 	if rec.params == nil {
 		t.Fatal("server did not record any request")
 	}
+}
+
+func newTestUAccountClient(t *testing.T, ac *AggConfig) *uaccount.UAccountClient {
+	t.Helper()
+	if err := InitClientRuntime(ac); err != nil {
+		t.Fatal(err)
+	}
+	client := uaccount.NewClient(ClientConfig, BuildCredential())
+	AttachHandlersWith(client, AuthCredential, ac, AggConfigListIns)
+	return client
 }
 
 // CRITICAL 缺陷回归（RetCode 171）：oauth profile 残留 AK/SK（供 logout 恢复）时，
@@ -159,10 +171,7 @@ func TestOAuthRetryHandler(t *testing.T) {
 		ClientConfig, AuthCredential = prevCC, prevAC
 	})
 
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	resp, err := client.GetRegion(client.NewGetRegionRequest())
 	if err != nil {
 		t.Fatalf("replay should succeed: %v", err)
@@ -223,10 +232,7 @@ func TestOAuthRetryHandlerRetCode174(t *testing.T) {
 		ClientConfig, AuthCredential = prevCC, prevAC
 	})
 
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	resp, err := client.GetRegion(client.NewGetRegionRequest())
 	if err != nil {
 		t.Fatalf("replay should succeed: %v", err)
@@ -277,10 +283,7 @@ func TestOAuthRetryHandlerRetCode174Persists(t *testing.T) {
 	AggConfigListIns = m
 	t.Cleanup(func() { AggConfigListIns, ClientConfig, AuthCredential = prevList, prevCC, prevAC })
 
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	if _, err := client.GetRegion(client.NewGetRegionRequest()); err == nil {
 		t.Error("persistent RetCode 174 must surface an error after single replay")
 	}
@@ -315,10 +318,7 @@ func TestOAuthRetryHandlerRefreshFails(t *testing.T) {
 	AggConfigListIns = m
 	t.Cleanup(func() { AggConfigListIns, ClientConfig, AuthCredential = prevList, prevCC, prevAC })
 
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	if _, err := client.GetRegion(client.NewGetRegionRequest()); err == nil {
 		t.Error("refresh failure must surface the original 401 error")
 	}
@@ -352,10 +352,7 @@ func TestOAuthRetryHandlerReplayStill401(t *testing.T) {
 	AggConfigListIns = m
 	t.Cleanup(func() { AggConfigListIns, ClientConfig, AuthCredential = prevList, prevCC, prevAC })
 
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	if _, err := client.GetRegion(client.NewGetRegionRequest()); err == nil {
 		t.Error("replay still 401 must surface error")
 	}
@@ -379,10 +376,7 @@ func TestOAuthRetryHandlerSkipsAksk(t *testing.T) {
 	_ = newTestManager(t, ac)
 	prevCC, prevAC := ClientConfig, AuthCredential
 	t.Cleanup(func() { ClientConfig, AuthCredential = prevCC, prevAC })
-	client, err := GetBizClient(ac)
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestUAccountClient(t, ac)
 	if _, err := client.GetRegion(client.NewGetRegionRequest()); err == nil {
 		t.Error("aksk 401 should surface error, not replay-refresh")
 	}

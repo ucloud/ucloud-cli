@@ -6,59 +6,11 @@ import (
 	"net/url"
 
 	"github.com/ucloud/ucloud-sdk-go/private/protocol/http"
-	ppathx "github.com/ucloud/ucloud-sdk-go/private/services/pathx"
-	pudb "github.com/ucloud/ucloud-sdk-go/private/services/udb"
-	puhost "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
-	pumem "github.com/ucloud/ucloud-sdk-go/private/services/umem"
-	"github.com/ucloud/ucloud-sdk-go/services/pathx"
-	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
-	"github.com/ucloud/ucloud-sdk-go/services/ucompshare"
-	"github.com/ucloud/ucloud-sdk-go/services/udb"
-	"github.com/ucloud/ucloud-sdk-go/services/udisk"
-	"github.com/ucloud/ucloud-sdk-go/services/udpn"
-	"github.com/ucloud/ucloud-sdk-go/services/uhost"
-	"github.com/ucloud/ucloud-sdk-go/services/ulb"
-	"github.com/ucloud/ucloud-sdk-go/services/umem"
-	"github.com/ucloud/ucloud-sdk-go/services/unet"
-	"github.com/ucloud/ucloud-sdk-go/services/uphost"
-	"github.com/ucloud/ucloud-sdk-go/services/vpc"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
-
-// PrivateUHostClient 私有模块的uhost client 即未在官网开放的接口
-type PrivateUHostClient = puhost.UHostClient
-
-// PrivateUDBClient 私有模块的udb client 即未在官网开放的接口
-type PrivateUDBClient = pudb.UDBClient
-
-// PrivateUMemClient 私有模块的umem client 即未在官网开放的接口
-type PrivateUMemClient = pumem.UMemClient
-
-// PrivatePathxClient 私有模块的pathx client 即未在官网开放的接口
-type PrivatePathxClient = ppathx.PathXClient
-
-// Client aggregate client for business
-type Client struct {
-	uaccount.UAccountClient
-	uhost.UHostClient
-	unet.UNetClient
-	vpc.VPCClient
-	udpn.UDPNClient
-	pathx.PathXClient
-	udisk.UDiskClient
-	ulb.ULBClient
-	udb.UDBClient
-	umem.UMemClient
-	uphost.UPHostClient
-	PrivateUHostClient
-	PrivateUDBClient
-	PrivateUMemClient PrivateUMemClient
-	PrivatePathxClient
-	ucompshare.UCompShareClient
-}
 
 // newCredHeaderInjector 返回凭据头注入 handler。
 // aksk/CloudShell 行为与历史完全一致（Cookie/Csrf-Token 始终 set，含空值）；
@@ -66,6 +18,9 @@ type Client struct {
 // 空密钥也会算出 Signature），并在 token 非空时追加 Authorization: Bearer，
 // 保证 oauth 请求只携带 Bearer 一种凭据机制（凭据模型见 spec §2）。
 func newCredHeaderInjector(credConfig *CredentialConfig) sdk.HttpRequestHandler {
+	if credConfig == nil {
+		credConfig = &CredentialConfig{}
+	}
 	return func(c *sdk.Client, req *http.HttpRequest) (*http.HttpRequest, error) {
 		if err := req.SetHeader("Cookie", credConfig.Cookie); err != nil {
 			return req, err
@@ -143,7 +98,7 @@ func isAuthFailure(resp *http.HttpResponse, err error) bool {
 // （GetAggConfigByProfile/Append 直接存取同一指针），refreshAndSave 的写回因此可靠。
 // req 的 Authorization 由 SetHeader 以 map 赋值覆盖（不会叠加重复头），且 body 中
 // 的签名参数已被 newCredHeaderInjector 剥离，重放仍满足「oauth 请求只带 Bearer」不变式。
-func newOAuthRetryHandler(credConfig *CredentialConfig, ac *AggConfig) sdk.HttpResponseHandler {
+func newOAuthRetryHandler(credConfig *CredentialConfig, ac *AggConfig, manager *AggConfigManager) sdk.HttpResponseHandler {
 	return func(c *sdk.Client, req *http.HttpRequest, resp *http.HttpResponse, err error) (*http.HttpResponse, error) {
 		if ac == nil || credConfig.AuthMode != AuthModeOAuth || credConfig.AccessToken == "" {
 			return resp, err
@@ -151,8 +106,12 @@ func newOAuthRetryHandler(credConfig *CredentialConfig, ac *AggConfig) sdk.HttpR
 		if !isAuthFailure(resp, err) {
 			return resp, err
 		}
+		if manager == nil {
+			LogWarn("oauth reactive refresh skipped: config manager is not initialized")
+			return resp, err
+		}
 		// 刷新（flock 串行化 + 拿锁后重读，见 refreshAndSave）
-		if rerr := refreshAndSave(ac, AggConfigListIns); rerr != nil {
+		if rerr := refreshAndSave(ac, manager); rerr != nil {
 			LogWarn(fmt.Sprintf("oauth reactive refresh failed: %v", Redact(rerr.Error())))
 			return resp, err
 		}
@@ -178,6 +137,9 @@ func newOAuthRetryHandler(credConfig *CredentialConfig, ac *AggConfig) sdk.HttpR
 // 注意 SDK 编码器对空密钥仍会附加 Signature 参数，由 newCredHeaderInjector
 // 剥离，最终 Bearer 是唯一凭据。AK/SK 模式填真实公私钥，SDK 签名器据此签名。
 func buildCredential(credConfig *CredentialConfig) *auth.Credential {
+	if credConfig == nil {
+		credConfig = &CredentialConfig{}
+	}
 	credential := &auth.Credential{}
 	if credConfig.AuthMode != AuthModeOAuth {
 		credential.PublicKey = credConfig.PublicKey
@@ -186,11 +148,17 @@ func buildCredential(credConfig *CredentialConfig) *auth.Credential {
 	return credential
 }
 
-// BuildCredential 从包级 AuthCredential（由 InitConfig/GetBizClient 填充）构造签名凭据。
+// BuildCredential 从包级 AuthCredential（由 InitConfig/InitClientRuntime 填充）构造签名凭据。
 // 供 cli.NewServiceClient 使用——与 NewClient 走完全相同的 buildCredential 逻辑/分支，
 // oauth 与 AK/SK profile 共用一条代码路径（不分叉，§9 无鉴权回归）。
 func BuildCredential() *auth.Credential {
-	return buildCredential(AuthCredential)
+	return BuildCredentialFrom(AuthCredential)
+}
+
+// BuildCredentialFrom constructs an SDK signing credential from an explicit
+// credential config, without reading package-level runtime state.
+func BuildCredentialFrom(credConfig *CredentialConfig) *auth.Credential {
+	return buildCredential(credConfig)
 }
 
 // attachHandlers 把三个平台 handler 挂到 service client 上：
@@ -199,7 +167,10 @@ func BuildCredential() *auth.Credential {
 // 重试目标必须是构造本 client 的 profile，而非包级 ConfigIns
 // （详见 newOAuthRetryHandler 的注释：os.Args 扫描识别不了 -p X/--profile=X，
 // ConfigIns 可能指向另一个 profile，错刷会把别人的 Bearer 重放到当前请求）。
-func attachHandlers(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggConfig) {
+func attachHandlersWithManager(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggConfig, manager *AggConfigManager) {
+	if credConfig == nil {
+		credConfig = &CredentialConfig{}
+	}
 	sc.AddRequestHandler(func(c *sdk.Client, req request.Common) (request.Common, error) {
 		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
 		return req, err
@@ -214,72 +185,18 @@ func attachHandlers(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggC
 		return req, nil
 	})
 	sc.AddHttpRequestHandler(newCredHeaderInjector(credConfig))
-	sc.AddHttpResponseHandler(newOAuthRetryHandler(credConfig, ac))
+	sc.AddHttpResponseHandler(newOAuthRetryHandler(credConfig, ac, manager))
 }
 
 // AttachHandlers 用包级 AuthCredential/ConfigIns（由 InitConfig 填充）把平台 handler
 // 挂到 sc 上。供 cli.NewServiceClient 使用——此时活动 profile 就是 ConfigIns，
 // 它正是正确的反应式刷新目标。
 func AttachHandlers(sc sdk.ServiceClient) {
-	attachHandlers(sc, AuthCredential, ConfigIns)
+	AttachHandlersWith(sc, AuthCredential, ConfigIns, AggConfigListIns)
 }
 
-// NewClient will return a aggregate client.
-// ac 是构造来源 profile（oauth 401 反应式刷新的对象），允许为 nil（此时不重放）。
-func NewClient(config *sdk.Config, credConfig *CredentialConfig, ac *AggConfig) *Client {
-	credential := buildCredential(credConfig)
-	var (
-		uaccountClient = *uaccount.NewClient(config, credential)
-		uhostClient    = *uhost.NewClient(config, credential)
-		unetClient     = *unet.NewClient(config, credential)
-		vpcClient      = *vpc.NewClient(config, credential)
-		udpnClient     = *udpn.NewClient(config, credential)
-		pathxClient    = *pathx.NewClient(config, credential)
-		udiskClient    = *udisk.NewClient(config, credential)
-		ulbClient      = *ulb.NewClient(config, credential)
-		udbClient      = *udb.NewClient(config, credential)
-		umemClient     = *umem.NewClient(config, credential)
-		uphostClient   = *uphost.NewClient(config, credential)
-		puhostClient   = *puhost.NewClient(config, credential)
-		pudbClient     = *pudb.NewClient(config, credential)
-		pumemClient    = *pumem.NewClient(config, credential)
-		ppathxClient   = *ppathx.NewClient(config, credential)
-		ulhostClient   = *ucompshare.NewClient(config, credential)
-	)
-
-	attachHandlers(&uaccountClient, credConfig, ac)
-	attachHandlers(&uhostClient, credConfig, ac)
-	attachHandlers(&unetClient, credConfig, ac)
-	attachHandlers(&vpcClient, credConfig, ac)
-	attachHandlers(&udpnClient, credConfig, ac)
-	attachHandlers(&pathxClient, credConfig, ac)
-	attachHandlers(&udiskClient, credConfig, ac)
-	attachHandlers(&ulbClient, credConfig, ac)
-	attachHandlers(&udbClient, credConfig, ac)
-	attachHandlers(&umemClient, credConfig, ac)
-	attachHandlers(&uphostClient, credConfig, ac)
-	attachHandlers(&puhostClient, credConfig, ac)
-	attachHandlers(&pudbClient, credConfig, ac)
-	attachHandlers(&pumemClient, credConfig, ac)
-	attachHandlers(&ppathxClient, credConfig, ac)
-	attachHandlers(&ulhostClient, credConfig, ac)
-
-	return &Client{
-		uaccountClient,
-		uhostClient,
-		unetClient,
-		vpcClient,
-		udpnClient,
-		pathxClient,
-		udiskClient,
-		ulbClient,
-		udbClient,
-		umemClient,
-		uphostClient,
-		puhostClient,
-		pudbClient,
-		pumemClient,
-		ppathxClient,
-		ulhostClient,
-	}
+// AttachHandlersWith attaches platform handlers using explicit runtime state,
+// so callers do not need the old aggregate base client singleton.
+func AttachHandlersWith(sc sdk.ServiceClient, credConfig *CredentialConfig, ac *AggConfig, manager *AggConfigManager) {
+	attachHandlersWithManager(sc, credConfig, ac, manager)
 }

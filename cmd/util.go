@@ -18,20 +18,23 @@ import (
 
 func bindRegion(req request.Common, cmd *cobra.Command) {
 	var region string
-	cmd.Flags().StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&region, "region", def.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "region", getRegionList)
 	req.SetRegionRef(&region)
 }
 
 func bindRegionS(region *string, cmd *cobra.Command) {
-	*region = base.ConfigIns.Region
-	cmd.Flags().StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	*region = def.Region
+	cmd.Flags().StringVar(region, "region", def.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "region", getRegionList)
 }
 
 func bindZone(req request.Common, cmd *cobra.Command) {
 	var zone string
-	cmd.Flags().StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&zone, "zone", def.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
@@ -55,8 +58,9 @@ func bindZoneEmptyS(zone, region *string, cmd *cobra.Command) {
 }
 
 func bindZoneS(zone, region *string, cmd *cobra.Command) {
-	*zone = base.ConfigIns.Zone
-	cmd.Flags().StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	*zone = def.Zone
+	cmd.Flags().StringVar(zone, "zone", def.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(*region)
 	})
@@ -64,14 +68,16 @@ func bindZoneS(zone, region *string, cmd *cobra.Command) {
 
 func bindProjectID(req request.Common, cmd *cobra.Command) {
 	var project string
-	cmd.Flags().StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&project, "project-id", def.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	command.SetCompletion(cmd, "project-id", getProjectList)
 	req.SetProjectIdRef(&project)
 }
 
 func bindProjectIDS(project *string, cmd *cobra.Command) {
-	*project = base.ConfigIns.ProjectID
-	cmd.Flags().StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	def := runtimeDefaults()
+	*project = def.ProjectID
+	cmd.Flags().StringVar(project, "project-id", def.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	command.SetCompletion(cmd, "project-id", getProjectList)
 }
 
