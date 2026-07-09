@@ -1,0 +1,7 @@
+# products/ulhost/product.yaml — ulhost 产品元数据(归属真源,owner 自治维护)
+name: ulhost
+owners:
+  - Episkey-G
+commands:
+  - ulhost
+enabled: true

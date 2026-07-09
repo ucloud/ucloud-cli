@@ -18,6 +18,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
+	"github.com/ucloud/ucloud-cli/products/ulhost"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -27,7 +28,7 @@ type RepeatsConfig struct {
 }
 
 var RepeatsSupportedAPI = map[string]RepeatsConfig{
-	"CreateULHostInstance": {Poller: ulhostSpoller, IDInResp: "ULHostId"},
+	"CreateULHostInstance": {Poller: ulhost.Spoller, IDInResp: "ULHostId"},
 }
 
 const ActionField = "Action"
