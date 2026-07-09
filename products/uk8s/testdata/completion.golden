@@ -1,0 +1,16 @@
+ucloud uk8s create	charge-type	static	Dynamic,Month,Year
+ucloud uk8s create	external-api-server	static	No,Yes
+ucloud uk8s create	kube-proxy-mode	static	iptables,ipvs
+ucloud uk8s create	master-boot-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uk8s create	master-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
+ucloud uk8s create	master-data-disk-type	static	,CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uk8s create	master-machine-type	static	C,N,O,OS
+ucloud uk8s create	node-boot-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uk8s create	node-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
+ucloud uk8s create	node-data-disk-type	static	,CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uk8s create	node-machine-type	static	C,N,O,OS
+ucloud uk8s create	project-id	dynamic
+ucloud uk8s create	region	dynamic
+ucloud uk8s create	subnet-id	static
+ucloud uk8s create	vpc-id	dynamic
+ucloud uk8s create	zone	dynamic
