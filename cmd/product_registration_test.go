@@ -50,6 +50,7 @@ func TestRegisteredProductsUseCommandDirectoryProducts(t *testing.T) {
 		{product: "udpn", commands: []string{"udpn"}},
 		{product: "uhost", commands: []string{"uhost"}},
 		{product: "ulb", commands: []string{"ulb"}},
+		{product: "umodelverse", commands: []string{"umodelverse"}},
 		{product: "uphost", commands: []string{"uphost"}},
 		{product: "vpc", commands: []string{"vpc"}},
 	} {
