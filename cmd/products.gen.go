@@ -5,9 +5,12 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/products/udb"
 	"github.com/ucloud/ucloud-cli/products/udisk"
+	"github.com/ucloud/ucloud-cli/products/ufs"
 	"github.com/ucloud/ucloud-cli/products/uhost"
 	"github.com/ucloud/ucloud-cli/products/unet"
+	"github.com/ucloud/ucloud-cli/products/upfs"
 	"github.com/ucloud/ucloud-cli/products/uphost"
+	"github.com/ucloud/ucloud-cli/products/usnap"
 )
 
 // registeredProducts returns the platform-registered products.
@@ -15,8 +18,11 @@ func registeredProducts() []cli.Product {
 	return []cli.Product{
 		udb.New(),
 		udisk.New(),
+		ufs.New(),
 		uhost.New(),
 		unet.New(),
+		upfs.New(),
 		uphost.New(),
+		usnap.New(),
 	}
 }

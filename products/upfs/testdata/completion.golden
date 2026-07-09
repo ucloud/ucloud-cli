@@ -1,0 +1,3 @@
+ucloud upfs create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud upfs create	protocol-type	static	POSIX
+ucloud upfs delete	volume-id	dynamic

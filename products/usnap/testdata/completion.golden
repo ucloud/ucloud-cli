@@ -1,0 +1,2 @@
+ucloud usnap create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud usnap delete	vdisk-id	dynamic
