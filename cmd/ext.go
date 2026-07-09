@@ -17,6 +17,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ import (
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
+	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
 
@@ -72,7 +74,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 			for _, idname := range uhostIDs {
 				uhostID := base.PickResourceID(idname)
 				logs = append(logs, fmt.Sprintf("describe uhost instance by uhostID %s", uhostID))
-				ins, err := describeUHostByID(uhostID, project, region, zone)
+				ins, err := extDescribeUHostByID(uhostID, project, region, zone)
 				if err != nil {
 					errStr := fmt.Sprintf("describe uhost %s failed: %v", uhostID, err)
 					base.HandleError(errors.New(errStr))
@@ -136,7 +138,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					fmt.Println(eipRet)
 
 					//绑定新EIP
-					slogs, err2 := sbindEIP(&uhostID, sdk.String("uhost"), &eipID, &project, &region)
+					slogs, err2 := extAttachEIPWithLogs(&uhostID, sdk.String("uhost"), &eipID, &project, &region)
 					logs = append(logs, slogs...)
 					if err2 != nil {
 						base.HandleError(fmt.Errorf("bind new eip %s failed: %v", eipID, err2))
@@ -145,7 +147,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					fmt.Printf("bound eip %s with uhost %s\n", eipID, uhostID)
 
 					if unbind {
-						slogs, err := unbindEIP(uhostID, "uhost", ip.IPId, project, region)
+						slogs, err := extDetachEIPWithLogs(uhostID, "uhost", ip.IPId, project, region)
 						logs = append(logs, slogs...)
 						if err != nil {
 							base.HandleError(fmt.Errorf("unbind eip %s failed: %v", ip.IPId, err))
@@ -198,10 +200,145 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 	bindZoneEmptyS(&zone, &region, cmd)
 
 	command.SetCompletion(cmd, "uhost-id", func() []string {
-		return getUhostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, project, region, zone)
+		return extUHostList([]string{status.HOST_RUNNING, status.HOST_STOPPED, status.HOST_FAIL}, project, region, zone)
 	})
 
 	cmd.MarkFlagRequired("uhost-id")
 
 	return cmd
+}
+
+func extDescribeUHostByID(uhostID, projectID, region, zone string) (interface{}, error) {
+	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	req.UHostIds = []string{uhostID}
+	req.ProjectId = &projectID
+	req.Region = &region
+	req.Zone = &zone
+
+	resp, err := base.BizClient.DescribeUHostInstance(req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.UHostSet) < 1 {
+		return nil, fmt.Errorf("uhost [%s] does not exist", uhostID)
+	}
+
+	return &resp.UHostSet[0], nil
+}
+
+func extUHostList(states []string, project, region, zone string) []string {
+	req := base.BizClient.NewDescribeUHostInstanceRequest()
+	req.ProjectId = sdk.String(project)
+	req.Region = sdk.String(region)
+	req.Zone = sdk.String(zone)
+	req.Limit = sdk.Int(50)
+	resp, err := base.BizClient.DescribeUHostInstance(req)
+	if err != nil {
+		return nil
+	}
+	list := []string{}
+	for _, host := range resp.UHostSet {
+		if states != nil {
+			for _, s := range states {
+				if host.State == s {
+					list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+				}
+			}
+		} else {
+			list = append(list, host.UHostId+"/"+strings.Replace(host.Name, " ", "-", -1))
+		}
+	}
+	return list
+}
+
+func extEIPIDByIP(ip net.IP, projectID, region string) (string, error) {
+	eipList, err := extFetchAllEIP(projectID, region)
+	if err != nil {
+		return "", err
+	}
+	for _, eip := range eipList {
+		for _, addr := range eip.EIPAddr {
+			if addr.IP == ip.String() {
+				return eip.EIPId, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("IP[%s] not exist", ip.String())
+}
+
+func extFetchAllEIP(projectID, region string) ([]unet.UnetEIPSet, error) {
+	req := base.BizClient.NewDescribeEIPRequest()
+	list := []unet.UnetEIPSet{}
+	req.ProjectId = sdk.String(projectID)
+	req.Region = sdk.String(region)
+	for offset, step := 0, 100; ; offset += step {
+		req.Offset = &offset
+		req.Limit = &step
+		resp, err := base.BizClient.DescribeEIP(req)
+		if err != nil {
+			return nil, err
+		}
+		for i, size := 0, len(resp.EIPSet); i < size; i++ {
+			list = append(list, resp.EIPSet[i])
+		}
+		if resp.TotalCount <= offset+step {
+			break
+		}
+	}
+	return list, nil
+}
+
+func extAttachEIPWithLogs(resourceID, resourceType, eipID, projectID, region *string) ([]string, error) {
+	logs := make([]string, 0)
+	ip := net.ParseIP(*eipID)
+	if ip != nil {
+		id, err := extEIPIDByIP(ip, *projectID, *region)
+		if err != nil {
+			base.HandleError(err)
+		} else {
+			*eipID = id
+		}
+	}
+	req := base.BizClient.NewBindEIPRequest()
+	req.ResourceId = resourceID
+	req.ResourceType = resourceType
+	req.EIPId = sdk.String(base.PickResourceID(*eipID))
+	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
+	req.Region = region
+	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", base.ToQueryMap(req)))
+	_, err := base.BizClient.BindEIP(req)
+	if err != nil {
+		logs = append(logs, fmt.Sprintf("bind eip failed: %v", err))
+		return logs, err
+	}
+	logs = append(logs, fmt.Sprintf("bind eip[%s] with %s[%s] successfully", *req.EIPId, *req.ResourceType, *req.ResourceId))
+	return logs, nil
+}
+
+func extDetachEIPWithLogs(resourceID, resourceType, eipID, projectID, region string) ([]string, error) {
+	logs := make([]string, 0)
+	eipID = base.PickResourceID(eipID)
+	ip := net.ParseIP(eipID)
+	if ip != nil {
+		id, err := extEIPIDByIP(ip, projectID, region)
+		if err != nil {
+			base.HandleError(err)
+		} else {
+			eipID = id
+		}
+	}
+	req := base.BizClient.NewUnBindEIPRequest()
+	req.ResourceId = &resourceID
+	req.ResourceType = &resourceType
+	req.EIPId = &eipID
+	req.ProjectId = sdk.String(base.PickResourceID(projectID))
+	req.Region = &region
+	logs = append(logs, fmt.Sprintf("api: UnBindEIP, request: %v", base.ToQueryMap(req)))
+	_, err := base.BizClient.UnBindEIP(req)
+	if err != nil {
+		logs = append(logs, fmt.Sprintf("unbind eip failed: %v", err))
+		return logs, err
+	}
+	logs = append(logs, fmt.Sprintf("unbind eip[%s] with %s[%s] successfully", *req.EIPId, *req.ResourceType, *req.ResourceId))
+	return logs, nil
 }

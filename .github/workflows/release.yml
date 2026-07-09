@@ -1,7 +1,8 @@
-# Merge-to-release automation
+# Weekly release automation
 #
 # Flow:
-#   1. A PR merges to master (or workflow_dispatch for the first guarded run).
+#   1. Once per week (or workflow_dispatch for an urgent/manual run), the
+#      workflow checks master for releasable commits since the latest tag.
 #   2. Version policy: every release is a PATCH bump (0.3.3 → 0.3.4 → 0.3.5),
 #      regardless of whether the commits are feat or fix — we intentionally do
 #      NOT auto-minor on feat. svu is used in two roles here:
@@ -19,16 +20,17 @@
 #   5. If there are no new releasable commits (feat/fix/perf/refactor/breaking),
 #      the job exits early without creating a release.
 #
-# Release is intentionally automatic after master updates. Product-autonomous
-# PRs are admitted by PR Gate, then the master push from the automation identity
-# triggers this workflow.
+# Release is intentionally batched weekly. PRs are still admitted by PR Gate and
+# normal CI/CD checks before merge; this workflow only decides whether the
+# already-merged master branch should be published during the release window.
 
 name: Release
 
 on:
-  push:
-    branches: [master]
-  workflow_dispatch: {}   # manual trigger for the first guarded run
+  schedule:
+    # Mondays 23:00 Asia/Shanghai (15:00 UTC).
+    - cron: "0 15 * * 1"
+  workflow_dispatch: {}   # manual trigger for urgent releases or guarded runs
 
 concurrency:
   group: release

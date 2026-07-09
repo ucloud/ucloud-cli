@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 	"time"
 
@@ -110,15 +109,6 @@ func bindQuantity(req interface{}, flags *pflag.FlagSet) {
 	v := reflect.ValueOf(req).Elem()
 	f := v.FieldByName("Quantity")
 	f.Set(reflect.ValueOf(quanitiy))
-}
-
-func getEIPLine(region string) (line string) {
-	if strings.HasPrefix(region, "cn") {
-		line = "BGP"
-	} else {
-		line = "International"
-	}
-	return
 }
 
 type concurrentAction struct {

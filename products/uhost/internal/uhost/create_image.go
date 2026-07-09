@@ -36,6 +36,7 @@ func newCreateImage(ctx *cli.Context) *cobra.Command {
 			} else {
 				ctx.PollerTo(w, describeImageByID(ctx, *req.ProjectId, *req.Region, *req.Zone)).Spoll(resp.ImageId, text, []string{IMAGE_AVAILABLE, IMAGE_UNAVAILABLE})
 			}
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.ImageId, Action: "create", Status: "Making"})
 		},
 	}
 	flags := cmd.Flags()

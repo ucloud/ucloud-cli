@@ -1,0 +1,7 @@
+# products/ulb/product.yaml — ULB product metadata.
+name: ulb
+owners:
+  - Episkey-G
+commands:
+  - ulb
+enabled: true

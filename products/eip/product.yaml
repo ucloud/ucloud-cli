@@ -1,0 +1,6 @@
+name: eip
+owners:
+  - Episkey-G
+commands:
+  - eip
+enabled: true

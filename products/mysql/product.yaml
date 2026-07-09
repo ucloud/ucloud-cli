@@ -1,0 +1,6 @@
+name: mysql
+owners:
+  - Episkey-G
+commands:
+  - mysql
+enabled: true

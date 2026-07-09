@@ -379,22 +379,13 @@ func checkConsistency(products []Product, dirs []string) (violations, warnings [
 // set to match.
 var reservedCommands = map[string]bool{
 	// addPlatformCommands (cmd/root.go), in registration order:
-	"init":      true, // NewCmdInit
-	"auth":      true, // NewCmdAuth
-	"gendoc":    true, // NewCmdDoc (doc-gen command, Use: "gendoc")
-	"config":    true, // NewCmdConfig
-	"region":    true, // NewCmdRegion
-	"project":   true, // NewCmdProject
+	"init":    true, // NewCmdInit
+	"auth":    true, // NewCmdAuth
+	"gendoc":  true, // NewCmdDoc (doc-gen command, Use: "gendoc")
+	"config":  true, // NewCmdConfig
+	"region":  true, // NewCmdRegion
+	"project": true, // NewCmdProject
 	// uhost migrated to products/uhost (Part 6) — no longer platform-reserved.
-	"subnet":    true, // NewCmdSubnet
-	"vpc":       true, // NewCmdVpc
-	"bandwidth": true, // NewCmdBandwidth
-	"udpn":      true, // NewCmdUDPN
-	"ulb":       true, // NewCmdULB
-	"gssh":      true, // NewCmdGssh
-	"pathx":     true, // NewCmdPathx
-	"redis":     true, // NewCmdRedis
-	"memcache":  true, // NewCmdMemcache
 	"ext":       true, // NewCmdExt
 	"api":       true, // NewCmdAPI
 	"signature": true, // NewCmdSignature
@@ -507,7 +498,7 @@ func main() {
 			}
 
 			// Determine which product this file belongs to.
-			// path is like "products/udb/internal/mysql/cmd.go"
+			// path is like "products/mysql/internal/mysql/cmd.go"
 			rel := strings.TrimPrefix(path, productsRoot+string(filepath.Separator))
 			parts := strings.SplitN(rel, string(filepath.Separator), 2)
 			productName := parts[0]

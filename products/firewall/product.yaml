@@ -1,0 +1,6 @@
+name: firewall
+owners:
+  - Episkey-G
+commands:
+  - firewall
+enabled: true

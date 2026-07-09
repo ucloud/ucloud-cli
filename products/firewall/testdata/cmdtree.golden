@@ -1,0 +1,58 @@
+ucloud firewall	use=firewall	short=List and manipulate extranet firewall
+ucloud firewall add-rule	use=add-rule	short=Add rule to firewall instance
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall apply	use=apply	short=Applay firewall to ucloud service
+  flag=fw-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=true
+  flag=resource-type	short=	default=	required=true
+ucloud firewall copy	use=copy	short=Copy firewall
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-fw	short=	default=	required=true
+  flag=target-region	short=	default=	required=
+ucloud firewall create	use=create	short=Create firewall
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall delete	use=delete	short=Delete firewall by resource ids or names
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall list	use=list	short=List extranet firewall
+  flag=bound-resource-id	short=	default=	required=
+  flag=bound-resource-type	short=	default=	required=
+  flag=firewall-id	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall remove-rule	use=remove-rule	short=Remove rule from firewall instance
+  flag=fw-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=rules	short=	default=[]	required=
+  flag=rules-file	short=	default=	required=
+ucloud firewall resource	use=resource	short=List resources that has been applied the firewall
+  flag=fw-id	short=	default=	required=true
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud firewall update	use=update	short=Update firewall attribute, such as name,group and remark.
+  flag=fw-id	short=	default=[]	required=true
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=

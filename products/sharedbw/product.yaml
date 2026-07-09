@@ -1,0 +1,6 @@
+name: sharedbw
+owners:
+  - Episkey-G
+commands:
+  - bw
+enabled: true

@@ -50,11 +50,11 @@ func TestCheckFile_Rule1_SameProductImport_Clean(t *testing.T) {
 	src := `package cmd
 
 import (
-	_ "github.com/ucloud/ucloud-cli/products/udb/internal/helper"
+	_ "github.com/ucloud/ucloud-cli/products/mysql/internal/helper"
 )
 `
-	path := writeFile(t, dir, "udb/cmd.go", src)
-	got := checkFile(path, "udb")
+	path := writeFile(t, dir, "mysql/cmd.go", src)
+	got := checkFile(path, "mysql")
 	for _, v := range got {
 		if strings.Contains(v, "rule1") {
 			t.Errorf("unexpected rule1 violation for same-product import: %v", v)
@@ -243,8 +243,8 @@ func setup(ctx *cli.Context, f someFlag) {
 // --------------------------------------------------------------------------
 
 func TestCheckConsistency_DirWithoutYAML_Violation(t *testing.T) {
-	products := []Product{{Name: "udb", Dir: "products/udb", Enabled: true}}
-	dirs := []string{"udb", "mystery"} // mystery 无 product.yaml
+	products := []Product{{Name: "mysql", Dir: "products/mysql", Enabled: true}}
+	dirs := []string{"mysql", "mystery"} // mystery 无 product.yaml
 	violations, _ := checkConsistency(products, dirs)
 	found := false
 	for _, v := range violations {
@@ -258,8 +258,8 @@ func TestCheckConsistency_DirWithoutYAML_Violation(t *testing.T) {
 }
 
 func TestCheckConsistency_AllHaveYAML_Clean(t *testing.T) {
-	products := []Product{{Name: "udb", Dir: "products/udb", Enabled: true}}
-	dirs := []string{"udb"}
+	products := []Product{{Name: "mysql", Dir: "products/mysql", Enabled: true}}
+	dirs := []string{"mysql"}
 	violations, _ := checkConsistency(products, dirs)
 	if len(violations) != 0 {
 		t.Errorf("expected no violations, got: %v", violations)
@@ -268,13 +268,13 @@ func TestCheckConsistency_AllHaveYAML_Clean(t *testing.T) {
 
 func TestLoadProducts(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "products/udb/product.yaml", "name: udb\nowners: [Episkey-G]\ncommands: [mysql]\nenabled: true\n")
+	writeFile(t, dir, "products/mysql/product.yaml", "name: mysql\nowners: [Episkey-G]\ncommands: [mysql]\nenabled: true\n")
 	t.Chdir(dir)
 	got, err := loadProducts()
 	if err != nil {
 		t.Fatalf("loadProducts: %v", err)
 	}
-	if len(got) != 1 || got[0].Name != "udb" || got[0].Dir != "products/udb" || len(got[0].Commands) != 1 {
+	if len(got) != 1 || got[0].Name != "mysql" || got[0].Dir != "products/mysql" || len(got[0].Commands) != 1 {
 		t.Fatalf("unexpected: %+v", got)
 	}
 }
@@ -306,14 +306,74 @@ func TestCheckReservedCommands_ReservedName_Violation(t *testing.T) {
 }
 
 func TestCheckReservedCommands_RealRegistry_Clean(t *testing.T) {
-	// The real registry (udb → mysql) declares no reserved name → clean.
+	// The real registry declares no reserved name → clean.
 	products := []Product{
-		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+		{Name: "mysql", Dir: "products/mysql", Commands: []string{"mysql"}, Enabled: true},
 	}
 
 	violations := checkReservedCommands(products)
 	if len(violations) != 0 {
 		t.Errorf("expected no violations for clean registry, got: %v", violations)
+	}
+}
+
+func TestReservedCommands_ExcludesStaleBandwidthImplementationName(t *testing.T) {
+	if reservedCommands["bandwidth"] {
+		t.Fatal("reservedCommands must not include stale implementation name \"bandwidth\"")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedUDPNProduct(t *testing.T) {
+	if reservedCommands["udpn"] {
+		t.Fatal("reservedCommands must not include udpn after it migrates to products/udpn")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedGSSHProductCommand(t *testing.T) {
+	if reservedCommands["gssh"] {
+		t.Fatal("reservedCommands must not include gssh after it migrates to products/globalssh")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedPathXProductCommand(t *testing.T) {
+	if reservedCommands["pathx"] {
+		t.Fatal("reservedCommands must not include pathx after it migrates to products/pathx")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedBandwidthProductCommand(t *testing.T) {
+	if reservedCommands["bw"] {
+		t.Fatal("reservedCommands must not include bw after it migrates to products/sharedbw")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedRedisProductCommand(t *testing.T) {
+	if reservedCommands["redis"] {
+		t.Fatal("reservedCommands must not include redis after it migrates to products/redis")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedMemcacheProductCommand(t *testing.T) {
+	if reservedCommands["memcache"] {
+		t.Fatal("reservedCommands must not include memcache after it migrates to products/memcache")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedULBProductCommand(t *testing.T) {
+	if reservedCommands["ulb"] {
+		t.Fatal("reservedCommands must not include ulb after it migrates to products/ulb")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedVPCProductCommand(t *testing.T) {
+	if reservedCommands["vpc"] {
+		t.Fatal("reservedCommands must not include vpc after it migrates to products/vpc")
+	}
+}
+
+func TestReservedCommands_ExcludesMigratedSubnetProductCommand(t *testing.T) {
+	if reservedCommands["subnet"] {
+		t.Fatal("reservedCommands must not include subnet after it migrates to products/subnet")
 	}
 }
 
@@ -341,7 +401,7 @@ func TestCheckCommandCollisions_Duplicate_Violation(t *testing.T) {
 
 func TestCheckCommandCollisions_UniqueRegistry_Clean(t *testing.T) {
 	products := []Product{
-		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+		{Name: "mysql", Dir: "products/mysql", Commands: []string{"mysql"}, Enabled: true},
 		{Name: "uhost", Dir: "products/uhost", Commands: []string{"uhost"}, Enabled: true},
 	}
 	violations := checkCommandCollisions(products)
@@ -386,14 +446,14 @@ func TestSameStringSet(t *testing.T) {
 
 func TestExtractMetadataCommands(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "product.go", `package udb
+	writeFile(t, dir, "product.go", `package mysql
 
 import "github.com/ucloud/ucloud-cli/pkg/cli"
 
 type product struct{}
 
 func (product) Metadata() cli.Metadata {
-	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
+	return cli.Metadata{Name: "mysql", Commands: []string{"mysql"}}
 }
 `)
 	got, err := extractMetadataCommands(dir)
@@ -407,24 +467,24 @@ func (product) Metadata() cli.Metadata {
 
 func TestCheckCommandsConsistency_Mismatch_Violation(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "products/udb/product.go", `package udb
+	writeFile(t, dir, "products/mysql/product.go", `package mysql
 
 import "github.com/ucloud/ucloud-cli/pkg/cli"
 
 type product struct{}
 
 func (product) Metadata() cli.Metadata {
-	return cli.Metadata{Name: "udb", Commands: []string{"mysql", "extra"}}
+	return cli.Metadata{Name: "mysql", Commands: []string{"mysql", "extra"}}
 }
 `)
 	t.Chdir(dir) // Go 1.24+: chdir for this test, auto-restored
 	products := []Product{
-		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+		{Name: "mysql", Dir: "products/mysql", Commands: []string{"mysql"}, Enabled: true},
 	}
 	violations := checkCommandsConsistency(products)
 	found := false
 	for _, v := range violations {
-		if strings.Contains(v, "rule8") && strings.Contains(v, "udb") {
+		if strings.Contains(v, "rule8") && strings.Contains(v, "mysql") {
 			found = true
 			break
 		}
@@ -436,19 +496,19 @@ func (product) Metadata() cli.Metadata {
 
 func TestCheckCommandsConsistency_Match_Clean(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "products/udb/product.go", `package udb
+	writeFile(t, dir, "products/mysql/product.go", `package mysql
 
 import "github.com/ucloud/ucloud-cli/pkg/cli"
 
 type product struct{}
 
 func (product) Metadata() cli.Metadata {
-	return cli.Metadata{Name: "udb", Commands: []string{"mysql"}}
+	return cli.Metadata{Name: "mysql", Commands: []string{"mysql"}}
 }
 `)
 	t.Chdir(dir)
 	products := []Product{
-		{Name: "udb", Dir: "products/udb", Commands: []string{"mysql"}, Enabled: true},
+		{Name: "mysql", Dir: "products/mysql", Commands: []string{"mysql"}, Enabled: true},
 	}
 	violations := checkCommandsConsistency(products)
 	if len(violations) != 0 {
@@ -463,18 +523,18 @@ func (product) Metadata() cli.Metadata {
 func TestCheckFile_Rule9_ImportWhitelist(t *testing.T) {
 	src := `package p
 
-import (
-	_ "fmt"
-	_ "github.com/spf13/cobra"
-	_ "github.com/ucloud/ucloud-cli/internal/common"
-	_ "github.com/ucloud/ucloud-cli/model/status"
-	_ "github.com/ucloud/ucloud-cli/pkg/cli"
-	_ "github.com/ucloud/ucloud-cli/products/udb/internal/mysql"
-	_ "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
-	_ "github.com/fatih/color"
-)
+	import (
+		_ "fmt"
+		_ "github.com/spf13/cobra"
+		_ "github.com/ucloud/ucloud-cli/internal/common"
+		_ "github.com/ucloud/ucloud-cli/model/status"
+		_ "github.com/ucloud/ucloud-cli/pkg/cli"
+		_ "github.com/ucloud/ucloud-cli/products/mysql/internal/mysql"
+		_ "github.com/ucloud/ucloud-sdk-go/private/services/uhost"
+		_ "github.com/fatih/color"
+	)
 `
-	joined := strings.Join(checkFile(writeFile(t, t.TempDir(), "x.go", src), "udb"), "\n")
+	joined := strings.Join(checkFile(writeFile(t, t.TempDir(), "x.go", src), "mysql"), "\n")
 
 	for _, bad := range []string{
 		`rule9: import "github.com/ucloud/ucloud-cli/model/status"`,
@@ -487,7 +547,7 @@ import (
 	for _, ok := range []string{`"fmt"`, `"github.com/spf13/cobra"`,
 		`"github.com/ucloud/ucloud-cli/internal/common"`,
 		`"github.com/ucloud/ucloud-cli/pkg/cli"`,
-		`"github.com/ucloud/ucloud-cli/products/udb/internal/mysql"`,
+		`"github.com/ucloud/ucloud-cli/products/mysql/internal/mysql"`,
 		`"github.com/ucloud/ucloud-sdk-go/private/services/uhost"`} {
 		if strings.Contains(joined, "rule9: import "+ok) {
 			t.Fatalf("false positive on %s in:\n%s", ok, joined)

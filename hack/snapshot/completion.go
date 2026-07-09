@@ -21,7 +21,7 @@ type completionResult struct {
 //
 // Dynamic detection: SetCompletion closures touch the network-backing globals
 // which the test nils after tree construction, causing a nil-pointer panic.
-// Platform (cmd) closures dereference base.BizClient; product (products/udb)
+// Platform (cmd) closures dereference base.BizClient; product (products/mysql)
 // closures go through cli.NewServiceClient, which builds an SDK client from
 // base.ClientConfig — so the test nils both (see TestWriteCompletionBaseline).
 // We recover from the panic and mark the flag dynamic. A closure may also

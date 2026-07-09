@@ -1,0 +1,44 @@
+ucloud pathx area list	project-id	dynamic
+ucloud pathx area list	region	dynamic
+ucloud pathx area list	zone	dynamic
+ucloud pathx create	accel	static	AF,AP,EU,Global,ME,NA,OA,SA
+ucloud pathx create	area-code	static	BKK,BOM,CGK,DME,DXB,FRA,HKG,IAD,ICN,LAX,LHR,LOS,MNL,MSP,NRT,PVG,SGN,SIN,TPE
+ucloud pathx create	charge-type	static	Hour,Month,Year
+ucloud pathx create	project-id	dynamic
+ucloud pathx create	protocol	static	TCP,UDP
+ucloud pathx create	region	dynamic
+ucloud pathx create	zone	dynamic
+ucloud pathx delete	id	dynamic
+ucloud pathx delete	project-id	dynamic
+ucloud pathx delete	region	dynamic
+ucloud pathx delete	zone	dynamic
+ucloud pathx list	id	dynamic
+ucloud pathx list	project-id	dynamic
+ucloud pathx list	region	dynamic
+ucloud pathx list	zone	dynamic
+ucloud pathx modify	id	dynamic
+ucloud pathx modify	project-id	dynamic
+ucloud pathx modify	region	dynamic
+ucloud pathx modify	zone	dynamic
+ucloud pathx price list	accel	static	AF,AP,EU,Global,ME,NA,OA,SA
+ucloud pathx price list	area-code	static	BKK,BOM,CGK,DME,DXB,FRA,HKG,IAD,ICN,LAX,LHR,LOS,MNL,MSP,NRT,PVG,SGN,SIN,TPE
+ucloud pathx price list	charge-type	static	Hour,Month,Year
+ucloud pathx price list	project-id	dynamic
+ucloud pathx price list	region	dynamic
+ucloud pathx price list	zone	dynamic
+ucloud pathx uga add-port	project-id	dynamic
+ucloud pathx uga add-port	protocol	static	tcp,udp
+ucloud pathx uga add-port	uga-id	dynamic
+ucloud pathx uga create	origin-location	static	东京,中国,中国台北,中国香港,华盛顿,孟买,新加坡,曼谷,法兰克福,洛杉矶,莫斯科,雅加达,首尔
+ucloud pathx uga create	project-id	dynamic
+ucloud pathx uga create	protocol	static	tcp,udp
+ucloud pathx uga create	upath-id	dynamic
+ucloud pathx uga delete	project-id	dynamic
+ucloud pathx uga delete	uga-id	dynamic
+ucloud pathx uga delete-port	project-id	dynamic
+ucloud pathx uga delete-port	protocol	static	tcp,udp
+ucloud pathx uga delete-port	uga-id	dynamic
+ucloud pathx uga describe	project-id	dynamic
+ucloud pathx uga describe	uga-id	dynamic
+ucloud pathx uga list	project-id	dynamic
+ucloud pathx upath list	project-id	dynamic

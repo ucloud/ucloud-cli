@@ -1,0 +1,192 @@
+ucloud umodelverse	use=umodelverse	short=Manipulate uModelVerse resources
+ucloud umodelverse apikey	use=apikey	short=Manage uModelVerse API keys
+ucloud umodelverse apikey create	use=create	short=Create a uModelVerse API key
+  flag=daily-limit-amount	short=	default=	required=
+  flag=daily-quota-alert-threshold	short=	default=0	required=
+  flag=expire-time	short=	default=0	required=
+  flag=grant-all-models	short=	default=true	required=
+  flag=granted-models	short=	default=[]	required=
+  flag=ip-whitelist	short=	default=	required=
+  flag=modelverse-disabled	short=	default=0	required=
+  flag=monthly-limit-amount	short=	default=	required=
+  flag=monthly-quota-alert-threshold	short=	default=0	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quota-alert-channel	short=	default=[]	required=
+  flag=quota-alert-email	short=	default=	required=
+  flag=quota-alert-email-verification-token	short=	default=	required=
+  flag=quota-alert-phone	short=	default=	required=
+  flag=quota-alert-phone-verification-token	short=	default=	required=
+  flag=sandbox-disabled	short=	default=0	required=
+ucloud umodelverse apikey delete	use=delete	short=Delete a uModelVerse API key
+  flag=key-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+ucloud umodelverse apikey list	use=list	short=List uModelVerse API keys
+  flag=key-id	short=	default=	required=
+  flag=limit	short=	default=20	required=
+  flag=modelverse-disabled	short=	default=0	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=sandbox-disabled	short=	default=0	required=
+ucloud umodelverse apikey update	use=update	short=Update a uModelVerse API key
+  flag=daily-limit-amount	short=	default=	required=
+  flag=daily-quota-alert-threshold	short=	default=0	required=
+  flag=expire-time	short=	default=0	required=
+  flag=grant-all-models	short=	default=true	required=
+  flag=granted-models	short=	default=[]	required=
+  flag=ip-whitelist	short=	default=	required=
+  flag=key-id	short=	default=	required=true
+  flag=modelverse-disabled	short=	default=0	required=
+  flag=monthly-limit-amount	short=	default=	required=
+  flag=monthly-quota-alert-threshold	short=	default=0	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quota-alert-channel	short=	default=[]	required=
+  flag=quota-alert-email	short=	default=	required=
+  flag=quota-alert-email-verification-token	short=	default=	required=
+  flag=quota-alert-phone	short=	default=	required=
+  flag=quota-alert-phone-verification-token	short=	default=	required=
+  flag=sandbox-disabled	short=	default=0	required=
+  flag=status	short=	default=0	required=
+ucloud umodelverse filter-options	use=filter-options	short=Get uModelVerse order filter options
+  flag=product-code	short=	default=	required=
+ucloud umodelverse log	use=log	short=Query and export uModelVerse inference logs
+ucloud umodelverse log describe	use=describe	short=Describe a uModelVerse inference request log
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=request-id	short=	default=	required=true
+  flag=zone	short=	default=	required=true
+ucloud umodelverse log export	use=export	short=Export uModelVerse inference request logs
+  flag=email	short=	default=	required=true
+  flag=end-time-ms	short=	default=0	required=true
+  flag=key-id	short=	default=[]	required=
+  flag=model-name	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=request-id	short=	default=	required=
+  flag=start-time-ms	short=	default=0	required=true
+  flag=zone	short=	default=	required=true
+ucloud umodelverse log list	use=list	short=List uModelVerse inference request logs
+  flag=end-time-ms	short=	default=0	required=true
+  flag=key-id	short=	default=[]	required=
+  flag=limit	short=	default=20	required=
+  flag=model-name	short=	default=[]	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=request-id	short=	default=	required=
+  flag=start-time-ms	short=	default=0	required=true
+  flag=zone	short=	default=	required=true
+ucloud umodelverse model	use=model	short=Query uModelVerse models
+ucloud umodelverse model list	use=list	short=List uModelVerse square models
+  flag=keyword	short=	default=	required=
+  flag=language	short=	default=[]	required=
+  flag=limit	short=	default=20	required=
+  flag=max-model-len	short=	default=[]	required=
+  flag=model-type	short=	default=	required=
+  flag=offset	short=	default=0	required=
+  flag=order	short=	default=	required=
+  flag=order-by	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud umodelverse order	use=order	short=Query and export uModelVerse orders
+ucloud umodelverse order amount	use=amount	short=Get uModelVerse order amount statistics
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order paid	use=paid	short=Query and export paid uModelVerse orders
+ucloud umodelverse order paid export	use=export	short=Export paid uModelVerse order details
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order paid list	use=list	short=List paid uModelVerse orders
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=page	short=	default=1	required=true
+  flag=page-size	short=	default=20	required=true
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order paid summary	use=summary	short=Summarize paid uModelVerse orders
+  flag=charge-type-code	short=	default=[]	required=
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order summary	use=summary	short=Export uModelVerse order summaries
+ucloud umodelverse order summary export	use=export	short=Export uModelVerse order summary
+  flag=charge-type-code	short=	default=[]	required=
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order unpaid	use=unpaid	short=Query and export unpaid uModelVerse orders
+ucloud umodelverse order unpaid export	use=export	short=Export unpaid uModelVerse order details
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order unpaid list	use=list	short=List unpaid uModelVerse orders
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=page	short=	default=1	required=true
+  flag=page-size	short=	default=20	required=true
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
+ucloud umodelverse order unpaid summary	use=summary	short=Summarize unpaid uModelVerse orders
+  flag=charge-type-code	short=	default=[]	required=
+  flag=end-time	short=	default=0	required=true
+  flag=model-id	short=	default=[]	required=
+  flag=order-region	short=	default=[]	required=
+  flag=order-type	short=	default=[]	required=
+  flag=organization-id	short=	default=[]	required=
+  flag=pricing-sku	short=	default=[]	required=
+  flag=pricing-unit	short=	default=[]	required=
+  flag=product-code	short=	default=[]	required=
+  flag=resource-id	short=	default=[]	required=
+  flag=start-time	short=	default=0	required=true
