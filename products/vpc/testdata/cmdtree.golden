@@ -1,0 +1,34 @@
+ucloud vpc	use=vpc	short=List and manipulate VPC instances
+ucloud vpc create	use=create	short=Create vpc network
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=segment	short=	default=[]	required=true
+ucloud vpc create-intercome	use=create-intercome	short=Create intercome with other vpc
+  flag=dst-project-id	short=	default=	required=
+  flag=dst-region	short=	default=	required=
+  flag=dst-vpc-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+ucloud vpc delete	use=delete	short=Delete vpc network
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=[]	required=true
+ucloud vpc delete-intercome	use=delete-intercome	short=delete the vpc intercome
+  flag=dst-region	short=	default=	required=true
+  flag=dst-vpc-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+ucloud vpc list	use=list	short=List vpc
+  flag=group	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=[]	required=
+ucloud vpc list-intercome	use=list-intercome	short=list intercome 
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true

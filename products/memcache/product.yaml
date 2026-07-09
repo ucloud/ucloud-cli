@@ -1,0 +1,6 @@
+name: memcache
+owners:
+  - Episkey-G
+commands:
+  - memcache
+enabled: true

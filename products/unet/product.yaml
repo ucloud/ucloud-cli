@@ -1,8 +1,0 @@
-# products/unet/product.yaml — UNet 产品元数据(归属真源,owner 自治维护)
-name: unet
-owners:
-  - Episkey-G
-commands:
-  - eip
-  - firewall
-enabled: true

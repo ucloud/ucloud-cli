@@ -1,0 +1,34 @@
+ucloud redis	use=redis	short=List and manipulate redis instances
+ucloud redis create	use=create	short=Create redis instance
+  flag=block-cnt	short=	default=2	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=password	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=proxy-size	short=	default=2	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=2	required=
+  flag=subnet-id	short=	default=	required=
+  flag=type	short=	default=	required=true
+  flag=version	short=	default=6.0	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud redis delete	use=delete	short=Delete redis instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis list	use=list	short=List redis instances
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud redis restart	use=restart	short=Restart redis instances of master-replica type
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=

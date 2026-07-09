@@ -1,0 +1,19 @@
+ucloud bw pkg create	eip-id	dynamic
+ucloud bw pkg create	project-id	dynamic
+ucloud bw pkg create	region	dynamic
+ucloud bw pkg delete	project-id	dynamic
+ucloud bw pkg delete	region	dynamic
+ucloud bw pkg list	project-id	dynamic
+ucloud bw pkg list	region	dynamic
+ucloud bw shared create	charge-type	static	Dynamic,Month,Year
+ucloud bw shared create	project-id	dynamic
+ucloud bw shared create	region	dynamic
+ucloud bw shared delete	project-id	dynamic
+ucloud bw shared delete	region	dynamic
+ucloud bw shared delete	shared-bw-id	dynamic
+ucloud bw shared delete	traffic-mode	static	Bandwidth,Traffic
+ucloud bw shared list	project-id	dynamic
+ucloud bw shared list	region	dynamic
+ucloud bw shared resize	project-id	dynamic
+ucloud bw shared resize	region	dynamic
+ucloud bw shared resize	shared-bw-id	dynamic

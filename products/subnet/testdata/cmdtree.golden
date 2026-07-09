@@ -1,0 +1,28 @@
+ucloud subnet	use=subnet	short=List, create and delete subnet
+ucloud subnet create	use=create	short=Create subnet of vpc network
+  flag=group	short=	default=	required=
+  flag=name	short=	default=Subnet	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=segment	short=	default=<nil>	required=true
+  flag=vpc-id	short=	default=	required=true
+ucloud subnet delete	use=delete	short=Delete subnet
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=[]	required=true
+ucloud subnet list	use=list	short=List subnet
+  flag=group	short=	default=	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=[]	required=
+  flag=vpc-id	short=	default=	required=
+ucloud subnet list-resource	use=list-resource	short=List resources belong to subnet
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-type	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true

@@ -1,0 +1,7 @@
+# products/udpn/product.yaml - UDPN product metadata.
+name: udpn
+owners:
+  - Episkey-G
+commands:
+  - udpn
+enabled: true
