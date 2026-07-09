@@ -38,13 +38,14 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.Size = flags.Int("size-gb", 100, "Required. Size of the UFS volume. Unit: GB")
 	req.StorageType = flags.String("storage-type", "Basic", "Optional. Storage type: 'Basic' (capacity) or 'Advanced' (performance)")
 	req.ProtocolType = flags.String("protocol-type", "NFS", "Optional. Protocol type: 'NFS' or 'SMB'")
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	req.ChargeType = flags.String("charge-type", "Dynamic", "Optional. 'Year', pay yearly; 'Month', pay monthly; 'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.Remark = flags.String("remark", "", "Optional. Remark")
+
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
 
 	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
 	command.SetFlagValues(cmd, "storage-type", "Basic", "Advanced")

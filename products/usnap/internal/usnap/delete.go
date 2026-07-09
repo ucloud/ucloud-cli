@@ -44,10 +44,9 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	req.VDiskId = flags.String("vdisk-id", "", "Required. Resource ID of the disk whose snapshot service to delete")
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
+
+	ctx.BindCommonParams(cmd, req)
 
 	cmd.MarkFlagRequired("vdisk-id")
 

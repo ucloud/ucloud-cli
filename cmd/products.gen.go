@@ -15,14 +15,14 @@ import (
 	"github.com/ucloud/ucloud-cli/products/subnet"
 	"github.com/ucloud/ucloud-cli/products/udisk"
 	"github.com/ucloud/ucloud-cli/products/udpn"
+	"github.com/ucloud/ucloud-cli/products/ufs"
 	"github.com/ucloud/ucloud-cli/products/uhost"
 	"github.com/ucloud/ucloud-cli/products/ulb"
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
-	"github.com/ucloud/ucloud-cli/products/uphost"
-	"github.com/ucloud/ucloud-cli/products/vpc"
-	"github.com/ucloud/ucloud-cli/products/usnap"
 	"github.com/ucloud/ucloud-cli/products/upfs"
-	"github.com/ucloud/ucloud-cli/products/ufs"
+	"github.com/ucloud/ucloud-cli/products/uphost"
+	"github.com/ucloud/ucloud-cli/products/usnap"
+	"github.com/ucloud/ucloud-cli/products/vpc"
 )
 
 // registeredProducts returns the platform-registered products.
@@ -40,13 +40,13 @@ func registeredProducts() []cli.Product {
 		subnet.New(),
 		udisk.New(),
 		udpn.New(),
+		ufs.New(),
 		uhost.New(),
 		ulb.New(),
 		umodelverse.New(),
-		uphost.New(),
-		vpc.New(),
-		ufs.New(),
 		upfs.New(),
+		uphost.New(),
 		usnap.New(),
+		vpc.New(),
 	}
 }

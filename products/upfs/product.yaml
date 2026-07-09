@@ -1,7 +1,7 @@
 # products/upfs/product.yaml — upfs 产品元数据(归属真源,owner 自治维护)
 name: upfs
 owners:
-  - pearlin-pan
+  - pearlinpan
 commands:
   - upfs
 enabled: true

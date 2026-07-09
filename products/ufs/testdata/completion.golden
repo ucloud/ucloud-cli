@@ -1,4 +1,12 @@
 ucloud ufs create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud ufs create	project-id	dynamic
 ucloud ufs create	protocol-type	static	NFS,SMB
+ucloud ufs create	region	dynamic
 ucloud ufs create	storage-type	static	Advanced,Basic
-ucloud ufs delete	volume-id	dynamic
+ucloud ufs create	zone	dynamic
+ucloud ufs delete	project-id	dynamic
+ucloud ufs delete	region	dynamic
+ucloud ufs delete	zone	dynamic
+ucloud ufs describe	project-id	dynamic
+ucloud ufs describe	region	dynamic
+ucloud ufs describe	zone	dynamic

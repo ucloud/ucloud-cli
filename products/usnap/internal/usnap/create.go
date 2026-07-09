@@ -44,13 +44,14 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.Day = flags.Int("backup-day", 0, "Optional. Backup day range")
 	req.Hour = flags.Int("backup-hour", 0, "Optional. Backup hour")
 	req.Journal = flags.Int("journal", 0, "Optional. Journal retention count")
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	req.ChargeType = flags.String("charge-type", "Dynamic", "Optional. 'Year', pay yearly; 'Month', pay monthly; 'Dynamic', pay hourly")
 	req.Quantity = flags.Int("quantity", 1, "Optional. The duration of the instance. N years/months")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	async = flags.Bool("async", false, "Optional. Do not wait for the long-running operation to finish.")
+
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
 
 	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic", "Trial")
 

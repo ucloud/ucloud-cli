@@ -1,6 +1,5 @@
 ucloud ufs	use=ufs	short=Manage UFS (UCloud File Storage) volumes
 ucloud ufs create	use=create	short=Create a UFS volume
-  flag=async	short=	default=false	required=
   flag=charge-type	short=	default=Dynamic	required=
   flag=group	short=	default=Default	required=
   flag=name	short=	default=	required=true
@@ -10,7 +9,7 @@ ucloud ufs create	use=create	short=Create a UFS volume
   flag=region	short=	default=	required=
   flag=remark	short=	default=	required=
   flag=size-gb	short=	default=100	required=true
-  flag=storage-type	short=	default=SATA	required=
+  flag=storage-type	short=	default=Basic	required=
   flag=zone	short=	default=	required=
 ucloud ufs delete	use=delete	short=Delete UFS volume(s)
   flag=project-id	short=	default=	required=

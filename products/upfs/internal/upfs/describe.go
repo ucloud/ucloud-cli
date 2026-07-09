@@ -47,12 +47,13 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	req.VolumeId = flags.String("volume-id", "", "Optional. Resource ID of the UPFS volume")
 	req.Limit = flags.Int("limit", 50, "Optional. Limit")
 	req.Offset = flags.Int("offset", 0, "Optional. Offset")
+
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
 
 	return cmd
 }

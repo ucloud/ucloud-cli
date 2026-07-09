@@ -49,10 +49,9 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	volumeIDs = flags.StringSlice("volume-id", nil, "Required. The Resource ID of UPFS volumes to delete")
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	yes = flags.BoolP("yes", "y", false, "Optional. Do not prompt for confirmation.")
+
+	ctx.BindCommonParams(cmd, req)
 
 	cmd.MarkFlagRequired("volume-id")
 
