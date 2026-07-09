@@ -28,6 +28,7 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/pkg/ui"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
@@ -199,15 +200,33 @@ func applyGlobalOverrideFlags(root *cobra.Command) {
 // (post-InitConfig) and AddChildrenForSnapshot (stubbed values).
 func buildContext() *cli.Context {
 	return cli.NewContext(cli.Deps{
-		In:          os.Stdin,
-		Out:         os.Stdout,
-		Err:         os.Stderr,
-		Format:      decideOutputFormat(os.Stdout),
-		Config:      base.ConfigIns,
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		Err:    os.Stderr,
+		Format: decideOutputFormat(os.Stdout),
+		DefaultsProvider: func() command.Defaults {
+			c := base.ConfigIns
+			if c == nil {
+				return command.Defaults{}
+			}
+			return command.Defaults{Region: c.Region, Zone: c.Zone, ProjectID: c.ProjectID}
+		},
 		RegionList:  getRegionList,
 		ZoneList:    getZoneList,
 		ProjectList: getProjectList,
 		AllRegions:  getAllRegions,
+		ClientConfig: func() *sdk.Config {
+			return base.ClientConfig
+		},
+		BuildCredential: base.BuildCredential,
+		AttachHandlers:  base.AttachHandlers,
+		HandleError:     base.HandleErrorTo,
+		LogInfo:         base.LogInfo,
+		LogPrint:        base.LogPrintTo,
+		LogWarn:         base.LogWarnTo,
+		LogError:        base.LogErrorTo,
+		LogFilePath:     base.GetLogFilePath,
+		NewPoller:       cli.NewPoller,
 	})
 }
 

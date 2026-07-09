@@ -18,7 +18,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
 type RepeatsConfig struct {
@@ -91,7 +91,7 @@ func NewCmdAPI(out io.Writer) *cobra.Command {
 						}
 						delete(params, RepeatsField)
 						delete(params, ConcurrentField)
-						err = genericInvokeRepeatWrapper(&repeatsConfig, params, action, repeatsNum, concurrentNum)
+						err = genericInvokeRepeatWrapper(&repeatsConfig, params, action, repeatsNum, concurrentNum, out)
 						if err != nil {
 							fmt.Fprintf(out, "error: %v\n", err)
 							return
@@ -150,7 +150,7 @@ func parseParamsFromCmdLine(args []string) (map[string]interface{}, error) {
 	return params, nil
 }
 
-func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]interface{}, action string, repeats int, concurrent int) error {
+func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]interface{}, action string, repeats int, concurrent int, out io.Writer) error {
 	if repeatsConfig == nil {
 		return fmt.Errorf("error: repeatsConfig is nil")
 	}
@@ -165,8 +165,8 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 	retCh := make(chan bool, repeats)
 
 	wg.Add(repeats)
-	//ux.Doc.Disable()
-	refresh := ux.NewRefresh()
+	doc := ui.NewDocument(out)
+	refresh := ui.NewRefresh(out)
 
 	req := base.BizClient.UAccountClient.NewGenericRequest()
 	err := req.SetPayload(params)
@@ -186,8 +186,8 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 				}()
 				success := true
 				resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
-				block := ux.NewBlock()
-				ux.Doc.Append(block)
+				block := ui.NewBlock()
+				doc.Append(block)
 				logs := []string{"=================================================="}
 				logs = append(logs, fmt.Sprintf("api:%v, request:%v", action, base.ToQueryMap(req)))
 				if err != nil {
@@ -222,10 +222,10 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 
 	var success, fail atomic.Int32
 	go func() {
-		block := ux.NewBlock()
-		ux.Doc.Append(block)
+		block := ui.NewBlock()
+		doc.Append(block)
 		block.Append(fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success.Load(), fail.Load()))
-		blockCount := ux.Doc.GetBlockCount()
+		blockCount := doc.GetBlockCount()
 		for ret := range retCh {
 			if ret {
 				success.Add(1)
@@ -233,11 +233,11 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 				fail.Add(1)
 			}
 			text := fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success.Load(), fail.Load())
-			if blockCount != ux.Doc.GetBlockCount() {
-				block = ux.NewBlock()
-				ux.Doc.Append(block)
+			if blockCount != doc.GetBlockCount() {
+				block = ui.NewBlock()
+				doc.Append(block)
 				block.Append(text)
-				blockCount = ux.Doc.GetBlockCount()
+				blockCount = doc.GetBlockCount()
 			} else {
 				block.Update(text, 0)
 			}

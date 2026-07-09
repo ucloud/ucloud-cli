@@ -39,7 +39,13 @@ func TestProgressNewBlock(t *testing.T) {
 func TestConcurrentActionRunsAllReqs(t *testing.T) {
 	t.Setenv("COMP_LINE", "1") // base.LogInfo becomes a no-op (uninitialized global logger otherwise panics)
 	var out bytes.Buffer
-	ctx := cli.NewContext(cli.Deps{Out: &out, Err: &out, Format: cli.OutputJSON})
+	ctx := cli.NewContext(cli.Deps{
+		Out:         &out,
+		Err:         &out,
+		Format:      cli.OutputJSON,
+		LogInfo:     func(...string) {},
+		LogFilePath: func() string { return "/tmp/cli.log" },
+	})
 
 	var n int32
 	actionFunc := func(req request.Common) (bool, []string) {

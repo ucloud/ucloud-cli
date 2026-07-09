@@ -13,7 +13,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/command"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
 func bindRegion(req request.Common, cmd *cobra.Command) {
@@ -146,10 +146,12 @@ func (c *concurrentAction) actionFuncWrapper(req request.Common) {
 func (c *concurrentAction) Do() {
 	count := len(c.reqs)
 	success, fail := 0, 0
-	refresh := ux.NewRefresh()
+	progressOut := base.Cxt.GetWriter()
+	refresh := ui.NewRefresh(progressOut)
 	//同时执行任务数量大于5时，不再单独显示每一个任务的进行情况，而是聚合显示
 	if count > 5 {
-		ux.Doc.Disable()
+		doc := ui.NewDocument(progressOut)
+		doc.Disable()
 		refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
 	}
 	go func() {

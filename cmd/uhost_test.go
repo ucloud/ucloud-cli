@@ -15,6 +15,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/products/uhost"
 )
 
@@ -27,7 +28,8 @@ import (
 // the cmd-local NewCmdUImageList/ImageRow shim is now a direct DescribeImage SDK
 // call (image is served by the uhost SDK). create/delete narration now flows
 // through ctx.NewProgress → ctx.ProgressWriter (the ctx Out buffer in table
-// mode) instead of the global ux.Doc, so the test captures the ctx Out buffer.
+// mode) instead of the old global progress document, so the test captures the
+// ctx Out buffer.
 
 // fetchLiveImageID returns the first Available Base image id via DescribeImage.
 func fetchLiveImageID(t *testing.T) string {
@@ -53,15 +55,20 @@ func TestUhost(t *testing.T) {
 	// routes to ProgressWriter == Out; the cmd-package completion providers + real
 	// config preserve the live behaviour.
 	ctx := cli.NewContext(cli.Deps{
-		In:          strings.NewReader(""),
-		Out:         &out,
-		Err:         &out,
-		Format:      cli.OutputTable,
-		Config:      base.ConfigIns,
-		RegionList:  getRegionList,
-		ZoneList:    getZoneList,
-		ProjectList: getProjectList,
-		AllRegions:  getAllRegions,
+		In:     strings.NewReader(""),
+		Out:    &out,
+		Err:    &out,
+		Format: cli.OutputTable,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{Region: base.ConfigIns.Region, Zone: base.ConfigIns.Zone, ProjectID: base.ConfigIns.ProjectID}
+		},
+		RegionList:      getRegionList,
+		ZoneList:        getZoneList,
+		ProjectList:     getProjectList,
+		AllRegions:      getAllRegions,
+		ClientConfig:    func() *sdk.Config { return base.ClientConfig },
+		BuildCredential: base.BuildCredential,
+		AttachHandlers:  base.AttachHandlers,
 	})
 	root := topLevelCmd(t, uhost.New().NewCommand(ctx), "uhost")
 

@@ -24,7 +24,6 @@ import (
 	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/model"
 	"github.com/ucloud/ucloud-cli/pkg/ui"
-	"github.com/ucloud/ucloud-cli/ux"
 )
 
 // ConfigPath 配置文件路径
@@ -292,7 +291,7 @@ type pollResult struct {
 }
 
 // Sspoll 简化版, 支持并发
-func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ux.Block, commonBase *request.CommonBase) *pollResult {
+func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, block *ui.Block, commonBase *request.CommonBase) *pollResult {
 	w := waiter.StateWaiter{
 		Pending: []string{"pending"},
 		Target:  []string{"avaliable"},
@@ -359,8 +358,10 @@ func (p *Poller) Sspoll(resourceID, pollText string, targetStates []string, bloc
 		return &ret
 	}
 
-	spin := ux.NewDotSpin(p.Out, pollText)
-	block.SetSpin(spin)
+	spin := ui.NewDotSpin(p.Out, pollText)
+	if block != nil {
+		_ = block.SetSpin(spin)
+	}
 
 	ret := <-pollRetChan
 
@@ -434,7 +435,7 @@ func (p *Poller) Spoll(resourceID, pollText string, targetStates []string) {
 		}
 		return
 	}
-	spinner := ux.NewDotSpinner(p.Out)
+	spinner := ui.NewDotSpinner(p.Out)
 	spinner.Start(pollText)
 	ret := <-done
 	if ret {
@@ -495,7 +496,7 @@ func (p *Poller) Poll(resourceID, projectID, region, zone, pollText string, targ
 		done <- true
 	}()
 
-	spinner := ux.NewDotSpinner(p.Out)
+	spinner := ui.NewDotSpinner(p.Out)
 	spinner.Start(pollText)
 	ret := <-done
 	if err != nil {
@@ -569,7 +570,7 @@ func Confirm(yes bool, text string) bool {
 	if yes {
 		return true
 	}
-	sure, err := ux.Prompt(text)
+	sure, err := ui.Prompt(text)
 	if err != nil {
 		LogError(err.Error())
 		return false

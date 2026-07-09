@@ -11,6 +11,7 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	productuhost "github.com/ucloud/ucloud-cli/products/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
@@ -55,7 +56,12 @@ func TestUhostCreateImageJSONEmitsStructuredResult(t *testing.T) {
 		Out:    &stdout,
 		Err:    &stderr,
 		Format: cli.OutputJSON,
-		Config: base.ConfigIns,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{ProjectID: base.ConfigIns.ProjectID, Region: base.ConfigIns.Region, Zone: base.ConfigIns.Zone}
+		},
+		ClientConfig:    func() *sdk.Config { return base.ClientConfig },
+		BuildCredential: base.BuildCredential,
+		AttachHandlers:  base.AttachHandlers,
 	})
 	root := topLevelCmd(t, productuhost.New().NewCommand(ctx), "uhost")
 	root.SetArgs([]string{

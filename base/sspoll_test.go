@@ -8,7 +8,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
 // Sspoll (concurrent poller) must suppress spinner animation on a non-TTY
@@ -22,7 +22,7 @@ func TestSspollNonTTY_Done(t *testing.T) {
 	p := NewSpoller(describeFunc, buf)
 	p.Timeout = 30 * time.Second
 
-	ret := p.Sspoll("res-001", "creating", []string{"DONE"}, ux.NewBlock(), &request.CommonBase{})
+	ret := p.Sspoll("res-001", "creating", []string{"DONE"}, ui.NewBlock(), &request.CommonBase{})
 
 	if ret == nil || !ret.Done {
 		t.Fatalf("Sspoll non-TTY: want Done=true, got %+v", ret)
