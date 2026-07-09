@@ -65,11 +65,29 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			if concurrent > 50 {
 				return fmt.Errorf("%q should not be more than 50, current value is %v", "concurrent", concurrent)
 			}
+
+			// GPU and GpuType must be specified together: if one is set, the other must also be set.
+			gpuVal, _ := cmd.Flags().GetInt("gpu")
+			gpuTypeVal, _ := cmd.Flags().GetString("gpu-type")
+			if gpuVal > 0 && gpuTypeVal == "" {
+				return fmt.Errorf("--gpu requires --gpu-type, e.g. --gpu-type V100")
+			}
+			if gpuTypeVal != "" && gpuVal <= 0 {
+				return fmt.Errorf("--gpu-type requires --gpu, e.g. --gpu 1")
+			}
+
 			return nil
 		},
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			*req.Memory *= 1024
+			// If --gpu and --gpu-type are specified, auto-set MachineType to "G"
+			// unless the user explicitly set --machine-type.
+			if *req.GPU > 0 && *req.GpuType != "" {
+				if !cmd.Flags().Changed("machine-type") {
+					req.MachineType = sdk.String("G")
+				}
+			}
 			if len(password) > 0 {
 				req.LoginMode = sdk.String("Password")
 				req.KeyPairId = nil
@@ -257,7 +275,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
 
-	req.MachineType = flags.String("machine-type", "N", "Optional. Accept values: N, C, G, O, OS. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
+	req.MachineType = flags.String("machine-type", "O", "Optional. Accept values: N, C, G, O, OS. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.MinimalCpuPlatform = flags.String("minimal-cpu-platform", "", "Optional. Accept values: Intel/Auto, Intel/IvyBridge, Intel/Haswell, Intel/Broadwell, Intel/Skylake, Intel/Cascadelake")
 	req.UHostType = flags.String("type", "", "Optional. Accept values: N1, N2, N3, G1, G2, G3, I1, I2, C1. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details")
 	req.GPU = flags.Int("gpu", 0, "Optional. The count of GPU cores.")
@@ -273,7 +291,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringSliceVar(&secGroupIds, "security-group-id", nil, "Optional. Security Group Id. Before using security group function, please confirm the account has such permission. When both firewall-id and security-group-id are set, the security-group-id will be ignored")
 	req.Tag = flags.String("group", "Default", "Optional. Business group")
 	req.IsolationGroup = flags.String("isolation-group", "", "Optional. Resource ID of isolation group. see 'ucloud uhost isolation-group list")
-	req.GpuType = flags.String("gpu-type", "", "Optional. The type of GPU instance. Required if defined the `machine-type` as 'G'. Accept values: 'K80', 'P40', 'V100'. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details.")
+	req.GpuType = flags.String("gpu-type", "", "Optional. The type of GPU instance. Required if defined the `machine-type` as 'G'. Accept values: 'K80','P40','V100','T4','T4S','T4A','2080Ti','2080Ti-4C','1080Ti','V100S','MI100','2080','2080TiS','2080TiPro','3090','A100','A800','3080Ti','4090','4090Pro','4090_48G','4090LD','MR-V100','MetaX-C500','H800','H20','H100','H200','5090','5090D','5090Pro'. Forward to https://docs.ucloud.cn/api/uhost-api/uhost_type for details.")
 	flags.StringVar(&userData, "user-data", "", "Optional. Conflicts with `user-data-base64`. ConCustomize the startup behaviors when launching the instance. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
 	flags.StringVar(&userDataBase64, "user-data-base64", "", "Optional. Conflicts with `user-data`. Customize the startup behaviors when launching the instance. The value must be base64-encode. Forward to https://docs.ucloud.cn/uhost/guide/metadata/userdata for details.")
 
@@ -291,7 +309,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "data-disk-backup-type", "NONE", "DATAARK")
 	command.SetFlagValues(cmd, "create-eip-line", "BGP", "International")
 	command.SetFlagValues(cmd, "create-eip-traffic-mode", "Bandwidth", "Traffic", "ShareBandwidth")
-	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100")
+	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100", "T4", "T4S", "T4A", "2080Ti", "2080Ti-4C", "1080Ti", "V100S", "MI100", "2080", "2080TiS", "2080TiPro", "3090", "A100", "A800", "3080Ti", "4090", "4090Pro", "4090_48G", "4090LD", "MR-V100", "MetaX-C500", "H800", "H20", "H100", "H200", "5090", "5090D", "5090Pro")
 
 	command.SetCompletion(cmd, "image-id", func() []string {
 		return getImageList(ctx, []string{IMAGE_AVAILABLE}, IMAGE_BASE, *req.ProjectId, *req.Region, *req.Zone)
