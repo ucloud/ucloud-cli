@@ -1,0 +1,7 @@
+# products/utidb/product.yaml — UTiDB 产品元数据
+name: utidb
+owners:
+  - UTiDB
+commands:
+  - utidb
+enabled: true

@@ -1,0 +1,40 @@
+ucloud utidb backup	project-id	dynamic
+ucloud utidb backup	region	dynamic
+ucloud utidb backup	utidb-id	dynamic
+ucloud utidb create	charge-type	static	Dynamic,Month,Trial,Year
+ucloud utidb create	dt-type	static	10,20
+ucloud utidb create	project-id	dynamic
+ucloud utidb create	region	dynamic
+ucloud utidb create	zone	dynamic
+ucloud utidb delete	project-id	dynamic
+ucloud utidb delete	region	dynamic
+ucloud utidb delete	utidb-id	dynamic
+ucloud utidb delete	zone	dynamic
+ucloud utidb describe	project-id	dynamic
+ucloud utidb describe	region	dynamic
+ucloud utidb describe	utidb-id	dynamic
+ucloud utidb describe	zone	dynamic
+ucloud utidb list	project-id	dynamic
+ucloud utidb list	region	dynamic
+ucloud utidb list	zone	dynamic
+ucloud utidb list-backup	project-id	dynamic
+ucloud utidb list-backup	region	dynamic
+ucloud utidb list-backup	utidb-id	dynamic
+ucloud utidb list-specs	node-types	dynamic
+ucloud utidb list-specs	project-id	dynamic
+ucloud utidb list-specs	region	dynamic
+ucloud utidb modify-spec	project-id	dynamic
+ucloud utidb modify-spec	region	dynamic
+ucloud utidb modify-spec	utidb-id	dynamic
+ucloud utidb modify-spec	zone	dynamic
+ucloud utidb resize-disk	project-id	dynamic
+ucloud utidb resize-disk	region	dynamic
+ucloud utidb resize-disk	scale-type	static	SCALEIN,SCALEOUT
+ucloud utidb resize-disk	utidb-id	dynamic
+ucloud utidb resize-disk	zone	dynamic
+ucloud utidb scale-node	project-id	dynamic
+ucloud utidb scale-node	region	dynamic
+ucloud utidb scale-node	scale-type	static	SCALEIN,SCALEOUT
+ucloud utidb scale-node	server-id	static
+ucloud utidb scale-node	utidb-id	dynamic
+ucloud utidb scale-node	zone	dynamic

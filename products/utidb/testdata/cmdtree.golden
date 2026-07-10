@@ -1,0 +1,84 @@
+ucloud utidb	use=utidb	short=Manipulate UTiDB instances on UCloud platform
+ucloud utidb backup	use=backup	short=Start a backup of a UTiDB instance
+  flag=backup-filter	short=	default=	required=
+  flag=backup-ts	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=utidb-id	short=	default=	required=true
+ucloud utidb create	use=create	short=Create a UTiDB instance
+  flag=activity-id	short=	default=0	required=
+  flag=alert-strategy-ids	short=	default=[]	required=
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=	required=true
+  flag=coupon	short=	default=	required=
+  flag=db-version	short=	default=	required=
+  flag=dt-type	short=	default=	required=true
+  flag=ip	short=	default=	required=
+  flag=labels	short=	default=[]	required=
+  flag=name	short=	default=	required=true
+  flag=node-config	short=	default=[]	required=true
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=promotion-id	short=	default=	required=
+  flag=pub-ulb-id	short=	default=	required=true
+  flag=quantity	short=	default=1	required=true
+  flag=region	short=	default=	required=
+  flag=rule-id	short=	default=0	required=
+  flag=sec-group-info	short=	default=[]	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=template-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud utidb delete	use=delete	short=Delete a UTiDB instance
+  flag=delete-backup	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=utidb-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud utidb describe	use=describe	short=Show details of a UTiDB instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud utidb list	use=list	short=List UTiDB instances
+  flag=limit	short=	default=	required=
+  flag=offset	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud utidb list-backup	use=list-backup	short=List backups of a UTiDB instance
+  flag=limit	short=	default=30	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=utidb-id	short=	default=	required=true
+ucloud utidb list-specs	use=list-specs	short=List available uhost specs
+  flag=node-types	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud utidb modify-spec	use=modify-spec	short=Modify uhost specs of a UTiDB instance
+  flag=node-config	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=start-time	short=	default=0	required=
+  flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud utidb resize-disk	use=resize-disk	short=Resize disk of a UTiDB instance
+  flag=node-config	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=scale-type	short=	default=	required=true
+  flag=start-time	short=	default=0	required=
+  flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud utidb scale-node	use=scale-node	short=Scale nodes of a UTiDB instance (SCALEOUT/SCALEIN)
+  flag=node-config	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=scale-type	short=	default=	required=true
+  flag=server-id	short=	default=	required=
+  flag=start-time	short=	default=0	required=
+  flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
