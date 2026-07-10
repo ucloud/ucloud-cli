@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,8 +70,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			if err := validateCreateOptionalFields(cmd, req); err != nil {
 				return err
 			}
-			if !strings.ContainsAny(*req.Password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-				return fmt.Errorf("--password must contain at least one uppercase letter")
+			if err := validatePassword(*req.Password); err != nil {
+				return err
 			}
 			if cmd.Flags().Changed("charge-type") && !oneOf(chargeType, "Dynamic", "Month", "Year") {
 				return fmt.Errorf("--charge-type must be one of Dynamic, Month, or Year")
@@ -107,9 +108,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			if nodeZone == "" {
 				return fmt.Errorf("--node-zone is required")
 			}
-			if req.ImageId == nil || strings.TrimSpace(*req.ImageId) == "" {
-				return fmt.Errorf("--image-id is required: choose a compatible image with 'ucloud uk8s image list'")
-			}
 			if cmd.Flags().Changed("charge-type") {
 				req.ChargeType = sdk.String(chargeType)
 			}
@@ -120,7 +118,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				req.Quantity = sdk.Int(quantity)
 			}
 			optional := map[string]func(){
-				"k8s-version":              func() { req.K8sVersion = nil },
 				"external-api-server":      func() { req.ExternalApiServer = nil },
 				"cluster-domain":           func() { req.ClusterDomain = nil },
 				"master-boot-disk-type":    func() { req.MasterBootDiskType = nil },
@@ -231,8 +228,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 
 	// --- Required: cluster identification ---
 	req.ClusterName = flags.String("name", "", "Required. Cluster name.")
-	req.K8sVersion = flags.String("k8s-version", "", "Optional. Kubernetes version. If omitted, the service selects the highest supported version.")
-	req.Password = flags.String("password", "", "Required. Password for cluster nodes (Master + Node). Must include at least one uppercase letter. Base64-encoded automatically before submission.")
+	req.K8sVersion = flags.String("k8s-version", "", "Required. Kubernetes version. Use 'ucloud uk8s version list' to find a supported version.")
+	req.Password = flags.String("password", "", "Required. Password for cluster nodes (Master + Node). 8-30 chars from A-Z, a-z, 0-9 and ()~!@#$%^&*-+=_|{}[]:;'\\<>,.?/; must include at least 2 of {uppercase, lowercase, digit, special symbol}. Base64-encoded automatically before submission.")
 
 	// --- Required: network ---
 	req.VPCId = flags.String("vpc-id", "", "Required. VPC ID. See 'ucloud vpc list'.")
@@ -252,8 +249,10 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.Nodes[0].MachineType = flags.String("node-machine-type", "", "Required. Node machine type. One of N, C, G, O, OS.")
 	flags.StringVar(&nodeZone, "node-zone", "", "Required. Availability zone for the node group.")
 
-	// --- Optional: image / extras ---
+	// --- Required: image ---
 	req.ImageId = flags.String("image-id", "", "Required. Compatible UK8S UHost image ID for Master and Node. See 'ucloud uk8s image list'.")
+
+	// --- Optional: extras ---
 	req.ExternalApiServer = flags.String("external-api-server", "", "Optional. Expose the API server on the public internet. Accept values: Yes, No.")
 	req.ClusterDomain = flags.String("cluster-domain", "", "Optional. Custom cluster domain.")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the cluster to become RUNNING.")
@@ -340,6 +339,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("node-machine-type")
 	cmd.MarkFlagRequired("node-zone")
 	cmd.MarkFlagRequired("image-id")
+	cmd.MarkFlagRequired("k8s-version")
 
 	return cmd
 }
@@ -446,4 +446,35 @@ func oneOf(value string, allowed ...string) bool {
 		}
 	}
 	return false
+}
+
+// UK8S password policy (server-side UHost/CreateUK8SClusterV2 rule):
+// 8-30 chars from [A-Za-z0-9()~!@#$%^&*-+=_|{}[]:;'\<>,.?/], must include at
+// least 2 of {uppercase, lowercase, digit, special symbol}. Mirrors the
+// check used by UHost/UASGTemplateBuilder so we fail fast at the CLI.
+var (
+	uk8sPwdAllowed = regexp.MustCompile(`^[A-Za-z0-9()~!@#$%^&*\-_+=|{}[\]:;'\\<>,.?/]+$`)
+	uk8sPwdUpper   = regexp.MustCompile(`[A-Z]`)
+	uk8sPwdLower   = regexp.MustCompile(`[a-z]`)
+	uk8sPwdDigit   = regexp.MustCompile(`[0-9]`)
+	uk8sPwdSpecial = regexp.MustCompile(`[^A-Za-z0-9]`)
+)
+
+func validatePassword(raw string) error {
+	if l := len(raw); l < 8 || l > 30 {
+		return fmt.Errorf("--password must be 8-30 characters long (got %d)", l)
+	}
+	if !uk8sPwdAllowed.MatchString(raw) {
+		return fmt.Errorf("--password contains illegal characters; allowed: A-Z, a-z, 0-9 and ()~!@#$%%^&*-_+=|{}[]:;'\\<>,.?/")
+	}
+	classes := 0
+	for _, re := range []*regexp.Regexp{uk8sPwdUpper, uk8sPwdLower, uk8sPwdDigit, uk8sPwdSpecial} {
+		if re.MatchString(raw) {
+			classes++
+		}
+	}
+	if classes < 2 {
+		return fmt.Errorf("--password must contain at least 2 of: uppercase, lowercase, digit, special symbol")
+	}
+	return nil
 }

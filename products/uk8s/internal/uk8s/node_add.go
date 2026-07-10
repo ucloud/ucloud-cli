@@ -81,8 +81,8 @@ func newNodeAdd(ctx *cli.Context) *cobra.Command {
 			if *req.ChargeType == "Dynamic" && cmd.Flags().Changed("quantity") {
 				return fmt.Errorf("--quantity must not be set when --charge-type is Dynamic")
 			}
-			if !strings.ContainsAny(*req.Password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-				return fmt.Errorf("--password must contain at least one uppercase letter")
+			if err := validatePassword(*req.Password); err != nil {
+				return err
 			}
 			if err := bindEncodedValue(cmd, "user-data", userData, "user-data-base64", userDataB64, &req.UserData); err != nil {
 				return err
@@ -121,7 +121,7 @@ func newNodeAdd(ctx *cli.Context) *cobra.Command {
 	req.Mem = flags.Int("memory-mb", 0, "Required. Memory in MB per node.")
 	req.Count = flags.Int("count", 0, "Required. Number of nodes, 1-50.")
 	req.ChargeType = flags.String("charge-type", "", "Required. Billing mode.")
-	req.Password = flags.String("password", "", "Required. Plaintext node password; encoded before submission.")
+	req.Password = flags.String("password", "", "Required. Plaintext node password. 8-30 chars from A-Z, a-z, 0-9 and ()~!@#$%^&*-+=_|{}[]:;'\\<>,.?/; must include at least 2 of {uppercase, lowercase, digit, special symbol}. Base64-encoded automatically before submission.")
 	req.MachineType = flags.String("machine-type", "", "Optional. Node machine type.")
 	req.NodeGroupId = flags.String("nodegroup-id", "", "Optional. Node group ID.")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID.")
