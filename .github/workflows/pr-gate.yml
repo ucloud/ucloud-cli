@@ -256,7 +256,7 @@ jobs:
         env: { GOPROXY: 'https://goproxy.cn,direct' }
       - run: go vet ./...
         env: { GOPROXY: 'https://goproxy.cn,direct' }
-      - run: go test ./pkg/... ./base/ ./hack/... ./ux/... -count=1
+      - run: go test ./pkg/... ./cmd/internal/... ./hack/... -count=1
         env: { GOPROXY: 'https://goproxy.cn,direct' }
 
   build-matrix:
