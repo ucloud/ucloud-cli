@@ -12,6 +12,42 @@ type clusterRow struct {
 	MasterCnt  int
 	NodeCnt    int
 	Status     string
-	Group      string
 	Created    string
+}
+
+type nodeGroupRow struct {
+	ResourceID  string
+	Name        string
+	MachineType string
+	CPU         int
+	MemoryMB    int
+	NodeCount   int
+	ChargeType  string
+	ImageID     string
+}
+
+type nodeRow struct {
+	ResourceID  string
+	InstanceID  string
+	Name        string
+	Role        string
+	Zone        string
+	MachineType string
+	CPU         int
+	MemoryMB    int
+	Status      string
+	OS          string
+}
+
+type imageRow struct {
+	ResourceID    string
+	Name          string
+	ZoneID        int
+	ProductType   string
+	NotSupportGPU bool
+}
+
+type versionRow struct {
+	K8sVersion        string
+	ContainerdVersion string
 }

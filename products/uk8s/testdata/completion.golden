@@ -1,5 +1,7 @@
 ucloud uk8s create	charge-type	static	Dynamic,Month,Year
 ucloud uk8s create	external-api-server	static	No,Yes
+ucloud uk8s create	image-id	dynamic
+ucloud uk8s create	k8s-version	dynamic
 ucloud uk8s create	kube-proxy-mode	static	iptables,ipvs
 ucloud uk8s create	master-boot-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
 ucloud uk8s create	master-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
@@ -8,9 +10,64 @@ ucloud uk8s create	master-machine-type	static	C,N,O,OS
 ucloud uk8s create	node-boot-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
 ucloud uk8s create	node-cpu-platform	static	Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
 ucloud uk8s create	node-data-disk-type	static	,CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
-ucloud uk8s create	node-machine-type	static	C,N,O,OS
+ucloud uk8s create	node-gpu-type	static	K80,P40,V100
+ucloud uk8s create	node-isolation-group-id	dynamic
+ucloud uk8s create	node-machine-type	static	C,G,N,O,OS
 ucloud uk8s create	project-id	dynamic
 ucloud uk8s create	region	dynamic
 ucloud uk8s create	subnet-id	static
 ucloud uk8s create	vpc-id	dynamic
-ucloud uk8s create	zone	dynamic
+ucloud uk8s delete	cluster-id	dynamic
+ucloud uk8s delete	project-id	dynamic
+ucloud uk8s delete	region	dynamic
+ucloud uk8s describe	cluster-id	dynamic
+ucloud uk8s describe	project-id	dynamic
+ucloud uk8s describe	region	dynamic
+ucloud uk8s get-config	cluster-id	dynamic
+ucloud uk8s get-config	project-id	dynamic
+ucloud uk8s get-config	region	dynamic
+ucloud uk8s image list	project-id	dynamic
+ucloud uk8s image list	region	dynamic
+ucloud uk8s image list	zone	dynamic
+ucloud uk8s list	cluster-id	dynamic
+ucloud uk8s list	project-id	dynamic
+ucloud uk8s list	region	dynamic
+ucloud uk8s node add	charge-type	static	Dynamic,Month,Postpay,Year
+ucloud uk8s node add	cluster-id	dynamic
+ucloud uk8s node add	gpu-type	static	K80,P40,V100
+ucloud uk8s node add	image-id	dynamic
+ucloud uk8s node add	isolation-group-id	dynamic
+ucloud uk8s node add	machine-type	static	C,G,N,O,OS
+ucloud uk8s node add	nodegroup-id	static
+ucloud uk8s node add	project-id	dynamic
+ucloud uk8s node add	region	dynamic
+ucloud uk8s node add	zone	dynamic
+ucloud uk8s node delete	cluster-id	dynamic
+ucloud uk8s node delete	node-id	static
+ucloud uk8s node delete	project-id	dynamic
+ucloud uk8s node delete	region	dynamic
+ucloud uk8s node describe	cluster-id	dynamic
+ucloud uk8s node describe	node-id	static
+ucloud uk8s node describe	project-id	dynamic
+ucloud uk8s node describe	region	dynamic
+ucloud uk8s node list	cluster-id	dynamic
+ucloud uk8s node list	project-id	dynamic
+ucloud uk8s node list	region	dynamic
+ucloud uk8s nodegroup add	charge-type	static	Dynamic,Month,Year
+ucloud uk8s nodegroup add	cluster-id	dynamic
+ucloud uk8s nodegroup add	gpu-type	static	K80,P40,V100
+ucloud uk8s nodegroup add	image-id	dynamic
+ucloud uk8s nodegroup add	machine-type	static	C,G,N,O,OS
+ucloud uk8s nodegroup add	project-id	dynamic
+ucloud uk8s nodegroup add	region	dynamic
+ucloud uk8s nodegroup add	zone	dynamic
+ucloud uk8s nodegroup delete	cluster-id	dynamic
+ucloud uk8s nodegroup delete	nodegroup-id	static
+ucloud uk8s nodegroup delete	project-id	dynamic
+ucloud uk8s nodegroup delete	region	dynamic
+ucloud uk8s nodegroup list	cluster-id	dynamic
+ucloud uk8s nodegroup list	project-id	dynamic
+ucloud uk8s nodegroup list	region	dynamic
+ucloud uk8s version list	kind	static	Dedicated
+ucloud uk8s version list	project-id	dynamic
+ucloud uk8s version list	region	dynamic

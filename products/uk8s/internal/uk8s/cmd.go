@@ -16,5 +16,13 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 		Long:  "Read and manipulate UK8S (UCloud Kubernetes Service) clusters",
 	}
 	cmd.AddCommand(newCreate(ctx))
+	cmd.AddCommand(newDelete(ctx))
+	cmd.AddCommand(newList(ctx))
+	cmd.AddCommand(newDescribe(ctx))
+	cmd.AddCommand(newGetConfig(ctx))
+	cmd.AddCommand(newNodeGroup(ctx))
+	cmd.AddCommand(newNode(ctx))
+	cmd.AddCommand(newImage(ctx))
+	cmd.AddCommand(newVersion(ctx))
 	return cmd
 }
