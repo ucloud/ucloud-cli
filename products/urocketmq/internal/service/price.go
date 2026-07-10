@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/urocketmq"
@@ -18,6 +20,9 @@ func newPrice(ctx *cli.Context) *cobra.Command {
 		Short: "Get price of URocketMQ service instance",
 		Long:  "Get price of URocketMQ service instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if *req.Storage <= 0 || *req.Storage%100 != 0 {
+				return fmt.Errorf("--storage-gb must be a positive multiple of 100")
+			}
 			resp, err := client.GetURocketMQServicePrice(req)
 			if err != nil {
 				return err

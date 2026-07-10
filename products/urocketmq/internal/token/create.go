@@ -45,13 +45,13 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	ctx.BindRegion(cmd, req)
 	req.Name = cmd.Flags().String("name", "", "Required. Token name")
 	req.ServiceId = cmd.Flags().String("service-id", "", "Required. Service ID. See 'ucloud urocketmq service list'")
-	req.TopicConsumePerm = cmd.Flags().String("topic-consume-perm", "", "Required. Topic consume permission. Accept values: Allow, Deny")
-	req.TopicProducePerm = cmd.Flags().String("topic-produce-perm", "", "Required. Topic produce permission. Accept values: Allow, Deny")
+	req.TopicConsumePerm = cmd.Flags().String("topic-consume-perm", "", "Required. Topic consume permission. Accept values: ALL, NONE, PART")
+	req.TopicProducePerm = cmd.Flags().String("topic-produce-perm", "", "Required. Topic produce permission. Accept values: ALL, NONE, PART")
 	cmd.Flags().StringSliceVar(&allowConsumeTopicList, "allow-consume-topic-list", nil, "Optional. Allow consume topic name list, multiple values separated by comma")
 	cmd.Flags().StringSliceVar(&allowProduceTopicList, "allow-produce-topic-list", nil, "Optional. Allow produce topic name list, multiple values separated by comma")
 
-	command.SetFlagValues(cmd, "topic-consume-perm", "Allow", "Deny")
-	command.SetFlagValues(cmd, "topic-produce-perm", "Allow", "Deny")
+	command.SetFlagValues(cmd, "topic-consume-perm", "ALL", "NONE", "PART")
+	command.SetFlagValues(cmd, "topic-produce-perm", "ALL", "NONE", "PART")
 	command.SetCompletion(cmd, "service-id", func() []string {
 		return service.ServiceList(ctx, *req.ProjectId, *req.Region)
 	})

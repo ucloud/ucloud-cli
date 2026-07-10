@@ -24,6 +24,8 @@ func newGet(ctx *cli.Context) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			if display {
 				req.Display = sdk.String("true")
+			} else {
+				req.Display = sdk.String("false")
 			}
 			resp, err := client.GetURocketMQToken(req)
 			if err != nil {

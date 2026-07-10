@@ -22,11 +22,7 @@ func newGet(ctx *cli.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			list := make([]urocketmq.ServiceDetail, 0, len(resp.ServiceList))
-			for _, s := range resp.ServiceList {
-				list = append(list, s)
-			}
-			ctx.PrintList(list)
+			ctx.PrintList(resp.ServiceList)
 			return nil
 		},
 	}

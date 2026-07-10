@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	urocketmq "github.com/ucloud/ucloud-sdk-go/services/urocketmq"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
@@ -35,6 +36,9 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 
 			resp, err := client.DeleteURocketMQService(req)
 			if err != nil {
+				if serr, ok := err.(uerr.ServerError); ok && serr.Code() == 99539 {
+					return fmt.Errorf("please delete all Topics and Groups under the instance before deleting it")
+				}
 				return err
 			}
 

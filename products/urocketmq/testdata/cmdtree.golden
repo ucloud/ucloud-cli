@@ -33,8 +33,8 @@ ucloud urocketmq message query-by-key	use=query-by-key	short=Query messages by k
   flag=service-id	short=	default=	required=true
   flag=topic-name	short=	default=	required=true
 ucloud urocketmq message query-by-topic	use=query-by-topic	short=Query messages by topic and time range
-  flag=begin	short=	default=0	required=true
-  flag=end	short=	default=0	required=true
+  flag=begin	short=	default=	required=true
+  flag=end	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=service-id	short=	default=	required=true

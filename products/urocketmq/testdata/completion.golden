@@ -28,7 +28,7 @@ ucloud urocketmq service create	project-id	dynamic
 ucloud urocketmq service create	public-version	static	v4,v5
 ucloud urocketmq service create	region	dynamic
 ucloud urocketmq service create	subnet-id	dynamic
-ucloud urocketmq service create	tps	static	100000,20000,200000,50000
+ucloud urocketmq service create	tps	static	10000,100000,20000,200000,50000
 ucloud urocketmq service create	vpc-id	dynamic
 ucloud urocketmq service delete	project-id	dynamic
 ucloud urocketmq service delete	region	dynamic
@@ -46,7 +46,7 @@ ucloud urocketmq service price	mode	static	PrivateNet
 ucloud urocketmq service price	project-id	dynamic
 ucloud urocketmq service price	public-version	static	v4,v5
 ucloud urocketmq service price	region	dynamic
-ucloud urocketmq service price	tps	static	100000,20000,200000,50000
+ucloud urocketmq service price	tps	static	10000,100000,20000,200000,50000
 ucloud urocketmq service update-name	project-id	dynamic
 ucloud urocketmq service update-name	region	dynamic
 ucloud urocketmq service update-name	service-id	dynamic
@@ -58,8 +58,8 @@ ucloud urocketmq token create	allow-produce-topic-list	dynamic
 ucloud urocketmq token create	project-id	dynamic
 ucloud urocketmq token create	region	dynamic
 ucloud urocketmq token create	service-id	dynamic
-ucloud urocketmq token create	topic-consume-perm	static	Allow,Deny
-ucloud urocketmq token create	topic-produce-perm	static	Allow,Deny
+ucloud urocketmq token create	topic-consume-perm	static	ALL,NONE,PART
+ucloud urocketmq token create	topic-produce-perm	static	ALL,NONE,PART
 ucloud urocketmq token delete	project-id	dynamic
 ucloud urocketmq token delete	region	dynamic
 ucloud urocketmq token delete	service-id	dynamic
@@ -77,8 +77,8 @@ ucloud urocketmq token update	project-id	dynamic
 ucloud urocketmq token update	region	dynamic
 ucloud urocketmq token update	service-id	dynamic
 ucloud urocketmq token update	token-id	dynamic
-ucloud urocketmq token update	topic-consume-perm	static	Allow,Deny
-ucloud urocketmq token update	topic-produce-perm	static	Allow,Deny
+ucloud urocketmq token update	topic-consume-perm	static	ALL,NONE,PART
+ucloud urocketmq token update	topic-produce-perm	static	ALL,NONE,PART
 ucloud urocketmq topic create	message-type	static	Delay,GlobalSequence,Normal,PartitionSequence,Transaction
 ucloud urocketmq topic create	project-id	dynamic
 ucloud urocketmq topic create	region	dynamic
