@@ -47,8 +47,8 @@ func registeredProducts() []cli.Product {
 		umodelverse.New(),
 		upfs.New(),
 		uphost.New(),
+		urocketmq.New(),
 		usnap.New(),
 		vpc.New(),
-		urocketmq.New(),
 	}
 }

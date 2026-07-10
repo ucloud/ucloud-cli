@@ -53,7 +53,7 @@ func getAllSubnetIDNames(ctx *cli.Context, vpcID, project, region string) []stri
 	req.ProjectId = sdk.String(project)
 	req.Region = sdk.String(region)
 	if vpcID != "" {
-		req.VPCId = sdk.String(vpcID)
+		req.VPCId = sdk.String(cli.PickResourceID(vpcID))
 	}
 	subnets := make([]vpc.SubnetInfo, 0)
 	for limit, offset := 50, 0; ; offset += limit {

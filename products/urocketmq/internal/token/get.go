@@ -55,24 +55,23 @@ func newGet(ctx *cli.Context) *cobra.Command {
 	return cmd
 }
 
-// renderTokenGet selects the row struct by format + display state.
-// Security: table mode always uses tokenRowDefault (no AKSK); json/yaml includes SecretKey only with --display.
 func renderTokenGet(ctx *cli.Context, t *urocketmq.Token, showSecret bool) {
+	if showSecret {
+		ctx.PrintList([]tokenRowWithSecret{{
+			TokenId:          t.TokenId,
+			Name:             t.Name,
+			TopicConsumePerm: t.TopicConsumePerm,
+			TopicProducePerm: t.TopicProducePerm,
+			Type:             t.Type,
+			CreateTime:       common.FormatDate(t.CreateTime),
+			ModifyTime:       common.FormatDate(t.ModifyTime),
+			AccessKey:        t.AKSK.AccessKey,
+			SecretKey:        t.AKSK.SecretKey,
+		}})
+		return
+	}
+
 	if ctx.Format() != cli.OutputTable {
-		if showSecret {
-			ctx.PrintList([]tokenRowWithSecret{{
-				TokenId:          t.TokenId,
-				Name:             t.Name,
-				TopicConsumePerm: t.TopicConsumePerm,
-				TopicProducePerm: t.TopicProducePerm,
-				Type:             t.Type,
-				CreateTime:       common.FormatDate(t.CreateTime),
-				ModifyTime:       common.FormatDate(t.ModifyTime),
-				AccessKey:        t.AKSK.AccessKey,
-				SecretKey:        t.AKSK.SecretKey,
-			}})
-			return
-		}
 		ctx.PrintList([]tokenRow{{
 			TokenId:          t.TokenId,
 			Name:             t.Name,
@@ -86,7 +85,6 @@ func renderTokenGet(ctx *cli.Context, t *urocketmq.Token, showSecret bool) {
 		return
 	}
 
-	// table mode never outputs SecretKey
 	ctx.PrintList([]tokenRowDefault{{
 		TokenId:          t.TokenId,
 		Name:             t.Name,

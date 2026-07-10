@@ -23,6 +23,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 		Short: "Create a URocketMQ service instance",
 		Long:  "Create a URocketMQ service instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			req.VPCId = sdk.String(ctx.PickResourceID(*req.VPCId))
+			req.SubnetId = sdk.String(ctx.PickResourceID(*req.SubnetId))
 			if *req.Storage <= 0 || *req.Storage%100 != 0 {
 				return fmt.Errorf("--storage-gb must be a positive multiple of 100")
 			}
