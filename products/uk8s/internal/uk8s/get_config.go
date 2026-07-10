@@ -25,7 +25,6 @@ func newGetConfig(ctx *cli.Context) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			*req.ClusterId = ctx.PickResourceID(*req.ClusterId)
 			resp, err := client.GetClusterConfig(req)
-			fmt.Println("hello")
 			if err != nil {
 				ctx.HandleError(err)
 				return

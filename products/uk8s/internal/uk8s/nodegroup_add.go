@@ -20,13 +20,36 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 		Short: "Add a UK8S node group",
 		Args:  cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.Flags().Changed("machine-type") && !oneOf(*req.MachineType, "N", "C", "G", "O", "OS") {
+			for _, name := range []string{"cluster-id", "name", "machine-type", "cpu", "memory-mb", "subnet-id", "boot-disk-type", "boot-disk-size-gb"} {
+				if !cmd.Flags().Changed(name) {
+					return fmt.Errorf("--%s is required", name)
+				}
+			}
+			if req.MachineType == nil || *req.MachineType == "" {
+				return fmt.Errorf("--machine-type is required")
+			}
+			if req.CPU == nil {
+				return fmt.Errorf("--cpu is required")
+			}
+			if req.Mem == nil {
+				return fmt.Errorf("--memory-mb is required")
+			}
+			if req.SubnetId == nil || *req.SubnetId == "" {
+				return fmt.Errorf("--subnet-id is required")
+			}
+			if req.BootDiskType == nil || *req.BootDiskType == "" {
+				return fmt.Errorf("--boot-disk-type is required")
+			}
+			if req.BootDiskSize == nil {
+				return fmt.Errorf("--boot-disk-size-gb is required")
+			}
+			if !oneOf(*req.MachineType, "N", "C", "G", "O", "OS") {
 				return fmt.Errorf("--machine-type must be one of N, C, G, O, or OS")
 			}
-			if cmd.Flags().Changed("cpu") && (*req.CPU < 2 || *req.CPU > 64) {
+			if *req.CPU < 2 || *req.CPU > 64 {
 				return fmt.Errorf("--cpu must be between 2 and 64")
 			}
-			if cmd.Flags().Changed("memory-mb") && (*req.Mem < 4096 || *req.Mem > 262144 || *req.Mem%1024 != 0) {
+			if *req.Mem < 4096 || *req.Mem > 262144 || *req.Mem%1024 != 0 {
 				return fmt.Errorf("--memory-mb must be between 4096 and 262144 and a multiple of 1024")
 			}
 			for _, item := range []struct {
@@ -37,14 +60,20 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 				{"boot-disk-size-gb", req.BootDiskSize, 40, 500},
 				{"data-disk-size-gb", req.DataDiskSize, 20, 1000},
 			} {
-				if cmd.Flags().Changed(item.name) && (*item.value < item.min || *item.value > item.max) {
+				if *item.value != 0 && (*item.value < item.min || *item.value > item.max) {
 					return fmt.Errorf("--%s must be between %d and %d", item.name, item.min, item.max)
 				}
+			}
+			if *req.BootDiskSize < 40 || *req.BootDiskSize > 500 {
+				return fmt.Errorf("--boot-disk-size-gb must be between 40 and 500")
+			}
+			if !oneOf(*req.BootDiskType, "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK") {
+				return fmt.Errorf("--boot-disk-type must be a supported disk type")
 			}
 			if cmd.Flags().Changed("charge-type") && !oneOf(*req.ChargeType, "Dynamic", "Month", "Year") {
 				return fmt.Errorf("--charge-type must be one of Dynamic, Month, or Year")
 			}
-			if req.MachineType != nil && *req.MachineType == "G" {
+			if cmd.Flags().Changed("machine-type") && *req.MachineType == "G" {
 				if !cmd.Flags().Changed("gpu") || !cmd.Flags().Changed("gpu-type") {
 					return fmt.Errorf("--gpu and --gpu-type are required when --machine-type is G")
 				}
@@ -56,6 +85,23 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 			}
 			if cmd.Flags().Changed("gpu-type") && !oneOf(*req.GpuType, "K80", "P40", "V100") {
 				return fmt.Errorf("--gpu-type must be one of K80, P40, or V100")
+			}
+			// Keep the boot disk type explicit because the backend rejects a
+			// node-group request with an empty Disks.0.Type. Every other
+			// product field remains nil unless the user supplied its flag.
+			for name, clear := range map[string]func(){
+				"image-id":          func() { req.ImageId = nil },
+				"data-disk-type":    func() { req.DataDiskType = nil },
+				"data-disk-size-gb": func() { req.DataDiskSize = nil },
+				"cpu-platform":      func() { req.MinimalCpuPlatform = nil },
+				"charge-type":       func() { req.ChargeType = nil },
+				"group":             func() { req.Tag = nil },
+				"gpu":               func() { req.GPU = nil },
+				"gpu-type":          func() { req.GpuType = nil },
+			} {
+				if !cmd.Flags().Changed(name) {
+					clear()
+				}
 			}
 			return nil
 		},
@@ -80,13 +126,13 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 	req.ClusterId = flags.String("cluster-id", "", "Required. Cluster ID.")
 	req.NodeGroupName = flags.String("name", "", "Required. Node group name.")
-	req.MachineType = flags.String("machine-type", "", "Optional. Node machine type.")
-	req.CPU = flags.Int("cpu", 0, "Optional. vCPU cores.")
-	req.Mem = flags.Int("memory-mb", 0, "Optional. Memory in MB.")
+	req.MachineType = flags.String("machine-type", "", "Required. Node machine type. One of N, C, G, O, OS. G requires --gpu and --gpu-type.")
+	req.CPU = flags.Int("cpu", 0, "Required. vCPU cores per node. Range 2-64.")
+	req.Mem = flags.Int("memory-mb", 0, "Required. Memory in MB per node. Range 4096-262144, multiple of 1024.")
 	req.ImageId = flags.String("image-id", "", "Optional. Node image ID.")
-	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID.")
-	req.BootDiskType = flags.String("boot-disk-type", "", "Optional. Boot disk type.")
-	req.BootDiskSize = flags.Int("boot-disk-size-gb", 0, "Optional. Boot disk size in GB.")
+	req.SubnetId = flags.String("subnet-id", "", "Required. Subnet ID; must belong to the cluster's VPC.")
+	req.BootDiskType = flags.String("boot-disk-type", "", "Required. Boot disk type. Must be explicit because the backend rejects an empty disk type.")
+	req.BootDiskSize = flags.Int("boot-disk-size-gb", 0, "Required. Boot disk size in GB. Range 40-500.")
 	req.DataDiskType = flags.String("data-disk-type", "", "Optional. Data disk type.")
 	req.DataDiskSize = flags.Int("data-disk-size-gb", 0, "Optional. Data disk size in GB.")
 	req.MinimalCpuPlatform = flags.String("cpu-platform", "", "Optional. Minimum CPU platform.")
@@ -99,12 +145,20 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 	ctx.BindProjectID(cmd, req)
 	cmd.MarkFlagRequired("cluster-id")
 	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("machine-type")
+	cmd.MarkFlagRequired("cpu")
+	cmd.MarkFlagRequired("memory-mb")
+	cmd.MarkFlagRequired("subnet-id")
+	cmd.MarkFlagRequired("boot-disk-type")
+	cmd.MarkFlagRequired("boot-disk-size-gb")
 	command.SetCompletion(cmd, "cluster-id", func() []string {
 		return listClusterIDs(ctx, nil, derefStr(req.Region), derefStr(req.ProjectId))
 	})
 	command.SetFlagValues(cmd, "machine-type", "N", "C", "G", "O", "OS")
 	command.SetFlagValues(cmd, "charge-type", "Dynamic", "Month", "Year")
 	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100")
+	command.SetFlagValues(cmd, "boot-disk-type", "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
+	command.SetFlagValues(cmd, "data-disk-type", "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
 	command.SetCompletion(cmd, "image-id", func() []string {
 		return listUK8SImageIDs(ctx, derefStr(req.ProjectId), derefStr(req.Region), derefStr(req.Zone))
 	})

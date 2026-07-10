@@ -8,7 +8,7 @@ ucloud uk8s create	use=create	short=Create a UK8S cluster
   flag=image-id	short=	default=	required=true
   flag=init-script	short=	default=	required=
   flag=init-script-base64	short=	default=	required=
-  flag=k8s-version	short=	default=	required=
+  flag=k8s-version	short=	default=	required=true
   flag=kube-proxy-mode	short=	default=	required=
   flag=master-boot-disk-size-gb	short=	default=0	required=
   flag=master-boot-disk-type	short=	default=	required=
@@ -122,11 +122,11 @@ ucloud uk8s node list	use=list	short=List nodes in a UK8S cluster
   flag=region	short=	default=	required=
 ucloud uk8s nodegroup	use=nodegroup	short=Manage UK8S node groups
 ucloud uk8s nodegroup add	use=add	short=Add a UK8S node group
-  flag=boot-disk-size-gb	short=	default=0	required=
-  flag=boot-disk-type	short=	default=	required=
+  flag=boot-disk-size-gb	short=	default=0	required=true
+  flag=boot-disk-type	short=	default=	required=true
   flag=charge-type	short=	default=	required=
   flag=cluster-id	short=	default=	required=true
-  flag=cpu	short=	default=0	required=
+  flag=cpu	short=	default=0	required=true
   flag=cpu-platform	short=	default=	required=
   flag=data-disk-size-gb	short=	default=0	required=
   flag=data-disk-type	short=	default=	required=
@@ -134,12 +134,12 @@ ucloud uk8s nodegroup add	use=add	short=Add a UK8S node group
   flag=gpu-type	short=	default=	required=
   flag=group	short=	default=	required=
   flag=image-id	short=	default=	required=
-  flag=machine-type	short=	default=	required=
-  flag=memory-mb	short=	default=0	required=
+  flag=machine-type	short=	default=	required=true
+  flag=memory-mb	short=	default=0	required=true
   flag=name	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
-  flag=subnet-id	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
   flag=zone	short=	default=	required=
 ucloud uk8s nodegroup delete	use=delete	short=Delete a UK8S node group
   flag=cluster-id	short=	default=	required=true

@@ -147,7 +147,7 @@ func TestNodeGroupCommandsDispatch(t *testing.T) {
 			args: []string{
 				"add", "--cluster-id", "uk8s-a/name", "--name", "workers", "--machine-type", "G",
 				"--cpu", "4", "--memory-mb", "8192", "--gpu", "1", "--gpu-type", "V100",
-				"--image-id", "uimage-a/name", "--subnet-id", "subnet-a/name",
+				"--image-id", "uimage-a/name", "--subnet-id", "subnet-a/name", "--boot-disk-type", "CLOUD_SSD", "--boot-disk-size-gb", "40",
 			},
 			action: "AddUK8SNodeGroup", want: map[string]string{
 				"ClusterId": "uk8s-a", "NodeGroupName": "workers", "MachineType": "G", "CPU": "4", "Mem": "8192",
@@ -174,6 +174,25 @@ func TestNodeGroupCommandsDispatch(t *testing.T) {
 			tt.want["Action"] = tt.action
 			assertRequest(t, got, tt.want)
 		})
+	}
+}
+
+func TestNodeGroupAddOmitsUnspecifiedResourceDefaults(t *testing.T) {
+	ctx, requests := setupCommandGateway(t)
+	runUK8SCommand(t, newNodeGroup(ctx), "add",
+		"--cluster-id", "uk8s-a/name", "--name", "workers",
+		"--machine-type", "N", "--cpu", "2", "--memory-mb", "4096",
+		"--subnet-id", "subnet-a/name", "--boot-disk-type", "CLOUD_SSD", "--boot-disk-size-gb", "40")
+	got := lastRequest(t, requests)
+	assertRequest(t, got, map[string]string{
+		"Action": "AddUK8SNodeGroup", "ClusterId": "uk8s-a", "NodeGroupName": "workers",
+		"MachineType": "N", "CPU": "2", "Mem": "4096", "SubnetId": "subnet-a",
+		"BootDiskType": "CLOUD_SSD", "BootDiskSize": "40",
+	})
+	for _, key := range []string{"ImageId", "DataDiskType", "DataDiskSize", "ChargeType", "GPU", "GpuType"} {
+		if _, ok := got[key]; ok {
+			t.Errorf("unspecified node-group field %s must be omitted", key)
+		}
 	}
 }
 
@@ -262,8 +281,14 @@ func TestMutationValidationStopsBeforeAPI(t *testing.T) {
 		{
 			name: "nodegroup gpu",
 			cmd:  func(ctx *cli.Context) *cobra.Command { return newNodeGroup(ctx) },
-			args: []string{"add", "--cluster-id", "uk8s-a", "--name", "gpu", "--machine-type", "G"},
+			args: []string{"add", "--cluster-id", "uk8s-a", "--name", "gpu", "--machine-type", "G", "--cpu", "2", "--memory-mb", "4096", "--subnet-id", "subnet-a", "--boot-disk-type", "CLOUD_SSD", "--boot-disk-size-gb", "40"},
 			want: "--gpu and --gpu-type are required",
+		},
+		{
+			name: "nodegroup boot disk type",
+			cmd:  func(ctx *cli.Context) *cobra.Command { return newNodeGroup(ctx) },
+			args: []string{"add", "--cluster-id", "uk8s-a", "--name", "workers", "--machine-type", "N", "--cpu", "2", "--memory-mb", "4096", "--subnet-id", "subnet-a", "--boot-disk-size-gb", "40"},
+			want: "--boot-disk-type is required",
 		},
 	}
 
