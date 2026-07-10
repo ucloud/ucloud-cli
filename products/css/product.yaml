@@ -1,7 +1,7 @@
 # products/css/product.yaml — css 产品元数据
 name: css
 owners:
-  - Episkey-G
+  - rocky.gu@ucloud.cn
 commands:
   - css
 enabled: true
