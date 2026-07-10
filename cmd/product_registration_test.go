@@ -37,7 +37,7 @@ func TestRegisteredProductsUseCommandDirectoryProducts(t *testing.T) {
 		commands []string
 	}{
 		{product: "sharedbw", commands: []string{"bw"}},
-		{product: "eip", commands: []string{"eip"}},
+		{product: "eip", commands: []string{"eip", "ext"}},
 		{product: "firewall", commands: []string{"firewall"}},
 		{product: "globalssh", commands: []string{"gssh"}},
 		{product: "image", commands: []string{"image"}},
@@ -91,6 +91,7 @@ func TestAddPlatformCommandsExcludesMigratedProductCommands(t *testing.T) {
 		"NewCmdULB(",
 		"NewCmdSubnet(",
 		"NewCmdVpc(",
+		"NewCmdExt(",
 	} {
 		if strings.Contains(string(src), constructor) {
 			t.Fatalf("addPlatformCommands must not register %s after product migration", constructor)

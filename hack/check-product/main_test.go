@@ -412,6 +412,12 @@ func TestReservedCommands_ExcludesMigratedSubnetProductCommand(t *testing.T) {
 	}
 }
 
+func TestReservedCommands_ExcludesMigratedExtProductCommand(t *testing.T) {
+	if reservedCommands["ext"] {
+		t.Fatal("reservedCommands must not include ext after it migrates to products/eip")
+	}
+}
+
 // --------------------------------------------------------------------------
 // checkCommandCollisions tests (rule7)
 // --------------------------------------------------------------------------

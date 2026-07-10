@@ -392,7 +392,6 @@ var reservedCommands = map[string]bool{
 	"region":  true, // NewCmdRegion
 	"project": true, // NewCmdProject
 	// uhost migrated to products/uhost (Part 6) — no longer platform-reserved.
-	"ext":       true, // NewCmdExt
 	"api":       true, // NewCmdAPI
 	"signature": true, // NewCmdSignature
 	"__schema":  true, // newSchemaCmd (hidden)
