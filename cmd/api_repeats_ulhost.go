@@ -9,6 +9,7 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
+// newULHostPoller supports `ucloud api --Action CreateULHostInstance --repeats`.
 func newULHostPoller(out io.Writer) cli.Poller {
 	return cli.NewPoller(sdescribeULHostByID, out)
 }
