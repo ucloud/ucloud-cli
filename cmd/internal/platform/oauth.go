@@ -1,5 +1,5 @@
 // base/oauth.go
-package base
+package platform
 
 import (
 	"context"

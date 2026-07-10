@@ -3,8 +3,6 @@ package ui
 import (
 	"fmt"
 	"io"
-
-	"github.com/ucloud/ucloud-cli/ansi"
 )
 
 // Refresh rewrites a single progress line on each Do call.
@@ -15,7 +13,7 @@ type Refresh struct {
 
 func (r *Refresh) Do(text string) {
 	if r.reset {
-		fmt.Fprint(r.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
+		fmt.Fprint(r.out, ansiCursorLeft+ansiCursorUp(1)+ansiEraseDown)
 	} else {
 		r.reset = true
 	}

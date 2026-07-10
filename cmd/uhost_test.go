@@ -14,7 +14,7 @@ import (
 	svcuhost "github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/products/uhost"
@@ -51,7 +51,7 @@ func fetchLiveImageID(t *testing.T) string {
 }
 
 func TestUhost(t *testing.T) {
-	base.InitConfig()
+	platform.InitConfig()
 	var out bytes.Buffer
 	// Buffer-backed ctx (table mode): create/delete narration via ctx.NewProgress
 	// routes to ProgressWriter == Out; the cmd-package completion providers + real
@@ -62,28 +62,35 @@ func TestUhost(t *testing.T) {
 		Err:    &out,
 		Format: cli.OutputTable,
 		DefaultsProvider: func() command.Defaults {
-			return command.Defaults{Region: base.ConfigIns.Region, Zone: base.ConfigIns.Zone, ProjectID: base.ConfigIns.ProjectID}
+			return command.Defaults{Region: platform.ConfigIns.Region, Zone: platform.ConfigIns.Zone, ProjectID: platform.ConfigIns.ProjectID}
 		},
 		RegionList:      getRegionList,
 		ZoneList:        getZoneList,
 		ProjectList:     getProjectList,
 		AllRegions:      getAllRegions,
-		ClientConfig:    func() *sdk.Config { return base.ClientConfig },
-		BuildCredential: base.BuildCredential,
-		AttachHandlers:  base.AttachHandlers,
+		ClientConfig:    func() *sdk.Config { return platform.ClientConfig },
+		BuildCredential: platform.BuildCredential,
+		AttachHandlers:  platform.AttachHandlers,
 	})
 	root := topLevelCmd(t, uhost.New().NewCommand(ctx), "uhost")
 
 	imageID := fetchLiveImageID(t)
 
-	run := func(name string, flags []string) string {
+	runE := func(name string, flags []string) (string, error) {
 		out.Reset()
 		subCmd(t, root, name)
 		root.SetArgs(append([]string{name}, flags...))
 		if err := root.Execute(); err != nil {
-			t.Fatalf("unexpected error executing %s: %v, flags: %v", name, err, flags)
+			return out.String(), fmt.Errorf("unexpected error executing %s: %w, flags: %v", name, err, flags)
 		}
-		return out.String()
+		return out.String(), nil
+	}
+	run := func(name string, flags []string) string {
+		content, err := runE(name, flags)
+		if err != nil {
+			t.Fatalf("%v, output: %s", err, content)
+		}
+		return content
 	}
 
 	createOut := run("create", []string{
@@ -103,6 +110,18 @@ func TestUhost(t *testing.T) {
 	}
 	uhostID := m[1]
 	idFlag := fmt.Sprintf("--uhost-id=%s", uhostID)
+	deleted := false
+	defer func() {
+		if deleted {
+			return
+		}
+		content, err := runE("delete", []string{"--yes", "--destroy", idFlag})
+		if err != nil {
+			t.Logf("cleanup delete failed for %s: %v, output: %s", uhostID, err, content)
+			return
+		}
+		t.Logf("cleanup delete succeeded for %s: %s", uhostID, content)
+	}()
 
 	assertRun := func(name string, flags []string, re *regexp.Regexp) {
 		content := run(name, flags)
@@ -118,4 +137,5 @@ func TestUhost(t *testing.T) {
 	assertRun("start", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is starting\.\.\.done`))
 	assertRun("stop", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`))
 	run("delete", []string{"--yes", "--destroy", idFlag})
+	deleted = true
 }

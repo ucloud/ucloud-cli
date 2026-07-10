@@ -1,5 +1,5 @@
 // base/oauth_test.go
-package base
+package platform
 
 import (
 	"os"

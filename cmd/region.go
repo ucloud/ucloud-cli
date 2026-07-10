@@ -26,7 +26,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 // NewCmdRegion ucloud region
@@ -39,14 +39,14 @@ func NewCmdRegion(out io.Writer) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			regionIns, err := fetchRegion()
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 				return
 			}
 			regionList := make([]RegionTable, 0)
 			for region, zones := range regionIns.Labels {
 				regionList = append(regionList, RegionTable{region, strings.Join(zones, ", ")})
 			}
-			base.PrintList(regionList, out)
+			platform.PrintList(regionList, out)
 		},
 	}
 	return cmd
@@ -103,7 +103,7 @@ func fetchRegion() (*Region, error) {
 	return region, nil
 }
 
-func fetchRegionWithConfig(cfg *base.AggConfig) (*Region, error) {
+func fetchRegionWithConfig(cfg *platform.AggConfig) (*Region, error) {
 	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func getDefaultProject() (string, string, error) {
 	return "", "", errNoDefaultProject
 }
 
-func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
+func getDefaultProjectWithConfig(cfg *platform.AggConfig) (string, string, error) {
 	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return "", "", err
@@ -205,7 +205,7 @@ func getDefaultProjectWithConfig(cfg *base.AggConfig) (string, string, error) {
 }
 
 // fetchProjectListWithConfig 用指定 profile 的凭证拉取完整项目列表（含默认标记）
-func fetchProjectListWithConfig(cfg *base.AggConfig) ([]uaccount.ProjectListInfo, error) {
+func fetchProjectListWithConfig(cfg *platform.AggConfig) ([]uaccount.ProjectListInfo, error) {
 	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func fetchProjectListWithConfig(cfg *base.AggConfig) ([]uaccount.ProjectListInfo
 	return resp.ProjectSet, nil
 }
 
-func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
+func fetchProjectWithConfig(cfg *platform.AggConfig) (map[string]bool, error) {
 	client, err := newServiceClientForConfig(cfg, uaccount.NewClient)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func fetchProjectWithConfig(cfg *base.AggConfig) (map[string]bool, error) {
 	return projects, nil
 }
 
-func getReasonableProject(cfg *base.AggConfig) (string, error) {
+func getReasonableProject(cfg *platform.AggConfig) (string, error) {
 	if cfg.ProjectID == "" {
 		id, _, err := getDefaultProjectWithConfig(cfg)
 		if err != nil {
@@ -281,7 +281,7 @@ func getUserInfo() (*uaccount.UserInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		fileFullPath := base.GetConfigDir() + "/user.json"
+		fileFullPath := platform.GetConfigDir() + "/user.json"
 		err = ioutil.WriteFile(fileFullPath, bytes, 0600)
 		if err != nil {
 			return nil, err

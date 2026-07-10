@@ -21,7 +21,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 // NewCmdProject ucloud project
@@ -32,7 +32,7 @@ func NewCmdProject() *cobra.Command {
 		Long:    "List,create,update and delete project",
 		Example: "ucloud project",
 	}
-	out := base.Cxt.GetWriter()
+	out := platform.Cxt.GetWriter()
 	cmd.AddCommand(NewCmdProjectList(out))
 	cmd.AddCommand(NewCmdProjectCreate())
 	cmd.AddCommand(NewCmdProjectUpdate())
@@ -66,12 +66,12 @@ func NewCmdProjectCreate() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := client.CreateProject(req)
 			if err != nil {
-				base.Cxt.PrintErr(err)
+				platform.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					base.HandleBizError(resp)
+					platform.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%q created\n", resp.ProjectId)
+					platform.Cxt.Printf("Project:%q created\n", resp.ProjectId)
 				}
 			}
 		},
@@ -94,12 +94,12 @@ func NewCmdProjectUpdate() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := client.ModifyProject(req)
 			if err != nil {
-				base.Cxt.PrintErr(err)
+				platform.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					base.HandleBizError(resp)
+					platform.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%s updated\n", *req.ProjectId)
+					platform.Cxt.Printf("Project:%s updated\n", *req.ProjectId)
 				}
 			}
 		},
@@ -123,12 +123,12 @@ func NewCmdProjectDelete() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			resp, err := client.TerminateProject(req)
 			if err != nil {
-				base.Cxt.PrintErr(err)
+				platform.Cxt.PrintErr(err)
 			} else {
 				if resp.RetCode != 0 {
-					base.HandleBizError(resp)
+					platform.HandleBizError(resp)
 				} else {
-					base.Cxt.Printf("Project:%s deleted\n", *req.ProjectId)
+					platform.Cxt.Printf("Project:%s deleted\n", *req.ProjectId)
 				}
 			}
 		},
@@ -146,12 +146,12 @@ func listProject(out io.Writer) error {
 		return err
 	}
 	if resp.RetCode != 0 {
-		return base.HandleBizError(resp)
+		return platform.HandleBizError(resp)
 	}
 	if global.JSON {
-		return base.PrintJSON(resp.ProjectSet, out)
+		return platform.PrintJSON(resp.ProjectSet, out)
 	}
-	base.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
+	platform.PrintTable(resp.ProjectSet, []string{"ProjectId", "ProjectName"})
 	return nil
 }
 

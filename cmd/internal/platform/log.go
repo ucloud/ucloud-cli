@@ -1,4 +1,4 @@
-package base
+package platform
 
 import (
 	"bytes"
@@ -16,8 +16,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/version"
+	sdkversion "github.com/ucloud/ucloud-sdk-go/ucloud/version"
 
+	cliversion "github.com/ucloud/ucloud-cli/cmd/internal/version"
 	"github.com/ucloud/ucloud-cli/internal/common"
 )
 
@@ -345,7 +346,7 @@ func (t Tracer) Send(logs []string) error {
 	}
 
 	client := &http.Client{}
-	ua := fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), version.Version, UserAgent)
+	ua := fmt.Sprintf("GO/%s GO-SDK/%s %s", runtime.Version(), sdkversion.Version, cliversion.UserAgent())
 	req, err := http.NewRequest("POST", t.DasUrl, bytes.NewReader(body))
 	req.Header.Add("Origin", "https://sdk.ucloud.cn")
 	req.Header.Add("User-Agent", ua)

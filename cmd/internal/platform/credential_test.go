@@ -1,5 +1,5 @@
 // base/credential_test.go
-package base
+package platform
 
 import (
 	"testing"

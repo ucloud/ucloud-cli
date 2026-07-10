@@ -84,14 +84,12 @@ var _ = cmd.Root
 
 func TestCheckFile_Rule2_BaseImport(t *testing.T) {
 	dir := t.TempDir()
-	src := `package cmd
+	src := "package cmd\n\n" +
+		"import (\n" +
+		"\t\"" + moduleRoot + "/base\"\n" +
+		")\n\n" +
+		"var _ = base.Foo\n"
 
-import (
-	"github.com/ucloud/ucloud-cli/base"
-)
-
-var _ = base.Foo
-`
 	path := writeFile(t, dir, "udb/cmd.go", src)
 	got := checkFile(path, "udb")
 	if len(got) == 0 {
@@ -99,6 +97,43 @@ var _ = base.Foo
 	}
 	if !strings.Contains(got[0], "rule2") {
 		t.Errorf("expected rule2 in violation, got: %v", got)
+	}
+}
+
+func TestCheckFile_Rule2_LegacyPlatformImports(t *testing.T) {
+	cases := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "ux",
+			src:  "package cmd\n\nimport \"" + moduleRoot + "/ux\"\n\nvar _ = ux.Doc\n",
+		},
+		{
+			name: "ansi",
+			src:  "package cmd\n\nimport \"" + moduleRoot + "/ansi\"\n\nvar _ = ansi.CursorLeft\n",
+		},
+		{
+			name: "cmd/internal",
+			src: `package cmd
+
+import "github.com/ucloud/ucloud-cli/cmd/internal/runtime"
+
+var _ = runtime.Active
+`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeFile(t, t.TempDir(), "udb/cmd.go", tc.src)
+			got := checkFile(path, "udb")
+			if len(got) == 0 {
+				t.Fatalf("expected violation for %s import, got none", tc.name)
+			}
+			if !strings.Contains(got[0], "rule2") {
+				t.Errorf("expected rule2 in violation, got: %v", got)
+			}
+		})
 	}
 }
 
@@ -556,13 +591,11 @@ func TestCheckFile_Rule9_ImportWhitelist(t *testing.T) {
 }
 
 func TestCheckFile_Rule9_DoesNotDuplicateRules12(t *testing.T) {
-	src := `package p
-
-import (
-	_ "github.com/ucloud/ucloud-cli/base"
-	_ "github.com/ucloud/ucloud-cli/products/vpc/internal/vpc"
-)
-`
+	src := "package p\n\n" +
+		"import (\n" +
+		"\t_ \"" + moduleRoot + "/base\"\n" +
+		"\t_ \"" + moduleRoot + "/products/vpc/internal/vpc\"\n" +
+		")\n"
 	joined := strings.Join(checkFile(writeFile(t, t.TempDir(), "x.go", src), "udb"), "\n")
 	if strings.Count(joined, "ucloud-cli/base") != 1 || strings.Count(joined, "products/vpc") != 1 {
 		t.Fatalf("rule1/2 territory must be flagged exactly once (by rule1/2, not rule9):\n%s", joined)

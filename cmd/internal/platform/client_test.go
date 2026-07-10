@@ -1,5 +1,5 @@
 // base/client_test.go
-package base
+package platform
 
 import (
 	"encoding/json"

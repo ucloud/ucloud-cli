@@ -1,4 +1,4 @@
-package base
+package platform
 
 import (
 	"encoding/json"
@@ -13,6 +13,8 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
+
+	"github.com/ucloud/ucloud-cli/cmd/internal/version"
 )
 
 // ConfigFilePath path of config.json
@@ -64,13 +66,6 @@ const (
 	// OAuthRedirectPath redirect_uri 与回调 server mux 共用的路径，必须一致（导出供 cmd/callback.go 复用）。
 	OAuthRedirectPath = "/authorization"
 )
-
-// Version 版本号。var（非 const）以便 release 构建用
-// -ldflags "-X github.com/ucloud/ucloud-cli/base.Version=<tag>" 注入；
-// 本地/dev 构建保持 "dev"。
-var Version = "dev"
-
-var UserAgent = fmt.Sprintf("UCloud-CLI/%s", Version)
 
 var InCloudShell = os.Getenv("CLOUD_SHELL") == "true"
 
@@ -790,7 +785,7 @@ func BuildClientRuntime(ac *AggConfig) (*sdk.Config, *CredentialConfig, error) {
 	cfg := &sdk.Config{
 		BaseUrl:    ac.BaseURL,
 		Timeout:    timeout,
-		UserAgent:  UserAgent,
+		UserAgent:  version.UserAgent(),
 		LogLevel:   log.FatalLevel,
 		Region:     ac.Region,
 		ProjectId:  ac.ProjectID,

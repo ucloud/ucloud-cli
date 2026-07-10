@@ -1,5 +1,5 @@
 // base/log_test.go
-package base
+package platform
 
 import (
 	"bytes"

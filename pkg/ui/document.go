@@ -5,8 +5,6 @@ import (
 	"io"
 	"sync"
 	"time"
-
-	"github.com/ucloud/ucloud-cli/ansi"
 )
 
 // Document is a writer-bound live rendering surface for progress blocks.
@@ -28,7 +26,7 @@ func (d *Document) reset() {
 	}
 	d.mux.RUnlock()
 	if size != 0 {
-		fmt.Fprint(d.out, ansi.CursorLeft+ansi.CursorPrevLine(size)+ansi.EraseDown)
+		fmt.Fprint(d.out, ansiCursorLeft+ansiCursorPrevLine(size)+ansiEraseDown)
 	}
 }
 

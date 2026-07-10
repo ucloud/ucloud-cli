@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/model/status"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
@@ -66,26 +66,26 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 		Example: "ucloud ext uhost switch-eip --uhost-id uhost-1n1sxx2,uhost-li4jxx1 --create-eip-bandwidth-mb 2",
 		Run: func(c *cobra.Command, args []string) {
 			unetClient := newServiceClient(unet.NewClient)
-			project = base.PickResourceID(project)
+			project = platform.PickResourceID(project)
 			eipAddrMap := make(map[string]bool)
 			for _, addr := range eipAddrs {
 				eipAddrMap[addr] = true
 			}
 			logs := make([]string, 0)
 			for _, idname := range uhostIDs {
-				uhostID := base.PickResourceID(idname)
+				uhostID := platform.PickResourceID(idname)
 				logs = append(logs, fmt.Sprintf("describe uhost instance by uhostID %s", uhostID))
 				ins, err := extDescribeUHostByID(uhostID, project, region, zone)
 				if err != nil {
 					errStr := fmt.Sprintf("describe uhost %s failed: %v", uhostID, err)
-					base.HandleError(errors.New(errStr))
+					platform.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
 				uhostIns, ok := ins.(*uhost.UHostInstanceSet)
 				if !ok {
 					errStr := fmt.Sprintf("uhost %s does not exist", uhostID)
-					base.HandleError(errors.New(errStr))
+					platform.HandleError(errors.New(errStr))
 					logs = append(logs, errStr)
 					continue
 				}
@@ -115,21 +115,21 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						} else {
 							errStr := "create-eip-share-bandwidth-id should not be empty when create-eip-traffic-mode is assigned 'ShareBandwidth'"
 							logs = append(logs, errStr)
-							base.HandleError(errors.New(errStr))
+							platform.HandleError(errors.New(errStr))
 							return
 						}
 					}
-					logs = append(logs, fmt.Sprintf("api AllocateEIP, request:%v", base.ToQueryMap(req)))
+					logs = append(logs, fmt.Sprintf("api AllocateEIP, request:%v", platform.ToQueryMap(req)))
 					resp, err := unetClient.AllocateEIP(req)
 					if err != nil {
 						errStr := fmt.Sprintf("allocate EIP failed: %v", err)
 						logs = append(logs, errStr)
-						base.HandleError(errors.New(errStr))
+						platform.HandleError(errors.New(errStr))
 						continue
 					}
 					if len(resp.EIPSet) != 1 {
 						errStr := fmt.Sprintf("allocate EIP failed, length of eip set is not 1")
-						base.HandleError(errors.New(errStr))
+						platform.HandleError(errors.New(errStr))
 						logs = append(logs, errStr)
 						continue
 					}
@@ -142,7 +142,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 					slogs, err2 := extAttachEIPWithLogs(&uhostID, sdk.String("uhost"), &eipID, &project, &region)
 					logs = append(logs, slogs...)
 					if err2 != nil {
-						base.HandleError(fmt.Errorf("bind new eip %s failed: %v", eipID, err2))
+						platform.HandleError(fmt.Errorf("bind new eip %s failed: %v", eipID, err2))
 						continue
 					}
 					fmt.Printf("bound eip %s with uhost %s\n", eipID, uhostID)
@@ -151,7 +151,7 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						slogs, err := extDetachEIPWithLogs(uhostID, "uhost", ip.IPId, project, region)
 						logs = append(logs, slogs...)
 						if err != nil {
-							base.HandleError(fmt.Errorf("unbind eip %s failed: %v", ip.IPId, err))
+							platform.HandleError(fmt.Errorf("unbind eip %s failed: %v", ip.IPId, err))
 							continue
 						}
 						fmt.Printf("unbound eip %s|%s with uhost %s\n", ip.IPId, ip.IP, uhostID)
@@ -162,19 +162,19 @@ func NewCmdExtUHostSwitchEIP() *cobra.Command {
 						req.ProjectId = &project
 						req.Region = &region
 						req.EIPId = sdk.String(ip.IPId)
-						logs = append(logs, fmt.Sprintf("api ReleaseEIP, request:%v", base.ToQueryMap(req)))
+						logs = append(logs, fmt.Sprintf("api ReleaseEIP, request:%v", platform.ToQueryMap(req)))
 						_, err := unetClient.ReleaseEIP(req)
 						if err != nil {
 							errStr := fmt.Sprintf("release eip %s failed: %v", ip.IPId, err)
 							logs = append(logs, errStr)
-							base.HandleError(errors.New(errStr))
+							platform.HandleError(errors.New(errStr))
 							continue
 						}
 						releaseRet := fmt.Sprintf("released eip %s|%s", ip.IPId, ip.IP)
 						logs = append(logs, releaseRet)
 						fmt.Println(releaseRet)
 					}
-					base.LogInfo(logs...)
+					platform.LogInfo(logs...)
 				}
 			}
 		},
@@ -298,7 +298,7 @@ func extAttachEIPWithLogs(resourceID, resourceType, eipID, projectID, region *st
 	if ip != nil {
 		id, err := extEIPIDByIP(ip, *projectID, *region)
 		if err != nil {
-			base.HandleError(err)
+			platform.HandleError(err)
 		} else {
 			*eipID = id
 		}
@@ -307,10 +307,10 @@ func extAttachEIPWithLogs(resourceID, resourceType, eipID, projectID, region *st
 	req := client.NewBindEIPRequest()
 	req.ResourceId = resourceID
 	req.ResourceType = resourceType
-	req.EIPId = sdk.String(base.PickResourceID(*eipID))
-	req.ProjectId = sdk.String(base.PickResourceID(*projectID))
+	req.EIPId = sdk.String(platform.PickResourceID(*eipID))
+	req.ProjectId = sdk.String(platform.PickResourceID(*projectID))
 	req.Region = region
-	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", base.ToQueryMap(req)))
+	logs = append(logs, fmt.Sprintf("api: BindEIP, request: %v", platform.ToQueryMap(req)))
 	_, err := client.BindEIP(req)
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("bind eip failed: %v", err))
@@ -322,12 +322,12 @@ func extAttachEIPWithLogs(resourceID, resourceType, eipID, projectID, region *st
 
 func extDetachEIPWithLogs(resourceID, resourceType, eipID, projectID, region string) ([]string, error) {
 	logs := make([]string, 0)
-	eipID = base.PickResourceID(eipID)
+	eipID = platform.PickResourceID(eipID)
 	ip := net.ParseIP(eipID)
 	if ip != nil {
 		id, err := extEIPIDByIP(ip, projectID, region)
 		if err != nil {
-			base.HandleError(err)
+			platform.HandleError(err)
 		} else {
 			eipID = id
 		}
@@ -337,9 +337,9 @@ func extDetachEIPWithLogs(resourceID, resourceType, eipID, projectID, region str
 	req.ResourceId = &resourceID
 	req.ResourceType = &resourceType
 	req.EIPId = &eipID
-	req.ProjectId = sdk.String(base.PickResourceID(projectID))
+	req.ProjectId = sdk.String(platform.PickResourceID(projectID))
 	req.Region = &region
-	logs = append(logs, fmt.Sprintf("api: UnBindEIP, request: %v", base.ToQueryMap(req)))
+	logs = append(logs, fmt.Sprintf("api: UnBindEIP, request: %v", platform.ToQueryMap(req)))
 	_, err := client.UnBindEIP(req)
 	if err != nil {
 		logs = append(logs, fmt.Sprintf("unbind eip failed: %v", err))

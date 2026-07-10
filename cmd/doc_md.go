@@ -24,7 +24,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/internal/common"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
@@ -37,9 +37,9 @@ func NewCmdDoc(out io.Writer) *cobra.Command {
 		Short: "Generate documents for all commands",
 		Long:  "Generate documents for all commands. Support markdown, rst and douku",
 		Run: func(c *cobra.Command, args []string) {
-			base.ConfigIns.Region = ""
-			base.ConfigIns.ProjectID = ""
-			base.ConfigIns.Zone = ""
+			platform.ConfigIns.Region = ""
+			platform.ConfigIns.ProjectID = ""
+			platform.ConfigIns.Zone = ""
 			rootCmd := NewCmdRoot()
 			addChildren(rootCmd)
 			switch format {

@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"io"
+
 	"github.com/ucloud/ucloud-sdk-go/services/ucompshare"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-var ulhostSpoller = base.NewSpoller(sdescribeULHostByID, base.Cxt.GetWriter())
+func newULHostPoller(out io.Writer) cli.Poller {
+	return cli.NewPoller(sdescribeULHostByID, out)
+}
 
 func sdescribeULHostByID(ulhostID string, common *request.CommonBase) (interface{}, error) {
 	client := newServiceClient(ucompshare.NewClient)

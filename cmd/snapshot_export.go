@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
@@ -16,11 +16,11 @@ import (
 // initialise them with zero-credential stubs when InitConfig was skipped.
 func AddChildrenForSnapshot(root *cobra.Command) {
 	runtimeAutoStub = true
-	if base.ClientConfig == nil {
-		base.ClientConfig = &sdk.Config{BaseUrl: base.DefaultBaseURL}
+	if platform.ClientConfig == nil {
+		platform.ClientConfig = &sdk.Config{BaseUrl: platform.DefaultBaseURL}
 	}
-	if base.AuthCredential == nil {
-		base.AuthCredential = &base.CredentialConfig{}
+	if platform.AuthCredential == nil {
+		platform.AuthCredential = &platform.CredentialConfig{}
 	}
 	setActiveRuntimeFromBaseGlobals()
 	addChildren(root)
@@ -28,11 +28,11 @@ func AddChildrenForSnapshot(root *cobra.Command) {
 
 // DisableRuntimeForSnapshotCompletion poisons runtime-backed dynamic
 // completions after command construction, so snapshot rendering does not issue
-// real network calls. It mirrors the old test behavior of nil-ing base.BizClient
+// real network calls. It mirrors the old test behavior of nil-ing platform.BizClient
 // after AddChildrenForSnapshot.
 func DisableRuntimeForSnapshotCompletion() {
-	base.ClientConfig = nil
-	base.AuthCredential = nil
+	platform.ClientConfig = nil
+	platform.AuthCredential = nil
 	runtimeAutoStub = false
 	activeRuntime = buildRuntimeFromBaseGlobals()
 }

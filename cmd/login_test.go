@@ -6,14 +6,14 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 // resolveLoginOAuthBase 决定登录使用的 OAuth 域：--oauth-base-url flag 最优先（去尾斜杠后
 // 写回 cfg.OAuthBaseURL 以便登录成功后随 profile 持久化），未给定则回退到 profile 配置或内置默认。
 func TestResolveLoginOAuthBase(t *testing.T) {
 	// case 1: 给了 flag → 去尾斜杠后返回，并写回 cfg（证明持久化接线）
-	cfg := &base.AggConfig{}
+	cfg := &platform.AggConfig{}
 	got, err := resolveLoginOAuthBase(cfg, "https://oauth-global.example/")
 	if err != nil {
 		t.Fatalf("flag given: unexpected error: %v", err)
@@ -26,7 +26,7 @@ func TestResolveLoginOAuthBase(t *testing.T) {
 	}
 
 	// case 2: flag 为空，cfg 预置 → 返回 profile 值，cfg 不变
-	cfg = &base.AggConfig{OAuthBaseURL: "https://oauth-profile.example"}
+	cfg = &platform.AggConfig{OAuthBaseURL: "https://oauth-profile.example"}
 	got, err = resolveLoginOAuthBase(cfg, "")
 	if err != nil {
 		t.Fatalf("flag empty, cfg preset: unexpected error: %v", err)
@@ -39,12 +39,12 @@ func TestResolveLoginOAuthBase(t *testing.T) {
 	}
 
 	// case 3: flag 为空，cfg 为空 → 返回内置默认，并写回 cfg 以便随 profile 显式落盘
-	cfg = &base.AggConfig{}
+	cfg = &platform.AggConfig{}
 	got, err = resolveLoginOAuthBase(cfg, "")
 	if err != nil {
 		t.Fatalf("flag empty, cfg empty: unexpected error: %v", err)
 	}
-	want, _ := base.GetOAuthBaseURL(&base.AggConfig{})
+	want, _ := platform.GetOAuthBaseURL(&platform.AggConfig{})
 	if want == "" {
 		t.Fatal("flag empty, cfg empty: built-in default is empty, test precondition broken")
 	}

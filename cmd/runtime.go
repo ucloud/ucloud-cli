@@ -3,17 +3,17 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 )
 
 type runtimeState struct {
-	Configs    *base.AggConfigManager
-	Config     *base.AggConfig
+	Configs    *platform.AggConfigManager
+	Config     *platform.AggConfig
 	SDKConfig  *sdk.Config
-	Credential *base.CredentialConfig
+	Credential *platform.CredentialConfig
 }
 
 var activeRuntime *runtimeState
@@ -21,10 +21,10 @@ var runtimeAutoStub = true
 
 func buildRuntimeFromBaseGlobals() *runtimeState {
 	return &runtimeState{
-		Configs:    base.AggConfigListIns,
-		Config:     base.ConfigIns,
-		SDKConfig:  base.ClientConfig,
-		Credential: base.AuthCredential,
+		Configs:    platform.AggConfigListIns,
+		Config:     platform.ConfigIns,
+		SDKConfig:  platform.ClientConfig,
+		Credential: platform.AuthCredential,
 	}
 }
 
@@ -33,12 +33,12 @@ func ensureRuntime() *runtimeState {
 		activeRuntime = buildRuntimeFromBaseGlobals()
 	}
 	if runtimeAutoStub && activeRuntime.SDKConfig == nil {
-		activeRuntime.SDKConfig = &sdk.Config{BaseUrl: base.DefaultBaseURL}
-		base.ClientConfig = activeRuntime.SDKConfig
+		activeRuntime.SDKConfig = &sdk.Config{BaseUrl: platform.DefaultBaseURL}
+		platform.ClientConfig = activeRuntime.SDKConfig
 	}
 	if runtimeAutoStub && activeRuntime.Credential == nil {
-		activeRuntime.Credential = &base.CredentialConfig{}
-		base.AuthCredential = activeRuntime.Credential
+		activeRuntime.Credential = &platform.CredentialConfig{}
+		platform.AuthCredential = activeRuntime.Credential
 	}
 	return activeRuntime
 }
@@ -70,18 +70,18 @@ func runtimeClientConfig() *sdk.Config {
 func runtimeCredential() *auth.Credential {
 	rt := ensureRuntime()
 	if rt == nil {
-		return base.BuildCredentialFrom(nil)
+		return platform.BuildCredentialFrom(nil)
 	}
-	return base.BuildCredentialFrom(rt.Credential)
+	return platform.BuildCredentialFrom(rt.Credential)
 }
 
 func attachRuntimeHandlers(sc sdk.ServiceClient) {
 	rt := ensureRuntime()
 	if rt == nil {
-		base.AttachHandlersWith(sc, nil, nil, nil)
+		platform.AttachHandlersWith(sc, nil, nil, nil)
 		return
 	}
-	base.AttachHandlersWith(sc, rt.Credential, rt.Config, rt.Configs)
+	platform.AttachHandlersWith(sc, rt.Credential, rt.Config, rt.Configs)
 }
 
 func newServiceClient[T sdk.ServiceClient](ctor func(*sdk.Config, *auth.Credential) T) T {
@@ -89,23 +89,23 @@ func newServiceClient[T sdk.ServiceClient](ctor func(*sdk.Config, *auth.Credenti
 	if rt == nil || rt.SDKConfig == nil {
 		panic("cmd runtime is not initialized")
 	}
-	client := ctor(rt.SDKConfig, base.BuildCredentialFrom(rt.Credential))
-	base.AttachHandlersWith(client, rt.Credential, rt.Config, rt.Configs)
+	client := ctor(rt.SDKConfig, platform.BuildCredentialFrom(rt.Credential))
+	platform.AttachHandlersWith(client, rt.Credential, rt.Config, rt.Configs)
 	return client
 }
 
-func newServiceClientForConfig[T sdk.ServiceClient](cfg *base.AggConfig, ctor func(*sdk.Config, *auth.Credential) T) (T, error) {
+func newServiceClientForConfig[T sdk.ServiceClient](cfg *platform.AggConfig, ctor func(*sdk.Config, *auth.Credential) T) (T, error) {
 	var zero T
-	sdkConfig, credConfig, err := base.BuildClientRuntime(cfg)
+	sdkConfig, credConfig, err := platform.BuildClientRuntime(cfg)
 	if sdkConfig == nil {
 		return zero, fmt.Errorf("build sdk config failed")
 	}
-	client := ctor(sdkConfig, base.BuildCredentialFrom(credConfig))
+	client := ctor(sdkConfig, platform.BuildCredentialFrom(credConfig))
 	rt := ensureRuntime()
-	var manager *base.AggConfigManager
+	var manager *platform.AggConfigManager
 	if rt != nil {
 		manager = rt.Configs
 	}
-	base.AttachHandlersWith(client, credConfig, cfg, manager)
+	platform.AttachHandlersWith(client, credConfig, cfg, manager)
 	return client, err
 }

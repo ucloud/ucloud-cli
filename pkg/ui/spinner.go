@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
-	"github.com/ucloud/ucloud-cli/ansi"
 )
 
 const windows = "windows"
@@ -56,7 +54,7 @@ func (s *Spinner) reset() {
 	if s.output == "" {
 		return
 	}
-	fmt.Fprint(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
+	fmt.Fprint(s.out, ansiCursorLeft+ansiCursorUp(1)+ansiEraseDown)
 	s.output = ""
 }
 
@@ -135,7 +133,7 @@ func (s *Spin) reset() {
 	if s.output == "" {
 		return
 	}
-	fmt.Fprint(s.out, ansi.CursorLeft+ansi.CursorUp(1)+ansi.EraseDown)
+	fmt.Fprint(s.out, ansiCursorLeft+ansiCursorUp(1)+ansiEraseDown)
 	s.output = ""
 }
 

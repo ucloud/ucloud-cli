@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/cmd"
 )
 
 const goldenPath = "testdata/cmdtree.golden"
+
+var rootVersionLine = regexp.MustCompile(`UCloud CLI v[^\n]+`)
 
 func TestWriteBaseline(t *testing.T) {
 	root := cmd.NewCmdRoot()
@@ -22,10 +24,8 @@ func TestWriteBaseline(t *testing.T) {
 	// The version string (root's Short: "UCloud CLI vX.Y.Z") is an intended,
 	// separately-managed value — not part of the command-tree structure we guard.
 	// Normalize it to a stable placeholder so the golden is version-insensitive
-	// (base.Version may be a const "0.3.3", "dev", or an ldflags-injected tag).
-	if base.Version != "" {
-		got = strings.ReplaceAll(got, "v"+base.Version, "v{VERSION}")
-	}
+	// without importing platform-internal version state from outside cmd/.
+	got = rootVersionLine.ReplaceAllString(got, "UCloud CLI v{VERSION}")
 
 	compareOrWrite(t, goldenPath, got, "WRITE_CMDTREE_GOLDEN")
 }
