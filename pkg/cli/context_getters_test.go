@@ -3,8 +3,8 @@ package cli_test
 import (
 	"testing"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 func TestRegionZoneProjectListGetters(t *testing.T) {
@@ -34,28 +34,27 @@ func TestRegionZoneProjectListGetters(t *testing.T) {
 func TestDefaultRegionProjectIDGetters(t *testing.T) {
 	tests := []struct {
 		name          string
-		config        *base.AggConfig
+		defaults      command.Defaults
 		wantRegion    string
 		wantZone      string
 		wantProjectID string
 	}{
 		{
 			name:          "nil config is nil-safe",
-			config:        nil,
 			wantRegion:    "",
 			wantZone:      "",
 			wantProjectID: "",
 		},
 		{
 			name:          "empty config returns empty",
-			config:        &base.AggConfig{},
+			defaults:      command.Defaults{},
 			wantRegion:    "",
 			wantZone:      "",
 			wantProjectID: "",
 		},
 		{
 			name:          "populated config returns configured values",
-			config:        &base.AggConfig{Region: "cn-bj2", Zone: "cn-bj2-04", ProjectID: "org-x"},
+			defaults:      command.Defaults{Region: "cn-bj2", Zone: "cn-bj2-04", ProjectID: "org-x"},
 			wantRegion:    "cn-bj2",
 			wantZone:      "cn-bj2-04",
 			wantProjectID: "org-x",
@@ -64,7 +63,9 @@ func TestDefaultRegionProjectIDGetters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := cli.NewContext(cli.Deps{Config: tt.config})
+			ctx := cli.NewContext(cli.Deps{
+				DefaultsProvider: func() command.Defaults { return tt.defaults },
+			})
 			if got := ctx.DefaultRegion(); got != tt.wantRegion {
 				t.Errorf("DefaultRegion() = %q, want %q", got, tt.wantRegion)
 			}

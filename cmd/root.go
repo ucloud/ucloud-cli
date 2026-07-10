@@ -24,20 +24,21 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
+	"github.com/ucloud/ucloud-cli/cmd/internal/version"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/pkg/ui"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/log"
 )
 
-var global = &base.Global
+var global = &platform.Global
 
 // NewCmdRoot 创建rootCmd rootCmd represents the base command when called without any subcommands
 func NewCmdRoot() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "ucloud",
-		Short:             "UCloud CLI v" + base.Version,
+		Short:             "UCloud CLI v" + version.Version,
 		Long:              `UCloud CLI - manage UCloud resources and developer workflow`,
 		DisableAutoGenTag: true,
 		// PersistentPreRun runs the per-invocation auth/config init for the
@@ -50,12 +51,13 @@ func NewCmdRoot() *cobra.Command {
 			initialize(c)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			syncLegacyJSONFlag(os.Stdout)
 			if global.Version {
-				base.Cxt.Printf("ucloud cli %s\n", base.Version)
+				platform.Cxt.Printf("ucloud cli %s\n", version.Version)
 			} else if global.Completion {
 				NewCmdCompletion().Run(cmd, args)
 			} else if global.Config {
-				base.ListAggConfig(global.JSON)
+				platform.ListAggConfig(global.JSON)
 			} else if global.Signup {
 				NewCmdSignup().Run(cmd, args)
 			} else {
@@ -73,7 +75,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.Flags().BoolVar(&global.Config, "config", false, "Display configuration")
 	cmd.Flags().BoolVar(&global.Signup, "signup", false, "Launch UCloud sign up page in browser")
 
-	command.SetPersistentCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetPersistentCompletion(cmd, "profile", func() []string { return platform.AggConfigListIns.GetProfileNameList() })
 	command.SetPersistentCompletion(cmd, "output", func() []string { return []string{"json", "table", "yaml"} })
 	cmd.SetHelpTemplate(helpTmpl)
 	cmd.SetUsageTemplate(usageTmpl)
@@ -129,10 +131,10 @@ func newSchemaCmd() *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			out, err := cli.RenderSchemaJSON(c.Root())
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 				return
 			}
-			fmt.Fprintln(base.Cxt.GetWriter(), out)
+			fmt.Fprintln(platform.Cxt.GetWriter(), out)
 		},
 	}
 }
@@ -154,7 +156,7 @@ func addChildren(root *cobra.Command) {
 // The set and order of AddCommand calls must stay identical to preserve
 // the command-tree golden (hack/snapshot/testdata/cmdtree.golden).
 func addPlatformCommands(root *cobra.Command) {
-	out := base.Cxt.GetWriter()
+	out := platform.Cxt.GetWriter()
 	root.AddCommand(NewCmdInit())
 	root.AddCommand(NewCmdAuth())
 	root.AddCommand(NewCmdDoc(out))
@@ -162,7 +164,6 @@ func addPlatformCommands(root *cobra.Command) {
 	root.AddCommand(NewCmdRegion(out))
 	root.AddCommand(NewCmdProject())
 	// uhost migrated to products/uhost (Part 6); registered via products.gen.go.
-	root.AddCommand(NewCmdExt())
 	root.AddCommand(NewCmdAPI(out))
 	root.AddCommand(NewCmdSignature())
 	root.AddCommand(newSchemaCmd())
@@ -199,15 +200,25 @@ func applyGlobalOverrideFlags(root *cobra.Command) {
 // (post-InitConfig) and AddChildrenForSnapshot (stubbed values).
 func buildContext() *cli.Context {
 	return cli.NewContext(cli.Deps{
-		In:          os.Stdin,
-		Out:         os.Stdout,
-		Err:         os.Stderr,
-		Format:      decideOutputFormat(os.Stdout),
-		Config:      base.ConfigIns,
-		RegionList:  getRegionList,
-		ZoneList:    getZoneList,
-		ProjectList: getProjectList,
-		AllRegions:  getAllRegions,
+		In:               os.Stdin,
+		Out:              os.Stdout,
+		Err:              os.Stderr,
+		Format:           decideOutputFormat(os.Stdout),
+		DefaultsProvider: runtimeDefaults,
+		RegionList:       getRegionList,
+		ZoneList:         getZoneList,
+		ProjectList:      getProjectList,
+		AllRegions:       getAllRegions,
+		ClientConfig:     runtimeClientConfig,
+		BuildCredential:  runtimeCredential,
+		AttachHandlers:   attachRuntimeHandlers,
+		HandleError:      platform.HandleErrorTo,
+		LogInfo:          platform.LogInfo,
+		LogPrint:         platform.LogPrintTo,
+		LogWarn:          platform.LogWarnTo,
+		LogError:         platform.LogErrorTo,
+		LogFilePath:      platform.GetLogFilePath,
+		NewPoller:        cli.NewPoller,
 	})
 }
 
@@ -217,23 +228,25 @@ func Execute() {
 	// Phase 3 脱敏扩面：panic 路径兜底，避免 panic 消息（可能含 token/header）原样落到 stderr
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Fprintln(os.Stderr, base.Redact(fmt.Sprintf("panic: %v", r)))
+			fmt.Fprintln(os.Stderr, platform.Redact(fmt.Sprintf("panic: %v", r)))
 			os.Exit(1)
 		}
 	}()
 	cmd := NewCmdRoot()
-	if base.InCloudShell {
-		err := base.InitConfigInCloudShell()
+	if platform.InCloudShell {
+		err := platform.InitConfigInCloudShell()
 		if err != nil {
-			base.HandleError(err)
+			platform.HandleError(err)
 			return
 		}
 	}
-	base.InitConfig()
+	platform.InitConfig()
+	setActiveRuntimeFromBaseGlobals()
 	mode := os.Getenv("UCLOUD_CLI_DEBUG")
 	if mode == "on" || global.Debug {
-		base.ClientConfig.LogLevel = log.DebugLevel
-		base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential, base.ConfigIns)
+		if rt := ensureRuntime(); rt.SDKConfig != nil {
+			rt.SDKConfig.LogLevel = log.DebugLevel
+		}
 	}
 
 	addChildren(cmd)
@@ -241,7 +254,15 @@ func Execute() {
 	targetCmd, flags, err := cmd.Find(os.Args[1:])
 	if err == nil {
 		if targetCmd.Use == "api" {
-			targetCmd.Run(targetCmd, flags)
+			if targetCmd.RunE != nil {
+				if err := targetCmd.RunE(targetCmd, flags); err != nil {
+					os.Exit(1)
+				}
+				return
+			}
+			if targetCmd.Run != nil {
+				targetCmd.Run(targetCmd, flags)
+			}
 			return
 		}
 	}
@@ -319,6 +340,8 @@ func resetHelpFunc(cmd *cobra.Command) {
 }
 
 func initialize(cmd *cobra.Command) {
+	syncLegacyJSONFlag(os.Stdout)
+
 	// Finalize the product output format now that cobra has parsed --output.
 	// buildContext() ran before flag parsing, so the format it set was
 	// provisional (always JSON for non-TTY stdout, ignoring an explicit
@@ -330,64 +353,68 @@ func initialize(cmd *cobra.Command) {
 	flags := cmd.Flags()
 	project, err := flags.GetString("project-id")
 	if err == nil {
-		base.ClientConfig.ProjectId = project
+		if rt := ensureRuntime(); rt.SDKConfig != nil {
+			rt.SDKConfig.ProjectId = project
+		}
 	}
 
 	region, err := flags.GetString("region")
 	if err == nil {
-		base.ClientConfig.Region = region
+		if rt := ensureRuntime(); rt.SDKConfig != nil {
+			rt.SDKConfig.Region = region
+		}
 	}
 
 	zone, err := flags.GetString("zone")
 	if err == nil {
-		base.ClientConfig.Zone = zone
+		if rt := ensureRuntime(); rt.SDKConfig != nil {
+			rt.SDKConfig.Zone = zone
+		}
 	}
 
 	if isAuthSkippedCmd(cmd) {
 		return
 	}
-	if base.InCloudShell {
+	if platform.InCloudShell {
 		return
 	}
 
-	if base.ConfigIns.AuthMode == base.AuthModeOAuth {
+	rt := ensureRuntime()
+	if rt.Config.AuthMode == platform.AuthModeOAuth {
 		// AP-1：oauth 凭据缺失/失效 → stderr + 非零退出（不复制下方 aksk 路径的 exit 0 反模式）
-		isTTY := base.IsStdinTTY()
-		if msg, ok := base.CheckOAuthRunnable(base.ConfigIns, isTTY); !ok {
+		isTTY := platform.IsStdinTTY()
+		if msg, ok := platform.CheckOAuthRunnable(rt.Config, isTTY); !ok {
 			fmt.Fprintln(os.Stderr, msg)
 			os.Exit(1)
 		}
-		if err := base.EnsureFreshToken(base.ConfigIns, base.AggConfigListIns); err != nil {
-			fmt.Fprintln(os.Stderr, base.OAuthRefreshFailedHint(base.ConfigIns.Profile, isTTY, err))
+		if err := platform.EnsureFreshToken(rt.Config, rt.Configs); err != nil {
+			fmt.Fprintln(os.Stderr, platform.OAuthRefreshFailedHint(rt.Config.Profile, isTTY, err))
 			os.Exit(1)
 		}
-		// 刷新可能换了 token，重建 client 让新 Bearer 生效。
-		// GetBizClient 会重建 ClientConfig 并硬编码 FatalLevel，若 Execute 已按
-		// UCLOUD_CLI_DEBUG 设了 DebugLevel，需在重建后恢复（SDK logger 在
-		// NewClient 时捕获 LogLevel，必须再 rebuild 一次才生效）。
-		debugOn := base.ClientConfig.LogLevel == log.DebugLevel
-		bc, err := base.GetBizClient(base.ConfigIns)
-		if err != nil {
-			base.HandleError(err)
-		} else {
-			base.BizClient = bc
+		debugOn := rt.SDKConfig != nil && rt.SDKConfig.LogLevel == log.DebugLevel
+		if err := platform.InitClientRuntime(rt.Config); err != nil {
+			platform.HandleError(err)
 		}
+		setActiveRuntimeFromBaseGlobals()
 		if debugOn {
-			base.ClientConfig.LogLevel = log.DebugLevel
-			base.BizClient = base.NewClient(base.ClientConfig, base.AuthCredential, base.ConfigIns)
+			ensureRuntime().SDKConfig.LogLevel = log.DebugLevel
 		}
 		return
 	}
 
 	// 既有 AK/SK 检查，原样保留（CRITICAL 回归约束：行为与文案零变化）
-	if base.ConfigIns.PrivateKey == "" {
-		base.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
+	if rt.Config.PrivateKey == "" {
+		platform.Cxt.Println("private-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 		os.Exit(0)
 	}
-	if base.ConfigIns.PublicKey == "" {
-		base.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
+	if rt.Config.PublicKey == "" {
+		platform.Cxt.Println("public-key is empty. Execute command 'ucloud init|config' to configure it or run 'ucloud config list' to check your configurations")
 		os.Exit(0)
 	}
+}
+
+func syncLegacyJSONFlag(out io.Writer) {
+	global.JSON = decideOutputFormat(out) == cli.OutputJSON
 }
 
 // decideOutputFormat resolves the effective output format: explicit --output

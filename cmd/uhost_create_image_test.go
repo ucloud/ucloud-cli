@@ -9,19 +9,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	productuhost "github.com/ucloud/ucloud-cli/products/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 )
 
 func saveBaseGlobalsForCreateImage(t *testing.T) {
 	t.Helper()
-	oldClientConfig, oldAuthCredential, oldConfigIns := base.ClientConfig, base.AuthCredential, base.ConfigIns
+	oldClientConfig, oldAuthCredential, oldConfigIns := platform.ClientConfig, platform.AuthCredential, platform.ConfigIns
 	t.Cleanup(func() {
-		base.ClientConfig = oldClientConfig
-		base.AuthCredential = oldAuthCredential
-		base.ConfigIns = oldConfigIns
+		platform.ClientConfig = oldClientConfig
+		platform.AuthCredential = oldAuthCredential
+		platform.ConfigIns = oldConfigIns
 	})
 }
 
@@ -46,16 +47,21 @@ func TestUhostCreateImageJSONEmitsStructuredResult(t *testing.T) {
 	cfg.Region = "cn-bj2"
 	cfg.Zone = "cn-bj2-03"
 	cfg.ProjectId = "org-test"
-	base.ClientConfig = &cfg
-	base.AuthCredential = &base.CredentialConfig{PublicKey: "public", PrivateKey: "private"}
-	base.ConfigIns = &base.AggConfig{ProjectID: "org-test", Region: "cn-bj2", Zone: "cn-bj2-03"}
+	platform.ClientConfig = &cfg
+	platform.AuthCredential = &platform.CredentialConfig{PublicKey: "public", PrivateKey: "private"}
+	platform.ConfigIns = &platform.AggConfig{ProjectID: "org-test", Region: "cn-bj2", Zone: "cn-bj2-03"}
 
 	var stdout, stderr bytes.Buffer
 	ctx := cli.NewContext(cli.Deps{
 		Out:    &stdout,
 		Err:    &stderr,
 		Format: cli.OutputJSON,
-		Config: base.ConfigIns,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{ProjectID: platform.ConfigIns.ProjectID, Region: platform.ConfigIns.Region, Zone: platform.ConfigIns.Zone}
+		},
+		ClientConfig:    func() *sdk.Config { return platform.ClientConfig },
+		BuildCredential: platform.BuildCredential,
+		AttachHandlers:  platform.AttachHandlers,
 	})
 	root := topLevelCmd(t, productuhost.New().NewCommand(ctx), "uhost")
 	root.SetArgs([]string{

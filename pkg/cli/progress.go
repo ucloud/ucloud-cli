@@ -8,27 +8,25 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
-// Block is the platform alias for ux.Block, so product packages get the
-// concurrent-progress block type without ever importing ux.
-type Block = ux.Block
+// Block is the platform alias for ui.Block, so product packages get the
+// concurrent-progress block type without importing platform internals.
+type Block = ui.Block
 
 // Progress is a per-invocation concurrent-progress session bound to the ctx
-// progress writer (stdout in table mode, stderr in json/yaml). It wraps
-// ux.Document/Block/Refresh so products never import ux or base.
+// progress writer (stdout in table mode, stderr in json/yaml).
 type Progress struct {
 	out io.Writer
-	doc *ux.Document
+	doc *ui.Document
 }
 
 // NewProgress builds a Progress bound to the ctx progress writer. Non-TTY
-// writers suppress animation (handled inside ux.NewDocument).
+// writers suppress animation (handled inside ui.NewDocument).
 func (c *Context) NewProgress() *Progress {
 	w := c.ProgressWriter()
-	return &Progress{out: w, doc: ux.NewDocument(w)}
+	return &Progress{out: w, doc: ui.NewDocument(w)}
 }
 
 // Disable switches off per-block animation (the count>5 aggregate path).
@@ -42,31 +40,30 @@ func (p *Progress) Animated() bool { return !p.doc.Disabled() }
 
 // NewBlock appends a fresh block to the document and returns it.
 func (p *Progress) NewBlock() *Block {
-	b := ux.NewBlock()
+	b := ui.NewBlock()
 	p.doc.Append(b)
 	return b
 }
 
 // Refresh prints an aggregate counter line to the progress writer.
-func (p *Progress) Refresh(text string) { ux.NewRefreshTo(p.out).Do(text) }
+func (p *Progress) Refresh(text string) { ui.NewRefresh(p.out).Do(text) }
 
 // Sspoll runs the concurrent poller into block, bound to the progress writer.
 func (p *Progress) Sspoll(describe func(string, *request.CommonBase) (interface{}, error),
 	resourceID, text string, targetStates []string, block *Block, common *request.CommonBase) {
-	base.NewSpoller(describe, p.out).Sspoll(resourceID, text, targetStates, block, common)
+	NewPoller(describe, p.out).Sspoll(resourceID, text, targetStates, block, common)
 }
 
 // ConcurrentAction runs actionFunc over reqs with bounded concurrency (limit),
 // aggregating a refresh counter when count>5. It is a verbatim port of
-// cmd/util.go concurrentAction, rebound to the ctx progress writer: the global
-// ux.Doc / ux.NewRefresh become the per-ctx writer; base logging (which is a
-// platform concern) stays in base. Products call this instead of touching base.
+// cmd/util.go concurrentAction, rebound to the ctx progress writer. Products
+// call this instead of touching platform internals.
 func (c *Context) ConcurrentAction(reqs []request.Common, limit int, actionFunc func(request.Common) (bool, []string)) {
 	if limit <= 0 {
 		limit = 10
 	}
 	w := c.ProgressWriter()
-	refresh := ux.NewRefreshTo(w)
+	refresh := ui.NewRefresh(w)
 	count := len(reqs)
 	var wg sync.WaitGroup
 	result := make(chan bool)
@@ -88,7 +85,7 @@ func (c *Context) ConcurrentAction(reqs []request.Common, limit int, actionFunc 
 				}
 			case <-time.Tick(time.Second / 30):
 				if count == (success+fail) && fail > 0 {
-					fmt.Fprintf(w, "Check logs in %s\n", base.GetLogFilePath())
+					fmt.Fprintf(w, "Check logs in %s\n", c.LogFilePath())
 					return
 				}
 				if count > 5 {
@@ -105,7 +102,7 @@ func (c *Context) ConcurrentAction(reqs []request.Common, limit int, actionFunc 
 			ok, logs := actionFunc(req)
 			result <- ok
 			logs = append([]string{"========================================"}, logs...)
-			base.LogInfo(logs...)
+			c.LogInfo(logs...)
 			<-tokens
 			time.Sleep(time.Second / 5)
 			wg.Done()

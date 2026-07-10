@@ -17,11 +17,5 @@ ucloud config update	profile	static
 ucloud config update	project-id	dynamic
 ucloud config update	region	dynamic
 ucloud config update	zone	dynamic
-ucloud ext uhost switch-eip	create-eip-charge-type	static	Dynamic,Month,Trial,Year
-ucloud ext uhost switch-eip	create-eip-traffic-mode	static	Bandwidth,ShareBandwidth,Traffic
-ucloud ext uhost switch-eip	project-id	dynamic
-ucloud ext uhost switch-eip	region	dynamic
-ucloud ext uhost switch-eip	uhost-id	dynamic
-ucloud ext uhost switch-eip	zone	dynamic
 ucloud gendoc	dir	static
 ucloud gendoc	format	static	douku,markdown,rst

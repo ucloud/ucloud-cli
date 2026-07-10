@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 // allocateLoopbackListener 在回环地址上取一个内核分配的空闲端口（>=1024），返回 listener 与端口。
 func allocateLoopbackListener() (net.Listener, int, error) {
-	ln, err := net.Listen("tcp", base.LoopbackListenHost+":0")
+	ln, err := net.Listen("tcp", platform.LoopbackListenHost+":0")
 	if err != nil {
 		return nil, 0, fmt.Errorf("cannot open a local callback port: %v", err)
 	}
@@ -47,7 +47,7 @@ func startCallbackServer(ln net.Listener, expectState string) (*http.Server, <-c
 
 	srv := &http.Server{}
 	mux := http.NewServeMux()
-	mux.HandleFunc(base.OAuthRedirectPath, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(platform.OAuthRedirectPath, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 
 		if e := q.Get("error"); e != "" {

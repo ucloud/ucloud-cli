@@ -3,4 +3,5 @@ owners:
   - Episkey-G
 commands:
   - eip
+  - ext
 enabled: true
