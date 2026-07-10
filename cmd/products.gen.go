@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/products/css"
 	"github.com/ucloud/ucloud-cli/products/eip"
 	"github.com/ucloud/ucloud-cli/products/firewall"
 	"github.com/ucloud/ucloud-cli/products/globalssh"
@@ -28,6 +29,7 @@ import (
 // registeredProducts returns the platform-registered products.
 func registeredProducts() []cli.Product {
 	return []cli.Product{
+		css.New(),
 		eip.New(),
 		firewall.New(),
 		globalssh.New(),

@@ -1,0 +1,7 @@
+# products/css/product.yaml — css 产品元数据
+name: css
+owners:
+  - Episkey-G
+commands:
+  - css
+enabled: true

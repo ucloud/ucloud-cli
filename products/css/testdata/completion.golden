@@ -1,0 +1,8 @@
+ucloud css create	charge-type	static	Dynamic,Month,Year
+ucloud css delete	instance-id	dynamic
+ucloud css describe	instance-id	dynamic
+ucloud css expand	instance-id	dynamic
+ucloud css expand	node-role	static	compute,coordinating
+ucloud css resize	instance-id	dynamic
+ucloud css resize	node-role	static	compute,coordinating,dashboard,kibana,master
+ucloud css restart	instance-id	dynamic
