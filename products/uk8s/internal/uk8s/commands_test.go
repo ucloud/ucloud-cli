@@ -12,9 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 func setupCommandGateway(t *testing.T) (*cli.Context, *[]url.Values) {
@@ -49,19 +50,24 @@ func setupCommandGateway(t *testing.T) (*cli.Context, *[]url.Values) {
 		_ = json.NewEncoder(w).Encode(response)
 	}))
 
-	oldClientConfig, oldCredential, oldConfig := base.ClientConfig, base.AuthCredential, base.ConfigIns
-	base.ClientConfig = &sdk.Config{Region: "cn-sh2", ProjectId: "org-test", BaseUrl: server.URL}
-	base.AuthCredential = &base.CredentialConfig{PublicKey: "public", PrivateKey: "private"}
-	base.ConfigIns = &base.AggConfig{Region: "cn-sh2", ProjectID: "org-test", BaseURL: server.URL}
 	t.Cleanup(func() {
 		server.Close()
-		base.ClientConfig, base.AuthCredential, base.ConfigIns = oldClientConfig, oldCredential, oldConfig
 	})
 
 	var out, errOut bytes.Buffer
 	ctx := cli.NewContext(cli.Deps{
 		In: strings.NewReader(""), Out: &out, Err: &errOut,
-		Format: cli.OutputTable, Config: base.ConfigIns,
+		Format: cli.OutputTable,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{Region: "cn-sh2", ProjectID: "org-test"}
+		},
+		ClientConfig: func() *sdk.Config {
+			return &sdk.Config{Region: "cn-sh2", ProjectId: "org-test", BaseUrl: server.URL}
+		},
+		BuildCredential: func() *auth.Credential {
+			return &auth.Credential{PublicKey: "public", PrivateKey: "private"}
+		},
+		AttachHandlers: func(sdk.ServiceClient) {},
 	})
 	return ctx, requests
 }

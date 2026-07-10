@@ -11,9 +11,10 @@ import (
 	"testing"
 
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 func setupCreateMock(t *testing.T) (*cli.Context, *url.Values, func()) {
@@ -33,26 +34,25 @@ func setupCreateMock(t *testing.T) (*cli.Context, *url.Values, func()) {
 		})
 	}))
 
-	oldClientConfig, oldCredential, oldConfig := base.ClientConfig, base.AuthCredential, base.ConfigIns
-	base.ClientConfig = &sdk.Config{
-		Region:    "cn-sh2",
-		ProjectId: "org-test",
-		BaseUrl:   server.URL,
-	}
-	base.AuthCredential = &base.CredentialConfig{PublicKey: "public", PrivateKey: "private"}
-	base.ConfigIns = &base.AggConfig{Region: "cn-sh2", ProjectID: "org-test", BaseURL: server.URL}
-
 	var out, errOut bytes.Buffer
 	ctx := cli.NewContext(cli.Deps{
 		In:     strings.NewReader(""),
 		Out:    &out,
 		Err:    &errOut,
 		Format: cli.OutputTable,
-		Config: base.ConfigIns,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{Region: "cn-sh2", ProjectID: "org-test"}
+		},
+		ClientConfig: func() *sdk.Config {
+			return &sdk.Config{Region: "cn-sh2", ProjectId: "org-test", BaseUrl: server.URL}
+		},
+		BuildCredential: func() *auth.Credential {
+			return &auth.Credential{PublicKey: "public", PrivateKey: "private"}
+		},
+		AttachHandlers: func(sdk.ServiceClient) {},
 	})
 	cleanup := func() {
 		server.Close()
-		base.ClientConfig, base.AuthCredential, base.ConfigIns = oldClientConfig, oldCredential, oldConfig
 	}
 	return ctx, values, cleanup
 }
