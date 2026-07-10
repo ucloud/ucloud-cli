@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/urocketmq"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -22,6 +23,9 @@ func newPrice(ctx *cli.Context) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if *req.Storage <= 0 || *req.Storage%100 != 0 {
 				return fmt.Errorf("--storage-gb must be a positive multiple of 100")
+			}
+			if sdk.StringValue(req.ChargeType) == "Dynamic" {
+				req.Quantity = sdk.Int(0)
 			}
 			resp, err := client.GetURocketMQServicePrice(req)
 			if err != nil {
@@ -55,7 +59,7 @@ func newPrice(ctx *cli.Context) *cobra.Command {
 	req.Edition = flags.String("edition", "Enterprise", "Required. Edition. Unique value: Enterprise")
 	req.Mode = flags.String("mode", "PrivateNet", "Required. Network mode. Unique value: PrivateNet")
 	req.PublicVersion = flags.String("public-version", "", "Required. Cluster version. Enum: v4, v5. Note: each region currently supports only one version, confirm with region")
-	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration. Dynamic does not require this; Month 0 means until month end")
+	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration. Dynamic only accepts 0 or omitted; Year does not accept 0; Month 0 means until month end")
 	req.Storage = flags.Int("storage-gb", 0, "Required. Message storage space in GB")
 	req.TPS = flags.Int("tps", 0, "Required. Transactions per second. Enum: 10000, 20000, 50000, 100000, 200000. Note: v4 supports 20000, 50000, 100000, 200000; v5 currently supports only 10000, 20000.")
 
