@@ -22,6 +22,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
 	"github.com/ucloud/ucloud-cli/products/upfs"
 	"github.com/ucloud/ucloud-cli/products/uphost"
+	"github.com/ucloud/ucloud-cli/products/urocketmq"
 	"github.com/ucloud/ucloud-cli/products/usnap"
 	"github.com/ucloud/ucloud-cli/products/vpc"
 )
@@ -48,6 +49,7 @@ func registeredProducts() []cli.Product {
 		umodelverse.New(),
 		upfs.New(),
 		uphost.New(),
+		urocketmq.New(),
 		usnap.New(),
 		vpc.New(),
 	}

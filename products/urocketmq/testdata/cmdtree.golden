@@ -1,0 +1,159 @@
+ucloud urocketmq	use=urocketmq	short=Manage URocketMQ instances, topics, groups, tokens and messages
+ucloud urocketmq group	use=group	short=Manage URocketMQ consumer groups
+ucloud urocketmq group create	use=create	short=Create a consumer group
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq group delete	use=delete	short=Delete a consumer group
+  flag=group-name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud urocketmq group list	use=list	short=List URocketMQ consumer groups
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq message	use=message	short=Query URocketMQ messages
+ucloud urocketmq message query-by-id	use=query-by-id	short=Query a message by ID
+  flag=msg-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-name	short=	default=	required=true
+ucloud urocketmq message query-by-key	use=query-by-key	short=Query messages by key
+  flag=id-only	short=	default=false	required=
+  flag=key	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-name	short=	default=	required=true
+ucloud urocketmq message query-by-topic	use=query-by-topic	short=Query messages by topic and time range
+  flag=begin	short=	default=	required=true
+  flag=end	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-name	short=	default=	required=true
+ucloud urocketmq service	use=service	short=Manage URocketMQ service instances
+ucloud urocketmq service create	use=create	short=Create a URocketMQ service instance
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=Month	required=true
+  flag=edition	short=	default=Enterprise	required=true
+  flag=file-reserved-time	short=	default=3	required=
+  flag=group	short=	default=Default	required=
+  flag=mode	short=	default=PrivateNet	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=public-version	short=	default=	required=true
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=storage-gb	short=	default=0	required=true
+  flag=subnet-id	short=	default=	required=true
+  flag=tps	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=true
+ucloud urocketmq service delete	use=delete	short=Delete a URocketMQ service instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud urocketmq service get	use=get	short=Get details of a URocketMQ service instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq service list	use=list	short=List all URocketMQ instances
+  flag=all-region	short=	default=false	required=
+  flag=id-only	short=	default=false	required=
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud urocketmq service price	use=price	short=Get price of URocketMQ service instance
+  flag=charge-type	short=	default=Month	required=true
+  flag=edition	short=	default=Enterprise	required=true
+  flag=mode	short=	default=PrivateNet	required=true
+  flag=project-id	short=	default=	required=
+  flag=public-version	short=	default=	required=true
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=storage-gb	short=	default=0	required=true
+  flag=tps	short=	default=0	required=true
+ucloud urocketmq service update-name	use=update-name	short=Update URocketMQ service instance name
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq service update-remark	use=update-remark	short=Update URocketMQ service instance remark
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq token	use=token	short=Manage URocketMQ access tokens
+ucloud urocketmq token create	use=create	short=Create URocketMQ token
+  flag=allow-consume-topic-list	short=	default=[]	required=
+  flag=allow-produce-topic-list	short=	default=[]	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-consume-perm	short=	default=	required=true
+  flag=topic-produce-perm	short=	default=	required=true
+ucloud urocketmq token delete	use=delete	short=Delete URocketMQ token
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=token-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud urocketmq token get	use=get	short=Get URocketMQ token details
+  flag=display	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=token-id	short=	default=	required=true
+ucloud urocketmq token list	use=list	short=List URocketMQ tokens
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq token update	use=update	short=Update URocketMQ token configuration
+  flag=allow-consume-topic-list	short=	default=[]	required=
+  flag=allow-produce-topic-list	short=	default=[]	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=token-id	short=	default=	required=true
+  flag=topic-consume-perm	short=	default=	required=true
+  flag=topic-produce-perm	short=	default=	required=true
+ucloud urocketmq topic	use=topic	short=Manage URocketMQ topics
+ucloud urocketmq topic create	use=create	short=Create URocketMQ topic
+  flag=message-type	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq topic delete	use=delete	short=Delete URocketMQ topic
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-name	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud urocketmq topic list	use=list	short=List URocketMQ topics
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+ucloud urocketmq topic update	use=update	short=Update URocketMQ topic remark
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=service-id	short=	default=	required=true
+  flag=topic-name	short=	default=	required=true
