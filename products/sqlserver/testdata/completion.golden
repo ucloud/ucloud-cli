@@ -1,0 +1,32 @@
+ucloud sqlserver db create	charge-type	static	Dynamic,Month,Year
+ucloud sqlserver db create	cpu	static	16,2,32,4,64,8
+ucloud sqlserver db create	db-type	static	sqlserver-2017,sqlserver-2019,sqlserver-2022
+ucloud sqlserver db create	project-id	dynamic
+ucloud sqlserver db create	region	dynamic
+ucloud sqlserver db create	spec-class	static	O
+ucloud sqlserver db create	storage-class	static	CLOUD_RSSD
+ucloud sqlserver db create	subnet-id	dynamic
+ucloud sqlserver db create	vpc-id	dynamic
+ucloud sqlserver db create	zone	dynamic
+ucloud sqlserver db delete	project-id	dynamic
+ucloud sqlserver db delete	region	dynamic
+ucloud sqlserver db delete	udb-id	dynamic
+ucloud sqlserver db delete	zone	dynamic
+ucloud sqlserver db list	include-slaves	static	false,true
+ucloud sqlserver db list	project-id	dynamic
+ucloud sqlserver db list	region	dynamic
+ucloud sqlserver db list	udb-id	dynamic
+ucloud sqlserver db list	zone	dynamic
+ucloud sqlserver db restart	project-id	dynamic
+ucloud sqlserver db restart	region	dynamic
+ucloud sqlserver db restart	udb-id	dynamic
+ucloud sqlserver db restart	zone	dynamic
+ucloud sqlserver db start	project-id	dynamic
+ucloud sqlserver db start	region	dynamic
+ucloud sqlserver db start	udb-id	dynamic
+ucloud sqlserver db start	zone	dynamic
+ucloud sqlserver db stop	force	static	false,true
+ucloud sqlserver db stop	project-id	dynamic
+ucloud sqlserver db stop	region	dynamic
+ucloud sqlserver db stop	udb-id	dynamic
+ucloud sqlserver db stop	zone	dynamic

@@ -13,6 +13,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/pathx"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
+	"github.com/ucloud/ucloud-cli/products/sqlserver"
 	"github.com/ucloud/ucloud-cli/products/subnet"
 	"github.com/ucloud/ucloud-cli/products/uclickhouse"
 	"github.com/ucloud/ucloud-cli/products/udisk"
@@ -42,6 +43,7 @@ func registeredProducts() []cli.Product {
 		pathx.New(),
 		redis.New(),
 		sharedbw.New(),
+		sqlserver.New(),
 		subnet.New(),
 		uclickhouse.New(),
 		udisk.New(),
