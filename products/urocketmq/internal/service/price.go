@@ -59,7 +59,7 @@ func newPrice(ctx *cli.Context) *cobra.Command {
 	req.Edition = flags.String("edition", "Enterprise", "Required. Edition. Unique value: Enterprise")
 	req.Mode = flags.String("mode", "PrivateNet", "Required. Network mode. Unique value: PrivateNet")
 	req.PublicVersion = flags.String("public-version", "", "Required. Cluster version. Enum: v4, v5. Note: each region currently supports only one version, confirm with region")
-	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration. Dynamic only accepts 0 or omitted; Year does not accept 0; Month 0 means until month end")
+	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration in months. Month: 1-9(month), 0=until end of current month; Dynamic: ignore; Year: use --quantity as years")
 	req.Storage = flags.Int("storage-gb", 0, "Required. Message storage space in GB")
 	req.TPS = flags.Int("tps", 0, "Required. Transactions per second. Enum: 10000, 20000, 50000, 100000, 200000. Note: v4 supports 20000, 50000, 100000, 200000; v5 currently supports only 10000, 20000.")
 

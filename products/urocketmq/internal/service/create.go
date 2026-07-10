@@ -65,7 +65,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.Tps = flags.String("tps", "", "Required. Transactions per second. Enum: 10000, 20000, 50000, 100000, 200000. Note: v4 supports 20000, 50000, 100000, 200000; v5 currently supports only 10000, 20000.")
 	req.VPCId = flags.String("vpc-id", "", "Required. VPC ID. Default to current region's default VPC")
 	req.FileReservedTime = flags.String("file-reserved-time", "3", "Optional. Message reserved time in days, default 3")
-	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration. Dynamic only accepts 0 or omitted; Year does not accept 0; Month 0 means until month end")
+	req.Quantity = flags.Int("quantity", 1, "Optional. Purchase duration in months. Month: 1-9(month), 0=until end of current month; Dynamic: ignore; Year: use --quantity as years")
 	req.Remark = flags.String("remark", "", "Optional. Remark")
 	req.Tag = flags.String("group", "Default", "Optional. Business group tag")
 
