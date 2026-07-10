@@ -49,6 +49,7 @@ ucloud uk8s delete	use=delete	short=Delete UK8S clusters
   flag=cluster-id	short=	default=[]	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=release-eip	short=	default=false	required=
   flag=release-udisk	short=	default=false	required=
   flag=yes	short=y	default=false	required=
 ucloud uk8s describe	use=describe	short=Show details of a UK8S cluster
@@ -133,7 +134,7 @@ ucloud uk8s nodegroup add	use=add	short=Add a UK8S node group
   flag=gpu	short=	default=0	required=
   flag=gpu-type	short=	default=	required=
   flag=group	short=	default=	required=
-  flag=image-id	short=	default=	required=
+  flag=image-id	short=	default=	required=true
   flag=machine-type	short=	default=	required=true
   flag=memory-mb	short=	default=0	required=true
   flag=name	short=	default=	required=true

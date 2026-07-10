@@ -20,7 +20,7 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 		Short: "Add a UK8S node group",
 		Args:  cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			for _, name := range []string{"cluster-id", "name", "machine-type", "cpu", "memory-mb", "subnet-id", "boot-disk-type", "boot-disk-size-gb"} {
+			for _, name := range []string{"cluster-id", "name", "machine-type", "cpu", "memory-mb", "image-id", "subnet-id", "boot-disk-type", "boot-disk-size-gb"} {
 				if !cmd.Flags().Changed(name) {
 					return fmt.Errorf("--%s is required", name)
 				}
@@ -36,6 +36,9 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 			}
 			if req.SubnetId == nil || *req.SubnetId == "" {
 				return fmt.Errorf("--subnet-id is required")
+			}
+			if req.ImageId == nil || *req.ImageId == "" {
+				return fmt.Errorf("--image-id is required")
 			}
 			if req.BootDiskType == nil || *req.BootDiskType == "" {
 				return fmt.Errorf("--boot-disk-type is required")
@@ -67,8 +70,8 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 			if *req.BootDiskSize < 40 || *req.BootDiskSize > 500 {
 				return fmt.Errorf("--boot-disk-size-gb must be between 40 and 500")
 			}
-			if !oneOf(*req.BootDiskType, "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK") {
-				return fmt.Errorf("--boot-disk-type must be a supported disk type")
+			if *req.BootDiskType != "CLOUD_RSSD" {
+				return fmt.Errorf("--boot-disk-type must be CLOUD_RSSD")
 			}
 			if cmd.Flags().Changed("charge-type") && !oneOf(*req.ChargeType, "Dynamic", "Month", "Year") {
 				return fmt.Errorf("--charge-type must be one of Dynamic, Month, or Year")
@@ -90,7 +93,6 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 			// node-group request with an empty Disks.0.Type. Every other
 			// product field remains nil unless the user supplied its flag.
 			for name, clear := range map[string]func(){
-				"image-id":          func() { req.ImageId = nil },
 				"data-disk-type":    func() { req.DataDiskType = nil },
 				"data-disk-size-gb": func() { req.DataDiskSize = nil },
 				"cpu-platform":      func() { req.MinimalCpuPlatform = nil },
@@ -129,9 +131,9 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 	req.MachineType = flags.String("machine-type", "", "Required. Node machine type. One of N, C, G, O, OS. G requires --gpu and --gpu-type.")
 	req.CPU = flags.Int("cpu", 0, "Required. vCPU cores per node. Range 2-64.")
 	req.Mem = flags.Int("memory-mb", 0, "Required. Memory in MB per node. Range 4096-262144, multiple of 1024.")
-	req.ImageId = flags.String("image-id", "", "Optional. Node image ID.")
+	req.ImageId = flags.String("image-id", "", "Required. Compatible UK8S node image ID. Choose one with 'ucloud uk8s image list'.")
 	req.SubnetId = flags.String("subnet-id", "", "Required. Subnet ID; must belong to the cluster's VPC.")
-	req.BootDiskType = flags.String("boot-disk-type", "", "Required. Boot disk type. Must be explicit because the backend rejects an empty disk type.")
+	req.BootDiskType = flags.String("boot-disk-type", "", "Required. System disk type. Only CLOUD_RSSD is supported for UK8S node pools.")
 	req.BootDiskSize = flags.Int("boot-disk-size-gb", 0, "Required. Boot disk size in GB. Range 40-500.")
 	req.DataDiskType = flags.String("data-disk-type", "", "Optional. Data disk type.")
 	req.DataDiskSize = flags.Int("data-disk-size-gb", 0, "Optional. Data disk size in GB.")
@@ -148,6 +150,7 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("machine-type")
 	cmd.MarkFlagRequired("cpu")
 	cmd.MarkFlagRequired("memory-mb")
+	cmd.MarkFlagRequired("image-id")
 	cmd.MarkFlagRequired("subnet-id")
 	cmd.MarkFlagRequired("boot-disk-type")
 	cmd.MarkFlagRequired("boot-disk-size-gb")
@@ -157,7 +160,7 @@ func newNodeGroupAdd(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "machine-type", "N", "C", "G", "O", "OS")
 	command.SetFlagValues(cmd, "charge-type", "Dynamic", "Month", "Year")
 	command.SetFlagValues(cmd, "gpu-type", "K80", "P40", "V100")
-	command.SetFlagValues(cmd, "boot-disk-type", "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
+	command.SetFlagValues(cmd, "boot-disk-type", "CLOUD_RSSD")
 	command.SetFlagValues(cmd, "data-disk-type", "CLOUD_SSD", "CLOUD_NORMAL", "LOCAL_SSD", "LOCAL_NORMAL", "CLOUD_RSSD", "EXCLUSIVE_LOCAL_DISK")
 	command.SetCompletion(cmd, "image-id", func() []string {
 		return listUK8SImageIDs(ctx, derefStr(req.ProjectId), derefStr(req.Region), derefStr(req.Zone))

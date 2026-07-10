@@ -7,6 +7,7 @@ import (
 
 	uk8ssdk "github.com/ucloud/ucloud-sdk-go/services/uk8s"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -18,6 +19,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 
 	var clusterIDs []string
 	var releaseUDisk bool
+	var releaseEIP bool
 	var yes bool
 
 	cmd := &cobra.Command{
@@ -41,7 +43,23 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 				id := ctx.PickResourceID(idName)
 				req.ClusterId = sdk.String(id)
 				req.ReleaseUDisk = sdk.Bool(releaseUDisk)
-				if _, err := client.DelUK8SCluster(req); err != nil {
+				var err error
+				if releaseEIP {
+					// DelUK8SClusterRequest in older SDK schemas does not expose
+					// ReleaseEIP, but the UK8S API accepts it. Use a local request
+					// shape only when the user explicitly opts in.
+					eipReq := &deleteClusterRequest{
+						ClusterId:    req.ClusterId,
+						ReleaseUDisk: req.ReleaseUDisk,
+						ReleaseEIP:   sdk.Bool(true),
+					}
+					client.SetupRequest(eipReq)
+					var resp uk8ssdk.DelUK8SClusterResponse
+					err = client.InvokeAction("DelUK8SCluster", eipReq, &resp)
+				} else {
+					_, err = client.DelUK8SCluster(req)
+				}
+				if err != nil {
 					ctx.HandleError(err)
 					continue
 				}
@@ -60,6 +78,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 	flags.StringSliceVar(&clusterIDs, "cluster-id", nil, "Required. Cluster ID(s) to delete.")
 	flags.BoolVar(&releaseUDisk, "release-udisk", false, "Optional. Release data disks attached to cluster nodes.")
+	flags.BoolVar(&releaseEIP, "release-eip", false, "Optional. Release EIP resources attached to the cluster.")
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Skip the confirmation prompt.")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
@@ -68,4 +87,13 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 		return listClusterIDs(ctx, nil, derefStr(req.Region), derefStr(req.ProjectId))
 	})
 	return cmd
+}
+
+// deleteClusterRequest carries the optional ReleaseEIP field that is not yet
+// present in the generated UK8S SDK request type.
+type deleteClusterRequest struct {
+	request.CommonBase
+	ClusterId    *string `required:"true"`
+	ReleaseUDisk *bool   `required:"false"`
+	ReleaseEIP   *bool   `required:"false"`
 }

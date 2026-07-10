@@ -53,7 +53,7 @@ ucloud uk8s node describe	region	dynamic
 ucloud uk8s node list	cluster-id	dynamic
 ucloud uk8s node list	project-id	dynamic
 ucloud uk8s node list	region	dynamic
-ucloud uk8s nodegroup add	boot-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
+ucloud uk8s nodegroup add	boot-disk-type	static	CLOUD_RSSD
 ucloud uk8s nodegroup add	charge-type	static	Dynamic,Month,Year
 ucloud uk8s nodegroup add	cluster-id	dynamic
 ucloud uk8s nodegroup add	data-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
