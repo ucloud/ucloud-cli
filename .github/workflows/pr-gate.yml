@@ -18,11 +18,9 @@
 #
 # Repo settings that this gate RELIES ON:
 #   - Settings → General → "Allow auto-merge" ✓ + "Allow squash merging" ✓.
-#   - Repository secret AUTO_MERGE_TOKEN is a bot/GitHub App token with
-#     contents:write + pull-requests:write. Do NOT use GITHUB_TOKEN for
-#     auto-merge: GitHub suppresses workflow runs triggered by GITHUB_TOKEN
-#     events, which can hide post-merge CI/CD automation. Release is scheduled
-#     weekly and no longer depends on master push events.
+#     The separate Auto Merge workflow enables GitHub native auto-merge for
+#     product-autonomous PRs after re-running the owner-gate decision in the
+#     trusted base-repository context.
 #   - Required approvals = 0. Do NOT set a global "require N approvals" — that
 #     would also block product autonomy. Platform approval is enforced by
 #     owner-gate (admin review), not by branch protection's approval count.
@@ -47,8 +45,9 @@ name: PR Gate
 on:
   pull_request:
     # labeled/unlabeled REQUIRED so hold-gate re-runs when do-not-merge/hold is
-    # added/removed after checks went green.
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    # added/removed after checks went green. edited REQUIRED so title fixes
+    # re-run scope-gate.
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
   pull_request_review:
     # submitted/dismissed REQUIRED so owner-gate re-evaluates platform clearance
     # when an admin approves or the approval is dismissed (stale-on-push).
@@ -191,36 +190,6 @@ jobs:
           echo "::error::PR is on hold (do-not-merge/hold label present) — remove the label to allow merge."
           exit 1
       - run: echo "hold-gate - not on hold"
-
-  auto-merge:
-    # Native GitHub auto-merge, only for product-autonomous eligible PRs. GitHub
-    # enforces required checks + (any) required approvals before the actual merge.
-    # Use a real automation identity instead of GITHUB_TOKEN so post-merge
-    # repository workflows/events are not suppressed.
-    if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
-    needs: [owner-gate]
-    runs-on: ubuntu-latest
-    # enablePullRequestAutoMerge (GraphQL) requires contents:write in addition to
-    # pull-requests:write; the workflow default above is contents:read, which made
-    # this job fail with "Resource not accessible by integration" on the first
-    # real product-autonomous PRs (P3.6 batch, 2026-07-02).
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Require automation token
-        env:
-          AUTO_MERGE_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "$AUTO_MERGE_TOKEN" ]; then
-            echo "::error::AUTO_MERGE_TOKEN is required for product auto-merge. Configure a bot/GitHub App token with contents:write and pull-requests:write so post-merge repository workflows/events are not suppressed."
-            exit 1
-          fi
-      - name: Enable auto-merge
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
-        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY"
 
   check-product:
     # Runs on every trigger (incl. merge_group + review events): must produce a
