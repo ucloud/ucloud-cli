@@ -9,7 +9,7 @@ import (
 
 type product struct{}
 
-// New returns the ukafka product (registered via hack/gen-products).
+// New returns the ukafka product (registered via hack/gen-products)
 func New() cli.Product { return product{} }
 
 func (product) Metadata() cli.Metadata {
