@@ -11,7 +11,7 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "utidb",
 		Short: "Manipulate UTiDB instances on UCloud platform",
-		Long:  "Manipulate UTiDB instances on UCloud platform",
+		Long:  helpUTiDBRoot,
 	}
 	cmd.AddCommand(newList(ctx))
 	cmd.AddCommand(newDescribe(ctx))

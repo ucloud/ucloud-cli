@@ -5,6 +5,7 @@ ucloud utidb backup	use=backup	short=Start a backup of a UTiDB instance
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
 ucloud utidb create	use=create	short=Create a UTiDB instance
   flag=activity-id	short=	default=0	required=
   flag=alert-strategy-ids	short=	default=[]	required=
@@ -21,7 +22,7 @@ ucloud utidb create	use=create	short=Create a UTiDB instance
   flag=port	short=	default=	required=
   flag=project-id	short=	default=	required=
   flag=promotion-id	short=	default=	required=
-  flag=pub-ulb-id	short=	default=	required=true
+  flag=pub-ulb-id	short=	default=	required=
   flag=quantity	short=	default=1	required=true
   flag=region	short=	default=	required=
   flag=rule-id	short=	default=0	required=
@@ -54,10 +55,12 @@ ucloud utidb list-backup	use=list-backup	short=List backups of a UTiDB instance
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=utidb-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
 ucloud utidb list-specs	use=list-specs	short=List available uhost specs
   flag=node-types	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
 ucloud utidb modify-spec	use=modify-spec	short=Modify uhost specs of a UTiDB instance
   flag=node-config	short=	default=	required=true
   flag=project-id	short=	default=	required=

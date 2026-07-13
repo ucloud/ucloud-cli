@@ -50,6 +50,12 @@ func parseCreateNodeConfig(s string) (tidb.CreateTiDBClusterServiceParamNodeConf
 	if cfg.ConfigId == nil || cfg.DiskSize == nil || cfg.NodeCount == nil || cfg.ServerType == nil {
 		return cfg, fmt.Errorf("node-config must include ConfigId, DiskSize, NodeCount and ServerType")
 	}
+	if err := validateServerType(*cfg.ServerType); err != nil {
+		return cfg, err
+	}
+	if err := validateNodeCount(*cfg.NodeCount, *cfg.ServerType); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
 }
 
@@ -112,56 +118,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a UTiDB instance",
-		Long:  "Create a UTiDB instance",
+		Long:  helpCreateLong,
 		Run: func(c *cobra.Command, args []string) {
-			req.Name = sdk.String(name)
-			req.Password = sdk.String(password)
-			req.ChargeType = sdk.String(chargeType)
-			req.DTType = sdk.String(dtType)
-			req.PubUlbId = sdk.String(pubUlbID)
-			req.VPCId = sdk.String(vpcID)
-			req.SubnetId = sdk.String(subnetID)
-			req.Quantity = sdk.Float64(quantity)
-
-			if dbVersion != "" {
-				req.DbVersion = sdk.String(dbVersion)
-			}
-			if ip != "" {
-				req.Ip = sdk.String(ip)
-			}
-			if port != "" {
-				req.Port = sdk.String(port)
-			}
-			if coupon != "" {
-				req.Coupon = sdk.String(coupon)
-			}
-			if promotionID != "" {
-				req.PromotionId = sdk.String(promotionID)
-			}
-			if templateID != "" {
-				req.TemplateId = sdk.String(templateID)
-			}
-			if activityID != 0 {
-				req.ActivityId = sdk.Int(activityID)
-			}
-			if ruleID != 0 {
-				req.RuleId = sdk.Int(ruleID)
-			}
-			if len(alertStrategyIDs) > 0 {
-				req.AlertStrategyIds = alertStrategyIDs
-			}
-			if len(labels) > 0 {
-				req.Labels = parseCreateLabels(labels)
-			}
-			if len(secGroupInfo) > 0 {
-				infos, err := parseCreateSecGroupInfo(secGroupInfo)
-				if err != nil {
-					ctx.HandleError(err)
-					return
-				}
-				req.SecGroupInfo = infos
-			}
-
 			var configs []tidb.CreateTiDBClusterServiceParamNodeConfig
 			for _, s := range nodeConfigs {
 				cfg, err := parseCreateNodeConfig(s)
@@ -171,21 +129,89 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				}
 				configs = append(configs, cfg)
 			}
-			req.NodeConfig = configs
 
-			resp, err := client.CreateTiDBClusterService(req)
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Name":       name,
+				"Password":   password,
+				"ChargeType": chargeType,
+				"DTType":     dtType,
+				"VPCId":      vpcID,
+				"SubnetId":   subnetID,
+				"Quantity":   quantity,
+			})
+			if pubUlbID != "" {
+				params["PubUlbId"] = pubUlbID
+			}
+			if dbVersion != "" {
+				params["DbVersion"] = dbVersion
+			}
+			if ip != "" {
+				params["Ip"] = ip
+			}
+			if port != "" {
+				params["Port"] = port
+			}
+			if promotionID != "" {
+				params["PromotionId"] = promotionID
+			}
+			if templateID != "" {
+				params["TemplateId"] = templateID
+			}
+			if activityID != 0 {
+				params["ActivityId"] = activityID
+			}
+			if ruleID != 0 {
+				params["RuleId"] = ruleID
+			}
+			if coupon != "" {
+				params["Coupon"] = coupon
+			}
+			if len(alertStrategyIDs) > 0 {
+				params["AlertStrategyIds"] = alertStrategyIDs
+			}
+			if len(labels) > 0 {
+				labelMaps := make([]map[string]interface{}, 0, len(labels))
+				for _, l := range parseCreateLabels(labels) {
+					labelMaps = append(labelMaps, labelToMap(l))
+				}
+				params["Labels"] = labelMaps
+			}
+			if len(secGroupInfo) > 0 {
+				infos, err := parseCreateSecGroupInfo(secGroupInfo)
+				if err != nil {
+					ctx.HandleError(err)
+					return
+				}
+				secMaps := make([]map[string]interface{}, 0, len(infos))
+				for _, info := range infos {
+					secMaps = append(secMaps, secGroupToMap(info))
+				}
+				params["SecGroupInfo"] = secMaps
+			}
+			nodeConfigMaps := make([]map[string]interface{}, 0, len(configs))
+			for _, cfg := range configs {
+				nodeConfigMaps = append(nodeConfigMaps, createNodeConfigToMap(cfg))
+			}
+			params["NodeConfig"] = nodeConfigMaps
+
+			payload, err := invokeAPI(ctx, "CreateTiDBClusterService", params)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			clusterID := resp.Data.Id
+			data, _ := payload["Data"].(map[string]interface{})
+			clusterID := stringVal(data["Id"])
+			if clusterID == "" {
+				ctx.HandleError(fmt.Errorf("empty cluster ID in response"))
+				return
+			}
 
 			w := ctx.ProgressWriter()
 			if async {
 				fmt.Fprintf(w, "utidb[%s] is creating\n", clusterID)
 			} else {
 				text := fmt.Sprintf("utidb[%s] is creating", clusterID)
-				ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(clusterID, text, []string{stateRunning, stateCreateFail})
+				spollCreate(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), clusterID, text)
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: clusterID, Action: "create", Status: "Creating"})
 		},
@@ -197,14 +223,14 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&name, "name", "", "Required. Instance name")
 	flags.StringVar(&password, "password", "", "Required. Admin password")
 	flags.StringVar(&chargeType, "charge-type", "", "Required. Charge type: Month, Year, Dynamic, Trial")
-	flags.StringVar(&dtType, "dt-type", "", "Required. Disaster tolerance type: 10 (same AZ), 20 (cross AZ)")
-	flags.StringVar(&pubUlbID, "pub-ulb-id", "", "Required. Public ULB ID")
+	flags.StringVar(&dtType, "dt-type", "", "Required. Disaster tolerance: 10 (same AZ), 20 (cross AZ)")
+	flags.StringVar(&pubUlbID, "pub-ulb-id", "", "Optional. Public ULB ID")
 	flags.StringVar(&vpcID, "vpc-id", "", "Required. VPC ID")
 	flags.StringVar(&subnetID, "subnet-id", "", "Required. Subnet ID")
 	flags.Float64Var(&quantity, "quantity", 1, "Required. Purchase duration")
-	flags.StringSliceVar(&nodeConfigs, "node-config", nil, "Required. Node config, format: ConfigId=xxx,DiskSize=N,NodeCount=N,ServerType=tidb")
+	flags.StringArrayVar(&nodeConfigs, "node-config", nil, "Required. Per node type: ConfigId=xxx,DiskSize=N,NodeCount=N,ServerType=tidb|tikv|pd|tiflash (NodeCount>3, min 4)")
 
-	flags.StringVar(&dbVersion, "db-version", "", "Optional. Database version")
+	flags.StringVar(&dbVersion, "db-version", "", "Optional. Database version, e.g. v8.5.1, v8.5.6")
 	flags.StringVar(&ip, "ip", "", "Optional. Specified IP address")
 	flags.StringVar(&port, "port", "", "Optional. Specified port")
 	flags.StringVar(&coupon, "coupon", "", "Optional. Coupon ID")
@@ -214,7 +240,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.IntVar(&ruleID, "rule-id", 0, "Optional. Rule ID")
 	flags.IntSliceVar(&alertStrategyIDs, "alert-strategy-ids", nil, "Optional. Alert strategy IDs")
 	flags.StringSliceVar(&labels, "labels", nil, "Optional. Resource labels, format: key=value, repeatable")
-	flags.StringSliceVar(&secGroupInfo, "sec-group-info", nil, "Optional. Security group info, format: SecGroupId=xxx,Priority=N, repeatable")
+	flags.StringArrayVar(&secGroupInfo, "sec-group-info", nil, "Optional. Security group info, format: SecGroupId=xxx,Priority=N, repeatable")
 	flags.BoolVar(&async, "async", false, "Optional. Do not wait for creation to finish")
 
 	ctx.BindRegion(cmd, req)
@@ -225,7 +251,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("charge-type")
 	cmd.MarkFlagRequired("dt-type")
-	cmd.MarkFlagRequired("pub-ulb-id")
 	cmd.MarkFlagRequired("vpc-id")
 	cmd.MarkFlagRequired("subnet-id")
 	cmd.MarkFlagRequired("quantity")

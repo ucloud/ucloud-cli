@@ -1,6 +1,7 @@
 ucloud utidb backup	project-id	dynamic
 ucloud utidb backup	region	dynamic
 ucloud utidb backup	utidb-id	dynamic
+ucloud utidb backup	zone	dynamic
 ucloud utidb create	charge-type	static	Dynamic,Month,Trial,Year
 ucloud utidb create	dt-type	static	10,20
 ucloud utidb create	project-id	dynamic
@@ -20,9 +21,11 @@ ucloud utidb list	zone	dynamic
 ucloud utidb list-backup	project-id	dynamic
 ucloud utidb list-backup	region	dynamic
 ucloud utidb list-backup	utidb-id	dynamic
+ucloud utidb list-backup	zone	dynamic
 ucloud utidb list-specs	node-types	dynamic
 ucloud utidb list-specs	project-id	dynamic
 ucloud utidb list-specs	region	dynamic
+ucloud utidb list-specs	zone	dynamic
 ucloud utidb modify-spec	project-id	dynamic
 ucloud utidb modify-spec	region	dynamic
 ucloud utidb modify-spec	utidb-id	dynamic

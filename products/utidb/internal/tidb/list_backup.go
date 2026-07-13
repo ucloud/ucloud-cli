@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/tidb"
-	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -23,16 +22,17 @@ func newListBackup(ctx *cli.Context) *cobra.Command {
 		Short: "List backups of a UTiDB instance",
 		Long:  "List backups of a UTiDB instance",
 		Run: func(c *cobra.Command, args []string) {
-			req.Id = sdk.String(ctx.PickResourceID(id))
-			req.Limit = sdk.Int(limit)
-			req.Offset = sdk.Int(offset)
-			resp, err := client.ListTiDBClusterBackup(req)
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id":     ctx.PickResourceID(id),
+				"Limit":  limit,
+				"Offset": offset,
+			})
+			payload, err := invokeAPI(ctx, "ListTiDBClusterBackup", params)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			rows := []backupRow{newBackupRowFromData(resp.Data)}
-			ctx.PrintList(rows)
+			ctx.PrintList(parseBackupRowsFromPayload(payload))
 		},
 	}
 
@@ -44,6 +44,7 @@ func newListBackup(ctx *cli.Context) *cobra.Command {
 	flags.IntVar(&offset, "offset", 0, "Optional. The index of resource which start to list")
 
 	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
 	ctx.BindProjectID(cmd, req)
 
 	cmd.MarkFlagRequired("utidb-id")

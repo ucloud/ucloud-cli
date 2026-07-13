@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/tidb"
-	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -36,10 +35,14 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 			}
 
 			pickedID := ctx.PickResourceID(id)
-			req.Id = sdk.String(pickedID)
-			req.DeleteBackup = sdk.Bool(deleteBackup)
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id": pickedID,
+			})
+			if deleteBackup {
+				params["DeleteBackup"] = true
+			}
 
-			_, err = client.DeleteTiDBClusterService(req)
+			_, err = invokeAPI(ctx, "DeleteTiDBClusterService", params)
 			if err != nil {
 				ctx.HandleError(err)
 				return

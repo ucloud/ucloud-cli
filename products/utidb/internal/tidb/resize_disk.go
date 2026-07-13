@@ -42,6 +42,9 @@ func parseResizeDiskNodeConfig(s string) (tidb.ModifyTiDBClusterUhostDiskParamNo
 	if cfg.DiskSize == nil || cfg.ServerType == nil {
 		return cfg, fmt.Errorf("node-config must include DiskSize and ServerType")
 	}
+	if err := validateServerType(*cfg.ServerType); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
 }
 
@@ -56,7 +59,7 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resize-disk",
 		Short: "Resize disk of a UTiDB instance",
-		Long:  "Resize disk of a UTiDB instance",
+		Long:  helpResizeDiskLong,
 		Run: func(c *cobra.Command, args []string) {
 			cfg, err := parseResizeDiskNodeConfig(nodeConfig)
 			if err != nil {
@@ -65,14 +68,16 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 			}
 
 			pickedID := ctx.PickResourceID(id)
-			req.Id = sdk.String(pickedID)
-			req.ScaleType = sdk.String(scaleType)
-			req.NodeConfig = &cfg
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id":        pickedID,
+				"ScaleType": scaleType,
+			})
+			params["NodeConfig"] = resizeDiskNodeConfigToMap(cfg)
 			if startTime != 0 {
-				req.StartTime = sdk.Int(startTime)
+				params["StartTime"] = startTime
 			}
 
-			_, err = client.ModifyTiDBClusterUhostDisk(req)
+			_, err = invokeAPI(ctx, "ModifyTiDBClusterUhostDisk", params)
 			if err != nil {
 				ctx.HandleError(err)
 				return
@@ -80,7 +85,7 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 
 			w := ctx.ProgressWriter()
 			text := fmt.Sprintf("utidb[%s] is resizing disk", pickedID)
-			ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateRunning, stateUpgradeFail})
+			spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "resize-disk", Status: "Resizing"})
 		},
 	}
@@ -89,8 +94,8 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance")
-	flags.StringVar(&scaleType, "scale-type", "", "Required. Scale type: SCALEOUT or SCALEIN")
-	flags.StringVar(&nodeConfig, "node-config", "", "Required. Node config, format: DiskSize=N,ServerType=tidb")
+	flags.StringVar(&scaleType, "scale-type", "", "Required. SCALEOUT (expand disk) or SCALEIN (shrink disk)")
+	flags.StringVar(&nodeConfig, "node-config", "", "Required. DiskSize=N,ServerType=tidb|tikv|pd|tiflash")
 	flags.IntVar(&startTime, "start-time", 0, "Optional. Task start time")
 
 	ctx.BindRegion(cmd, req)

@@ -47,22 +47,14 @@ func listResourceIDs(ctx *cli.Context, states []string, region, zone, projectID 
 
 // listNodeTypes returns all available node types by querying specs.
 func listNodeTypes(ctx *cli.Context, region, zone string) []string {
-	// The API requires NodeTypes as input, so we seed with known types and
-	// collect the actual available set from the response.
 	seedTypes := []string{"tidb", "tikv", "pd", "tiflash"}
-	client := cli.NewServiceClient(ctx, tidb.NewClient)
-	req := client.NewGetTiDBClusterUhostSpecsRequest()
-	if region != "" {
-		req.Region = sdk.String(region)
-	}
-	req.NodeTypes = seedTypes
-	resp, err := client.GetTiDBClusterUhostSpecs(req)
+	specs, err := getTiDBClusterUhostSpecs(ctx, region, zone, "", seedTypes)
 	if err != nil {
 		return nil
 	}
 	seen := make(map[string]bool)
 	var list []string
-	for _, s := range resp.Data {
+	for _, s := range specs {
 		if !seen[s.NodeType] {
 			seen[s.NodeType] = true
 			list = append(list, s.NodeType)
@@ -76,28 +68,26 @@ func listConfigIDs(ctx *cli.Context, region, zone, nodeType string) []string {
 	if nodeType == "" {
 		return nil
 	}
-	client := cli.NewServiceClient(ctx, tidb.NewClient)
-	req := client.NewGetTiDBClusterUhostSpecsRequest()
-	if region != "" {
-		req.Region = sdk.String(region)
-	}
-	req.NodeTypes = []string{nodeType}
-	resp, err := client.GetTiDBClusterUhostSpecs(req)
+	specs, err := getTiDBClusterUhostSpecs(ctx, region, zone, "", []string{nodeType})
 	if err != nil {
 		return nil
 	}
 	var list []string
-	for _, s := range resp.Data {
+	for _, s := range specs {
 		list = append(list, fmt.Sprintf("%s/%s", s.ConfigId, s.ConfigName))
 	}
 	return list
 }
 
-// listServerIDs returns the server IDs of the given UTiDB instance.
-// The current TiDB SDK does not expose server IDs in GetTiDBClusterService,
-// so this function returns an empty list.
-func listServerIDs(ctx *cli.Context, id string) []string {
-	_ = ctx
-	_ = id
-	return nil
+// listServerIDs returns server IDs of the given UTiDB instance for scale-in completion.
+// Format: <server-id>/<node-type>@<host-ip>
+func listServerIDs(ctx *cli.Context, region, zone, projectID, id string) []string {
+	if id == "" {
+		return nil
+	}
+	payload, err := getTiDBClusterPayload(ctx, region, zone, projectID, id)
+	if err != nil {
+		return nil
+	}
+	return extractServerIDs(payload)
 }

@@ -44,6 +44,12 @@ func parseScaleNodeConfig(s string) (tidb.ModifyTiDBClusterNodeParamNodeConfig, 
 	if cfg.ConfigId == nil || cfg.NodeCount == nil || cfg.ServerType == nil {
 		return cfg, fmt.Errorf("node-config must include ConfigId, NodeCount and ServerType")
 	}
+	if err := validateServerType(*cfg.ServerType); err != nil {
+		return cfg, err
+	}
+	if err := validateNodeCount(*cfg.NodeCount, *cfg.ServerType); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
 }
 
@@ -58,7 +64,7 @@ func newScaleNode(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scale-node",
 		Short: "Scale nodes of a UTiDB instance (SCALEOUT/SCALEIN)",
-		Long:  "Scale nodes of a UTiDB instance (SCALEOUT/SCALEIN)",
+		Long:  helpScaleNodeLong,
 		Run: func(c *cobra.Command, args []string) {
 			if scaleType == "SCALEIN" && serverID == "" {
 				ctx.HandleError(fmt.Errorf("server-id is required when scale-type is SCALEIN"))
@@ -72,25 +78,27 @@ func newScaleNode(ctx *cli.Context) *cobra.Command {
 			}
 
 			pickedID := ctx.PickResourceID(id)
-			req.Id = sdk.String(pickedID)
-			req.ScaleType = sdk.String(scaleType)
-			req.NodeConfig = &cfg
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id":        pickedID,
+				"ScaleType": scaleType,
+			})
+			params["NodeConfig"] = scaleNodeConfigToMap(cfg)
 			if serverID != "" {
-				req.ServerId = sdk.String(serverID)
+				params["ServerId"] = serverID
 			}
 			if startTime != 0 {
-				req.StartTime = sdk.Int(startTime)
+				params["StartTime"] = startTime
 			}
 
-			_, err = client.ModifyTiDBClusterNode(req)
+			_, err = invokeAPI(ctx, "ModifyTiDBClusterNode", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 
 			w := ctx.ProgressWriter()
 			text := fmt.Sprintf("utidb[%s] is scaling nodes", pickedID)
-			ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateRunning, stateUpgradeFail})
+			spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "scale-node", Status: "Scaling"})
 		},
 	}
@@ -99,9 +107,9 @@ func newScaleNode(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance")
-	flags.StringVar(&scaleType, "scale-type", "", "Required. Scale type: SCALEOUT or SCALEIN")
-	flags.StringVar(&nodeConfig, "node-config", "", "Required. Node config, format: ConfigId=xxx,NodeCount=N,ServerType=tidb")
-	flags.StringVar(&serverID, "server-id", "", "Optional. Server ID to scale in, required when scale-type=SCALEIN")
+	flags.StringVar(&scaleType, "scale-type", "", "Required. SCALEOUT (expand) or SCALEIN (shrink; requires --server-id)")
+	flags.StringVar(&nodeConfig, "node-config", "", "Required. ConfigId=xxx,NodeCount=N,ServerType=tidb|tikv|pd|tiflash (target count after scale; NodeCount>3, min 4)")
+	flags.StringVar(&serverID, "server-id", "", "Required for SCALEIN. Server ID of the node to remove (tab completion lists cluster nodes)")
 	flags.IntVar(&startTime, "start-time", 0, "Optional. Task start time")
 
 	ctx.BindRegion(cmd, req)
@@ -116,7 +124,7 @@ func newScaleNode(ctx *cli.Context) *cobra.Command {
 		return listResourceIDs(ctx, nil, *req.Region, *req.Zone, *req.ProjectId)
 	})
 	command.SetCompletion(cmd, "server-id", func() []string {
-		return listServerIDs(ctx, ctx.PickResourceID(id))
+		return listServerIDs(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId(), ctx.PickResourceID(id))
 	})
 
 	return cmd

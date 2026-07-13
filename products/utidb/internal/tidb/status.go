@@ -2,6 +2,7 @@ package tidb
 
 // UTiDB domain state constants, product-owned copies.
 const (
+	stateAvailable   = "Available"
 	stateRunning     = "Running"
 	stateStopped     = "Stopped"
 	stateFailed      = "Failed"
@@ -14,4 +15,6 @@ const (
 	stateBackupFail  = "BackupFailed"
 	stateUpgrading   = "Upgrading"
 	stateUpgradeFail = "UpgradeFailed"
+	stateAltering    = "Altering"  // modify-spec / scale / resize in progress (实测)
+	stateDeploying   = "Deploying" // create in progress (实测)
 )

@@ -37,6 +37,9 @@ func parseModifySpecNodeConfig(s string) (tidb.ModifyTiDBClusterUhostSpecsParamN
 	if cfg.ConfigId == nil || cfg.ServerType == nil {
 		return cfg, fmt.Errorf("node-config must include ConfigId and ServerType")
 	}
+	if err := validateServerType(*cfg.ServerType); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
 }
 
@@ -51,7 +54,7 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "modify-spec",
 		Short: "Modify uhost specs of a UTiDB instance",
-		Long:  "Modify uhost specs of a UTiDB instance",
+		Long:  helpModifySpecLong,
 		Run: func(c *cobra.Command, args []string) {
 			cfg, err := parseModifySpecNodeConfig(nodeConfig)
 			if err != nil {
@@ -60,13 +63,15 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 			}
 
 			pickedID := ctx.PickResourceID(id)
-			req.Id = sdk.String(pickedID)
-			req.NodeConfig = &cfg
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id": pickedID,
+			})
+			params["NodeConfig"] = modifySpecNodeConfigToMap(cfg)
 			if startTime != 0 {
-				req.StartTime = sdk.Int(startTime)
+				params["StartTime"] = startTime
 			}
 
-			_, err = client.ModifyTiDBClusterUhostSpecs(req)
+			_, err = invokeAPI(ctx, "ModifyTiDBClusterUhostSpecs", params)
 			if err != nil {
 				ctx.HandleError(err)
 				return
@@ -74,7 +79,7 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 
 			w := ctx.ProgressWriter()
 			text := fmt.Sprintf("utidb[%s] is modifying spec", pickedID)
-			ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateRunning, stateUpgradeFail})
+			spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "modify-spec", Status: "Modifying"})
 		},
 	}
@@ -83,7 +88,7 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance")
-	flags.StringVar(&nodeConfig, "node-config", "", "Required. Node config, format: ConfigId=xxx,ServerType=tidb")
+	flags.StringVar(&nodeConfig, "node-config", "", "Required. ConfigId=xxx,ServerType=tidb|tikv|pd|tiflash")
 	flags.IntVar(&startTime, "start-time", 0, "Optional. Task start time")
 
 	ctx.BindRegion(cmd, req)

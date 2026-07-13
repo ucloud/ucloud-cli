@@ -1,12 +1,40 @@
 package tidb
 
 import (
+	"io"
+	"time"
+
 	"github.com/ucloud/ucloud-sdk-go/services/tidb"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
+
+const (
+	createPollTimeout  = 20 * time.Minute
+	upgradePollTimeout = 30 * time.Minute
+)
+
+func createPollTargets() []string {
+	return []string{stateAvailable, stateRunning, stateCreateFail}
+}
+
+func upgradePollTargets() []string {
+	return []string{stateAvailable, stateRunning, stateUpgradeFail}
+}
+
+func spollCreate(ctx *cli.Context, w io.Writer, region, zone, projectID, id, text string) {
+	p := ctx.PollerTo(w, describeByID(ctx, region, zone, projectID))
+	p.Timeout = createPollTimeout
+	p.Spoll(id, text, createPollTargets())
+}
+
+func spollUpgrade(ctx *cli.Context, w io.Writer, region, zone, projectID, id, text string) {
+	p := ctx.PollerTo(w, describeByID(ctx, region, zone, projectID))
+	p.Timeout = upgradePollTimeout
+	p.Spoll(id, text, upgradePollTargets())
+}
 
 // describeByID returns a poller function that reads a UTiDB instance by ID.
 // The returned data is a pointer to UTiDBServiceData so the poller can read its

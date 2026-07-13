@@ -31,7 +31,7 @@ func newBackup(ctx *cli.Context) *cobra.Command {
 			}
 			resp, err := client.StartTiDBClusterBackup(req)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.BackupId, Action: "backup", Status: stateBackingUp})
@@ -46,6 +46,7 @@ func newBackup(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&backupTs, "backup-ts", "", "Optional. Backup timestamp")
 
 	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
 	ctx.BindProjectID(cmd, req)
 
 	cmd.MarkFlagRequired("utidb-id")
