@@ -37,15 +37,20 @@ func newList(ctx *cli.Context) *cobra.Command {
 					created = time.Unix(int64(cluster.CreateTime), 0).Format(time.RFC3339)
 				}
 				rows = append(rows, clusterRow{
-					ResourceID: cluster.ClusterId,
-					Name:       cluster.ClusterName,
-					K8sVersion: cluster.K8sVersion,
-					VPCID:      cluster.VPCId,
-					SubnetID:   cluster.SubnetId,
-					MasterCnt:  cluster.MasterCount,
-					NodeCnt:    cluster.NodeCount,
-					Status:     cluster.Status,
-					Created:    created,
+					ResourceID:        cluster.ClusterId,
+					Name:              cluster.ClusterName,
+					ApiServer:         cluster.ApiServer,
+					ClusterLogInfo:    cluster.ClusterLogInfo,
+					ExternalApiServer: cluster.ExternalApiServer,
+					K8sVersion:        cluster.K8sVersion,
+					VPCID:             cluster.VPCId,
+					SubnetID:          cluster.SubnetId,
+					MasterCnt:         cluster.MasterCount,
+					NodeCnt:           cluster.NodeCount,
+					PodCIDR:           cluster.PodCIDR,
+					ServiceCIDR:       cluster.ServiceCIDR,
+					Status:            cluster.Status,
+					Created:           created,
 				})
 			}
 			ctx.PrintList(rows)

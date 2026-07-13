@@ -56,6 +56,7 @@ ucloud uk8s node list	region	dynamic
 ucloud uk8s nodegroup add	boot-disk-type	static	CLOUD_RSSD
 ucloud uk8s nodegroup add	charge-type	static	Dynamic,Month,Year
 ucloud uk8s nodegroup add	cluster-id	dynamic
+ucloud uk8s nodegroup add	cpu-platform	static	Amd/Auto,Amd/Epyc2,Intel/Auto,Intel/Broadwell,Intel/Cascadelake,Intel/CascadelakeR,Intel/Haswell,Intel/IvyBridge,Intel/Skylake
 ucloud uk8s nodegroup add	data-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD
 ucloud uk8s nodegroup add	gpu-type	static	K80,P40,V100
 ucloud uk8s nodegroup add	image-id	dynamic

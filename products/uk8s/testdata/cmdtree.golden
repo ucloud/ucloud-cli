@@ -125,10 +125,10 @@ ucloud uk8s nodegroup	use=nodegroup	short=Manage UK8S node groups
 ucloud uk8s nodegroup add	use=add	short=Add a UK8S node group
   flag=boot-disk-size-gb	short=	default=0	required=true
   flag=boot-disk-type	short=	default=	required=true
-  flag=charge-type	short=	default=	required=
+  flag=charge-type	short=	default=Month	required=true
   flag=cluster-id	short=	default=	required=true
   flag=cpu	short=	default=0	required=true
-  flag=cpu-platform	short=	default=	required=
+  flag=cpu-platform	short=	default=Intel/Auto	required=true
   flag=data-disk-size-gb	short=	default=0	required=
   flag=data-disk-type	short=	default=	required=
   flag=gpu	short=	default=0	required=

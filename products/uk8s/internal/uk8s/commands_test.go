@@ -154,10 +154,12 @@ func TestNodeGroupCommandsDispatch(t *testing.T) {
 				"add", "--cluster-id", "uk8s-a/name", "--name", "workers", "--machine-type", "G",
 				"--cpu", "4", "--memory-mb", "8192", "--gpu", "1", "--gpu-type", "V100",
 				"--image-id", "uimage-a/name", "--subnet-id", "subnet-a/name", "--boot-disk-type", "CLOUD_RSSD", "--boot-disk-size-gb", "40",
+				"--charge-type", "Month", "--cpu-platform", "Intel/Cascadelake",
 			},
 			action: "AddUK8SNodeGroup", want: map[string]string{
 				"ClusterId": "uk8s-a", "NodeGroupName": "workers", "MachineType": "G", "CPU": "4", "Mem": "8192",
 				"GPU": "1", "GpuType": "V100", "ImageId": "uimage-a", "SubnetId": "subnet-a",
+				"ChargeType": "Month", "MinimalCpuPlatform": "Intel/Cascadelake",
 			},
 		},
 		{
@@ -188,14 +190,16 @@ func TestNodeGroupAddOmitsUnspecifiedResourceDefaults(t *testing.T) {
 	runUK8SCommand(t, newNodeGroup(ctx), "add",
 		"--cluster-id", "uk8s-a/name", "--name", "workers",
 		"--machine-type", "N", "--cpu", "2", "--memory-mb", "4096",
-		"--image-id", "uimage-a/name", "--subnet-id", "subnet-a/name", "--boot-disk-type", "CLOUD_RSSD", "--boot-disk-size-gb", "40")
+		"--image-id", "uimage-a/name", "--subnet-id", "subnet-a/name", "--boot-disk-type", "CLOUD_RSSD", "--boot-disk-size-gb", "40",
+		"--charge-type", "Month", "--cpu-platform", "Intel/Auto")
 	got := lastRequest(t, requests)
 	assertRequest(t, got, map[string]string{
 		"Action": "AddUK8SNodeGroup", "ClusterId": "uk8s-a", "NodeGroupName": "workers",
 		"MachineType": "N", "CPU": "2", "Mem": "4096", "ImageId": "uimage-a", "SubnetId": "subnet-a",
-		"BootDiskType": "CLOUD_RSSD", "BootDiskSize": "40",
+		"BootDiskType": "CLOUD_RSSD", "BootDiskSize": "40", "ChargeType": "Month",
+		"MinimalCpuPlatform": "Intel/Auto",
 	})
-	for _, key := range []string{"DataDiskType", "DataDiskSize", "ChargeType", "GPU", "GpuType"} {
+	for _, key := range []string{"DataDiskType", "DataDiskSize", "GPU", "GpuType"} {
 		if _, ok := got[key]; ok {
 			t.Errorf("unspecified node-group field %s must be omitted", key)
 		}

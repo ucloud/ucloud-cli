@@ -4,15 +4,20 @@ package uk8s
 // (field declaration order) drives the table layout; the platform's
 // ctx.PrintList renders the row for any --output.
 type clusterRow struct {
-	ResourceID string
-	Name       string
-	K8sVersion string
-	VPCID      string
-	SubnetID   string
-	MasterCnt  int
-	NodeCnt    int
-	Status     string
-	Created    string
+	ResourceID        string
+	Name              string
+	ApiServer         string
+	ClusterLogInfo    string
+	ExternalApiServer string
+	K8sVersion        string
+	VPCID             string
+	SubnetID          string
+	MasterCnt         int
+	NodeCnt           int
+	PodCIDR           string
+	ServiceCIDR       string
+	Status            string
+	Created           string
 }
 
 type nodeGroupRow struct {
