@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	ucompsharesdk "github.com/ucloud/ucloud-sdk-go/services/ucompshare"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
@@ -21,8 +22,7 @@ func newModifyAttribute(ctx *cli.Context) *cobra.Command {
 		Long:  "Modify the attribute (name or remark) of ULHost instance. At least one of Name or Remark must be specified.",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := ctx.ProgressWriter()
-			req.ULHostId = new(string)
-			*req.ULHostId = ctx.PickResourceID(*req.ULHostId)
+			req.ULHostId = sdk.String(ctx.PickResourceID(*req.ULHostId))
 			resp, err := client.ModifyULHostAttribute(req)
 			if err != nil {
 				ctx.HandleError(err)
