@@ -11,21 +11,22 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-type deleteParams struct {
+type modifyNameParams struct {
+	name      string
 	region    string
 	zone      string
 	projectID string
 }
 
-// newDelete returns ucloud redis delete.
-func newDelete(ctx *cli.Context) *cobra.Command {
+// newModifyName returns ucloud redis modify-name.
+func newModifyName(ctx *cli.Context) *cobra.Command {
 	var idNames []string
-	var p deleteParams
+	var p modifyNameParams
 	cmd := &cobra.Command{
-		Use:     "delete",
-		Short:   "Delete redis instances",
-		Long:    "Delete redis instances",
-		Example: "ucloud redis delete --umem-id uredis-rl5xuxx/testcli1,uredis-xsdfa/testcli2",
+		Use:     "modify-name",
+		Short:   "Modify redis instance name",
+		Long:    "Modify redis instance name",
+		Example: "ucloud redis modify-name --umem-id uredis-rl5xuxx/testcli1,uredis-xsdfa/testcli2 --name newname",
 		Run: func(c *cobra.Command, args []string) {
 			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
@@ -37,12 +38,12 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 				}
 				switch mode {
 				case redisModeMasterReplica:
-					if deleteMasterReplica(ctx, &p, id) {
-						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+					if modifyMasterReplicaName(ctx, &p, id) {
+						results = append(results, cli.OpResultRow{ResourceID: id, Action: "modify-name", Status: "Modified"})
 					}
 				case redisModeDistributed:
-					if deleteDistributed(ctx, &p, id) {
-						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+					if modifyDistributedName(ctx, &p, id) {
+						results = append(results, cli.OpResultRow{ResourceID: id, Action: "modify-name", Status: "Modified"})
 					}
 				default:
 					fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] unknown resource type, skip\n", idname)
@@ -55,7 +56,8 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
+	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to modify name")
+	flags.StringVar(&p.name, "name", "", "Required. New name of the redis instance")
 	flags.StringVar(&p.region, "region", ctx.DefaultRegion(), "Optional. Override default region for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.zone, "zone", ctx.DefaultZone(), "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.projectID, "project-id", ctx.DefaultProjectID(), "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
@@ -68,37 +70,40 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	})
 
 	cmd.MarkFlagRequired("umem-id")
+	cmd.MarkFlagRequired("name")
 
 	return cmd
 }
 
-func deleteMasterReplica(ctx *cli.Context, p *deleteParams, id string) bool {
+func modifyMasterReplicaName(ctx *cli.Context, p *modifyNameParams, id string) bool {
 	client := cli.NewServiceClient(ctx, umem.NewClient)
-	req := client.NewDeleteURedisGroupRequest()
+	req := client.NewModifyURedisGroupNameRequest()
 	req.Region = &p.region
 	req.ProjectId = &p.projectID
 	req.GroupId = &id
-	_, err := client.DeleteURedisGroup(req)
+	req.Name = &p.name
+	_, err := client.ModifyURedisGroupName(req)
 	if err != nil {
 		ctx.HandleError(err)
 		return false
 	}
-	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] deleted\n", id)
+	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] name modified\n", id)
 	return true
 }
 
-func deleteDistributed(ctx *cli.Context, p *deleteParams, id string) bool {
+func modifyDistributedName(ctx *cli.Context, p *modifyNameParams, id string) bool {
 	client := cli.NewServiceClient(ctx, umem.NewClient)
-	req := client.NewDeleteUMemSpaceRequest()
+	req := client.NewModifyUMemSpaceNameRequest()
 	req.Region = &p.region
 	req.Zone = &p.zone
 	req.ProjectId = &p.projectID
 	req.SpaceId = &id
-	_, err := client.DeleteUMemSpace(req)
+	req.Name = &p.name
+	_, err := client.ModifyUMemSpaceName(req)
 	if err != nil {
 		ctx.HandleError(err)
 		return false
 	}
-	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] deleted\n", id)
+	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] name modified\n", id)
 	return true
 }

@@ -22,6 +22,12 @@ ucloud memcache list	use=list	short=List memcache instances
   flag=region	short=	default=	required=
   flag=umem-id	short=	default=	required=
   flag=zone	short=	default=	required=
+ucloud memcache resize	use=resize	short=Resize memcache instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=0	required=true
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
 ucloud memcache restart	use=restart	short=Restart memcache instances
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
