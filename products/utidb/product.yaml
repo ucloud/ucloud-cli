@@ -1,7 +1,8 @@
 # products/utidb/product.yaml — UTiDB 产品元数据
 name: utidb
 owners:
-  - UTiDB
+  - xingxingso
+  - jinfz12
 commands:
   - utidb
 enabled: true
