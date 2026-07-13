@@ -21,27 +21,23 @@ type clusterRow struct {
 }
 
 type nodeGroupRow struct {
-	ResourceID  string
-	Name        string
-	MachineType string
-	CPU         int
-	MemoryMB    int
-	NodeCount   int
-	ChargeType  string
-	ImageID     string
-}
-
-type nodeRow struct {
-	ResourceID  string
-	InstanceID  string
-	Name        string
-	Role        string
-	Zone        string
-	MachineType string
-	CPU         int
-	MemoryMB    int
-	Status      string
-	OS          string
+	ResourceID         string
+	Name               string
+	MachineType        string
+	CPU                int
+	MemoryMB           int
+	NodeCount          int
+	NodeIDs            string
+	ChargeType         string
+	ImageID            string
+	BootDiskType       string
+	BootDiskSize       int
+	DataDiskType       string
+	DataDiskSize       int
+	GPU                int
+	GPUType            string
+	MinimalCPUPlatform string
+	Tag                string
 }
 
 type imageRow struct {

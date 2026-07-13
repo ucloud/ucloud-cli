@@ -33,6 +33,16 @@ func setupCommandGateway(t *testing.T) (*cli.Context, *[]url.Values) {
 			"Action":  action + "Response",
 		}
 		switch action {
+		case "DescribeUK8SCluster":
+			response["ClusterId"] = "uk8s-a"
+			response["ClusterName"] = "test-cluster"
+			response["KubeProxy"] = map[string]string{"Mode": "iptables"}
+			response["MasterList"] = []map[string]interface{}{{
+				"NodeId": "uhost-master", "Name": "master-0", "IPSet": []map[string]interface{}{{"IP": "10.0.0.1"}},
+			}}
+			response["NodeList"] = []map[string]interface{}{{
+				"NodeId": "uhost-node", "Name": "node-0", "DiskSet": []map[string]interface{}{{"DiskId": "bsi-node"}},
+			}}
 		case "GetClusterConfig":
 			response["KubeConfig"] = "apiVersion: v1\nclusters: []\n"
 			response["ExternalKubeConfig"] = "apiVersion: v1\nclusters: []\n"
@@ -138,6 +148,31 @@ func TestClusterCommandsDispatch(t *testing.T) {
 			tt.want["Action"] = tt.action
 			assertRequest(t, got, tt.want)
 		})
+	}
+}
+
+func TestDescribeJSONUsesStructuredResponse(t *testing.T) {
+	ctx, _ := setupCommandGateway(t)
+	ctx.SetFormat(cli.OutputJSON)
+	runUK8SCommand(t, newDescribe(ctx), "--cluster-id", "uk8s-a")
+
+	var got map[string]json.RawMessage
+	if err := json.Unmarshal(ctx.Out().(*bytes.Buffer).Bytes(), &got); err != nil {
+		t.Fatalf("decode JSON output: %v", err)
+	}
+	if _, ok := got["Attribute"]; ok {
+		t.Fatal("describe JSON must be a structured response object, not describe rows")
+	}
+	if string(got["ClusterId"]) != `"uk8s-a"` {
+		t.Fatalf("ClusterId = %s, want uk8s-a", got["ClusterId"])
+	}
+	var kubeProxy struct{ Mode string }
+	if err := json.Unmarshal(got["KubeProxy"], &kubeProxy); err != nil || kubeProxy.Mode != "iptables" {
+		t.Fatalf("KubeProxy = %s, want structured object with iptables mode", got["KubeProxy"])
+	}
+	var masterList []struct{ NodeId string }
+	if err := json.Unmarshal(got["MasterList"], &masterList); err != nil || len(masterList) != 1 || masterList[0].NodeId != "uhost-master" {
+		t.Fatalf("MasterList = %s, want structured node array", got["MasterList"])
 	}
 }
 
