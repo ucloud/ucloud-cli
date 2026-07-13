@@ -1,0 +1,6 @@
+name: uhadoop
+owners:
+  - mark.wei
+commands:
+  - uhadoop
+enabled: true
