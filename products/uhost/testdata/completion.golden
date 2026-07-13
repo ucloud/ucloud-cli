@@ -16,7 +16,7 @@ ucloud uhost create	create-eip-traffic-mode	static	Bandwidth,ShareBandwidth,Traf
 ucloud uhost create	data-disk-backup-type	static	DATAARK,NONE
 ucloud uhost create	data-disk-type	static	CLOUD_NORMAL,CLOUD_RSSD,CLOUD_SSD,EXCLUSIVE_LOCAL_DISK,LOCAL_NORMAL,LOCAL_SSD,NONE
 ucloud uhost create	firewall-id	dynamic
-ucloud uhost create	gpu-type	static	K80,P40,V100
+ucloud uhost create	gpu-type	static	1080Ti,2080,2080Ti,2080Ti-4C,2080TiPro,2080TiS,3080Ti,3090,4090,4090LD,4090Pro,4090_48G,5090,5090D,5090Pro,A100,A800,H100,H20,H200,H800,K80,MI100,MR-V100,MetaX-C500,P40,T4,T4A,T4S,V100,V100S
 ucloud uhost create	hot-plug	static	false,true
 ucloud uhost create	image-id	dynamic
 ucloud uhost create	isolation-group	dynamic
