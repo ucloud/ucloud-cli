@@ -11,7 +11,6 @@ import (
 )
 
 // NewCreateCommand builds `udns create` (CreateUDNSZone).
-// Exported because product.go already references it by name.
 func NewCreateCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewCreateUDNSZoneRequest()
