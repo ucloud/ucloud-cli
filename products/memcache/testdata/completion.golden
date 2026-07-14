@@ -12,6 +12,11 @@ ucloud memcache delete	zone	dynamic
 ucloud memcache list	project-id	dynamic
 ucloud memcache list	region	dynamic
 ucloud memcache list	zone	dynamic
+ucloud memcache resize	project-id	dynamic
+ucloud memcache resize	region	dynamic
+ucloud memcache resize	size-gb	static	1,16,2,32,4,8
+ucloud memcache resize	umem-id	dynamic
+ucloud memcache resize	zone	dynamic
 ucloud memcache restart	project-id	dynamic
 ucloud memcache restart	region	dynamic
 ucloud memcache restart	umem-id	dynamic
