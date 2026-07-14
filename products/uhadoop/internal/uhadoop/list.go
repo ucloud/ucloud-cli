@@ -91,8 +91,6 @@ func newList(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "all-region", "true", "false")
 	command.SetFlagValues(cmd, "id-only", "true", "false")
 
-	cmd.MarkFlagRequired("region")
-	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 
@@ -106,6 +104,7 @@ func getAllClusters(ctx *cli.Context, client *uhadoopsdk.UHadoopClient, req *uha
 		for _, region := range regions {
 			_req := *req
 			_req.Region = sdk.String(region)
+			_req.Zone = nil // clear zone when fanning out across regions
 			clusters, err := fetchClustersPageOff(client, &_req)
 			if e, ok := err.(sdkerror.Error); ok && e.Code() == _RetCodeRegionNoPermission {
 				continue

@@ -1,7 +1,6 @@
 package uhadoop
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -52,14 +51,6 @@ func newListFrameworkApp(ctx *cli.Context) *cobra.Command {
 		Long:         `List available UHadoop frameworks and their applications organized by use case`,
 		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if req.Region == nil || *req.Region == "" {
-				ctx.HandleError(fmt.Errorf("--region is required"))
-				return
-			}
-			if req.Zone == nil || *req.Zone == "" {
-				ctx.HandleError(fmt.Errorf("--zone is required"))
-				return
-			}
 
 			var resp frameworkAppResponse
 			// Use InvokeAction directly with our custom response struct because
@@ -111,15 +102,4 @@ func listFrameworkApps(ctx *cli.Context, appConfigs []frameworkAppConfigVersion)
 		}
 	}
 	ctx.PrintList(list)
-}
-
-type frameworkRow struct {
-	Framework        string
-	FrameworkVersion string
-	ReleaseVersion   string
-	HadoopVersion    string
-	UseCase          string
-	Apps             string
-	Versions         string
-	MustHas          string
 }

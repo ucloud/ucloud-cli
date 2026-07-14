@@ -45,7 +45,7 @@ func newUpgradeDisk(ctx *cli.Context) *cobra.Command {
 	req.Zone = flags.String("zone", "", "Optional. Assign availability zone")
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
 	req.InstanceId = flags.String("instance-id", "", "Required. Cluster instance ID")
-	req.NodeRole = flags.String("node-role", "", "Required. Node role: master|core|task")
+	req.NodeRole = flags.String("node-role", "", "Required. Node role: master|core|task|client")
 	req.DataDiskSize = flags.Int("data-disk-size", 0, "Required. New data disk size in GB")
 	req.BootDiskSize = flags.Int("boot-disk-size", 0, "Optional. New boot disk size in GB")
 	yes = flags.BoolP("yes", "y", false, "Do not prompt for confirmation")

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	uhadoopsdk "github.com/ucloud/ucloud-sdk-go/services/uhadoop"
 
@@ -28,7 +29,7 @@ func newAddNode(ctx *cli.Context) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			w := ctx.ProgressWriter()
 			if rawPassword != "" {
-				req.Password = sdkStr(base64.StdEncoding.EncodeToString([]byte(rawPassword)))
+				req.Password = sdk.String(base64.StdEncoding.EncodeToString([]byte(rawPassword)))
 			}
 			resp, err := client.AddUHadoopInstanceNode(req)
 			if err != nil {
@@ -43,7 +44,7 @@ func newAddNode(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeClusterForPoll(ctx, client), cli.WithTimeout(60*time.Minute)).Spoll(*req.InstanceId, text, []string{StateRunning})
+				ctx.PollerTo(w, describeClusterForPoll(ctx, client), cli.WithTimeout(60*time.Minute)).Spoll(*req.InstanceId, text, []string{stateRunning})
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.InstanceId, Action: "add-node", Status: "Scaling"})
 		},

@@ -3,16 +3,13 @@ package uhadoop
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/response"
 
 	uhadoopsdk "github.com/ucloud/ucloud-sdk-go/services/uhadoop"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
-	"github.com/ucloud/ucloud-cli/pkg/command"
 )
-
-const StateRunning = "Running"
 
 type describeClusterResponse struct {
 	response.CommonBase
@@ -62,7 +59,7 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 		SilenceUsage: true,
 		Args:         cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			req.InstanceId = sdkStr(args[0])
+			req.InstanceId = sdk.String(args[0])
 			var resp describeClusterResponse
 			err := client.InvokeAction("DescribeUHadoopInstance", req, &resp)
 			if err != nil {
@@ -75,26 +72,7 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 	cmd.Flags().SortFlags = false
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
-	command.SetFlagValues(cmd, "region", ctx.RegionList()...)
 	cmd.MarkFlagRequired("region")
 	cmd.MarkFlagRequired("zone")
 	return cmd
-}
-
-func sdkStr(s string) *string { return &s }
-
-func describeClusterForPoll(ctx *cli.Context, client *uhadoopsdk.UHadoopClient) func(string, *request.CommonBase) (interface{}, error) {
-	return func(id string, _ *request.CommonBase) (interface{}, error) {
-		req := client.NewDescribeUHadoopInstanceRequest()
-		req.InstanceId = sdkStr(id)
-		var resp describeClusterResponse
-		err := client.InvokeAction("DescribeUHadoopInstance", req, &resp)
-		if err != nil {
-			return nil, err
-		}
-		if len(resp.ClusterSet) == 0 {
-			return nil, nil
-		}
-		return resp.ClusterSet[0], nil
-	}
 }

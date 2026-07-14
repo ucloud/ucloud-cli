@@ -47,13 +47,14 @@ type instanceTypeRow struct {
 	DiskMaxNum       string
 }
 
-// frameworkAppRow is the row for ListUHadoopFrameworkAppByUseCase output.
-type frameworkAppRow struct {
+// frameworkRow is the row for ListUHadoopFrameworkAppByUseCase output.
+type frameworkRow struct {
 	Framework        string
 	FrameworkVersion string
 	ReleaseVersion   string
 	HadoopVersion    string
 	UseCase          string
 	Apps             string
+	Versions         string
 	MustHas          string
 }

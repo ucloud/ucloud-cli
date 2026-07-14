@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	uhadoopsdk "github.com/ucloud/ucloud-sdk-go/services/uhadoop"
 
@@ -11,50 +12,47 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// newDelete ucloud uhadoop delete
 func newDelete(ctx *cli.Context) *cobra.Command {
 	var yes bool
 	client := cli.NewServiceClient(ctx, uhadoopsdk.NewClient)
 	req := client.NewDeleteUHadoopInstanceRequest()
 	cmd := &cobra.Command{
-		Use:          "delete <instance-id>",
-		Short:        "Delete a UHadoop cluster",
-		Long:         `Delete a UHadoop cluster by instance ID`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:   "delete <instance-id>",
+		Short: "Delete a UHadoop cluster",
+		Long:  `Delete a UHadoop cluster by instance ID`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
 			ok, err := ctx.Confirm(yes, fmt.Sprintf("Are you sure you want to delete cluster %s?", id))
 			if err != nil {
-				return err
+				ctx.HandleError(err)
+				return
 			}
 			if !ok {
-				return nil
+				return
 			}
-			req.InstanceId = sdkStr(id)
-			resp, err := client.DeleteUHadoopInstance(req)
+			w := ctx.ProgressWriter()
+			req.InstanceId = sdk.String(id)
+			_, err = client.DeleteUHadoopInstance(req)
 			if err != nil {
-				return err
+				ctx.HandleError(err)
+				return
 			}
-			if resp.RetCode != 0 {
-				return fmt.Errorf("[%d] %s", resp.RetCode, resp.Message)
-			}
-			fmt.Fprintf(ctx.Err(), "Cluster %s deleted\n", id)
-			ctx.PrintJSON(resp)
-			return nil
+			fmt.Fprintf(w, "uhadoop[%s] deleted\n", id)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
 		},
 	}
-	cmd.Flags().SortFlags = false
-
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
+	req.ReleaseEIP = flags.Bool("release-eip", false, "Optional. Release bound EIP after deletion")
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
 	ctx.BindProjectID(cmd, req)
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation.")
-	req.ReleaseEIP = cmd.Flags().Bool("release-eip", false, "Optional. Release bound EIP after deletion")
 
 	command.SetFlagValues(cmd, "release-eip", "true", "false")
-
 	cmd.MarkFlagRequired("region")
 	cmd.MarkFlagRequired("zone")
+
 	return cmd
 }

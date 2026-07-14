@@ -26,3 +26,6 @@ ucloud uhadoop restart-service	region	dynamic
 ucloud uhadoop restart-service	zone	dynamic
 ucloud uhadoop upgrade-disk	node-role	static	client,core,master,task
 ucloud uhadoop upgrade-node	node-role	static	client,core,master,task
+ucloud uhadoop upgrade-node	project-id	dynamic
+ucloud uhadoop upgrade-node	region	dynamic
+ucloud uhadoop upgrade-node	zone	dynamic
