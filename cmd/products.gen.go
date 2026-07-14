@@ -11,6 +11,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/memcache"
 	"github.com/ucloud/ucloud-cli/products/mysql"
 	"github.com/ucloud/ucloud-cli/products/pathx"
+	"github.com/ucloud/ucloud-cli/products/pgsql"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
 	"github.com/ucloud/ucloud-cli/products/subnet"
@@ -40,6 +41,7 @@ func registeredProducts() []cli.Product {
 		memcache.New(),
 		mysql.New(),
 		pathx.New(),
+		pgsql.New(),
 		redis.New(),
 		sharedbw.New(),
 		subnet.New(),
