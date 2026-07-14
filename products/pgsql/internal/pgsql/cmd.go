@@ -17,5 +17,6 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd.AddCommand(newPgsqlConf(ctx))
 	cmd.AddCommand(newPgsqlBackup(ctx))
 	cmd.AddCommand(newPgsqlLog(ctx))
+	cmd.AddCommand(newPgsqlSupabase(ctx))
 	return cmd
 }

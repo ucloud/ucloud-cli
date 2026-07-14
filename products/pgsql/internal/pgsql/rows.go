@@ -86,3 +86,35 @@ type PgsqlPriceRow struct {
 	Price         float64
 	OriginalPrice float64
 }
+
+// SupabaseInstanceRow is the table row for `pgsql supabase list`.
+type SupabaseInstanceRow struct {
+	USupabaseName   string
+	InstanceID      string
+	UPgSQLID        string
+	Zone            string
+	IntranetAddress string
+	Port            int
+	State           string
+}
+
+// SupabaseStorageConfigRow is the table row for `pgsql supabase get-storage-config`.
+type SupabaseStorageConfigRow struct {
+	Key         string
+	Value       string
+	Description string
+	Required    bool
+}
+
+// SupabaseAPIKeyRow is the table row for `pgsql supabase get-api-key`.
+type SupabaseAPIKeyRow struct {
+	ServiceKey string
+	AnonKey    string
+}
+
+// SupabaseChargeRow is the table row for `pgsql supabase external-price` /
+// `bandwidth-upgrade-price`.
+type SupabaseChargeRow struct {
+	ChargeType string
+	Price      int
+}

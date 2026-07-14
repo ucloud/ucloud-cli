@@ -35,3 +35,13 @@ const (
 	PGSQL_BACKUP_SUCCESS = "Success"
 	PGSQL_BACKUP_FAILED  = "Failed"
 )
+
+// USupabase state constants (live-observed from ListUSupabaseInstance /
+// DescribeUSupabase responses). Used as poll targets for start/stop/restart.
+// As with the pgsql enum, the published doc is untrusted; these are confirmed
+// live (Running confirmed; Stopped pending a live stop verification).
+const (
+	SUPABASE_RUNNING = "Running"
+	SUPABASE_STOPPED = "Stopped"
+	SUPABASE_FAIL    = "Fail"
+)
