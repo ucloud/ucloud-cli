@@ -11,16 +11,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-const (
-	STATE_RUNNING   = "Running"
-	STATE_ABNORMAL  = "Abnormal"
-	STATE_CREATING  = "Creating"
-	STATE_DELETING  = "Deleting"
-	STATE_DELETED   = "Deleted"
-	STATE_UPDATING  = "Updating"
-	STATE_DEPLOYING = "Deploying"
-)
-
 // newCreate ucloud ukafka create
 func newCreate(ctx *cli.Context) *cobra.Command {
 	var async *bool
@@ -41,7 +31,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeUKafkaInstanceByID(ctx)).Spoll(resp.InstanceId, text, []string{STATE_RUNNING, STATE_ABNORMAL})
+				ctx.PollerTo(w, describeUKafkaInstanceByID(ctx)).Spoll(resp.InstanceId, text, []string{StateRunning, StateAbnormal})
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.InstanceId, Action: "create", Status: "Creating"})
 		},
@@ -50,7 +40,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 	req.InstanceName = flags.String("name", "", "Required. Instance name")
 	req.FrameworkVersion = flags.String("kafka-version", "", "Required. Kafka version, e.g. 2.12-2.4.1")
-	req.ChargeType = flags.String("charge-type", "Month", "Optional. 'Year', 'Month', or 'Dynamic', default Month")
 	req.NodeType = flags.String("node-type", "", "Required. Node type")
 	req.DiskSize = flags.Int("disk-size-gb", 0, "Required. Disk size in GB")
 	req.NodeCount = flags.Int("node-count", 3, "Optional. Node count, default 3")
@@ -58,14 +47,19 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.VPCId = flags.String("vpc-id", "", "Optional. VPC ID")
 	req.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID")
 	req.BusinessId = flags.String("business-id", "", "Optional. Business group ID")
-	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
-	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
-	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	req.Quantity = flags.String("quantity", "1", "Optional. Instance quantity, default 1")
 	req.DiskControllerType = flags.String("disk-controller-type", "NONE", "Optional. Disk controller type: NONE or CLEAN")
 	req.DiskThreshold = flags.String("disk-threshold", "90", "Optional. Disk cleanup threshold (70-90), default 90")
 	req.IsSecurityEnabled = flags.String("enable-security", "false", "Optional. Enable security group: true or false")
 	async = flags.Bool("async", false, "Optional. Do not wait for creation to finish")
+
+	// Bind common params with Tab completion
+	// Note: UKafka SDK uses *string for ChargeType/Quantity (not *int),
+	// so we cannot use ctx.BindCommonParams which assumes standard types.
+	// Instead we bind region/zone/project-id individually with completion.
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
 
 	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
 

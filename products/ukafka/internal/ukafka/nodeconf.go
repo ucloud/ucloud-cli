@@ -21,15 +21,15 @@ type GetUKafkaNodeTypeResponse struct {
 
 // InstanceType 机型信息
 type InstanceType struct {
-	NodeTypeName    string    `json:"NodeTypeName"`
-	CPU             int       `json:"CPU"`
-	Memory          int       `json:"Memory"`
-	DiskType        string    `json:"DiskType"`
-	DiskSet         []DiskSet `json:"DiskSet"`
-	MaxDiskSize     int       `json:"MaxDiskSize"`
-	MinDiskSize     int       `json:"MinDiskSize"`
-	IsOpenSecGroup  bool      `json:"IsOpenSecGroup"`
-	UHostFamily     string    `json:"UHostFamily"`
+	NodeTypeName   string    `json:"NodeTypeName"`
+	CPU            int       `json:"CPU"`
+	Memory         int       `json:"Memory"`
+	DiskType       string    `json:"DiskType"`
+	DiskSet        []DiskSet `json:"DiskSet"`
+	MaxDiskSize    int       `json:"MaxDiskSize"`
+	MinDiskSize    int       `json:"MinDiskSize"`
+	IsOpenSecGroup bool      `json:"IsOpenSecGroup"`
+	UHostFamily    string    `json:"UHostFamily"`
 }
 
 // DiskSet 磁盘配置

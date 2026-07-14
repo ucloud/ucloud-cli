@@ -47,13 +47,13 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	instanceIDs = flags.StringSlice("instance-id", nil, "Required. Instance ID(s) to delete")
+	instanceIDs = flags.StringSlice("ukafka-id", nil, "Required. Instance ID(s) to delete")
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 	yes = flags.BoolP("yes", "y", false, "Optional. Skip confirmation prompt")
 
-	cmd.MarkFlagRequired("instance-id")
+	cmd.MarkFlagRequired("ukafka-id")
 
 	return cmd
 }

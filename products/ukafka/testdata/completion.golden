@@ -1,10 +1,3 @@
-ucloud ukafka	create	charge-type	static	Dynamic,Month,Year
-ucloud ukafka	delete	instance-id	dynamic
-ucloud ukafka	describe	instance-id	dynamic
-ucloud ukafka	add-node	instance-id	dynamic
-ucloud ukafka	describe-consumer	instance-id	dynamic
-ucloud ukafka	check-topic	instance-id	dynamic
-ucloud ukafka	list-consumers	instance-id	dynamic
-ucloud ukafka	list-topics	instance-id	dynamic
-ucloud ukafka	modify-type	instance-id	dynamic
-ucloud ukafka	resize-disk	instance-id	dynamic
+ucloud ukafka create	project-id	dynamic
+ucloud ukafka create	region	dynamic
+ucloud ukafka create	zone	dynamic

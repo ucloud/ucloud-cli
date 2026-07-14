@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	ukafkasdk "github.com/ucloud/ucloud-sdk-go/services/ukafka"
-	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
@@ -21,27 +20,27 @@ type DescribeUKafkaInstanceResponse struct {
 
 // ClusterInfo 实例信息
 type ClusterInfo struct {
-	Zone               string   `json:"Zone"`
-	ClusterInstanceId  string   `json:"ClusterInstanceId"`
-	ClusterInstanceName string  `json:"ClusterInstanceName"`
-	Remark             string   `json:"Remark"`
-	Tag                string   `json:"Tag"`
-	Framework          string   `json:"Framework"`
-	FrameworkVersion   string   `json:"FrameworkVersion"`
-	NetworkId          string   `json:"NetworkId"`
-	VPCId              string   `json:"VPCId"`
-	SubnetId           string   `json:"SubnetId"`
-	BusinessId         string   `json:"BusinessId"`
-	UHostSet           []Broker `json:"UHostSet"`
-	IsOpenSecgroup     bool     `json:"IsOpenSecgroup"`
-	ChargeType         string   `json:"ChargeType"`
-	AutoRenew          string   `json:"AutoRenew"`
-	ValidBrokerNum     int      `json:"ValidBrokerNum"`
-	UHostCount         int      `json:"UHostCount"`
-	ExpireTime         int      `json:"ExpireTime"`
-	CreateTime         int      `json:"CreateTime"`
-	RunningTime        int      `json:"RunningTime"`
-	State              string   `json:"State"`
+	Zone                string   `json:"Zone"`
+	ClusterInstanceId   string   `json:"ClusterInstanceId"`
+	ClusterInstanceName string   `json:"ClusterInstanceName"`
+	Remark              string   `json:"Remark"`
+	Tag                 string   `json:"Tag"`
+	Framework           string   `json:"Framework"`
+	FrameworkVersion    string   `json:"FrameworkVersion"`
+	NetworkId           string   `json:"NetworkId"`
+	VPCId               string   `json:"VPCId"`
+	SubnetId            string   `json:"SubnetId"`
+	BusinessId          string   `json:"BusinessId"`
+	UHostSet            []Broker `json:"UHostSet"`
+	IsOpenSecgroup      bool     `json:"IsOpenSecgroup"`
+	ChargeType          string   `json:"ChargeType"`
+	AutoRenew           string   `json:"AutoRenew"`
+	ValidBrokerNum      int      `json:"ValidBrokerNum"`
+	UHostCount          int      `json:"UHostCount"`
+	ExpireTime          int      `json:"ExpireTime"`
+	CreateTime          int      `json:"CreateTime"`
+	RunningTime         int      `json:"RunningTime"`
+	State               string   `json:"State"`
 }
 
 // Broker 节点信息
@@ -172,42 +171,12 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	instanceID = flags.String("instance-id", "", "Required. Instance ID to describe")
+	instanceID = flags.String("ukafka-id", "", "Required. Instance ID to describe")
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")
 
-	cmd.MarkFlagRequired("instance-id")
+	cmd.MarkFlagRequired("ukafka-id")
 
 	return cmd
-}
-
-// describeUKafkaInstanceByID returns the poller's describe func
-func describeUKafkaInstanceByID(ctx *cli.Context) func(instanceID string, commonBase *request.CommonBase) (interface{}, error) {
-	return func(instanceID string, commonBase *request.CommonBase) (interface{}, error) {
-		client := cli.NewServiceClient(ctx, ukafkasdk.NewClient)
-		genReq := client.Client.NewGenericRequest()
-		genReq.SetAction("DescribeUKafkaInstance")
-		genReq.SetRegion(ctx.DefaultRegion())
-		genReq.SetZone(ctx.DefaultZone())
-
-		payload := map[string]interface{}{
-			"ClusterInstanceId": instanceID,
-		}
-		genReq.SetPayload(payload)
-
-		genResp, err := client.Client.GenericInvoke(genReq)
-		if err != nil {
-			return nil, err
-		}
-
-		var resp DescribeUKafkaInstanceResponse
-		if err := genResp.Unmarshal(&resp); err != nil {
-			return nil, err
-		}
-		if len(resp.ClusterSet) == 0 {
-			return nil, fmt.Errorf("instance not found")
-		}
-		return &resp.ClusterSet[0], nil
-	}
 }
