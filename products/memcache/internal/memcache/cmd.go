@@ -17,5 +17,6 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd.AddCommand(newCreate(ctx))
 	cmd.AddCommand(newDelete(ctx))
 	cmd.AddCommand(newRestart(ctx))
+	cmd.AddCommand(newResize(ctx))
 	return cmd
 }
