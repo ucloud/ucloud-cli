@@ -50,10 +50,9 @@ func newListProducts(ctx *cli.Context) *cobra.Command {
 			rows := make([]MonitorProductRow, 0, len(resp.List))
 			for _, p := range resp.List {
 				rows = append(rows, MonitorProductRow{
-					Product:                p.ProductKey,
-					ProductName:            p.ProductName,
-					ProductChName:          p.ProductChName,
-					IsSupportHighPrecision: p.IsSupportHighPrecision,
+					Product:       p.ProductKey,
+					ProductName:   p.ProductName,
+					ProductChName: p.ProductChName,
 				})
 			}
 			ctx.PrintList(rows)
