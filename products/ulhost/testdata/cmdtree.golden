@@ -1,0 +1,90 @@
+ucloud ulhost	use=ulhost	short=List,create,delete,stop,restart,poweroff or resize ULHost instance
+ucloud ulhost bundles	use=bundles	short=List all ULHost bundles
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud ulhost create	use=create	short=Create ULHost instance
+  flag=async	short=	default=false	required=
+  flag=bundle-id	short=	default=	required=true
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=image-id	short=	default=	required=true
+  flag=name	short=	default=	required=
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=security-group-id	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud ulhost delete	use=delete	short=Delete ULHost instance
+  flag=delete-cloud-disk	short=	default=true	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+ucloud ulhost image	use=image	short=List ULHost images
+ucloud ulhost image list	use=list	short=List ULHost images
+  flag=image-id	short=	default=	required=
+  flag=image-type	short=	default=Base	required=
+  flag=limit	short=	default=500	required=
+  flag=offset	short=	default=0	required=
+  flag=os-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud ulhost list	use=list	short=List all ULHost Instances
+  flag=all-region	short=	default=false	required=
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=page-off	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=
+  flag=ulhost-id-only	short=	default=false	required=
+ucloud ulhost modify-attribute	use=modify-attribute	short=Modify the attribute of ULHost instance
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=ulhost-id	short=	default=	required=true
+ucloud ulhost poweroff	use=poweroff	short=Analog power off ULHost instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+ucloud ulhost price	use=price	short=Get ULHost instance price
+  flag=bundle-id	short=	default=	required=
+  flag=charge-type	short=	default=	required=
+  flag=count	short=	default=1	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=renew	short=	default=false	required=
+  flag=ulhost-id	short=	default=	required=
+ucloud ulhost reinstall-os	use=reinstall-os	short=Reinstall the operating system of the ULHost instance
+  flag=async	short=a	default=false	required=
+  flag=image-id	short=	default=	required=true
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=	required=true
+ucloud ulhost reset-password	use=reset-password	short=Reset the administrator password for the ULHost instances.
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
+ucloud ulhost restart	use=restart	short=Restart ULHost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
+ucloud ulhost start	use=start	short=Start ULHost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
+ucloud ulhost stop	use=stop	short=Shut down ULHost instance
+  flag=async	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ulhost-id	short=	default=[]	required=true
