@@ -1,0 +1,68 @@
+ucloud udns	use=udns	short=List and manipulate ucloud private dns(udns) instance and record
+ucloud udns associate-vpc	use=associate-vpc	short=Associate a UDNS zone with a VPC
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+  flag=vpc-project-id	short=	default=	required=true
+  flag=zone-id	short=	default=	required=true
+ucloud udns create	use=create	short=Create a UDNS private DNS zone
+  flag=charge-type	short=	default=Month	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=recursion	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=type	short=	default=	required=true
+  flag=zone-name	short=	default=	required=true
+ucloud udns disassociate-vpc	use=disassociate-vpc	short=Disassociate a UDNS zone from a VPC
+  flag=region	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+  flag=vpc-project-id	short=	default=	required=true
+  flag=zone-id	short=	default=	required=true
+ucloud udns list	use=list	short=List UDNS zones
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone-id	short=	default=[]	required=
+ucloud udns modify	use=modify	short=Modify a UDNS zone
+  flag=project-id	short=	default=	required=
+  flag=recursion	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=zone-id	short=	default=	required=true
+ucloud udns record	use=record	short=Manage DNS records within a UDNS zone
+ucloud udns record create	use=create	short=Create a DNS record in a UDNS zone
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=ttl	short=	default=5	required=
+  flag=type	short=	default=	required=true
+  flag=value	short=	default=	required=true
+  flag=value-type	short=	default=	required=true
+  flag=zone-id	short=	default=	required=true
+ucloud udns record delete	use=delete	short=Delete DNS records from a UDNS zone
+  flag=project-id	short=	default=	required=
+  flag=record-id	short=	default=[]	required=true
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone-id	short=	default=	required=true
+ucloud udns record list	use=list	short=List DNS records in a UDNS zone
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=query	short=	default=	required=
+  flag=record-id	short=	default=[]	required=
+  flag=region	short=	default=	required=
+  flag=zone-id	short=	default=	required=true
+ucloud udns record modify	use=modify	short=Modify a DNS record in a UDNS zone
+  flag=project-id	short=	default=	required=
+  flag=record-id	short=	default=	required=true
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=ttl	short=	default=0	required=
+  flag=type	short=	default=	required=
+  flag=value	short=	default=	required=
+  flag=value-type	short=	default=	required=
+  flag=zone-id	short=	default=	required=true

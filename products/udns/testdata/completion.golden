@@ -1,0 +1,24 @@
+ucloud udns associate-vpc	region	dynamic
+ucloud udns create	charge-type	static	Dynamic,Month,Year
+ucloud udns create	project-id	dynamic
+ucloud udns create	recursion	static	disable,enable
+ucloud udns create	region	dynamic
+ucloud udns create	type	static	private,public
+ucloud udns disassociate-vpc	region	dynamic
+ucloud udns list	project-id	dynamic
+ucloud udns list	region	dynamic
+ucloud udns modify	project-id	dynamic
+ucloud udns modify	recursion	static	disable,enable
+ucloud udns modify	region	dynamic
+ucloud udns record create	project-id	dynamic
+ucloud udns record create	region	dynamic
+ucloud udns record create	type	static	A,AAAA,CNAME,MX,PTR,SRV,TXT
+ucloud udns record create	value-type	static	Multivalue,Normal
+ucloud udns record delete	project-id	dynamic
+ucloud udns record delete	region	dynamic
+ucloud udns record list	project-id	dynamic
+ucloud udns record list	region	dynamic
+ucloud udns record modify	project-id	dynamic
+ucloud udns record modify	region	dynamic
+ucloud udns record modify	type	static	A,AAAA,CNAME,MX,PTR,SRV,TXT
+ucloud udns record modify	value-type	static	Multivalue,Normal

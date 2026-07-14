@@ -11,7 +11,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newListCommand builds `udns list` (DescribeUDNSZone).
 func newListCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewDescribeUDNSZoneRequest()
@@ -27,7 +26,7 @@ func newListCommand(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			rows := make([]ZoneRow, 0, len(resp.DNSZoneInfos))
+			rows := make([]zoneRow, 0, len(resp.DNSZoneInfos))
 			for _, z := range resp.DNSZoneInfos {
 				rows = append(rows, toZoneRow(z))
 			}
@@ -44,12 +43,12 @@ func newListCommand(ctx *cli.Context) *cobra.Command {
 	return cmd
 }
 
-func toZoneRow(z udnssdk.ZoneInfo) ZoneRow {
+func toZoneRow(z udnssdk.ZoneInfo) zoneRow {
 	vpcIDs := make([]string, 0, len(z.VPCInfos))
 	for _, v := range z.VPCInfos {
 		vpcIDs = append(vpcIDs, v.VPCId)
 	}
-	return ZoneRow{
+	return zoneRow{
 		ZoneID:     z.DNSZoneId,
 		Name:       z.DNSZoneName,
 		ChargeType: z.ChargeType,

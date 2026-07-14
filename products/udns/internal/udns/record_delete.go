@@ -10,21 +10,29 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newRecordDeleteCommand builds `udns record delete` (DeleteUDNSRecord).
 func newRecordDeleteCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewDeleteUDNSRecordRequest()
 	var recordIDs []string
+	var yes bool
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete DNS records from a UDNS zone",
 		Long:  "Delete DNS records from a UDNS zone",
 		Run: func(cmd *cobra.Command, args []string) {
+			ok, err := ctx.Confirm(yes, "Are you sure you want to delete the record(s)?")
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
+				return
+			}
 			for i, id := range recordIDs {
 				recordIDs[i] = ctx.PickResourceID(id)
 			}
 			req.RecordIds = recordIDs
-			_, err := client.DeleteUDNSRecord(req)
+			_, err = client.DeleteUDNSRecord(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
@@ -41,6 +49,7 @@ func newRecordDeleteCommand(ctx *cli.Context) *cobra.Command {
 	flags.SortFlags = false
 	req.DNSZoneId = flags.String("zone-id", "", "Required. Zone resource ID")
 	flags.StringSliceVar(&recordIDs, "record-id", nil, "Required. Record resource ID (repeatable)")
+	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Skip the confirmation prompt.")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
 	cmd.MarkFlagRequired("zone-id")

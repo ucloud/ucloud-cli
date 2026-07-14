@@ -10,7 +10,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newDisassociateVPCCommand builds `udns disassociate-vpc` (DisassociateUDNSZoneVPC).
 func newDisassociateVPCCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewDisassociateUDNSZoneVPCRequest()

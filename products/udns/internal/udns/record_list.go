@@ -11,7 +11,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newRecordListCommand builds `udns record list` (DescribeUDNSRecord).
 func newRecordListCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewDescribeUDNSRecordRequest()
@@ -27,7 +26,7 @@ func newRecordListCommand(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			rows := make([]RecordRow, 0, len(resp.RecordInfos))
+			rows := make([]recordRow, 0, len(resp.RecordInfos))
 			for _, r := range resp.RecordInfos {
 				rows = append(rows, toRecordRow(r))
 			}
@@ -47,12 +46,12 @@ func newRecordListCommand(ctx *cli.Context) *cobra.Command {
 	return cmd
 }
 
-func toRecordRow(r udnssdk.RecordInfo) RecordRow {
+func toRecordRow(r udnssdk.RecordInfo) recordRow {
 	values := make([]string, 0, len(r.ValueSet))
 	for _, v := range r.ValueSet {
 		values = append(values, fmt.Sprintf("%s|%d|%d", v.Data, v.Weight, v.IsEnabled))
 	}
-	return RecordRow{
+	return recordRow{
 		RecordID:  r.RecordId,
 		Name:      r.Name,
 		Type:      r.Type,

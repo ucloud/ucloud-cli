@@ -8,9 +8,9 @@ import (
 	udnssdk "github.com/ucloud/ucloud-sdk-go/services/udns"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// newRecordCreateCommand builds `udns record create` (CreateUDNSRecord).
 func newRecordCreateCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewCreateUDNSRecordRequest()
@@ -39,8 +39,8 @@ func newRecordCreateCommand(ctx *cli.Context) *cobra.Command {
 	req.Remark = flags.String("remark", "", "Optional. Remark")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
-	ctx.SetFlagValues(cmd, "type", "A", "AAAA", "CNAME", "MX", "TXT", "SRV", "PTR")
-	ctx.SetFlagValues(cmd, "value-type", "Normal", "Multivalue")
+	command.SetFlagValues(cmd, "type", "A", "AAAA", "CNAME", "MX", "TXT", "SRV", "PTR")
+	command.SetFlagValues(cmd, "value-type", "Normal", "Multivalue")
 	cmd.MarkFlagRequired("zone-id")
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("type")

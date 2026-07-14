@@ -1,7 +1,6 @@
 package udns
 
-// ZoneRow is one table row for `udns list`.
-type ZoneRow struct {
+type zoneRow struct {
 	ZoneID     string
 	Name       string
 	ChargeType string
@@ -13,8 +12,7 @@ type ZoneRow struct {
 	ExpireTime string
 }
 
-// RecordRow is one table row for `udns record list`.
-type RecordRow struct {
+type recordRow struct {
 	RecordID  string
 	Name      string
 	Type      string

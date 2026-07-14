@@ -8,9 +8,9 @@ import (
 	udnssdk "github.com/ucloud/ucloud-sdk-go/services/udns"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// newModifyCommand builds `udns modify` (ModifyUDNSZone).
 func newModifyCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewModifyUDNSZoneRequest()
@@ -37,7 +37,7 @@ func newModifyCommand(ctx *cli.Context) *cobra.Command {
 	req.Remark = flags.String("remark", "", "Optional. Remark")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
-	ctx.SetFlagValues(cmd, "recursion", "enable", "disable")
+	command.SetFlagValues(cmd, "recursion", "enable", "disable")
 	cmd.MarkFlagRequired("zone-id")
 	return cmd
 }

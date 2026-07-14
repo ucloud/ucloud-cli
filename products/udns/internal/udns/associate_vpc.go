@@ -10,7 +10,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newAssociateVPCCommand builds `udns associate-vpc` (AssociateUDNSZoneVPC).
 func newAssociateVPCCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewAssociateUDNSZoneVPCRequest()

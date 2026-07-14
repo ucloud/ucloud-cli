@@ -16,6 +16,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/subnet"
 	"github.com/ucloud/ucloud-cli/products/uclickhouse"
 	"github.com/ucloud/ucloud-cli/products/udisk"
+	"github.com/ucloud/ucloud-cli/products/udns"
 	"github.com/ucloud/ucloud-cli/products/udpn"
 	"github.com/ucloud/ucloud-cli/products/ufs"
 	"github.com/ucloud/ucloud-cli/products/uhost"
@@ -45,6 +46,7 @@ func registeredProducts() []cli.Product {
 		subnet.New(),
 		uclickhouse.New(),
 		udisk.New(),
+		udns.New(),
 		udpn.New(),
 		ufs.New(),
 		uhost.New(),

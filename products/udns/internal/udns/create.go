@@ -8,10 +8,10 @@ import (
 	udnssdk "github.com/ucloud/ucloud-sdk-go/services/udns"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// NewCreateCommand builds `udns create` (CreateUDNSZone).
-func NewCreateCommand(ctx *cli.Context) *cobra.Command {
+func newCreateCommand(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewCreateUDNSZoneRequest()
 	cmd := &cobra.Command{
@@ -39,9 +39,9 @@ func NewCreateCommand(ctx *cli.Context) *cobra.Command {
 	req.Remark = flags.String("remark", "", "Optional. Remark")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
-	ctx.SetFlagValues(cmd, "type", "private", "public")
-	ctx.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
-	ctx.SetFlagValues(cmd, "recursion", "enable", "disable")
+	command.SetFlagValues(cmd, "type", "private", "public")
+	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
+	command.SetFlagValues(cmd, "recursion", "enable", "disable")
 	cmd.MarkFlagRequired("zone-name")
 	cmd.MarkFlagRequired("type")
 	return cmd

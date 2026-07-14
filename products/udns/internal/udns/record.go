@@ -6,7 +6,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newRecordCommand builds the `udns record` subgroup.
 func newRecordCommand(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "record",
