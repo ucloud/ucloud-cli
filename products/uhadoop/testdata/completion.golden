@@ -1,17 +1,13 @@
 ucloud uhadoop add-node	node-role	static	client,core,task
-ucloud uhadoop add-node	project-id	dynamic
-ucloud uhadoop add-node	region	dynamic
-ucloud uhadoop add-node	zone	dynamic
 ucloud uhadoop create	charge-type	static	Dynamic,Month,Year
-ucloud uhadoop create	project-id	dynamic
-ucloud uhadoop create	region	dynamic
+ucloud uhadoop create	cluster-case	static	Core-Hadoop,Hbase,Spark
 ucloud uhadoop create	security-enabled	static	false,true
-ucloud uhadoop create	zone	dynamic
 ucloud uhadoop delete	project-id	dynamic
 ucloud uhadoop delete	region	dynamic
 ucloud uhadoop delete	release-eip	static	false,true
 ucloud uhadoop delete	zone	dynamic
 ucloud uhadoop describe	region	dynamic
+ucloud uhadoop describe	zone	dynamic
 ucloud uhadoop list	all-region	static	false,true
 ucloud uhadoop list	id-only	static	false,true
 ucloud uhadoop list	project-id	dynamic
@@ -29,10 +25,4 @@ ucloud uhadoop restart-service	project-id	dynamic
 ucloud uhadoop restart-service	region	dynamic
 ucloud uhadoop restart-service	zone	dynamic
 ucloud uhadoop upgrade-disk	node-role	static	client,core,master,task
-ucloud uhadoop upgrade-disk	project-id	dynamic
-ucloud uhadoop upgrade-disk	region	dynamic
-ucloud uhadoop upgrade-disk	zone	dynamic
 ucloud uhadoop upgrade-node	node-role	static	client,core,master,task
-ucloud uhadoop upgrade-node	project-id	dynamic
-ucloud uhadoop upgrade-node	region	dynamic
-ucloud uhadoop upgrade-node	zone	dynamic

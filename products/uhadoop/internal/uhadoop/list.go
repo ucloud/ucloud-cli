@@ -61,9 +61,10 @@ func newList(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, uhadoopsdk.NewClient)
 	req := client.NewListUHadoopInstanceRequest()
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all UHadoop clusters",
-		Long:  `List all UHadoop clusters`,
+		Use:          "list",
+		Short:        "List all UHadoop clusters",
+		Long:         `List all UHadoop clusters`,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			clusters, err := getAllClusters(ctx, client, req, allRegion)
 			if err != nil {

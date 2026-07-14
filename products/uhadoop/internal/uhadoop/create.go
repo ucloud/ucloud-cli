@@ -15,7 +15,6 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-// instanceGroupConfig matches the real API's InstanceGroupConfigs struct.
 type instanceGroupConfig struct {
 	NodeRole     string `json:"NodeRole"`
 	NodeType     string `json:"NodeType"`
@@ -27,7 +26,6 @@ type instanceGroupConfig struct {
 	BootDiskType string `json:"BootDiskType"`
 }
 
-// createRequest is the real request body for CreateUHadoopInstance.
 type createRequest struct {
 	request.CommonBase
 	InstanceName         string                `json:"InstanceName"`
@@ -51,16 +49,11 @@ type createRequest struct {
 	InstanceGroupConfigs []instanceGroupConfig `json:"InstanceGroupConfigs"`
 }
 
-// createResponse is the response for CreateUHadoopInstance.
 type createResponse struct {
 	response.CommonBase
 	InstanceId string `json:"InstanceId"`
-	Message    string `json:"Message"`
 }
 
-// clusterCaseApps maps (FrameworkVersion, ClusterCase) to app templates.
-// "Hadoop" cluster cases: Spark, Hbase, Core Hadoop.
-// For "Hadoop" framework, Hdfs is auto-appended. For "MR", it is not.
 var clusterCaseApps = map[string]map[string][]string{
 	"3.3.4-udh3.2": {
 		"Spark":       {"Spark#3.5.3", "Hive#3.1.3", "Hue#4.11.0", "Zookeeper#3.8.4", "Mysql#8.0.32", "Yarn#3.3.4"},
@@ -94,7 +87,6 @@ var clusterCaseApps = map[string]map[string][]string{
 	},
 }
 
-// hdfsVersionByFramework maps framework-version to the Hdfs app version for Hadoop framework.
 var hdfsVersionByFramework = map[string]string{
 	"3.3.4-udh3.2":    "Hdfs#3.3.4",
 	"3.3.4-udh3.1":    "Hdfs#3.3.4",
@@ -104,9 +96,9 @@ var hdfsVersionByFramework = map[string]string{
 	"2.6.0-cdh5.4.9":  "Hdfs#2.6.0",
 }
 
-// newCreate ucloud uhadoop create
 func newCreate(ctx *cli.Context) *cobra.Command {
 	var (
+		async       *bool
 		rawPassword string
 		clusterCase string
 		master      instanceGroupConfig
@@ -116,10 +108,13 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, uhadoopsdk.NewClient)
 	sdkReq := client.NewCreateUHadoopInstanceRequest()
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a UHadoop cluster",
-		Long:  `Create a UHadoop cluster with specified configuration`,
+		Use:          "create",
+		Short:        "Create a UHadoop cluster",
+		Long:         `Create a UHadoop cluster with specified configuration`,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			w := ctx.ProgressWriter()
+
 			if sdkReq.Framework != nil && (*sdkReq.Framework == "StarRocks-Shared-Nothing" || *sdkReq.Framework == "StarRocks-Shared-Data") {
 				if !cmd.Flags().Changed("master-count") {
 					master.Count = 3
@@ -127,21 +122,15 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			}
 			groups := buildGroups(master, core, task)
 			if len(groups) == 0 {
-				ctx.HandleError(fmt.Errorf("at least one node group (--master-node-type or --core-node-type) is required"))
+				ctx.HandleError(fmt.Errorf("at least one node group is required"))
 				return
 			}
 
-			// Resolve app configs: --cluster-case overrides --app-config
 			appConfigs := sdkReq.AppConfigs
 			if clusterCase != "" {
-				if sdkReq.FrameworkVersion == nil || *sdkReq.FrameworkVersion == "" {
-					ctx.HandleError(fmt.Errorf("--framework-version is required with --cluster-case"))
-					return
-				}
 				versionMap, ok := clusterCaseApps[*sdkReq.FrameworkVersion]
 				if !ok {
-					ctx.HandleError(fmt.Errorf("unsupported framework-version %q for --cluster-case, supported: %v",
-						*sdkReq.FrameworkVersion, supportedVersions()))
+					ctx.HandleError(fmt.Errorf("unsupported framework-version %q for --cluster-case", *sdkReq.FrameworkVersion))
 					return
 				}
 				template, ok := versionMap[clusterCase]
@@ -150,8 +139,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 					return
 				}
 				appConfigs = append([]string(nil), template...)
-
-				// For Hadoop framework, auto-append Hdfs
 				if sdkReq.Framework != nil && *sdkReq.Framework == "Hadoop" {
 					if hdfsVer, ok := hdfsVersionByFramework[*sdkReq.FrameworkVersion]; ok {
 						appConfigs = append(appConfigs, hdfsVer)
@@ -212,80 +199,83 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			ctx.PrintJSON(resp)
+			if resp.RetCode != 0 {
+				ctx.HandleError(fmt.Errorf("[%d] %s", resp.RetCode, resp.Message))
+				return
+			}
+			text := fmt.Sprintf("uhadoop[%s] is creating", resp.InstanceId)
+			if *async {
+				fmt.Fprintln(w, text)
+			} else {
+				ctx.PollerTo(w, describeClusterForPoll(ctx, client)).Spoll(resp.InstanceId, text, []string{StateRunning})
+			}
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.InstanceId, Action: "create", Status: "Creating"})
 		},
 	}
-	cmd.Flags().SortFlags = false
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	sdkReq.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
+	sdkReq.Zone = flags.String("zone", "", "Optional. Assign availability zone")
+	sdkReq.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
+	sdkReq.InstanceName = flags.String("name", "", "Required. Instance name")
+	sdkReq.Framework = flags.String("framework", "", "Required. Framework")
+	sdkReq.FrameworkVersion = flags.String("framework-version", "", "Required. Framework version")
+	flags.StringVar(&rawPassword, "password", "", "Required. Login password")
+	sdkReq.VPCId = flags.String("vpc-id", "", "Optional. VPC ID")
+	sdkReq.SubnetId = flags.String("subnet-id", "", "Optional. Subnet ID")
+	sdkReq.ChargeType = flags.String("charge-type", "Month", "Optional. Charge type")
+	sdkReq.Quantity = flags.Int("quantity", 1, "Optional. Quantity")
+	sdkReq.BusinessId = flags.String("business-id", "Default", "Optional. Business group")
+	sdkReq.StorgeClusterId = flags.String("storage-cluster-id", "", "Optional. Storage cluster ID (MR framework)")
+	sdkReq.StandAloneMetaStore = flags.String("meta-store", "", "Optional. Meta store type")
+	sdkReq.IsSecurityEnabled = flags.String("security-enabled", "", "Optional. Enable security group")
+	sdkReq.SecGroupIds = flags.String("sec-group-ids", "", "Optional. Security group IDs")
+	sdkReq.US3Bucket = flags.String("us3-bucket", "", "Optional. US3 bucket")
+	sdkReq.US3AccessKey = flags.String("us3-access-key", "", "Optional. US3 access key")
+	sdkReq.US3SecretKey = flags.String("us3-secret-key", "", "Optional. US3 secret key")
+	sdkReq.US3TokenName = flags.String("us3-token-name", "", "Optional. US3 token name")
+	flags.StringVar(&clusterCase, "cluster-case", "", "Cluster use case: Spark|Hbase|Core-Hadoop")
 
-	ctx.BindRegion(cmd, sdkReq)
-	ctx.BindZone(cmd, sdkReq)
-	ctx.BindProjectID(cmd, sdkReq)
-	sdkReq.InstanceName = cmd.Flags().String("name", "", "Required. Instance name")
-	sdkReq.Framework = cmd.Flags().String("framework", "", "Required. Framework: Hadoop|HDFS|MR|StarRocks-Shared-Nothing|StarRocks-Shared-Data")
-	sdkReq.FrameworkVersion = cmd.Flags().String("framework-version", "", "Required. Framework version, e.g. 3.3.4-udh3.2")
-	cmd.Flags().StringVar(&rawPassword, "password", "", "Required. Login password (plain text, auto base64 encoded)")
-	sdkReq.VPCId = cmd.Flags().String("vpc-id", "", "Optional. VPC ID, auto-discovered if not set")
-	sdkReq.SubnetId = cmd.Flags().String("subnet-id", "", "Optional. Subnet ID, auto-discovered if not set")
-	sdkReq.ChargeType = cmd.Flags().String("charge-type", "Month", "Optional. Charge type: Month|Year|Dynamic")
-	sdkReq.Quantity = cmd.Flags().Int("quantity", 1, "Optional. Quantity for charge type")
-	sdkReq.BusinessId = cmd.Flags().String("business-id", "Default", "Optional. Business group ID")
-	sdkReq.StorgeClusterId = cmd.Flags().String("storage-cluster-id", "", "Optional. Storage cluster ID for MR framework")
-	sdkReq.StandAloneMetaStore = cmd.Flags().String("meta-store", "", "Optional. Stand alone meta store type, e.g. 'udb'")
-	sdkReq.IsSecurityEnabled = cmd.Flags().String("security-enabled", "", "Optional. Enable security group: true|false")
-	sdkReq.SecGroupIds = cmd.Flags().String("sec-group-ids", "", "Optional. Security group IDs, comma separated")
-	sdkReq.US3Bucket = cmd.Flags().String("us3-bucket", "", "Optional. US3 bucket name for StarRocks-Shared-Data")
-	sdkReq.US3AccessKey = cmd.Flags().String("us3-access-key", "", "Optional. US3 access key for StarRocks-Shared-Data")
-	sdkReq.US3SecretKey = cmd.Flags().String("us3-secret-key", "", "Optional. US3 secret key for StarRocks-Shared-Data")
-	sdkReq.US3TokenName = cmd.Flags().String("us3-token-name", "", "Optional. US3 token name for StarRocks-Shared-Data")
-
-	// Cluster case flag — when set, auto-fills app-config based on the template
-	cmd.Flags().StringVar(&clusterCase, "cluster-case", "", "Optional. Cluster use case: Spark|Hbase|Core-Hadoop. When set, --app-config is auto-filled from the template")
-
-	// Master node group
 	master.NodeRole = "master"
-	cmd.Flags().StringVar(&master.NodeType, "master-node-type", "o.hadoop2m.xlarge", "Master node type, default o.hadoop2m.xlarge")
-	cmd.Flags().IntVar(&master.Count, "master-count", 2, "Master node count, default 2")
-	cmd.Flags().IntVar(&master.DataDiskSize, "master-data-disk-size", 100, "Master data disk size in GB, default 100")
-	cmd.Flags().IntVar(&master.DataDiskNum, "master-data-disk-num", 1, "Master data disk number, default 1")
-	cmd.Flags().StringVar(&master.DataDiskType, "master-data-disk-type", "CLOUD_RSSD", "Master data disk type, default CLOUD_RSSD")
-	cmd.Flags().IntVar(&master.BootDiskSize, "master-boot-disk-size", 50, "Master boot disk size in GB, default 50")
-	cmd.Flags().StringVar(&master.BootDiskType, "master-boot-disk-type", "CLOUD_RSSD", "Master boot disk type, default CLOUD_RSSD")
+	flags.StringVar(&master.NodeType, "master-node-type", "o.hadoop2m.xlarge", "Master node type")
+	flags.IntVar(&master.Count, "master-count", 2, "Master node count")
+	flags.IntVar(&master.DataDiskSize, "master-data-disk-size", 100, "Master data disk GB")
+	flags.IntVar(&master.DataDiskNum, "master-data-disk-num", 1, "Master data disk num")
+	flags.StringVar(&master.DataDiskType, "master-data-disk-type", "CLOUD_RSSD", "Master data disk type")
+	flags.IntVar(&master.BootDiskSize, "master-boot-disk-size", 50, "Master boot disk GB")
+	flags.StringVar(&master.BootDiskType, "master-boot-disk-type", "CLOUD_RSSD", "Master boot disk type")
 
-	// Core node group
 	core.NodeRole = "core"
-	cmd.Flags().StringVar(&core.NodeType, "core-node-type", "o.hadoop2m.xlarge", "Core node type, default o.hadoop2m.xlarge")
-	cmd.Flags().IntVar(&core.Count, "core-count", 3, "Core node count, default 3")
-	cmd.Flags().IntVar(&core.DataDiskSize, "core-data-disk-size", 200, "Core data disk size in GB, default 200")
-	cmd.Flags().IntVar(&core.DataDiskNum, "core-data-disk-num", 1, "Core data disk number, default 1")
-	cmd.Flags().StringVar(&core.DataDiskType, "core-data-disk-type", "CLOUD_RSSD", "Core data disk type, default CLOUD_RSSD")
-	cmd.Flags().IntVar(&core.BootDiskSize, "core-boot-disk-size", 50, "Core boot disk size in GB, default 50")
-	cmd.Flags().StringVar(&core.BootDiskType, "core-boot-disk-type", "CLOUD_RSSD", "Core boot disk type, default CLOUD_RSSD")
+	flags.StringVar(&core.NodeType, "core-node-type", "o.hadoop2m.xlarge", "Core node type")
+	flags.IntVar(&core.Count, "core-count", 3, "Core node count")
+	flags.IntVar(&core.DataDiskSize, "core-data-disk-size", 200, "Core data disk GB")
+	flags.IntVar(&core.DataDiskNum, "core-data-disk-num", 1, "Core data disk num")
+	flags.StringVar(&core.DataDiskType, "core-data-disk-type", "CLOUD_RSSD", "Core data disk type")
+	flags.IntVar(&core.BootDiskSize, "core-boot-disk-size", 50, "Core boot disk GB")
+	flags.StringVar(&core.BootDiskType, "core-boot-disk-type", "CLOUD_RSSD", "Core boot disk type")
 
-	// Task node group (optional)
 	task.NodeRole = "task"
-	cmd.Flags().StringVar(&task.NodeType, "task-node-type", "o.hadoop2m.xlarge", "Optional. Task node type, default o.hadoop2m.xlarge")
-	cmd.Flags().IntVar(&task.Count, "task-count", 0, "Task node count, default 0 (no task nodes)")
-	cmd.Flags().IntVar(&task.DataDiskSize, "task-data-disk-size", 200, "Task data disk size in GB, default 200")
-	cmd.Flags().IntVar(&task.DataDiskNum, "task-data-disk-num", 1, "Task data disk number, default 1")
-	cmd.Flags().StringVar(&task.DataDiskType, "task-data-disk-type", "CLOUD_RSSD", "Task data disk type, default CLOUD_RSSD")
-	cmd.Flags().IntVar(&task.BootDiskSize, "task-boot-disk-size", 50, "Task boot disk size in GB, default 50")
-	cmd.Flags().StringVar(&task.BootDiskType, "task-boot-disk-type", "CLOUD_RSSD", "Task boot disk type, default CLOUD_RSSD")
+	flags.StringVar(&task.NodeType, "task-node-type", "o.hadoop2m.xlarge", "Optional. Task node type")
+	flags.IntVar(&task.Count, "task-count", 0, "Task node count")
+	flags.IntVar(&task.DataDiskSize, "task-data-disk-size", 200, "Task data disk GB")
+	flags.IntVar(&task.DataDiskNum, "task-data-disk-num", 1, "Task data disk num")
+	flags.StringVar(&task.DataDiskType, "task-data-disk-type", "CLOUD_RSSD", "Task data disk type")
+	flags.IntVar(&task.BootDiskSize, "task-boot-disk-size", 50, "Task boot disk GB")
+	flags.StringVar(&task.BootDiskType, "task-boot-disk-type", "CLOUD_RSSD", "Task boot disk type")
 
-	cmd.Flags().StringSliceVar(&sdkReq.AppConfigs, "app-config", nil, "App configs in format App#Version. Ignored when --cluster-case is set")
+	async = flags.Bool("async", false, "Optional. Do not wait for creation to finish")
+	flags.StringSliceVar(&sdkReq.AppConfigs, "app-config", nil, "App configs: App#Version")
 
 	command.SetFlagValues(cmd, "cluster-case", "Spark", "Hbase", "Core-Hadoop")
 	command.SetFlagValues(cmd, "charge-type", "Month", "Year", "Dynamic")
 	command.SetFlagValues(cmd, "security-enabled", "true", "false")
 
-	return cmd
-}
+	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("framework")
+	cmd.MarkFlagRequired("framework-version")
+	cmd.MarkFlagRequired("password")
 
-func supportedVersions() []string {
-	vs := make([]string, 0, len(clusterCaseApps))
-	for v := range clusterCaseApps {
-		vs = append(vs, v)
-	}
-	return vs
+	return cmd
 }
 
 func buildGroups(master, core, task instanceGroupConfig) []instanceGroupConfig {

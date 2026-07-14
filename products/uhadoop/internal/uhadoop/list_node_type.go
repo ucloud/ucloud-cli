@@ -1,6 +1,7 @@
 package uhadoop
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,10 +17,20 @@ func newListNodeType(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, uhadoopsdk.NewClient)
 	req := client.NewGetUHadoopNodeTypeRequest()
 	cmd := &cobra.Command{
-		Use:   "list-node-type",
-		Short: "List available node types for UHadoop",
-		Long:  `List available node/instance types for UHadoop clusters`,
+		Use:          "list-node-type",
+		Short:        "List available node types for UHadoop",
+		Long:         `List available node/instance types for UHadoop clusters`,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if req.Region == nil || *req.Region == "" {
+				ctx.HandleError(fmt.Errorf("--region is required"))
+				return
+			}
+			if req.Zone == nil || *req.Zone == "" {
+				ctx.HandleError(fmt.Errorf("--zone is required"))
+				return
+			}
+
 			resp, err := client.GetUHadoopNodeType(req)
 			if err != nil {
 				ctx.HandleError(err)

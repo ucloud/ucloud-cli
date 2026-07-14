@@ -1,28 +1,44 @@
 ucloud uhadoop	use=uhadoop	short=List,create,delete,describe UHadoop clusters and manage nodes and services
 ucloud uhadoop add-node	use=add-node	short=Add nodes to a UHadoop cluster
-  flag=boot-disk-size	short=	default=	required=
-  flag=boot-disk-type	short=	default=	required=
-  flag=data-disk-num	short=	default=	required=
-  flag=data-disk-size	short=	default=	required=
-  flag=data-disk-type	short=	default=	required=
-  flag=instance-id	short=	default=	required=
+  flag=async	short=	default=false	required=
+  flag=boot-disk-size	short=	default=50	required=
+  flag=boot-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=data-disk-num	short=	default=1	required=
+  flag=data-disk-size	short=	default=200	required=
+  flag=data-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=instance-id	short=	default=	required=true
   flag=node-count	short=	default=1	required=
-  flag=node-role	short=	default=	required=
-  flag=node-type	short=	default=	required=
+  flag=node-role	short=	default=	required=true
+  flag=node-type	short=	default=	required=true
   flag=password	short=	default=	required=
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=zone	short=	default=	required=
 ucloud uhadoop create	use=create	short=Create a UHadoop cluster
   flag=app-config	short=	default=[]	required=
+  flag=async	short=	default=false	required=
   flag=business-id	short=	default=Default	required=
   flag=charge-type	short=	default=Month	required=
-  flag=framework	short=	default=	required=
-  flag=framework-version	short=	default=	required=
-  flag=instance-group	short=	default=[]	required=
+  flag=cluster-case	short=	default=	required=
+  flag=core-boot-disk-size	short=	default=50	required=
+  flag=core-boot-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=core-count	short=	default=3	required=
+  flag=core-data-disk-num	short=	default=1	required=
+  flag=core-data-disk-size	short=	default=200	required=
+  flag=core-data-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=core-node-type	short=	default=o.hadoop2m.xlarge	required=
+  flag=framework	short=	default=	required=true
+  flag=framework-version	short=	default=	required=true
+  flag=master-boot-disk-size	short=	default=50	required=
+  flag=master-boot-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=master-count	short=	default=2	required=
+  flag=master-data-disk-num	short=	default=1	required=
+  flag=master-data-disk-size	short=	default=100	required=
+  flag=master-data-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=master-node-type	short=	default=o.hadoop2m.xlarge	required=
   flag=meta-store	short=	default=	required=
-  flag=name	short=	default=	required=
-  flag=password	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=password	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=quantity	short=	default=1	required=
   flag=region	short=	default=	required=
@@ -30,19 +46,28 @@ ucloud uhadoop create	use=create	short=Create a UHadoop cluster
   flag=security-enabled	short=	default=	required=
   flag=storage-cluster-id	short=	default=	required=
   flag=subnet-id	short=	default=	required=
+  flag=task-boot-disk-size	short=	default=50	required=
+  flag=task-boot-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=task-count	short=	default=0	required=
+  flag=task-data-disk-num	short=	default=1	required=
+  flag=task-data-disk-size	short=	default=200	required=
+  flag=task-data-disk-type	short=	default=CLOUD_RSSD	required=
+  flag=task-node-type	short=	default=o.hadoop2m.xlarge	required=
   flag=us3-access-key	short=	default=	required=
   flag=us3-bucket	short=	default=	required=
   flag=us3-secret-key	short=	default=	required=
   flag=us3-token-name	short=	default=	required=
   flag=vpc-id	short=	default=	required=
   flag=zone	short=	default=	required=
-ucloud uhadoop delete	use=delete	short=Delete a UHadoop cluster
+ucloud uhadoop delete	use=delete <instance-id>	short=Delete a UHadoop cluster
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=release-eip	short=	default=false	required=
+  flag=yes	short=y	default=false	required=
   flag=zone	short=	default=	required=
-ucloud uhadoop describe	use=describe	short=Describe a UHadoop cluster
+ucloud uhadoop describe	use=describe <instance-id>	short=Describe a UHadoop cluster
   flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
 ucloud uhadoop list	use=list	short=List all UHadoop clusters
   flag=all-region	short=	default=false	required=
   flag=id-only	short=	default=false	required=
@@ -72,21 +97,26 @@ ucloud uhadoop restart-service	use=restart-service	short=Restart/start/stop a UH
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=service-name	short=	default=	required=
+  flag=yes	short=y	default=false	required=
   flag=zone	short=	default=	required=
 ucloud uhadoop upgrade-disk	use=upgrade-disk	short=Upgrade UHadoop node disk size
+  flag=async	short=	default=false	required=
   flag=boot-disk-size	short=	default=0	required=
-  flag=data-disk-size	short=	default=0	required=
-  flag=instance-id	short=	default=	required=
+  flag=data-disk-size	short=	default=0	required=true
+  flag=instance-id	short=	default=	required=true
   flag=node-name	short=	default=[]	required=
-  flag=node-role	short=	default=	required=
+  flag=node-role	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
   flag=zone	short=	default=	required=
 ucloud uhadoop upgrade-node	use=upgrade-node	short=Upgrade UHadoop node instance type
-  flag=instance-id	short=	default=	required=
+  flag=async	short=	default=false	required=
+  flag=instance-id	short=	default=	required=true
   flag=node-name	short=	default=[]	required=
-  flag=node-role	short=	default=	required=
-  flag=node-type	short=	default=	required=
+  flag=node-role	short=	default=	required=true
+  flag=node-type	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
   flag=zone	short=	default=	required=

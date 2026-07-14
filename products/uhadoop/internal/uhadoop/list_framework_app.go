@@ -1,6 +1,7 @@
 package uhadoop
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -46,10 +47,20 @@ func newListFrameworkApp(ctx *cli.Context) *cobra.Command {
 	client := cli.NewServiceClient(ctx, uhadoopsdk.NewClient)
 	req := client.NewListUHadoopFrameworkAppByUseCaseRequest()
 	cmd := &cobra.Command{
-		Use:   "list-framework-app",
-		Short: "List UHadoop framework apps by use case",
-		Long:  `List available UHadoop frameworks and their applications organized by use case`,
+		Use:          "list-framework-app",
+		Short:        "List UHadoop framework apps by use case",
+		Long:         `List available UHadoop frameworks and their applications organized by use case`,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if req.Region == nil || *req.Region == "" {
+				ctx.HandleError(fmt.Errorf("--region is required"))
+				return
+			}
+			if req.Zone == nil || *req.Zone == "" {
+				ctx.HandleError(fmt.Errorf("--zone is required"))
+				return
+			}
+
 			var resp frameworkAppResponse
 			// Use InvokeAction directly with our custom response struct because
 			// the SDK's typed response has MustHas as string (wrong: API returns []string).
