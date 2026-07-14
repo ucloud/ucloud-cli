@@ -25,7 +25,7 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 			req.Id = sdk.String(ctx.PickResourceID(id))
 			resp, err := client.GetTiDBClusterService(req)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			d := resp.Data
@@ -59,7 +59,7 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 
 	cmd.MarkFlagRequired("utidb-id")
 	command.SetCompletion(cmd, "utidb-id", func() []string {
-		return listResourceIDs(ctx, nil, *req.Region, *req.Zone, *req.ProjectId)
+		return listResourceIDs(ctx, nil, req.GetRegion(), req.GetZone(), req.GetProjectId())
 	})
 
 	return cmd

@@ -29,7 +29,7 @@ func newListBackup(ctx *cli.Context) *cobra.Command {
 			})
 			payload, err := invokeAPI(ctx, "ListTiDBClusterBackup", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			ctx.PrintList(parseBackupRowsFromPayload(payload))

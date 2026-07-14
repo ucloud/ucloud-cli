@@ -29,7 +29,7 @@ func newListSpecs(ctx *cli.Context) *cobra.Command {
 			}
 			specs, err := getTiDBClusterUhostSpecs(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId(), types)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			rows := []specRow{}

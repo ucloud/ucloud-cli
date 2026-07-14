@@ -47,6 +47,7 @@ func parseModifySpecNodeConfig(s string) (tidb.ModifyTiDBClusterUhostSpecsParamN
 func newModifySpec(ctx *cli.Context) *cobra.Command {
 	var id, nodeConfig string
 	var startTime int
+	var async bool
 
 	client := cli.NewServiceClient(ctx, tidb.NewClient)
 	req := client.NewModifyTiDBClusterUhostSpecsRequest()
@@ -73,13 +74,17 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 
 			_, err = invokeAPI(ctx, "ModifyTiDBClusterUhostSpecs", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 
 			w := ctx.ProgressWriter()
-			text := fmt.Sprintf("utidb[%s] is modifying spec", pickedID)
-			spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
+			if async {
+				fmt.Fprintf(w, "utidb[%s] is modifying spec\n", pickedID)
+			} else {
+				text := fmt.Sprintf("utidb[%s] is modifying spec", pickedID)
+				spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
+			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "modify-spec", Status: "Modifying"})
 		},
 	}
@@ -90,6 +95,7 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance")
 	flags.StringVar(&nodeConfig, "node-config", "", "Required. ConfigId=xxx,ServerType=tidb|tikv|pd|tiflash")
 	flags.IntVar(&startTime, "start-time", 0, "Optional. Task start time")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for modify-spec to finish")
 
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
@@ -98,7 +104,7 @@ func newModifySpec(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("utidb-id")
 	cmd.MarkFlagRequired("node-config")
 	command.SetCompletion(cmd, "utidb-id", func() []string {
-		return listResourceIDs(ctx, nil, *req.Region, *req.Zone, *req.ProjectId)
+		return listResourceIDs(ctx, nil, req.GetRegion(), req.GetZone(), req.GetProjectId())
 	})
 
 	return cmd

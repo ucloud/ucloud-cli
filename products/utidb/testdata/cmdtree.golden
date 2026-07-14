@@ -32,6 +32,7 @@ ucloud utidb create	use=create	short=Create a UTiDB instance
   flag=vpc-id	short=	default=	required=true
   flag=zone	short=	default=	required=
 ucloud utidb delete	use=delete	short=Delete a UTiDB instance
+  flag=async	short=	default=false	required=
   flag=delete-backup	short=	default=false	required=
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
@@ -62,6 +63,7 @@ ucloud utidb list-specs	use=list-specs	short=List available uhost specs
   flag=region	short=	default=	required=
   flag=zone	short=	default=	required=
 ucloud utidb modify-spec	use=modify-spec	short=Modify uhost specs of a UTiDB instance
+  flag=async	short=	default=false	required=
   flag=node-config	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
@@ -69,6 +71,7 @@ ucloud utidb modify-spec	use=modify-spec	short=Modify uhost specs of a UTiDB ins
   flag=utidb-id	short=	default=	required=true
   flag=zone	short=	default=	required=
 ucloud utidb resize-disk	use=resize-disk	short=Resize disk of a UTiDB instance
+  flag=async	short=	default=false	required=
   flag=node-config	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
@@ -77,6 +80,7 @@ ucloud utidb resize-disk	use=resize-disk	short=Resize disk of a UTiDB instance
   flag=utidb-id	short=	default=	required=true
   flag=zone	short=	default=	required=
 ucloud utidb scale-node	use=scale-node	short=Scale nodes of a UTiDB instance (SCALEOUT/SCALEIN)
+  flag=async	short=	default=false	required=
   flag=node-config	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=

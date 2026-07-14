@@ -52,6 +52,7 @@ func parseResizeDiskNodeConfig(s string) (tidb.ModifyTiDBClusterUhostDiskParamNo
 func newResizeDisk(ctx *cli.Context) *cobra.Command {
 	var id, scaleType, nodeConfig string
 	var startTime int
+	var async bool
 
 	client := cli.NewServiceClient(ctx, tidb.NewClient)
 	req := client.NewModifyTiDBClusterUhostDiskRequest()
@@ -79,13 +80,17 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 
 			_, err = invokeAPI(ctx, "ModifyTiDBClusterUhostDisk", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 
 			w := ctx.ProgressWriter()
-			text := fmt.Sprintf("utidb[%s] is resizing disk", pickedID)
-			spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
+			if async {
+				fmt.Fprintf(w, "utidb[%s] is resizing disk\n", pickedID)
+			} else {
+				text := fmt.Sprintf("utidb[%s] is resizing disk", pickedID)
+				spollUpgrade(ctx, w, req.GetRegion(), req.GetZone(), req.GetProjectId(), pickedID, text)
+			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "resize-disk", Status: "Resizing"})
 		},
 	}
@@ -97,6 +102,7 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&scaleType, "scale-type", "", "Required. SCALEOUT (expand disk) or SCALEIN (shrink disk)")
 	flags.StringVar(&nodeConfig, "node-config", "", "Required. DiskSize=N,ServerType=tidb|tikv|pd|tiflash")
 	flags.IntVar(&startTime, "start-time", 0, "Optional. Task start time")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for resize to finish")
 
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
@@ -107,7 +113,7 @@ func newResizeDisk(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("node-config")
 	command.SetFlagValues(cmd, "scale-type", "SCALEOUT", "SCALEIN")
 	command.SetCompletion(cmd, "utidb-id", func() []string {
-		return listResourceIDs(ctx, nil, *req.Region, *req.Zone, *req.ProjectId)
+		return listResourceIDs(ctx, nil, req.GetRegion(), req.GetZone(), req.GetProjectId())
 	})
 
 	return cmd

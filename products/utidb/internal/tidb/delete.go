@@ -15,7 +15,7 @@ import (
 func newDelete(ctx *cli.Context) *cobra.Command {
 	var id string
 	var deleteBackup bool
-	var yes bool
+	var yes, async bool
 
 	client := cli.NewServiceClient(ctx, tidb.NewClient)
 	req := client.NewDeleteTiDBClusterServiceRequest()
@@ -44,13 +44,17 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 
 			_, err = invokeAPI(ctx, "DeleteTiDBClusterService", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 
 			w := ctx.ProgressWriter()
-			text := fmt.Sprintf("utidb[%s] is deleting", pickedID)
-			ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateDeleted, stateDeleteFail})
+			if async {
+				fmt.Fprintf(w, "utidb[%s] is deleting\n", pickedID)
+			} else {
+				text := fmt.Sprintf("utidb[%s] is deleting", pickedID)
+				ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateDeleted, stateDeleteFail})
+			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "delete", Status: "Deleted"})
 		},
 	}
@@ -61,6 +65,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance to delete")
 	flags.BoolVar(&deleteBackup, "delete-backup", false, "Optional. Also delete backup data")
 	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for deletion to finish")
 
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
@@ -68,7 +73,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 
 	cmd.MarkFlagRequired("utidb-id")
 	command.SetCompletion(cmd, "utidb-id", func() []string {
-		return listResourceIDs(ctx, nil, *req.Region, *req.Zone, *req.ProjectId)
+		return listResourceIDs(ctx, nil, req.GetRegion(), req.GetZone(), req.GetProjectId())
 	})
 
 	return cmd

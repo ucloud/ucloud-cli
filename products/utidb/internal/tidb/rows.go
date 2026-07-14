@@ -43,17 +43,6 @@ type backupRow struct {
 	BackupEndTime   int
 }
 
-func newBackupRowFromData(d tidb.BackupData) backupRow {
-	return backupRow{
-		BackupID:        d.BackupId,
-		BackupType:      d.BackupType,
-		State:           d.State,
-		BackupSize:      d.BackupSize,
-		BackupStartTime: d.BackupStartTime,
-		BackupEndTime:   d.BackupEndTime,
-	}
-}
-
 // specRow is the table row for a UTiDB uhost spec.
 type specRow struct {
 	ConfigID        string

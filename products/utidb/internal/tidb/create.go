@@ -53,9 +53,6 @@ func parseCreateNodeConfig(s string) (tidb.CreateTiDBClusterServiceParamNodeConf
 	if err := validateServerType(*cfg.ServerType); err != nil {
 		return cfg, err
 	}
-	if err := validateNodeCount(*cfg.NodeCount, *cfg.ServerType); err != nil {
-		return cfg, err
-	}
 	return cfg, nil
 }
 
@@ -196,7 +193,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 
 			payload, err := invokeAPI(ctx, "CreateTiDBClusterService", params)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			data, _ := payload["Data"].(map[string]interface{})
@@ -228,7 +225,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&vpcID, "vpc-id", "", "Required. VPC ID")
 	flags.StringVar(&subnetID, "subnet-id", "", "Required. Subnet ID")
 	flags.Float64Var(&quantity, "quantity", 1, "Required. Purchase duration")
-	flags.StringArrayVar(&nodeConfigs, "node-config", nil, "Required. Per node type: ConfigId=xxx,DiskSize=N,NodeCount=N,ServerType=tidb|tikv|pd|tiflash (NodeCount>3, min 4)")
+	flags.StringArrayVar(&nodeConfigs, "node-config", nil, "Required. Per node type: ConfigId=xxx,DiskSize=N,NodeCount=N,ServerType=tidb|tikv|pd|tiflash")
 
 	flags.StringVar(&dbVersion, "db-version", "", "Optional. Database version, e.g. v8.5.1, v8.5.6")
 	flags.StringVar(&ip, "ip", "", "Optional. Specified IP address")

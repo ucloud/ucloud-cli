@@ -9,7 +9,9 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// newList ucloud utidb list
+// newList ucloud utidb list.
+// ListTiDBClusterService Limit/Offset are *string in the SDK, so
+// ctx.BindCommonParams (BindLimit expects *int) cannot be used here.
 func newList(ctx *cli.Context) *cobra.Command {
 	var limit, offset string
 	client := cli.NewServiceClient(ctx, tidb.NewClient)
@@ -27,7 +29,7 @@ func newList(ctx *cli.Context) *cobra.Command {
 			}
 			resp, err := client.ListTiDBClusterService(req)
 			if err != nil {
-				ctx.HandleError(err)
+				handleAPIError(ctx, err)
 				return
 			}
 			rows := []instanceRow{}
