@@ -1,0 +1,6 @@
+ucloud cloudwatch list-metrics	product	dynamic
+ucloud cloudwatch query-metric-data	calc-method	static	raw,avg,max,min,sum
+ucloud cloudwatch query-metric-data	period	static	60,300,3600,21600,86400
+ucloud cloudwatch query-metric-data	product	dynamic
+ucloud cloudwatch query-metric-data	project-id	dynamic
+ucloud cloudwatch query-metric-data	region	dynamic
