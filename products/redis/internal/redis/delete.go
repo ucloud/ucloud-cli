@@ -2,7 +2,6 @@ package redis
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -31,16 +30,22 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
-				if strings.HasPrefix(id, "uredis") || strings.HasPrefix(id, "uhredis") || strings.HasPrefix(id, "uregionredis") {
+				mode, err := describeRedisMode(ctx, id)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				switch mode {
+				case redisModeMasterReplica:
 					if deleteMasterReplica(ctx, &p, id) {
 						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
 					}
-				} else if strings.HasPrefix(id, "udredis") {
+				case redisModeDistributed:
 					if deleteDistributed(ctx, &p, id) {
 						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
 					}
-				} else {
-					fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] unknown id prefix, skip\n", idname)
+				default:
+					fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] unknown resource type, skip\n", idname)
 				}
 			}
 			ctx.EmitResult(results...)
@@ -54,15 +59,15 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&p.region, "region", ctx.DefaultRegion(), "Optional. Override default region for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.zone, "zone", ctx.DefaultZone(), "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.projectID, "project-id", ctx.DefaultProjectID(), "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+
 	command.SetCompletion(cmd, "region", ctx.RegionList)
 	command.SetCompletion(cmd, "zone", func() []string { return ctx.ZoneList(p.region) })
 	command.SetCompletion(cmd, "project-id", ctx.ProjectList)
-
-	cmd.MarkFlagRequired("umem-id")
-
 	command.SetCompletion(cmd, "umem-id", func() []string {
 		return getIDList(ctx, p.projectID, p.region)
 	})
+
+	cmd.MarkFlagRequired("umem-id")
 
 	return cmd
 }

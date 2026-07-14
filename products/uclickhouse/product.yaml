@@ -1,0 +1,7 @@
+# products/uclickhouse/product.yaml — uclickhouse 产品元数据
+name: uclickhouse
+owners:
+  - jukang-ucloud
+commands:
+  - uclickhouse
+enabled: true

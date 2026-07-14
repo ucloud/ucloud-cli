@@ -77,8 +77,8 @@ func TestContextBindCommonParams(t *testing.T) {
 
 func TestContextPollerToReturnsProductCompatiblePoller(t *testing.T) {
 	ctx := cli.NewContext(cli.Deps{
-		NewPoller: func(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer) cli.Poller {
-			return cli.NewPoller(describe, out)
+		NewPoller: func(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer, opts ...cli.PollerOption) cli.Poller {
+			return cli.NewPoller(describe, out, opts...)
 		},
 	})
 

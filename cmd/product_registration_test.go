@@ -52,6 +52,7 @@ func TestRegisteredProductsUseCommandDirectoryProducts(t *testing.T) {
 		{product: "ulb", commands: []string{"ulb"}},
 		{product: "umodelverse", commands: []string{"umodelverse"}},
 		{product: "uphost", commands: []string{"uphost"}},
+		{product: "utidb", commands: []string{"utidb"}},
 		{product: "vpc", commands: []string{"vpc"}},
 	} {
 		assertProductCommands(t, byName, tt.product, tt.commands)

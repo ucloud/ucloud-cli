@@ -10,20 +10,26 @@ import (
 	"github.com/ucloud/ucloud-cli/products/image"
 	"github.com/ucloud/ucloud-cli/products/memcache"
 	"github.com/ucloud/ucloud-cli/products/mysql"
+	"github.com/ucloud/ucloud-cli/products/nlb"
 	"github.com/ucloud/ucloud-cli/products/pathx"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
 	"github.com/ucloud/ucloud-cli/products/subnet"
+	"github.com/ucloud/ucloud-cli/products/uclickhouse"
+	"github.com/ucloud/ucloud-cli/products/uddos"
 	"github.com/ucloud/ucloud-cli/products/udisk"
 	"github.com/ucloud/ucloud-cli/products/udpn"
 	"github.com/ucloud/ucloud-cli/products/ufs"
 	"github.com/ucloud/ucloud-cli/products/uhost"
+	"github.com/ucloud/ucloud-cli/products/ukafka"
 	"github.com/ucloud/ucloud-cli/products/ulb"
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
+	"github.com/ucloud/ucloud-cli/products/umongodb"
 	"github.com/ucloud/ucloud-cli/products/upfs"
 	"github.com/ucloud/ucloud-cli/products/uphost"
 	"github.com/ucloud/ucloud-cli/products/urocketmq"
 	"github.com/ucloud/ucloud-cli/products/usnap"
+	"github.com/ucloud/ucloud-cli/products/utidb"
 	"github.com/ucloud/ucloud-cli/products/vpc"
 )
 
@@ -37,20 +43,26 @@ func registeredProducts() []cli.Product {
 		image.New(),
 		memcache.New(),
 		mysql.New(),
+		nlb.New(),
 		pathx.New(),
 		redis.New(),
 		sharedbw.New(),
 		subnet.New(),
+		uclickhouse.New(),
+		uddos.New(),
 		udisk.New(),
 		udpn.New(),
 		ufs.New(),
 		uhost.New(),
+		ukafka.New(),
 		ulb.New(),
 		umodelverse.New(),
+		umongodb.New(),
 		upfs.New(),
 		uphost.New(),
 		urocketmq.New(),
 		usnap.New(),
+		utidb.New(),
 		vpc.New(),
 	}
 }

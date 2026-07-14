@@ -50,8 +50,8 @@ func (p *Progress) Refresh(text string) { ui.NewRefresh(p.out).Do(text) }
 
 // Sspoll runs the concurrent poller into block, bound to the progress writer.
 func (p *Progress) Sspoll(describe func(string, *request.CommonBase) (interface{}, error),
-	resourceID, text string, targetStates []string, block *Block, common *request.CommonBase) {
-	NewPoller(describe, p.out).Sspoll(resourceID, text, targetStates, block, common)
+	resourceID, text string, targetStates []string, block *Block, common *request.CommonBase, opts ...PollerOption) {
+	NewPoller(describe, p.out, opts...).Sspoll(resourceID, text, targetStates, block, common)
 }
 
 // ConcurrentAction runs actionFunc over reqs with bounded concurrency (limit),

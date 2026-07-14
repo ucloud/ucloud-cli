@@ -1,0 +1,56 @@
+ucloud nlb create	charge-type	static	Dynamic,Month,Year
+ucloud nlb create	ip-version	static	DualStack,IPv4,IPv6
+ucloud nlb create	project-id	dynamic
+ucloud nlb create	region	dynamic
+ucloud nlb create	subnet-id	dynamic
+ucloud nlb create	vpc-id	dynamic
+ucloud nlb delete	nlb-id	dynamic
+ucloud nlb delete	project-id	dynamic
+ucloud nlb delete	region	dynamic
+ucloud nlb describe	nlb-id	dynamic
+ucloud nlb describe	project-id	dynamic
+ucloud nlb describe	region	dynamic
+ucloud nlb list	nlb-id	dynamic
+ucloud nlb list	project-id	dynamic
+ucloud nlb list	region	dynamic
+ucloud nlb list	subnet-id	dynamic
+ucloud nlb list	vpc-id	dynamic
+ucloud nlb listener create	forward-src-ip-method	static	,None,ProxyProto,Toa
+ucloud nlb listener create	health-check-type	static	Ping,Port,UDP
+ucloud nlb listener create	nlb-id	dynamic
+ucloud nlb listener create	project-id	dynamic
+ucloud nlb listener create	protocol	static	TCP,UDP
+ucloud nlb listener create	region	dynamic
+ucloud nlb listener create	scheduler	static	LeastConn,RoundRobin,SourceHash,WeightLeastConn,WeightRoundRobin
+ucloud nlb listener delete	listener-id	static
+ucloud nlb listener delete	nlb-id	dynamic
+ucloud nlb listener delete	project-id	dynamic
+ucloud nlb listener delete	region	dynamic
+ucloud nlb listener list	listener-id	static
+ucloud nlb listener list	nlb-id	dynamic
+ucloud nlb listener list	project-id	dynamic
+ucloud nlb listener list	region	dynamic
+ucloud nlb listener update	forward-src-ip-method	static	,None,ProxyProto,Toa
+ucloud nlb listener update	health-check-type	static	Ping,Port,UDP
+ucloud nlb listener update	listener-id	static
+ucloud nlb listener update	nlb-id	dynamic
+ucloud nlb listener update	project-id	dynamic
+ucloud nlb listener update	region	dynamic
+ucloud nlb listener update	scheduler	static	LeastConn,RoundRobin,SourceHash,WeightLeastConn,WeightRoundRobin
+ucloud nlb target add	listener-id	static
+ucloud nlb target add	nlb-id	dynamic
+ucloud nlb target add	project-id	dynamic
+ucloud nlb target add	region	dynamic
+ucloud nlb target remove	listener-id	static
+ucloud nlb target remove	nlb-id	dynamic
+ucloud nlb target remove	project-id	dynamic
+ucloud nlb target remove	region	dynamic
+ucloud nlb target remove	target-id	static
+ucloud nlb target update	listener-id	static
+ucloud nlb target update	nlb-id	dynamic
+ucloud nlb target update	project-id	dynamic
+ucloud nlb target update	region	dynamic
+ucloud nlb target update	target	static
+ucloud nlb update	nlb-id	dynamic
+ucloud nlb update	project-id	dynamic
+ucloud nlb update	region	dynamic

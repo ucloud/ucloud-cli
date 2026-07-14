@@ -40,7 +40,7 @@ func newNodeConf(ctx *cli.Context) *cobra.Command {
 	}
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	req.AppVersion = flags.String("app-version", "", "Required. Application version, e.g. elasticsearch-7.10.0")
+	req.AppVersion = flags.String("app-version", "", "Required. Application version, e.g. 7.10.2")
 	req.ProjectId = flags.String("project-id", ctx.DefaultProjectID(), "Optional. Assign project-id")
 	req.Region = flags.String("region", ctx.DefaultRegion(), "Optional. Assign region")
 	req.Zone = flags.String("zone", ctx.DefaultZone(), "Optional. Assign availability zone")

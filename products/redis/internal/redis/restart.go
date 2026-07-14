@@ -20,14 +20,23 @@ func newRestart(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restart",
 		Short: "Restart redis instances of master-replica type",
-		Long:  "Restart redis instances of master-replica type",
+		Long:  "Restart redis instances of master-replica type. Only master-replica instances are supported",
 		Run: func(c *cobra.Command, args []string) {
-			reqs := make([]request.Common, len(idNames))
-			for idx, idname := range idNames {
+			reqs := make([]request.Common, 0, len(idNames))
+			for _, idname := range idNames {
 				id := ctx.PickResourceID(idname)
+				mode, err := describeRedisMode(ctx, id)
+				if err != nil {
+					ctx.HandleError(err)
+					continue
+				}
+				if mode != redisModeMasterReplica {
+					fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] is not master-replica type, skip\n", idname)
+					continue
+				}
 				next := *req
 				next.GroupId = &id
-				reqs[idx] = &next
+				reqs = append(reqs, &next)
 			}
 			prog := ctx.NewProgress()
 			if len(reqs) > 5 {
