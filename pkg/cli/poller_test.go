@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
@@ -69,5 +70,38 @@ func TestPollerSspollNonTTYDone(t *testing.T) {
 		if strings.ContainsRune(out, r) {
 			t.Errorf("spinner frame %q leaked into non-TTY Sspoll output: %q", r, out)
 		}
+	}
+}
+
+// pollNoop 是仅用于构造 poller 的空 describe 函数。
+func pollNoop(string, *request.CommonBase) (interface{}, error) { return nil, nil }
+
+func TestNewPollerDefaultTimeout(t *testing.T) {
+	p, ok := NewPoller(pollNoop, &bytes.Buffer{}).(*poller)
+	if !ok {
+		t.Fatalf("NewPoller did not return *poller")
+	}
+	if p.timeout != 10*time.Minute {
+		t.Errorf("default poll timeout = %v, want 10m", p.timeout)
+	}
+}
+
+func TestSetDefaultPollTimeoutOverride(t *testing.T) {
+	defer SetDefaultPollTimeout(10 * time.Minute) // 恢复默认，避免污染其他用例
+	SetDefaultPollTimeout(30 * time.Minute)
+	p := NewPoller(pollNoop, &bytes.Buffer{}).(*poller)
+	if p.timeout != 30*time.Minute {
+		t.Errorf("after SetDefaultPollTimeout(30m), timeout = %v, want 30m", p.timeout)
+	}
+}
+
+func TestSetDefaultPollTimeoutIgnoresNonPositive(t *testing.T) {
+	defer SetDefaultPollTimeout(10 * time.Minute)
+	SetDefaultPollTimeout(30 * time.Minute)
+	SetDefaultPollTimeout(0)                // 0 应被忽略（SDK 会拒绝 Timeout==0）
+	SetDefaultPollTimeout(-5 * time.Minute) // 负值应被忽略
+	p := NewPoller(pollNoop, &bytes.Buffer{}).(*poller)
+	if p.timeout != 30*time.Minute {
+		t.Errorf("non-positive SetDefaultPollTimeout must be ignored, timeout = %v, want 30m", p.timeout)
 	}
 }

@@ -31,12 +31,25 @@ type poller struct {
 	timeout     time.Duration
 }
 
+// defaultPollTimeout 是一次同步轮询的总等待预算。默认 10 分钟；可经
+// SetDefaultPollTimeout 覆盖（cmd 层接到 --wait-timeout-sec）。
+var defaultPollTimeout = 10 * time.Minute
+
+// SetDefaultPollTimeout 覆盖此后由 NewPoller 创建的 poller 的总超时。
+// 非正值被忽略：SDK 的 waiter 在 Timeout==0 时直接报错（errTimeoutConf），
+// 故此时保留内置默认，不将其置 0。
+func SetDefaultPollTimeout(d time.Duration) {
+	if d > 0 {
+		defaultPollTimeout = d
+	}
+}
+
 func NewPoller(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer) Poller {
 	return &poller{
 		describe:    describe,
 		out:         out,
 		stateFields: []string{"State", "Status"},
-		timeout:     10 * time.Minute,
+		timeout:     defaultPollTimeout,
 	}
 }
 
