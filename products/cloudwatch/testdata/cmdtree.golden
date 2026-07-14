@@ -1,0 +1,16 @@
+ucloud cloudwatch	use=cloudwatch	short=Discover and query CloudWatch metrics
+ucloud cloudwatch list-metrics	use=list-metrics	short=List metrics for a product
+  flag=monitor-type	short=	default=	required=
+  flag=product	short=	default=	required=true
+ucloud cloudwatch list-products	use=list-products	short=List monitored products
+ucloud cloudwatch query-metric-data	use=query-metric-data	short=Query metric data
+  flag=calc-method	short=	default=raw	required=
+  flag=end-time	short=	default=0	required=
+  flag=metric	short=	default=[]	required=true
+  flag=period	short=	default=0	required=
+  flag=product	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=true
+  flag=start-time	short=	default=0	required=
+  flag=tag	short=	default=[]	required=

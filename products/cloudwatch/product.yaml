@@ -1,0 +1,7 @@
+# products/cloudwatch/product.yaml — cloudwatch 产品元数据(归属真源,owner 自治维护)
+name: cloudwatch
+owners:
+  - YAYALE-WA
+commands:
+  - cloudwatch
+enabled: true
