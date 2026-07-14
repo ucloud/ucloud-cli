@@ -79,5 +79,7 @@ func newRestartService(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "only-stop", "true", "false")
 	command.SetFlagValues(cmd, "node-role", "master", "core", "task")
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }

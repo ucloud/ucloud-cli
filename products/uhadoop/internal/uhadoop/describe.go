@@ -76,6 +76,8 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 	ctx.BindRegion(cmd, req)
 	ctx.BindZone(cmd, req)
 	command.SetFlagValues(cmd, "region", ctx.RegionList()...)
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 

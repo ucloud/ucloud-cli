@@ -54,5 +54,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "release-eip", "true", "false")
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }

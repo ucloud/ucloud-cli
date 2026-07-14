@@ -61,5 +61,7 @@ func newUpgradeDisk(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("instance-id")
 	cmd.MarkFlagRequired("node-role")
 	cmd.MarkFlagRequired("data-disk-size")
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }

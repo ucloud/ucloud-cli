@@ -67,5 +67,7 @@ func newAddNode(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("instance-id")
 	cmd.MarkFlagRequired("node-role")
 	cmd.MarkFlagRequired("node-type")
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }

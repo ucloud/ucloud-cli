@@ -31,20 +31,20 @@ type listRowDefault struct {
 
 // instanceTypeRow is the row for GetUHadoopNodeType output.
 type instanceTypeRow struct {
-	NodeType        string
-	HostType        string
-	CPU             string
-	Memory          string
+	NodeType         string
+	HostType         string
+	CPU              string
+	Memory           string
 	CPUToMemoryRatio string
-	SuitableRole    string
-	IsUsable        string
-	GpuType         string
-	GpuCount        int
-	DiskType        string
-	DiskMinSize     string
-	DiskMaxSize     string
-	DiskMinNum      string
-	DiskMaxNum      string
+	SuitableRole     string
+	IsUsable         string
+	GpuType          string
+	GpuCount         int
+	DiskType         string
+	DiskMinSize      string
+	DiskMaxSize      string
+	DiskMinNum       string
+	DiskMaxNum       string
 }
 
 // frameworkAppRow is the row for ListUHadoopFrameworkAppByUseCase output.

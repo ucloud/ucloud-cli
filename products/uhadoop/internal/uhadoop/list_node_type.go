@@ -50,6 +50,8 @@ func newListNodeType(ctx *cli.Context) *cobra.Command {
 
 	command.SetFlagValues(cmd, "node-role", "master", "core", "task", "client")
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 

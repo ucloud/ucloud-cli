@@ -78,6 +78,8 @@ func newListFrameworkApp(ctx *cli.Context) *cobra.Command {
 	ctx.BindZone(cmd, req)
 	ctx.BindProjectID(cmd, req)
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 

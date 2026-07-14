@@ -27,32 +27,32 @@ type listClusterResponse struct {
 }
 
 type listClusterInfo struct {
-	Zone               string `json:"Zone"`
-	InstanceId         string `json:"InstanceId"`
-	ClusterInstanceId  string `json:"ClusterInstanceId"`
-	InstanceName       string `json:"InstanceName"`
+	Zone                string `json:"Zone"`
+	InstanceId          string `json:"InstanceId"`
+	ClusterInstanceId   string `json:"ClusterInstanceId"`
+	InstanceName        string `json:"InstanceName"`
 	ClusterInstanceName string `json:"ClusterInstanceName"`
-	FlinkResourceId    string `json:"FlinkResourceId"`
-	Framework          string `json:"Framework"`
-	FrameworkVersion   string `json:"FrameworkVersion"`
-	Remark             string `json:"Remark"`
-	CreateTime         int64  `json:"CreateTime"`
-	ExpireTime         int64  `json:"ExpireTime"`
-	AutoRenew          int    `json:"AutoRenew"`
-	ChargeType         string `json:"ChargeType"`
-	MasterCount        int    `json:"MasterCount"`
-	CoreCount          int    `json:"CoreCount"`
-	TaskCount          int    `json:"TaskCount"`
-	UHostCount         int    `json:"UHostCount"`
-	RedundantCount     int    `json:"RedundantCount"`
-	State              string `json:"State"`
-	ReleaseVersion     string `json:"ReleaseVersion"`
-	HadoopVersion      string `json:"HadoopVersion"`
-	VPCId              string `json:"VPCId"`
-	SubnetId           string `json:"SubnetId"`
-	BusinessId         string `json:"BusinessId"`
-	HdfsTotal          int    `json:"HdfsTotal"`
-	HdfsUsed           int    `json:"HdfsUsed"`
+	FlinkResourceId     string `json:"FlinkResourceId"`
+	Framework           string `json:"Framework"`
+	FrameworkVersion    string `json:"FrameworkVersion"`
+	Remark              string `json:"Remark"`
+	CreateTime          int64  `json:"CreateTime"`
+	ExpireTime          int64  `json:"ExpireTime"`
+	AutoRenew           int    `json:"AutoRenew"`
+	ChargeType          string `json:"ChargeType"`
+	MasterCount         int    `json:"MasterCount"`
+	CoreCount           int    `json:"CoreCount"`
+	TaskCount           int    `json:"TaskCount"`
+	UHostCount          int    `json:"UHostCount"`
+	RedundantCount      int    `json:"RedundantCount"`
+	State               string `json:"State"`
+	ReleaseVersion      string `json:"ReleaseVersion"`
+	HadoopVersion       string `json:"HadoopVersion"`
+	VPCId               string `json:"VPCId"`
+	SubnetId            string `json:"SubnetId"`
+	BusinessId          string `json:"BusinessId"`
+	HdfsTotal           int    `json:"HdfsTotal"`
+	HdfsUsed            int    `json:"HdfsUsed"`
 }
 
 // newList ucloud uhadoop list
@@ -91,6 +91,8 @@ func newList(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "all-region", "true", "false")
 	command.SetFlagValues(cmd, "id-only", "true", "false")
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 

@@ -275,6 +275,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("framework-version")
 	cmd.MarkFlagRequired("password")
 
+	cmd.MarkFlagRequired("region")
+	cmd.MarkFlagRequired("zone")
 	return cmd
 }
 
