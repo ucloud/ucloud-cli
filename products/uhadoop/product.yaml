@@ -1,6 +1,6 @@
 name: uhadoop
 owners:
-  - mark.wei@ucloud.cn
+  - markwei-ucloud
 commands:
   - uhadoop
 enabled: true

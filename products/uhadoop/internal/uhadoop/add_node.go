@@ -3,6 +3,7 @@ package uhadoop
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -42,7 +43,7 @@ func newAddNode(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeClusterForPoll(ctx, client)).Spoll(*req.InstanceId, text, []string{StateRunning})
+				ctx.PollerTo(w, describeClusterForPoll(ctx, client), cli.WithTimeout(60*time.Minute)).Spoll(*req.InstanceId, text, []string{StateRunning})
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.InstanceId, Action: "add-node", Status: "Scaling"})
 		},

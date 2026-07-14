@@ -3,6 +3,7 @@ package uhadoop
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -207,7 +208,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			if *async {
 				fmt.Fprintln(w, text)
 			} else {
-				ctx.PollerTo(w, describeClusterForPoll(ctx, client)).Spoll(resp.InstanceId, text, []string{StateRunning})
+				ctx.PollerTo(w, describeClusterForPoll(ctx, client), cli.WithTimeout(60*time.Minute)).Spoll(resp.InstanceId, text, []string{StateRunning})
 			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.InstanceId, Action: "create", Status: "Creating"})
 		},
@@ -237,7 +238,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&clusterCase, "cluster-case", "", "Cluster use case: Spark|Hbase|Core-Hadoop")
 
 	master.NodeRole = "master"
-	flags.StringVar(&master.NodeType, "master-node-type", "o.hadoop2m.xlarge", "Master node type")
+	flags.StringVar(&master.NodeType, "master-node-type", "o.hadoop4m.xlarge", "Master node type")
 	flags.IntVar(&master.Count, "master-count", 2, "Master node count")
 	flags.IntVar(&master.DataDiskSize, "master-data-disk-size", 100, "Master data disk GB")
 	flags.IntVar(&master.DataDiskNum, "master-data-disk-num", 1, "Master data disk num")

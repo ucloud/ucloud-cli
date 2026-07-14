@@ -22,7 +22,6 @@ func newUpgradeDisk(ctx *cli.Context) *cobra.Command {
 		Long:         `Upgrade UHadoop node data disk (and optionally boot disk) size`,
 		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			w := ctx.ProgressWriter()
 			ok, err := ctx.Confirm(*yes, fmt.Sprintf("Upgrade disk on %s nodes of cluster %s to %d GB?", *req.NodeRole, *req.InstanceId, *req.DataDiskSize))
 			if err != nil {
 				ctx.HandleError(err)
@@ -32,17 +31,11 @@ func newUpgradeDisk(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			req.NodeNames = nodeNames
-			resp, err := client.UpgradeUHadoopNodeDisk(req)
+			_, err = client.UpgradeUHadoopNodeDisk(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			if resp.RetCode != 0 {
-				ctx.HandleError(fmt.Errorf("[%d] %s", resp.RetCode, resp.Message))
-				return
-			}
-			text := fmt.Sprintf("uhadoop[%s] upgrading disk on %s nodes", *req.InstanceId, *req.NodeRole)
-			ctx.PollerTo(w, describeClusterForPoll(ctx, client)).Spoll(*req.InstanceId, text, []string{StateRunning})
 			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.InstanceId, Action: "upgrade-disk", Status: "Upgrading"})
 		},
 	}
