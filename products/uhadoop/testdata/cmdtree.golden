@@ -12,8 +12,8 @@ ucloud uhadoop add-node	use=add-node	short=Add nodes to a UHadoop cluster
   flag=node-type	short=	default=	required=true
   flag=password	short=	default=	required=
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=zone	short=	default=	required=true
 ucloud uhadoop create	use=create	short=Create a UHadoop cluster
   flag=app-config	short=	default=[]	required=
   flag=async	short=	default=false	required=
@@ -41,7 +41,7 @@ ucloud uhadoop create	use=create	short=Create a UHadoop cluster
   flag=password	short=	default=	required=true
   flag=project-id	short=	default=	required=
   flag=quantity	short=	default=1	required=
-  flag=region	short=	default=	required=
+  flag=region	short=	default=	required=true
   flag=sec-group-ids	short=	default=	required=
   flag=security-enabled	short=	default=	required=
   flag=storage-cluster-id	short=	default=	required=
@@ -58,35 +58,35 @@ ucloud uhadoop create	use=create	short=Create a UHadoop cluster
   flag=us3-secret-key	short=	default=	required=
   flag=us3-token-name	short=	default=	required=
   flag=vpc-id	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=zone	short=	default=	required=true
 ucloud uhadoop delete	use=delete <instance-id>	short=Delete a UHadoop cluster
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
+  flag=region	short=	default=	required=true
   flag=release-eip	short=	default=false	required=
   flag=yes	short=y	default=false	required=
-  flag=zone	short=	default=	required=
+  flag=zone	short=	default=	required=true
 ucloud uhadoop describe	use=describe <instance-id>	short=Describe a UHadoop cluster
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=zone	short=	default=	required=true
 ucloud uhadoop list	use=list	short=List all UHadoop clusters
   flag=all-region	short=	default=false	required=
   flag=id-only	short=	default=false	required=
   flag=limit	short=	default=60	required=
   flag=offset	short=	default=0	required=
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=zone	short=	default=	required=true
 ucloud uhadoop list-framework-app	use=list-framework-app	short=List UHadoop framework apps by use case
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=zone	short=	default=	required=true
 ucloud uhadoop list-node-type	use=list-node-type	short=List available node types for UHadoop
   flag=framework	short=	default=	required=
   flag=framework-version	short=	default=	required=
   flag=node-role	short=	default=	required=
   flag=node-type	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
+  flag=region	short=	default=	required=true
+  flag=zone	short=	default=	required=true
 ucloud uhadoop restart-service	use=restart-service	short=Restart/start/stop a UHadoop cluster service
   flag=application-version	short=	default=	required=
   flag=instance-id	short=	default=	required=
@@ -95,21 +95,20 @@ ucloud uhadoop restart-service	use=restart-service	short=Restart/start/stop a UH
   flag=only-start	short=	default=false	required=
   flag=only-stop	short=	default=false	required=
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
+  flag=region	short=	default=	required=true
   flag=service-name	short=	default=	required=
   flag=yes	short=y	default=false	required=
-  flag=zone	short=	default=	required=
+  flag=zone	short=	default=	required=true
 ucloud uhadoop upgrade-disk	use=upgrade-disk	short=Upgrade UHadoop node disk size
-  flag=async	short=	default=false	required=
   flag=boot-disk-size	short=	default=0	required=
   flag=data-disk-size	short=	default=0	required=true
   flag=instance-id	short=	default=	required=true
   flag=node-name	short=	default=[]	required=
   flag=node-role	short=	default=	required=true
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
+  flag=region	short=	default=	required=true
   flag=yes	short=y	default=false	required=
-  flag=zone	short=	default=	required=
+  flag=zone	short=	default=	required=true
 ucloud uhadoop upgrade-node	use=upgrade-node	short=Upgrade UHadoop node instance type
   flag=async	short=	default=false	required=
   flag=instance-id	short=	default=	required=true
@@ -117,6 +116,6 @@ ucloud uhadoop upgrade-node	use=upgrade-node	short=Upgrade UHadoop node instance
   flag=node-role	short=	default=	required=true
   flag=node-type	short=	default=	required=true
   flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
+  flag=region	short=	default=	required=true
   flag=yes	short=y	default=false	required=
-  flag=zone	short=	default=	required=
+  flag=zone	short=	default=	required=true
