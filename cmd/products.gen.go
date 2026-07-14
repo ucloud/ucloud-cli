@@ -10,6 +10,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/image"
 	"github.com/ucloud/ucloud-cli/products/memcache"
 	"github.com/ucloud/ucloud-cli/products/mysql"
+	"github.com/ucloud/ucloud-cli/products/nlb"
 	"github.com/ucloud/ucloud-cli/products/pathx"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
@@ -56,5 +57,6 @@ func registeredProducts() []cli.Product {
 		usnap.New(),
 		utidb.New(),
 		vpc.New(),
+		nlb.New(),
 	}
 }
