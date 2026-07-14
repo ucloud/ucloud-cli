@@ -103,6 +103,7 @@ type GlobalFlag struct {
 	PrivateKey    string
 	BaseURL       string
 	Timeout       int
+	WaitTimeout   int // 同步轮询总超时（秒），0 表示用内置默认（600s）
 	MaxRetryTimes int
 }
 

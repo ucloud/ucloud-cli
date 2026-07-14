@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -190,6 +191,7 @@ func applyGlobalOverrideFlags(root *cobra.Command) {
 			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
 			c.PersistentFlags().StringVar(&global.BaseURL, "base-url", "", "Set base-url to override the base-url in local config file")
 			c.PersistentFlags().IntVar(&global.Timeout, "timeout-sec", 0, "Set timeout-sec to override the timeout-sec in local config file")
+			c.PersistentFlags().IntVar(&global.WaitTimeout, "wait-timeout-sec", 0, "Set the total timeout in seconds for synchronous wait/poll (e.g. cluster/host create). 0 uses the built-in default (600s)")
 			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
 		}
 	}
@@ -241,6 +243,9 @@ func Execute() {
 		}
 	}
 	platform.InitConfig()
+	if global.WaitTimeout > 0 {
+		cli.SetDefaultPollTimeout(time.Duration(global.WaitTimeout) * time.Second)
+	}
 	setActiveRuntimeFromBaseGlobals()
 	mode := os.Getenv("UCLOUD_CLI_DEBUG")
 	if mode == "on" || global.Debug {
@@ -317,6 +322,14 @@ func init() {
 				fmt.Printf("parse timeout-sec failed: %v\n", err)
 			} else {
 				global.Timeout = sec
+			}
+		}
+		if arg == "--wait-timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			sec, err := strconv.Atoi(os.Args[idx+1])
+			if err != nil {
+				fmt.Printf("parse wait-timeout-sec failed: %v\n", err)
+			} else {
+				global.WaitTimeout = sec
 			}
 		}
 		if arg == "--max-retry-times" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
