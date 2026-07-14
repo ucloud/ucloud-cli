@@ -1,0 +1,7 @@
+# products/ukafka/product.yaml — ukafka 产品元数据
+name: ukafka
+owners:
+  - zxl-wangwang
+commands:
+  - ukafka
+enabled: true

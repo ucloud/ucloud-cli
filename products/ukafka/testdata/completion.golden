@@ -1,0 +1,3 @@
+ucloud ukafka create	project-id	dynamic
+ucloud ukafka create	region	dynamic
+ucloud ukafka create	zone	dynamic
