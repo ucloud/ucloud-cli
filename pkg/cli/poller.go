@@ -31,17 +31,31 @@ type poller struct {
 	timeout     time.Duration
 }
 
-// defaultPollTimeout 是一次同步轮询的总等待预算。默认 10 分钟；可经
-// SetDefaultPollTimeout 覆盖（cmd 层接到 --wait-timeout-sec）。
-var defaultPollTimeout = 10 * time.Minute
+// builtinPollTimeout 是同步轮询的内置兜底总超时。
+const builtinPollTimeout = 10 * time.Minute
 
-// SetDefaultPollTimeout 覆盖此后由 NewPoller 创建的 poller 的总超时。
+// userPollTimeout 是用户经 --wait-timeout-sec 指定的轮询超时（cmd 层启动时注入）。
+// 0 表示用户未指定。它是全局最高优先级，覆盖任何命令自设的默认。
+var userPollTimeout time.Duration
+
+// SetUserPollTimeout 设置用户层轮询超时（cmd 层接 --wait-timeout-sec）。
 // 非正值被忽略：SDK 的 waiter 在 Timeout==0 时直接报错（errTimeoutConf），
-// 故此时保留内置默认，不将其置 0。
-func SetDefaultPollTimeout(d time.Duration) {
+// 故此时保留其余层级，不将其置 0。
+func SetUserPollTimeout(d time.Duration) {
 	if d > 0 {
-		defaultPollTimeout = d
+		userPollTimeout = d
 	}
+}
+
+// effectivePollTimeout 按 用户 > 命令自设 > 内置 的优先级裁决最终超时。
+func effectivePollTimeout(commandTimeout time.Duration) time.Duration {
+	if userPollTimeout > 0 {
+		return userPollTimeout
+	}
+	if commandTimeout > 0 {
+		return commandTimeout
+	}
+	return builtinPollTimeout
 }
 
 func NewPoller(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer) Poller {
@@ -49,7 +63,7 @@ func NewPoller(describe func(string, *request.CommonBase) (interface{}, error), 
 		describe:    describe,
 		out:         out,
 		stateFields: []string{"State", "Status"},
-		timeout:     defaultPollTimeout,
+		timeout:     effectivePollTimeout(0),
 	}
 }
 

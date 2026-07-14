@@ -86,22 +86,42 @@ func TestNewPollerDefaultTimeout(t *testing.T) {
 	}
 }
 
-func TestSetDefaultPollTimeoutOverride(t *testing.T) {
-	defer SetDefaultPollTimeout(10 * time.Minute) // 恢复默认，避免污染其他用例
-	SetDefaultPollTimeout(30 * time.Minute)
+func TestSetUserPollTimeoutOverride(t *testing.T) {
+	defer func() { userPollTimeout = 0 }() // 直接复位；SetUserPollTimeout(0) 会被守卫忽略
+	SetUserPollTimeout(30 * time.Minute)
 	p := NewPoller(pollNoop, &bytes.Buffer{}).(*poller)
 	if p.timeout != 30*time.Minute {
-		t.Errorf("after SetDefaultPollTimeout(30m), timeout = %v, want 30m", p.timeout)
+		t.Errorf("after SetUserPollTimeout(30m), timeout = %v, want 30m", p.timeout)
 	}
 }
 
-func TestSetDefaultPollTimeoutIgnoresNonPositive(t *testing.T) {
-	defer SetDefaultPollTimeout(10 * time.Minute)
-	SetDefaultPollTimeout(30 * time.Minute)
-	SetDefaultPollTimeout(0)                // 0 应被忽略（SDK 会拒绝 Timeout==0）
-	SetDefaultPollTimeout(-5 * time.Minute) // 负值应被忽略
+func TestSetUserPollTimeoutIgnoresNonPositive(t *testing.T) {
+	defer func() { userPollTimeout = 0 }()
+	SetUserPollTimeout(30 * time.Minute)
+	SetUserPollTimeout(0)                // 忽略
+	SetUserPollTimeout(-5 * time.Minute) // 忽略
 	p := NewPoller(pollNoop, &bytes.Buffer{}).(*poller)
 	if p.timeout != 30*time.Minute {
-		t.Errorf("non-positive SetDefaultPollTimeout must be ignored, timeout = %v, want 30m", p.timeout)
+		t.Errorf("non-positive SetUserPollTimeout must be ignored, timeout = %v, want 30m", p.timeout)
+	}
+}
+
+func TestEffectivePollTimeoutPriority(t *testing.T) {
+	defer func() { userPollTimeout = 0 }()
+
+	// 都未设 → builtin
+	userPollTimeout = 0
+	if got := effectivePollTimeout(0); got != 10*time.Minute {
+		t.Errorf("no user, no command: got %v, want 10m", got)
+	}
+	// 仅命令自设 → command
+	userPollTimeout = 0
+	if got := effectivePollTimeout(20 * time.Minute); got != 20*time.Minute {
+		t.Errorf("command only: got %v, want 20m", got)
+	}
+	// 用户已设 → user 覆盖命令
+	userPollTimeout = 15 * time.Minute
+	if got := effectivePollTimeout(20 * time.Minute); got != 15*time.Minute {
+		t.Errorf("user overrides command: got %v, want 15m", got)
 	}
 }

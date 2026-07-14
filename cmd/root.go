@@ -244,7 +244,7 @@ func Execute() {
 	}
 	platform.InitConfig()
 	if global.WaitTimeout > 0 {
-		cli.SetDefaultPollTimeout(time.Duration(global.WaitTimeout) * time.Second)
+		cli.SetUserPollTimeout(time.Duration(global.WaitTimeout) * time.Second)
 	}
 	setActiveRuntimeFromBaseGlobals()
 	mode := os.Getenv("UCLOUD_CLI_DEBUG")
