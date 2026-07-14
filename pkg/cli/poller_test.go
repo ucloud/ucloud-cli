@@ -125,3 +125,33 @@ func TestEffectivePollTimeoutPriority(t *testing.T) {
 		t.Errorf("user overrides command: got %v, want 15m", got)
 	}
 }
+
+func TestWithTimeoutSetsCommandTimeout(t *testing.T) {
+	defer func() { userPollTimeout = 0 }()
+	userPollTimeout = 0
+	p := NewPoller(pollNoop, &bytes.Buffer{}, WithTimeout(30*time.Minute)).(*poller)
+	if p.commandTimeout != 30*time.Minute {
+		t.Errorf("commandTimeout = %v, want 30m", p.commandTimeout)
+	}
+	if p.timeout != 30*time.Minute {
+		t.Errorf("effective timeout with command option = %v, want 30m", p.timeout)
+	}
+}
+
+func TestWithTimeoutIgnoresNonPositive(t *testing.T) {
+	defer func() { userPollTimeout = 0 }()
+	userPollTimeout = 0
+	p := NewPoller(pollNoop, &bytes.Buffer{}, WithTimeout(0), WithTimeout(-5*time.Minute)).(*poller)
+	if p.timeout != 10*time.Minute {
+		t.Errorf("non-positive WithTimeout must be ignored, timeout = %v, want builtin 10m", p.timeout)
+	}
+}
+
+func TestUserFlagOverridesCommandOption(t *testing.T) {
+	defer func() { userPollTimeout = 0 }()
+	SetUserPollTimeout(20 * time.Minute)
+	p := NewPoller(pollNoop, &bytes.Buffer{}, WithTimeout(30*time.Minute)).(*poller)
+	if p.timeout != 20*time.Minute {
+		t.Errorf("user flag must override command option: timeout = %v, want 20m", p.timeout)
+	}
+}

@@ -25,10 +25,11 @@ type Poller interface {
 }
 
 type poller struct {
-	describe    func(string, *request.CommonBase) (interface{}, error)
-	out         io.Writer
-	stateFields []string
-	timeout     time.Duration
+	describe       func(string, *request.CommonBase) (interface{}, error)
+	out            io.Writer
+	stateFields    []string
+	commandTimeout time.Duration
+	timeout        time.Duration
 }
 
 // builtinPollTimeout 是同步轮询的内置兜底总超时。
@@ -58,13 +59,30 @@ func effectivePollTimeout(commandTimeout time.Duration) time.Duration {
 	return builtinPollTimeout
 }
 
-func NewPoller(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer) Poller {
-	return &poller{
+// PollerOption 定制单个 poller 的创建。
+type PollerOption func(*poller)
+
+// WithTimeout 让单个命令声明自己的默认轮询超时。非正值被忽略。
+// 优先级低于用户 --wait-timeout-sec、高于内置默认（见 effectivePollTimeout）。
+func WithTimeout(d time.Duration) PollerOption {
+	return func(p *poller) {
+		if d > 0 {
+			p.commandTimeout = d
+		}
+	}
+}
+
+func NewPoller(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer, opts ...PollerOption) Poller {
+	p := &poller{
 		describe:    describe,
 		out:         out,
 		stateFields: []string{"State", "Status"},
-		timeout:     effectivePollTimeout(0),
 	}
+	for _, o := range opts {
+		o(p)
+	}
+	p.timeout = effectivePollTimeout(p.commandTimeout)
+	return p
 }
 
 func (p *poller) Spoll(resourceID, pollText string, targetStates []string) {

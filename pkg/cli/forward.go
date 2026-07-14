@@ -177,14 +177,14 @@ func (c *Context) LogFilePath() string { return c.logFilePath() }
 func (c *Context) PickResourceID(s string) string { return PickResourceID(s) }
 
 // Poller returns a platform poller bound to ctx's writer.
-func (c *Context) Poller(describeFunc func(string, *request.CommonBase) (interface{}, error)) Poller {
-	return c.newPoller(describeFunc, c.out)
+func (c *Context) Poller(describeFunc func(string, *request.CommonBase) (interface{}, error), opts ...PollerOption) Poller {
+	return c.newPoller(describeFunc, c.out, opts...)
 }
 
 // PollerTo wraps base.NewSpoller bound to an explicit writer, so callers can
 // route progress narration to stderr (e.g. in json/yaml mode) while keeping
 // machine output on stdout. Products cannot import base directly, so this
 // exposes the writer-parameterized poller through the Context.
-func (c *Context) PollerTo(w io.Writer, describeFunc func(string, *request.CommonBase) (interface{}, error)) Poller {
-	return c.newPoller(describeFunc, w)
+func (c *Context) PollerTo(w io.Writer, describeFunc func(string, *request.CommonBase) (interface{}, error), opts ...PollerOption) Poller {
+	return c.newPoller(describeFunc, w, opts...)
 }
