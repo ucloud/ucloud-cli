@@ -1,0 +1,9 @@
+ucloud umodelverse log describe	region	dynamic
+ucloud umodelverse log describe	zone	dynamic
+ucloud umodelverse log export	region	dynamic
+ucloud umodelverse log export	zone	dynamic
+ucloud umodelverse log list	region	dynamic
+ucloud umodelverse log list	zone	dynamic
+ucloud umodelverse model list	project-id	dynamic
+ucloud umodelverse model list	region	dynamic
+ucloud umodelverse model list	zone	dynamic

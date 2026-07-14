@@ -1,0 +1,18 @@
+ucloud memcache create	charge-type	static	Dynamic,Month,Year
+ucloud memcache create	project-id	dynamic
+ucloud memcache create	region	dynamic
+ucloud memcache create	size-gb	static	1,16,2,32,4,8
+ucloud memcache create	subnet-id	dynamic
+ucloud memcache create	vpc-id	dynamic
+ucloud memcache create	zone	dynamic
+ucloud memcache delete	project-id	dynamic
+ucloud memcache delete	region	dynamic
+ucloud memcache delete	umem-id	dynamic
+ucloud memcache delete	zone	dynamic
+ucloud memcache list	project-id	dynamic
+ucloud memcache list	region	dynamic
+ucloud memcache list	zone	dynamic
+ucloud memcache restart	project-id	dynamic
+ucloud memcache restart	region	dynamic
+ucloud memcache restart	umem-id	dynamic
+ucloud memcache restart	zone	dynamic

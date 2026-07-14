@@ -1,0 +1,6 @@
+name: globalssh
+owners:
+  - Episkey-G
+commands:
+  - gssh
+enabled: true

@@ -1,0 +1,12 @@
+ucloud subnet create	project-id	dynamic
+ucloud subnet create	region	dynamic
+ucloud subnet create	vpc-id	dynamic
+ucloud subnet delete	project-id	dynamic
+ucloud subnet delete	region	dynamic
+ucloud subnet delete	subnet-id	dynamic
+ucloud subnet list	project-id	dynamic
+ucloud subnet list	region	dynamic
+ucloud subnet list-resource	project-id	dynamic
+ucloud subnet list-resource	region	dynamic
+ucloud subnet list-resource	resource-type	static	docker,phost,udb,udw,ufortresshost,uhadoophost,uhost,ukafka,ulb,umem,unatgw,vip
+ucloud subnet list-resource	subnet-id	dynamic

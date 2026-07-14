@@ -1,0 +1,6 @@
+name: redis
+owners:
+  - Episkey-G
+commands:
+  - redis
+enabled: true

@@ -12,7 +12,7 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 const loginLongHelp = `Log in to UCloud via your browser (OAuth authorization code flow).
@@ -74,11 +74,11 @@ func NewCmdLogin() *cobra.Command {
 // resolveLoginOAuthBase 决定登录使用的 OAuth 域：--oauth-base-url flag 最优先，
 // 给定时写回 cfg.OAuthBaseURL 以便登录成功后随 profile 持久化（后续刷新沿用）；
 // 未给定则回退到 profile 配置或内置默认（GetOAuthBaseURL）。
-func resolveLoginOAuthBase(cfg *base.AggConfig, flagVal string) (string, error) {
+func resolveLoginOAuthBase(cfg *platform.AggConfig, flagVal string) (string, error) {
 	if flagVal != "" {
 		cfg.OAuthBaseURL = strings.TrimSuffix(flagVal, "/")
 	}
-	oauthBase, err := base.GetOAuthBaseURL(cfg)
+	oauthBase, err := platform.GetOAuthBaseURL(cfg)
 	if err == nil && cfg.OAuthBaseURL == "" {
 		cfg.OAuthBaseURL = oauthBase
 	}
@@ -87,18 +87,18 @@ func resolveLoginOAuthBase(cfg *base.AggConfig, flagVal string) (string, error) 
 
 func runLogin(noBrowser bool, oauthBaseURL string) {
 	// AP-1：非 TTY fail-fast
-	if !base.IsStdinTTY() {
+	if !platform.IsStdinTTY() {
 		fmt.Fprintln(os.Stderr, "'ucloud auth login' requires an interactive terminal. For automation/CI, use an AK/SK profile: ucloud config --profile <name> --public-key <pub> --private-key <pri>")
 		os.Exit(1)
 	}
 
-	cfg := base.ConfigIns
+	cfg := platform.ConfigIns
 	oauthBase, err := resolveLoginOAuthBase(cfg, oauthBaseURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	state, err := base.GenerateState()
+	state, err := platform.GenerateState()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -111,7 +111,7 @@ func runLogin(noBrowser bool, oauthBaseURL string) {
 		code, redirectURI = runLoginAuto(oauthBase, state)
 	}
 
-	tr, err := base.ExchangeToken(oauthBase, redirectURI, code)
+	tr, err := platform.ExchangeToken(oauthBase, redirectURI, code)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -122,12 +122,12 @@ func runLogin(noBrowser bool, oauthBaseURL string) {
 		fmt.Printf("Note: profile '%s' had AK/SK configured; it now switches to OAuth (auth_mode=oauth). AK/SK keys are kept; to switch back, run 'ucloud auth logout' then 'ucloud init'\n", cfg.Profile)
 	}
 
-	base.ApplyTokenResponse(cfg, tr)
+	platform.ApplyTokenResponse(cfg, tr)
 	cfg.Active = true
-	if _, ok := base.AggConfigListIns.GetAggConfigByProfile(cfg.Profile); ok {
-		err = base.AggConfigListIns.UpdateAggConfig(cfg)
+	if _, ok := platform.AggConfigListIns.GetAggConfigByProfile(cfg.Profile); ok {
+		err = platform.AggConfigListIns.UpdateAggConfig(cfg)
 	} else {
-		err = base.AggConfigListIns.Append(cfg)
+		err = platform.AggConfigListIns.Append(cfg)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "save credential failed: %v\n", err)
@@ -157,13 +157,13 @@ func runLogin(noBrowser bool, oauthBaseURL string) {
 			fmt.Println(notice)
 		}
 	}
-	if err := base.AggConfigListIns.UpdateAggConfig(cfg); err != nil {
+	if err := platform.AggConfigListIns.UpdateAggConfig(cfg); err != nil {
 		fmt.Printf("Warning: saving default region/project failed (%v). Set them later: ucloud config update --profile %s --region <region> --zone <zone> --project-id <id>\n", err, cfg.Profile)
 	}
 
 	// ⑥ 输出 email + 过期时间（id_token 仅解析不落盘）
 	until := time.Unix(cfg.ExpiresAt, 0).Format("15:04")
-	if email, eerr := base.ParseIDTokenEmail(tr.IDToken); eerr == nil && email != "" {
+	if email, eerr := platform.ParseIDTokenEmail(tr.IDToken); eerr == nil && email != "" {
 		fmt.Printf("Logged in as %s, token valid until %s\n", email, until)
 	} else {
 		fmt.Printf("Logged in, token valid until %s\n", until)
@@ -206,8 +206,8 @@ func runLoginManual(oauthBase, state string) (string, string) {
 		os.Exit(1)
 	}
 	ln.Close()
-	redirectURI := base.BuildLoopbackRedirectURI(port)
-	authorizeURL := base.BuildAuthorizeURL(oauthBase, redirectURI, state)
+	redirectURI := platform.BuildLoopbackRedirectURI(port)
+	authorizeURL := platform.BuildAuthorizeURL(oauthBase, redirectURI, state)
 
 	fmt.Println("Logging in via browser (manual paste). 3 steps:")
 	fmt.Println("  1. Open the URL below and finish login & authorization.")
@@ -233,8 +233,8 @@ func runLoginAuto(oauthBase, state string) (string, string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	redirectURI := base.BuildLoopbackRedirectURI(port)
-	authorizeURL := base.BuildAuthorizeURL(oauthBase, redirectURI, state)
+	redirectURI := platform.BuildLoopbackRedirectURI(port)
+	authorizeURL := platform.BuildAuthorizeURL(oauthBase, redirectURI, state)
 
 	srv, ch := startCallbackServer(ln, state)
 
@@ -271,7 +271,7 @@ func readCallbackCode(state string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("read input failed: %v", err)
 		}
-		code, perr := base.ParseCallbackURL(raw, state)
+		code, perr := platform.ParseCallbackURL(raw, state)
 		if perr == nil {
 			return code, nil
 		}
@@ -305,14 +305,14 @@ func NewCmdLogout() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Example: "ucloud auth logout",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg := base.ConfigIns
-			if cfg.AuthMode != base.AuthModeOAuth && cfg.AccessToken == "" {
+			cfg := platform.ConfigIns
+			if cfg.AuthMode != platform.AuthModeOAuth && cfg.AccessToken == "" {
 				fmt.Printf("Profile '%s' is not logged in via OAuth, nothing to do\n", cfg.Profile)
 				return
 			}
 			clearOAuthState(cfg)
-			if err := base.AggConfigListIns.UpdateAggConfig(cfg); err != nil {
-				base.HandleError(err)
+			if err := platform.AggConfigListIns.UpdateAggConfig(cfg); err != nil {
+				platform.HandleError(err)
 				return
 			}
 			// AP-4：不加服务端有效期提示（用户裁定，spec 风险 #5）

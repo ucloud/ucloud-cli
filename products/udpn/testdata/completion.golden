@@ -1,0 +1,10 @@
+ucloud udpn create	charge-type	static	Dynamic,Month,Year
+ucloud udpn create	peer1	dynamic
+ucloud udpn create	peer2	dynamic
+ucloud udpn create	project-id	dynamic
+ucloud udpn delete	project-id	dynamic
+ucloud udpn delete	udpn-id	dynamic
+ucloud udpn list	project-id	dynamic
+ucloud udpn list	region	dynamic
+ucloud udpn list	udpn-id	dynamic
+ucloud udpn modify-bw	udpn-id	dynamic

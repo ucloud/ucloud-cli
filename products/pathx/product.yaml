@@ -1,0 +1,6 @@
+name: pathx
+owners:
+  - Episkey-G
+commands:
+  - pathx
+enabled: true

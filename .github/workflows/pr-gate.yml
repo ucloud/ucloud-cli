@@ -4,7 +4,7 @@
 #   - owner-gate     (product-autonomous vs platform; platform fail-closed)
 #   - hold-gate      (red while a do-not-merge/hold label is present)
 #   - scope-gate     (conventional commit title)
-#   - check-product  (rule1–8 boundary checks)
+#   - check-product  (generated registry drift + rule1–10 boundary checks)
 #   - test           (build + vet + offline tests)
 #   - build-matrix   (6 × platform)
 #
@@ -18,10 +18,9 @@
 #
 # Repo settings that this gate RELIES ON:
 #   - Settings → General → "Allow auto-merge" ✓ + "Allow squash merging" ✓.
-#   - Repository secret AUTO_MERGE_TOKEN is a bot/GitHub App token with
-#     contents:write + pull-requests:write. Do NOT use GITHUB_TOKEN for
-#     auto-merge: GitHub suppresses workflow runs triggered by GITHUB_TOKEN
-#     events, so a GITHUB_TOKEN-merged PR would not fire the master Release.
+#     The separate Auto Merge workflow enables GitHub native auto-merge for
+#     product-autonomous PRs after re-running the owner-gate decision in the
+#     trusted base-repository context.
 #   - Required approvals = 0. Do NOT set a global "require N approvals" — that
 #     would also block product autonomy. Platform approval is enforced by
 #     owner-gate (admin review), not by branch protection's approval count.
@@ -46,8 +45,9 @@ name: PR Gate
 on:
   pull_request:
     # labeled/unlabeled REQUIRED so hold-gate re-runs when do-not-merge/hold is
-    # added/removed after checks went green.
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    # added/removed after checks went green. edited REQUIRED so title fixes
+    # re-run scope-gate.
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
   pull_request_review:
     # submitted/dismissed REQUIRED so owner-gate re-evaluates platform clearance
     # when an admin approves or the approval is dismissed (stale-on-push).
@@ -191,36 +191,6 @@ jobs:
           exit 1
       - run: echo "hold-gate - not on hold"
 
-  auto-merge:
-    # Native GitHub auto-merge, only for product-autonomous eligible PRs. GitHub
-    # enforces required checks + (any) required approvals before the actual merge.
-    # Use a real automation identity instead of GITHUB_TOKEN so the resulting
-    # master push can trigger Release.
-    if: github.event_name == 'pull_request' && needs.owner-gate.outputs.auto_merge == 'true'
-    needs: [owner-gate]
-    runs-on: ubuntu-latest
-    # enablePullRequestAutoMerge (GraphQL) requires contents:write in addition to
-    # pull-requests:write; the workflow default above is contents:read, which made
-    # this job fail with "Resource not accessible by integration" on the first
-    # real product-autonomous PRs (P3.6 batch, 2026-07-02).
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Require automation token
-        env:
-          AUTO_MERGE_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "$AUTO_MERGE_TOKEN" ]; then
-            echo "::error::AUTO_MERGE_TOKEN is required for product auto-merge. Configure a bot/GitHub App token with contents:write and pull-requests:write so the post-merge master push triggers Release."
-            exit 1
-          fi
-      - name: Enable auto-merge
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
-        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "$GITHUB_REPOSITORY"
-
   check-product:
     # Runs on every trigger (incl. merge_group + review events): must produce a
     # real conclusion, never an `if`-skip that GitHub would count as success.
@@ -229,6 +199,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '1.25' }
+      - name: Verify generated product registry
+        run: |
+          set -euo pipefail
+          go run ./hack/gen-products
+          if ! git diff --quiet -- cmd/products.gen.go; then
+            echo "::error file=cmd/products.gen.go,line=1::cmd/products.gen.go is out of date. Run 'go run ./hack/gen-products' from the repo root and commit the result."
+            git diff -- cmd/products.gen.go
+            exit 1
+          fi
+          echo "cmd/products.gen.go is up to date."
+        env: { GOPROXY: 'https://goproxy.cn,direct' }
       - run: go run ./hack/check-product
         env: { GOPROXY: 'https://goproxy.cn,direct' }
 
@@ -244,7 +225,7 @@ jobs:
         env: { GOPROXY: 'https://goproxy.cn,direct' }
       - run: go vet ./...
         env: { GOPROXY: 'https://goproxy.cn,direct' }
-      - run: go test ./pkg/... ./base/ ./hack/... ./ux/... -count=1
+      - run: go test ./pkg/... ./cmd/internal/... ./hack/... -count=1
         env: { GOPROXY: 'https://goproxy.cn,direct' }
 
   build-matrix:

@@ -1,0 +1,29 @@
+ucloud usnap	use=usnap	short=Manage USnap (UCloud Disk Snapshot Service)
+ucloud usnap create	use=create	short=Create a USnap snapshot service for a disk
+  flag=async	short=	default=false	required=
+  flag=backup-day	short=	default=0	required=
+  flag=backup-hour	short=	default=0	required=
+  flag=backup-mode	short=	default=	required=
+  flag=charge-type	short=	default=Dynamic	required=
+  flag=group	short=	default=Default	required=
+  flag=journal	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=vdisk-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud usnap delete	use=delete	short=Delete USnap snapshot service(s)
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=vdisk-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud usnap describe	use=describe	short=Describe USnap snapshot service(s)
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=service-id	short=	default=	required=
+  flag=snapshot-id	short=	default=	required=
+  flag=vdisk-id	short=	default=	required=
+  flag=zone	short=	default=	required=

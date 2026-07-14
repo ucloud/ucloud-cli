@@ -1,0 +1,6 @@
+name: subnet
+owners:
+  - Episkey-G
+commands:
+  - subnet
+enabled: true

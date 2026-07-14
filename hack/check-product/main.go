@@ -19,8 +19,8 @@
 //
 //  1. No cross-product imports: a file under products/A/... must not import
 //     github.com/ucloud/ucloud-cli/products/B (for any B != A).
-//  2. No cmd or base imports: product files must not import
-//     github.com/ucloud/ucloud-cli/cmd or .../base.
+//  2. No platform-internal or legacy imports: product files must not import
+//     github.com/ucloud/ucloud-cli/cmd, .../base, .../ux, or .../ansi.
 //  3. No bare SDK NewClient calls (best-effort AST): flag svc.NewClient(...)
 //     where svc is not the identifier "cli" (products must use
 //     cli.NewServiceClient).
@@ -246,20 +246,26 @@ func checkFile(path, productName string) []string {
 		// stay in sync, so classify each import path exactly once.
 		isCmdImport := importPath == moduleRoot+"/cmd" ||
 			strings.HasPrefix(importPath, moduleRoot+"/cmd/")
-		isBaseImport := importPath == moduleRoot+"/base" ||
-			strings.HasPrefix(importPath, moduleRoot+"/base/")
+		legacyPlatformPackage := ""
+		for _, name := range []string{"base", "ux", "ansi"} {
+			prefix := moduleRoot + "/" + name
+			if importPath == prefix || strings.HasPrefix(importPath, prefix+"/") {
+				legacyPlatformPackage = name
+				break
+			}
+		}
 		isProductsImport := strings.HasPrefix(importPath, productsPrefix)
 
-		// Rule 2: no cmd or base imports.
+		// Rule 2: no platform-internal or legacy imports.
 		if isCmdImport {
 			violations = append(violations,
 				fmt.Sprintf("%s: rule2: product must not import cmd package %q",
 					pos(imp.Path), importPath))
 		}
-		if isBaseImport {
+		if legacyPlatformPackage != "" {
 			violations = append(violations,
-				fmt.Sprintf("%s: rule2: product must not import base package %q",
-					pos(imp.Path), importPath))
+				fmt.Sprintf("%s: rule2: product must not import legacy %s package %q",
+					pos(imp.Path), legacyPlatformPackage, importPath))
 		}
 
 		// Rule 1: no cross-product imports.
@@ -279,9 +285,9 @@ func checkFile(path, productName string) []string {
 			}
 		}
 
-		// Rule 9: §6.1 whitelist. cmd/base and products/ prefixes are owned by
+		// Rule 9: §6.1 whitelist. cmd, legacy platform, and products/ prefixes are owned by
 		// rules 1-2 above (more specific messages) — rule 9 covers the rest.
-		isRule12Territory := isCmdImport || isBaseImport || isProductsImport
+		isRule12Territory := isCmdImport || legacyPlatformPackage != "" || isProductsImport
 		if !isRule12Territory && !importAllowed(importPath, productName) {
 			violations = append(violations,
 				fmt.Sprintf("%s: rule9: import %q is outside the §6.1 product import whitelist (allowed: stdlib, ucloud-sdk-go, spf13/cobra|pflag, pkg/cli|command|ui, internal/common, own product); extending the whitelist is a platform PR",
@@ -379,23 +385,13 @@ func checkConsistency(products []Product, dirs []string) (violations, warnings [
 // set to match.
 var reservedCommands = map[string]bool{
 	// addPlatformCommands (cmd/root.go), in registration order:
-	"init":      true, // NewCmdInit
-	"auth":      true, // NewCmdAuth
-	"gendoc":    true, // NewCmdDoc (doc-gen command, Use: "gendoc")
-	"config":    true, // NewCmdConfig
-	"region":    true, // NewCmdRegion
-	"project":   true, // NewCmdProject
+	"init":    true, // NewCmdInit
+	"auth":    true, // NewCmdAuth
+	"gendoc":  true, // NewCmdDoc (doc-gen command, Use: "gendoc")
+	"config":  true, // NewCmdConfig
+	"region":  true, // NewCmdRegion
+	"project": true, // NewCmdProject
 	// uhost migrated to products/uhost (Part 6) — no longer platform-reserved.
-	"subnet":    true, // NewCmdSubnet
-	"vpc":       true, // NewCmdVpc
-	"bandwidth": true, // NewCmdBandwidth
-	"udpn":      true, // NewCmdUDPN
-	"ulb":       true, // NewCmdULB
-	"gssh":      true, // NewCmdGssh
-	"pathx":     true, // NewCmdPathx
-	"redis":     true, // NewCmdRedis
-	"memcache":  true, // NewCmdMemcache
-	"ext":       true, // NewCmdExt
 	"api":       true, // NewCmdAPI
 	"signature": true, // NewCmdSignature
 	"__schema":  true, // newSchemaCmd (hidden)
@@ -507,7 +503,7 @@ func main() {
 			}
 
 			// Determine which product this file belongs to.
-			// path is like "products/udb/internal/mysql/cmd.go"
+			// path is like "products/mysql/internal/mysql/cmd.go"
 			rel := strings.TrimPrefix(path, productsRoot+string(filepath.Separator))
 			parts := strings.SplitN(rel, string(filepath.Separator), 2)
 			productName := parts[0]

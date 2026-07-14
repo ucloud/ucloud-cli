@@ -1,0 +1,24 @@
+ucloud gssh	use=gssh	short=Create,list,update and delete globalssh instance
+ucloud gssh create	use=create	short=Create GlobalSSH instance
+  flag=bandwidth-package	short=	default=0	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=forward-region	short=	default=	required=
+  flag=instance-type	short=	default=	required=
+  flag=location	short=	default=	required=true
+  flag=port	short=	default=22	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=remark	short=	default=	required=
+  flag=target-ip	short=	default=<nil>	required=true
+ucloud gssh delete	use=delete	short=Delete GlobalSSH instance
+  flag=gssh-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+ucloud gssh list	use=list	short=List all GlobalSSH instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud gssh location	use=location	short=List SSH server locations and covered areas
+ucloud gssh update	use=update	short=Update GlobalSSH instance
+  flag=gssh-id	short=	default=[]	required=true
+  flag=port	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=remark	short=	default=	required=

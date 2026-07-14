@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -9,8 +10,8 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
 func TestContextForwarders(t *testing.T) {
@@ -42,7 +43,9 @@ type ctxFakeReq struct {
 
 func TestContextBindCommonParams(t *testing.T) {
 	ctx := cli.NewContext(cli.Deps{
-		Config:      &base.AggConfig{Region: "cn-bj2", Zone: "cn-bj2-02", ProjectID: "org-x"},
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{Region: "cn-bj2", Zone: "cn-bj2-02", ProjectID: "org-x"}
+		},
 		RegionList:  func() []string { return []string{"cn-bj2"} },
 		ZoneList:    func(region string) []string { return []string{region} },
 		ProjectList: func() []string { return []string{"org-x"} },
@@ -70,4 +73,16 @@ func TestContextBindCommonParams(t *testing.T) {
 			t.Errorf("flag %q registered for plain CommonBase, want skipped", name)
 		}
 	}
+}
+
+func TestContextPollerToReturnsProductCompatiblePoller(t *testing.T) {
+	ctx := cli.NewContext(cli.Deps{
+		NewPoller: func(describe func(string, *request.CommonBase) (interface{}, error), out io.Writer) cli.Poller {
+			return cli.NewPoller(describe, out)
+		},
+	})
+
+	ctx.PollerTo(io.Discard, func(string, *request.CommonBase) (interface{}, error) {
+		return struct{ State string }{State: "RUNNING"}, nil
+	}).Spoll("res-1", "creating", []string{"RUNNING"})
 }

@@ -1,0 +1,20 @@
+ucloud redis create	charge-type	static	Dynamic,Month,Year
+ucloud redis create	project-id	dynamic
+ucloud redis create	region	dynamic
+ucloud redis create	subnet-id	dynamic
+ucloud redis create	type	static	distributed,master-replica
+ucloud redis create	version	static	4.0,5.0,6.0,7.0
+ucloud redis create	vpc-id	dynamic
+ucloud redis create	zone	dynamic
+ucloud redis delete	project-id	dynamic
+ucloud redis delete	region	dynamic
+ucloud redis delete	umem-id	dynamic
+ucloud redis delete	zone	dynamic
+ucloud redis list	project-id	dynamic
+ucloud redis list	region	dynamic
+ucloud redis list	umem-id	dynamic
+ucloud redis list	zone	dynamic
+ucloud redis restart	project-id	dynamic
+ucloud redis restart	region	dynamic
+ucloud redis restart	umem-id	dynamic
+ucloud redis restart	zone	dynamic

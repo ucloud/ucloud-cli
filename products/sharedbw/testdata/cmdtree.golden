@@ -1,0 +1,41 @@
+ucloud bw	use=bw	short=Manipulate bandwidth package and shared bandwidth
+ucloud bw pkg	use=pkg	short=List, create and delete bandwidth package instances
+ucloud bw pkg create	use=create	short=Create bandwidth package
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=eip-id	short=	default=[]	required=true
+  flag=end-time	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=start-time	short=	default=	required=true
+ucloud bw pkg delete	use=delete	short=Delete bandwidth packages
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=resource-id	short=	default=[]	required=
+ucloud bw pkg list	use=list	short=List bandwidth packages
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud bw shared	use=shared	short=Create and manipulate shared bandwidth instances
+ucloud bw shared create	use=create	short=Create shared bandwidth instance
+  flag=bandwidth-mb	short=	default=20	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+ucloud bw shared delete	use=delete	short=Delete shared bandwidth instance
+  flag=eip-bandwidth-mb	short=	default=1	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=[]	required=true
+  flag=traffic-mode	short=	default=	required=
+ucloud bw shared list	use=list	short=List shared bandwidth instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=[]	required=
+ucloud bw shared resize	use=resize	short=Resize shared bandwidth instance's bandwidth
+  flag=bandwidth-mb	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=shared-bw-id	short=	default=	required=true

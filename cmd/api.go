@@ -9,34 +9,32 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/model/status"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
 type RepeatsConfig struct {
-	Poller   *base.Poller
+	Poller   cli.Poller
 	IDInResp string
 }
 
-// RepeatsSupportedAPI maps a repeatable Action to its polling config. The map
-// is built lazily from repeatsSupportedAPI because each Poller captures an
-// io.Writer from NewCmdAPI's out, which is not available at package init.
-var RepeatsSupportedAPI = map[string]RepeatsConfig{}
+type repeatResult struct {
+	success bool
+	err     error
+}
 
-// initRepeatsSupportedAPI populates RepeatsSupportedAPI with the poller for the
-// given writer. Called from NewCmdAPI (where out is known). Idempotent.
-func initRepeatsSupportedAPI(out io.Writer) {
-	RepeatsSupportedAPI["CreateULHostInstance"] = RepeatsConfig{
-		Poller:   newULHostPoller(out),
-		IDInResp: "ULHostId",
+func repeatsSupportedAPI(out io.Writer) map[string]RepeatsConfig {
+	return map[string]RepeatsConfig{
+		"CreateULHostInstance": {Poller: newULHostPoller(out), IDInResp: "ULHostId"},
 	}
 }
 
@@ -54,82 +52,85 @@ Options:
 
 // NewCmdAPI ucloud api --xkey xvalue
 func NewCmdAPI(out io.Writer) *cobra.Command {
-	initRepeatsSupportedAPI(out)
 	return &cobra.Command{
 		Use:   "api",
 		Short: "Call API",
 		Long:  "Call API",
-		Run: func(c *cobra.Command, args []string) {
+		RunE: func(c *cobra.Command, args []string) error {
 			if containHelp(args) {
 				fmt.Fprintln(out, HelpInfo)
-				return
+				return nil
 			}
 			params, err := parseParamsFromCmdLine(args)
 			if err != nil {
 				fmt.Fprintln(out, err)
-				return
+				return err
 			}
 
 			if params["local-file"] != nil {
 				file, ok := params["local-file"].(string)
 				if !ok {
-					fmt.Fprintf(out, "local-file should be a string\n")
+					err := fmt.Errorf("local-file should be a string")
+					fmt.Fprintln(out, err)
+					return err
 				}
 				params, err = parseParamsFromJSONFile(file)
 				if err != nil {
 					fmt.Fprintln(out, err)
-					return
+					return err
 				}
 			}
 			if action, actionOK := params[ActionField].(string); actionOK {
-				if repeatsConfig, repeatsSupported := RepeatsSupportedAPI[action]; repeatsSupported {
+				if repeatsConfig, repeatsSupported := repeatsSupportedAPI(out)[action]; repeatsSupported {
 					if repeats, repeatsOK := params[RepeatsField].(string); repeatsOK {
 						var repeatsNum int
 						var concurrentNum int
 						repeatsNum, err = strconv.Atoi(repeats)
 						if err != nil {
 							fmt.Fprintf(out, "error: %v\n", err)
-							return
+							return err
 						}
 						if concurrent, concurrentOK := params[ConcurrentField].(string); concurrentOK {
 							concurrentNum, err = strconv.Atoi(concurrent)
 							if err != nil {
 								fmt.Fprintf(out, "error: %v\n", err)
-								return
+								return err
 							}
 						} else {
 							concurrentNum = DefaultConcurrent
 						}
 						delete(params, RepeatsField)
 						delete(params, ConcurrentField)
-						err = genericInvokeRepeatWrapper(&repeatsConfig, params, action, repeatsNum, concurrentNum)
+						err = genericInvokeRepeatWrapper(&repeatsConfig, params, action, repeatsNum, concurrentNum, out)
 						if err != nil {
 							fmt.Fprintf(out, "error: %v\n", err)
-							return
+							return err
 						}
-						return
+						return nil
 					}
 				}
 			}
-			req := base.BizClient.UAccountClient.NewGenericRequest()
+			client := newServiceClient(uaccount.NewClient)
+			req := client.NewGenericRequest()
 			err = req.SetPayload(params)
 			if err != nil {
 				fmt.Fprintf(out, "error: %v\n", err)
-				return
+				return err
 			}
 
-			resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
+			resp, err := client.GenericInvoke(req)
 			if err != nil {
 				fmt.Fprintf(out, "error: %v\n", err)
-				return
+				return err
 			}
 
 			data, err := json.MarshalIndent(resp.GetPayload(), "", "  ")
 			if err != nil {
 				fmt.Fprintf(out, "error: %v\n", err)
-				return
+				return err
 			}
 			fmt.Fprintln(out, string(data))
+			return nil
 		},
 	}
 }
@@ -161,7 +162,7 @@ func parseParamsFromCmdLine(args []string) (map[string]interface{}, error) {
 	return params, nil
 }
 
-func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]interface{}, action string, repeats int, concurrent int) error {
+func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]interface{}, action string, repeats int, concurrent int, out io.Writer) error {
 	if repeatsConfig == nil {
 		return fmt.Errorf("error: repeatsConfig is nil")
 	}
@@ -173,92 +174,107 @@ func genericInvokeRepeatWrapper(repeatsConfig *RepeatsConfig, params map[string]
 	}
 	wg := &sync.WaitGroup{}
 	tokens := make(chan struct{}, concurrent)
-	retCh := make(chan bool, repeats)
+	retCh := make(chan repeatResult, repeats)
 
 	wg.Add(repeats)
-	//ux.Doc.Disable()
-	refresh := ux.NewRefresh()
+	doc := ui.NewDocument(out)
+	refresh := ui.NewRefresh(out)
+	printBlockLine := func(block *ui.Block, line string) {
+		block.Append(line)
+		if !ui.IsTTY(out) {
+			fmt.Fprintln(out, line)
+		}
+	}
 
-	req := base.BizClient.UAccountClient.NewGenericRequest()
+	client := newServiceClient(uaccount.NewClient)
+	req := client.NewGenericRequest()
 	err := req.SetPayload(params)
 	if err != nil {
 		return fmt.Errorf("fail to set payload: %w", err)
 	}
 
-	go func(req request.GenericRequest) {
-		for i := 0; i < repeats; i++ {
-			go func(req request.GenericRequest, idx int) {
-				tokens <- struct{}{}
-				defer func() {
-					<-tokens
-					//设置延时，使报错能渲染出来
-					time.Sleep(time.Second / 5)
-					wg.Done()
-				}()
-				success := true
-				resp, err := base.BizClient.UAccountClient.GenericInvoke(req)
-				block := ux.NewBlock()
-				ux.Doc.Append(block)
-				logs := []string{"=================================================="}
-				logs = append(logs, fmt.Sprintf("api:%v, request:%v", action, base.ToQueryMap(req)))
-				if err != nil {
-					logs = append(logs, fmt.Sprintf("err:%v", err))
-					block.Append(base.ParseError(err))
+	for i := 0; i < repeats; i++ {
+		go func(req request.GenericRequest, idx int) {
+			tokens <- struct{}{}
+			defer func() {
+				<-tokens
+				//设置延时，使报错能渲染出来
+				time.Sleep(time.Second / 5)
+				wg.Done()
+			}()
+			success := true
+			var resultErr error
+			resp, err := client.GenericInvoke(req)
+			block := ui.NewBlock()
+			doc.Append(block)
+			logs := []string{"=================================================="}
+			logs = append(logs, fmt.Sprintf("api:%v, request:%v", action, platform.ToQueryMap(req)))
+			if err != nil {
+				logs = append(logs, fmt.Sprintf("err:%v", err))
+				printBlockLine(block, platform.ParseError(err))
+				success = false
+				resultErr = err
+			} else {
+				logs = append(logs, fmt.Sprintf("resp:%#v", resp))
+				resourceId, ok := resp.GetPayload()[repeatsConfig.IDInResp].(string)
+				if !ok {
+					resultErr = fmt.Errorf("expect %v in response, but not found", repeatsConfig.IDInResp)
+					printBlockLine(block, resultErr.Error())
 					success = false
 				} else {
-					logs = append(logs, fmt.Sprintf("resp:%#v", resp))
-					resourceId, ok := resp.GetPayload()[repeatsConfig.IDInResp].(string)
-					if !ok {
-						block.Append(fmt.Sprintf("expect %v in response, but not found", repeatsConfig.IDInResp))
+					text := fmt.Sprintf("the resource[%s] is initializing", resourceId)
+					result := repeatsConfig.Poller.Sspoll(resourceId, text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &request.CommonBase{
+						Region:    ucloud.String(req.GetRegion()),
+						Zone:      ucloud.String(req.GetZone()),
+						ProjectId: ucloud.String(req.GetProjectId()),
+					})
+					if result.Err != nil {
 						success = false
-					} else {
-						text := fmt.Sprintf("the resource[%s] is initializing", resourceId)
-						result := repeatsConfig.Poller.Sspoll(resourceId, text, []string{status.HOST_RUNNING, status.HOST_FAIL}, block, &request.CommonBase{
-							Region:    ucloud.String(req.GetRegion()),
-							Zone:      ucloud.String(req.GetZone()),
-							ProjectId: ucloud.String(req.GetProjectId()),
-						})
-						if result.Err != nil {
-							success = false
-							block.Append(result.Err.Error())
-						}
+						resultErr = result.Err
+						printBlockLine(block, result.Err.Error())
 					}
-					retCh <- success
-					logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
-					base.LogInfo(logs...)
 				}
-			}(req, i)
-		}
-	}(req)
+			}
+			retCh <- repeatResult{success: success, err: resultErr}
+			logs = append(logs, fmt.Sprintf("index:%d, result:%t", idx, success))
+			platform.LogInfo(logs...)
+		}(req, i)
+	}
 
-	var success, fail atomic.Int32
-	go func() {
-		block := ux.NewBlock()
-		ux.Doc.Append(block)
-		block.Append(fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success.Load(), fail.Load()))
-		blockCount := ux.Doc.GetBlockCount()
-		for ret := range retCh {
-			if ret {
-				success.Add(1)
-			} else {
-				fail.Add(1)
-			}
-			text := fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success.Load(), fail.Load())
-			if blockCount != ux.Doc.GetBlockCount() {
-				block = ux.NewBlock()
-				ux.Doc.Append(block)
-				block.Append(text)
-				blockCount = ux.Doc.GetBlockCount()
-			} else {
-				block.Update(text, 0)
-			}
-			if repeats == int(success.Load())+int(fail.Load()) && fail.Load() > 0 {
-				fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
+	var success, fail int
+	var firstErr error
+	block := ui.NewBlock()
+	doc.Append(block)
+	block.Append(fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success, fail))
+	blockCount := doc.GetBlockCount()
+	for i := 0; i < repeats; i++ {
+		ret := <-retCh
+		if ret.success {
+			success++
+		} else {
+			fail++
+			if firstErr == nil {
+				firstErr = ret.err
 			}
 		}
-	}()
+		text := fmt.Sprintf("creating, total:%d, success:%d, fail:%d", repeats, success, fail)
+		if blockCount != doc.GetBlockCount() {
+			block = ui.NewBlock()
+			doc.Append(block)
+			block.Append(text)
+			blockCount = doc.GetBlockCount()
+		} else {
+			block.Update(text, 0)
+		}
+	}
 	wg.Wait()
-	refresh.Do(fmt.Sprintf("finally, total:%d, success:%d, fail:%d", repeats, success.Load(), repeats-int(success.Load())))
+	if fail > 0 {
+		fmt.Fprintf(out, "Check logs in %s\n", platform.GetLogFilePath())
+	}
+	refresh.Do(fmt.Sprintf("finally, total:%d, success:%d, fail:%d", repeats, success, fail))
+	if firstErr != nil {
+		return fmt.Errorf("repeat API %s failed: %w", action, firstErr)
+	}
 	return nil
 }
 

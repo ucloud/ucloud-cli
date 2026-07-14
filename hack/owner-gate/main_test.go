@@ -54,8 +54,8 @@ func TestProductOf(t *testing.T) {
 		want string
 		ok   bool
 	}{
-		{"products/udb/internal/mysql/cmd.go", "udb", true},
-		{"products/udb/product.yaml", "udb", true},
+		{"products/mysql/internal/mysql/cmd.go", "mysql", true},
+		{"products/mysql/product.yaml", "mysql", true},
 		{"products/eip/x.go", "eip", true},
 		{"products/README.md", "", false}, // products/ 直属文件不属任何产品
 		{"pkg/cli/context.go", "", false},
@@ -76,9 +76,9 @@ func TestProductOf(t *testing.T) {
 
 func TestDecide_ProductAutonomous(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/internal/mysql/cmd.go")},
+		[]changedFile{cf("products/mysql/internal/mysql/cmd.go")},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "product" || !d.AutoMergeEligible || d.Blocking {
 		t.Fatalf("expected product+eligible+nonblocking, got %+v", d)
@@ -89,7 +89,7 @@ func TestDecide_PlatformFile(t *testing.T) {
 	d := decide(
 		[]changedFile{cf("pkg/cli/context.go")},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || !d.Blocking {
 		t.Fatalf("expected platform+ineligible+blocking, got %+v", d)
@@ -98,9 +98,9 @@ func TestDecide_PlatformFile(t *testing.T) {
 
 func TestDecide_CrossProduct(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/x.go"), cf("products/eip/y.go")},
+		[]changedFile{cf("products/mysql/x.go"), cf("products/eip/y.go")},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}, "eip": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}, "eip": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || !d.Blocking {
 		t.Fatalf("expected platform (cross-product) blocking, got %+v", d)
@@ -109,9 +109,9 @@ func TestDecide_CrossProduct(t *testing.T) {
 
 func TestDecide_NonOwnerEdit(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/internal/mysql/cmd.go")},
+		[]changedFile{cf("products/mysql/internal/mysql/cmd.go")},
 		"mallory", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || !d.Blocking {
 		t.Fatalf("expected platform (non-owner) blocking, got %+v", d)
@@ -121,9 +121,9 @@ func TestDecide_NonOwnerEdit(t *testing.T) {
 // base-vs-head 提权反例:HEAD 把 mallory 加进 owners,但 base 版只有 Episkey-G。
 func TestDecide_SelfPromotionRejectedByBase(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/product.yaml")},
+		[]changedFile{cf("products/mysql/product.yaml")},
 		"mallory", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}), // base: 无 mallory
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}), // base: 无 mallory
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || !d.Blocking {
 		t.Fatalf("expected platform (self-promotion blocked by base), got %+v", d)
@@ -133,9 +133,9 @@ func TestDecide_SelfPromotionRejectedByBase(t *testing.T) {
 // 改自己 owners:已是 base 版 owner 的人改 product.yaml(如加 co-owner)仍自治。
 func TestDecide_OwnerEditsOwnOwners(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/product.yaml")},
+		[]changedFile{cf("products/mysql/product.yaml")},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "product" || !d.AutoMergeEligible || d.Blocking {
 		t.Fatalf("expected product+eligible (owner edits own owners), got %+v", d)
@@ -157,9 +157,9 @@ func TestDecide_NewProductOnboarding(t *testing.T) {
 // 删产品:即便 author 是 owner,删除 product.yaml 也走平台审批(下线)。
 func TestDecide_ProductOffboarding(t *testing.T) {
 	d := decide(
-		[]changedFile{cfDel("products/udb/product.yaml"), cfDel("products/udb/internal/mysql/cmd.go")},
+		[]changedFile{cfDel("products/mysql/product.yaml"), cfDel("products/mysql/internal/mysql/cmd.go")},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || !d.Blocking {
 		t.Fatalf("expected platform (offboarding) blocking, got %+v", d)
@@ -175,7 +175,7 @@ func TestDecide_PlatformClearedReleases(t *testing.T) {
 	d := decide(
 		[]changedFile{cf("base/biz_client.go")},
 		"carol", true, // platformCleared
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.Blocking || d.AutoMergeEligible {
 		t.Fatalf("expected platform+nonblocking+ineligible (cleared), got %+v", d)
@@ -185,9 +185,9 @@ func TestDecide_PlatformClearedReleases(t *testing.T) {
 // cleared 只解硬拦,不把 non-owner 升级成 product 自治、不开 auto-merge。
 func TestDecide_ClearedDoesNotPromoteNonOwner(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/internal/mysql/cmd.go")},
+		[]changedFile{cf("products/mysql/internal/mysql/cmd.go")},
 		"mallory", true, // cleared
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || d.AutoMergeEligible || d.Blocking {
 		t.Fatalf("expected platform (non-owner) nonblocking+ineligible, got %+v", d)
@@ -198,9 +198,9 @@ func TestDecide_ClearedDoesNotPromoteNonOwner(t *testing.T) {
 func TestDecide_ProductIgnoresCleared(t *testing.T) {
 	for _, cleared := range []bool{false, true} {
 		d := decide(
-			[]changedFile{cf("products/udb/internal/mysql/cmd.go")},
+			[]changedFile{cf("products/mysql/internal/mysql/cmd.go")},
 			"Episkey-G", cleared,
-			staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+			staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 		)
 		if d.Type != "product" || !d.AutoMergeEligible || d.Blocking {
 			t.Fatalf("cleared=%v: expected product+eligible+nonblocking, got %+v", cleared, d)
@@ -212,11 +212,11 @@ func TestDecide_ProductIgnoresCleared(t *testing.T) {
 func TestDecide_CrossProductRename(t *testing.T) {
 	d := decide(
 		[]changedFile{
-			{Path: "products/udb/cmd/shared.go", Deleted: true}, // rename old 端
+			{Path: "products/mysql/cmd/shared.go", Deleted: true}, // rename old 端
 			{Path: "products/uhost/cmd/shared.go", Deleted: false},
 		},
 		"Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}, "uhost": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}, "uhost": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || !d.Blocking {
 		t.Fatalf("expected platform (cross-product rename) blocking, got %+v", d)
@@ -227,11 +227,11 @@ func TestDecide_CrossProductRename(t *testing.T) {
 func TestDecide_RenameAwayProductYAMLIsOffboarding(t *testing.T) {
 	d := decide(
 		[]changedFile{
-			{Path: "products/udb/product.yaml", Deleted: true}, // rename old 端
-			{Path: "products/udb/product.yaml.bak", Deleted: false},
+			{Path: "products/mysql/product.yaml", Deleted: true}, // rename old 端
+			{Path: "products/mysql/product.yaml.bak", Deleted: false},
 		},
 		"Episkey-G", false, // 即便作者是 owner
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}),
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}),
 	)
 	if d.Type != "platform" || !d.Blocking {
 		t.Fatalf("expected platform (rename-away offboarding) blocking, got %+v", d)
@@ -241,7 +241,7 @@ func TestDecide_RenameAwayProductYAMLIsOffboarding(t *testing.T) {
 // 空 diff(仅 merge commit / 无改动)→ noop,不当平台拦。
 func TestDecide_EmptyDiffNoop(t *testing.T) {
 	d := decide(nil, "Episkey-G", false,
-		staticOwners(map[string][]string{"udb": {"Episkey-G"}}))
+		staticOwners(map[string][]string{"mysql": {"Episkey-G"}}))
 	if d.Type != "noop" || d.Blocking || d.AutoMergeEligible {
 		t.Fatalf("expected noop+nonblocking+ineligible, got %+v", d)
 	}
@@ -250,9 +250,9 @@ func TestDecide_EmptyDiffNoop(t *testing.T) {
 // base 版 product.yaml 解析失败 → 独立平台文案(不误称 non-owner)。
 func TestDecide_ParseFailureDistinctReason(t *testing.T) {
 	d := decide(
-		[]changedFile{cf("products/udb/internal/mysql/cmd.go")},
+		[]changedFile{cf("products/mysql/internal/mysql/cmd.go")},
 		"Episkey-G", false,
-		staticOwnersParseErr("udb"),
+		staticOwnersParseErr("mysql"),
 	)
 	if d.Type != "platform" || !d.Blocking {
 		t.Fatalf("expected platform (parse error) blocking, got %+v", d)
@@ -267,10 +267,10 @@ func TestDecide_ParseFailureDistinctReason(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestParseNameStatus(t *testing.T) {
-	in := "M\tproducts/udb/product.go\n" +
-		"A\tproducts/udb/internal/mysql/new.go\n" +
-		"D\tproducts/udb/internal/mysql/old.go\n" +
-		"R100\tproducts/udb/a.go\tproducts/udb/b.go\n" +
+	in := "M\tproducts/mysql/product.go\n" +
+		"A\tproducts/mysql/internal/mysql/new.go\n" +
+		"D\tproducts/mysql/internal/mysql/old.go\n" +
+		"R100\tproducts/mysql/a.go\tproducts/mysql/b.go\n" +
 		"\n" // 空行应被跳过
 	got, err := parseNameStatus(strings.NewReader(in))
 	if err != nil {
@@ -281,26 +281,26 @@ func TestParseNameStatus(t *testing.T) {
 		t.Fatalf("expected 5 entries, got %d: %+v", len(got), got)
 	}
 	// 普通改动非删除
-	if got[0].Deleted || got[0].Path != "products/udb/product.go" {
+	if got[0].Deleted || got[0].Path != "products/mysql/product.go" {
 		t.Errorf("entry[0] should be modified product.go, got %+v", got[0])
 	}
 	// 删除标记
-	if !got[2].Deleted || got[2].Path != "products/udb/internal/mysql/old.go" {
+	if !got[2].Deleted || got[2].Path != "products/mysql/internal/mysql/old.go" {
 		t.Errorf("entry[2] should be deleted old.go, got %+v", got[2])
 	}
 	// rename old 端:标记 Deleted
-	if !got[3].Deleted || got[3].Path != "products/udb/a.go" {
+	if !got[3].Deleted || got[3].Path != "products/mysql/a.go" {
 		t.Errorf("entry[3] should be rename-old a.go (deleted), got %+v", got[3])
 	}
 	// rename new 端:非删除
-	if got[4].Deleted || got[4].Path != "products/udb/b.go" {
+	if got[4].Deleted || got[4].Path != "products/mysql/b.go" {
 		t.Errorf("entry[4] should be rename-new b.go (not deleted), got %+v", got[4])
 	}
 }
 
 // 跨产品 rename 行:old/new 两端分属不同产品都要计入。
 func TestParseNameStatus_CrossProductRename(t *testing.T) {
-	in := "R100\tproducts/udb/cmd/shared.go\tproducts/uhost/cmd/shared.go\n"
+	in := "R100\tproducts/mysql/cmd/shared.go\tproducts/uhost/cmd/shared.go\n"
 	got, err := parseNameStatus(strings.NewReader(in))
 	if err != nil {
 		t.Fatalf("parseNameStatus: %v", err)
@@ -314,8 +314,8 @@ func TestParseNameStatus_CrossProductRename(t *testing.T) {
 			seen[x] = true
 		}
 	}
-	if !seen["udb"] || !seen["uhost"] {
-		t.Fatalf("expected both udb and uhost in productSet, got %v", seen)
+	if !seen["mysql"] || !seen["uhost"] {
+		t.Fatalf("expected both mysql and uhost in productSet, got %v", seen)
 	}
 }
 
@@ -343,21 +343,21 @@ func TestGitShowOwners_ReadsBaseNotHead(t *testing.T) {
 	gitRun(t, repo, "init", "-q", "-b", "main")
 
 	// base commit: owners = [alice]
-	writeFile(t, repo, "products/udb/product.yaml",
-		"name: udb\nowners:\n  - alice\ncommands: [mysql]\nenabled: true\n")
+	writeFile(t, repo, "products/mysql/product.yaml",
+		"name: mysql\nowners:\n  - alice\ncommands: [mysql]\nenabled: true\n")
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-qm", "base")
 	baseSHA := gitRun(t, repo, "rev-parse", "HEAD")
 
 	// head commit: PR 把 bob 加进 owners(自我提权尝试)
-	writeFile(t, repo, "products/udb/product.yaml",
-		"name: udb\nowners:\n  - alice\n  - bob\ncommands: [mysql]\nenabled: true\n")
+	writeFile(t, repo, "products/mysql/product.yaml",
+		"name: mysql\nowners:\n  - alice\n  - bob\ncommands: [mysql]\nenabled: true\n")
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-qm", "head")
 
 	t.Chdir(repo) // gitShowOwners 在进程 cwd 下跑 git
 
-	owners, exists, parseErr := gitShowOwners(baseSHA, "udb")
+	owners, exists, parseErr := gitShowOwners(baseSHA, "mysql")
 	if !exists || parseErr {
 		t.Fatalf("expected base product.yaml to exist and parse, got exists=%v parseErr=%v", exists, parseErr)
 	}
@@ -376,13 +376,13 @@ func TestGitShowOwners_ParseError(t *testing.T) {
 	repo := t.TempDir()
 	gitRun(t, repo, "init", "-q", "-b", "main")
 	// 未定义 anchor 的别名引用 → yaml.v2 解析报错。
-	writeFile(t, repo, "products/udb/product.yaml", "owners: *nope\n")
+	writeFile(t, repo, "products/mysql/product.yaml", "owners: *nope\n")
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-qm", "base")
 	baseSHA := gitRun(t, repo, "rev-parse", "HEAD")
 
 	t.Chdir(repo)
-	owners, exists, parseErr := gitShowOwners(baseSHA, "udb")
+	owners, exists, parseErr := gitShowOwners(baseSHA, "mysql")
 	if !exists || !parseErr {
 		t.Fatalf("expected exists=true parseErr=true, got exists=%v parseErr=%v", exists, parseErr)
 	}
