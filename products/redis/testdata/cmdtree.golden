@@ -15,9 +15,36 @@ ucloud redis create	use=create	short=Create redis instance
   flag=version	short=	default=6.0	required=
   flag=vpc-id	short=	default=	required=
   flag=zone	short=	default=	required=
+ucloud redis create-proxy	use=create-proxy	short=Create proxy for distributed redis
+  flag=cpu	short=	default=2	required=true
+  flag=port	short=	default=6379	required=
+  flag=project-id	short=	default=	required=
+  flag=proxy-cnt	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
 ucloud redis delete	use=delete	short=Delete redis instances
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis delete-proxy	use=delete-proxy	short=Delete proxy of distributed redis
+  flag=project-id	short=	default=	required=
+  flag=proxy-id	short=	default=	required=true
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud redis flush	use=flush	short=Clear data of redis instances
+  flag=db-num	short=	default=0	required=
+  flag=flush-type	short=	default=FlushAll	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis isolation	use=isolation	short=Open or close redis instances of master-replica type
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=type	short=	default=close	required=true
   flag=umem-id	short=	default=[]	required=true
   flag=zone	short=	default=	required=
 ucloud redis list	use=list	short=List redis instances
@@ -26,6 +53,42 @@ ucloud redis list	use=list	short=List redis instances
   flag=project-id	short=	default=	required=
   flag=region	short=	default=	required=
   flag=umem-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud redis list-block	use=list-block	short=List block info of distributed redis
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud redis list-proxy	use=list-proxy	short=List proxy info of distributed redis
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud redis modify-name	use=modify-name	short=Modify redis instance name
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis modify-password	use=modify-password	short=Modify redis instance password
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis resize	use=resize	short=Resize redis instances
+  flag=block-id	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=size-gb	short=	default=0	required=true
+  flag=umem-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud redis resize-proxy	use=resize-proxy	short=Resize proxy of distributed redis
+  flag=new-cpu	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=proxy-id	short=	default=	required=true
+  flag=region	short=	default=	required=
+  flag=umem-id	short=	default=	required=true
   flag=zone	short=	default=	required=
 ucloud redis restart	use=restart	short=Restart redis instances of master-replica type
   flag=project-id	short=	default=	required=

@@ -6,26 +6,29 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-sdk-go/services/umem"
+	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
-type deleteParams struct {
+type flushParams struct {
+	flushType string
+	dbNum     int
 	region    string
 	zone      string
 	projectID string
 }
 
-// newDelete returns ucloud redis delete.
-func newDelete(ctx *cli.Context) *cobra.Command {
+// newFlush returns ucloud redis flush.
+func newFlush(ctx *cli.Context) *cobra.Command {
 	var idNames []string
-	var p deleteParams
+	var p flushParams
 	cmd := &cobra.Command{
-		Use:     "delete",
-		Short:   "Delete redis instances",
-		Long:    "Delete redis instances",
-		Example: "ucloud redis delete --umem-id uredis-rl5xuxx/testcli1,uredis-xsdfa/testcli2",
+		Use:     "flush",
+		Short:   "Clear data of redis instances",
+		Long:    "Clear data of redis instances. Master-replica instances call FlushallURedisGroup, distributed instances call RemoveUDRedisData",
+		Example: "ucloud redis flush --umem-id uredis-rl5xuxx/testcli1 --flush-type FlushAll",
 		Run: func(c *cobra.Command, args []string) {
 			results := []cli.OpResultRow{}
 			for _, idname := range idNames {
@@ -37,12 +40,12 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 				}
 				switch mode {
 				case redisModeMasterReplica:
-					if deleteMasterReplica(ctx, &p, id) {
-						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+					if flushMasterReplica(ctx, &p, id) {
+						results = append(results, cli.OpResultRow{ResourceID: id, Action: "flush", Status: "Flushed"})
 					}
 				case redisModeDistributed:
-					if deleteDistributed(ctx, &p, id) {
-						results = append(results, cli.OpResultRow{ResourceID: id, Action: "delete", Status: "Deleted"})
+					if flushDistributed(ctx, &p, id) {
+						results = append(results, cli.OpResultRow{ResourceID: id, Action: "flush", Status: "Flushed"})
 					}
 				default:
 					fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] unknown resource type, skip\n", idname)
@@ -55,7 +58,9 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 
-	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to delete")
+	flags.StringSliceVar(&idNames, "umem-id", nil, "Required. Resource ID of redis instances to flush data")
+	flags.StringVar(&p.flushType, "flush-type", "FlushAll", "Optional. FlushType of redis flush. Only for master-replica instances. Accept values: 'FlushAll', 'FlushDb'")
+	flags.IntVar(&p.dbNum, "db-num", 0, "Optional. DbNum to flush. Only used when flush-type is FlushDb for master-replica instances")
 	flags.StringVar(&p.region, "region", ctx.DefaultRegion(), "Optional. Override default region for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.zone, "zone", ctx.DefaultZone(), "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	flags.StringVar(&p.projectID, "project-id", ctx.DefaultProjectID(), "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
@@ -72,33 +77,38 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 	return cmd
 }
 
-func deleteMasterReplica(ctx *cli.Context, p *deleteParams, id string) bool {
+func flushMasterReplica(ctx *cli.Context, p *flushParams, id string) bool {
 	client := cli.NewServiceClient(ctx, umem.NewClient)
-	req := client.NewDeleteURedisGroupRequest()
+	req := client.NewFlushallURedisGroupRequest()
 	req.Region = &p.region
+	req.Zone = &p.zone
 	req.ProjectId = &p.projectID
 	req.GroupId = &id
-	_, err := client.DeleteURedisGroup(req)
+	req.FlushType = &p.flushType
+	if p.flushType == "FlushDb" {
+		req.DbNum = sdk.Int(p.dbNum)
+	}
+	_, err := client.FlushallURedisGroup(req)
 	if err != nil {
 		ctx.HandleError(err)
 		return false
 	}
-	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] deleted\n", id)
+	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] data flushed\n", id)
 	return true
 }
 
-func deleteDistributed(ctx *cli.Context, p *deleteParams, id string) bool {
+func flushDistributed(ctx *cli.Context, p *flushParams, id string) bool {
 	client := cli.NewServiceClient(ctx, umem.NewClient)
-	req := client.NewDeleteUMemSpaceRequest()
+	req := client.NewRemoveUDRedisDataRequest()
 	req.Region = &p.region
 	req.Zone = &p.zone
 	req.ProjectId = &p.projectID
 	req.SpaceId = &id
-	_, err := client.DeleteUMemSpace(req)
+	_, err := client.RemoveUDRedisData(req)
 	if err != nil {
 		ctx.HandleError(err)
 		return false
 	}
-	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] deleted\n", id)
+	fmt.Fprintf(ctx.ProgressWriter(), "redis[%s] data flushed\n", id)
 	return true
 }
