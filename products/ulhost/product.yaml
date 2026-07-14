@@ -4,5 +4,4 @@ owners:
   - Episkey-G
 commands:
   - ulhost
-  - image
 enabled: true

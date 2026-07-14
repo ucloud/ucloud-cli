@@ -1,12 +1,3 @@
-ucloud image copy	project-id	dynamic
-ucloud image copy	region	dynamic
-ucloud image copy	source-image-id	dynamic
-ucloud image copy	target-project	dynamic
-ucloud image copy	target-region	dynamic
-ucloud image copy	zone	dynamic
-ucloud image create	uhost-id	dynamic
-ucloud image delete	image-id	dynamic
-ucloud image list	image-type	static	Base,Business,Custom
 ucloud ulhost bundles	project-id	dynamic
 ucloud ulhost bundles	region	dynamic
 ucloud ulhost create	bundle-id	dynamic
@@ -14,6 +5,7 @@ ucloud ulhost create	charge-type	static	Month,Year
 ucloud ulhost create	region	dynamic
 ucloud ulhost delete	delete-cloud-disk	static	false,true
 ucloud ulhost delete	ulhost-id	dynamic
+ucloud ulhost image list	image-type	static	Base,Business,Custom
 ucloud ulhost list	page-off	static	false,true
 ucloud ulhost list	project-id	dynamic
 ucloud ulhost list	region	dynamic

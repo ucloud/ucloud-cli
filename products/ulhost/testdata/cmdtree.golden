@@ -1,36 +1,3 @@
-ucloud image	use=image	short=List and manipulate images
-ucloud image copy	use=copy	short=Copy custom images
-  flag=async	short=	default=false	required=
-  flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=source-image-id	short=	default=[]	required=true
-  flag=target-image-desc	short=	default=	required=
-  flag=target-image-name	short=	default=	required=
-  flag=target-project	short=	default=	required=
-  flag=target-region	short=	default=	required=
-  flag=zone	short=	default=	required=
-ucloud image create	use=create	short=Create image from an uhost instance
-  flag=async	short=a	default=false	required=
-  flag=image-desc	short=	default=	required=
-  flag=image-name	short=	default=	required=true
-  flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=uhost-id	short=	default=	required=true
-  flag=zone	short=	default=	required=
-ucloud image delete	use=delete	short=Delete custom images
-  flag=image-id	short=	default=[]	required=true
-  flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
-ucloud image list	use=list	short=List image
-  flag=image-id	short=	default=	required=
-  flag=image-type	short=	default=Base	required=
-  flag=limit	short=	default=500	required=
-  flag=offset	short=	default=0	required=
-  flag=os-type	short=	default=	required=
-  flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=zone	short=	default=	required=
 ucloud ulhost	use=ulhost	short=List,create,delete,stop,restart,poweroff or resize ULHost instance
 ucloud ulhost bundles	use=bundles	short=List all ULHost bundles
   flag=project-id	short=	default=	required=
@@ -55,6 +22,16 @@ ucloud ulhost delete	use=delete	short=Delete ULHost instance
   flag=region	short=	default=	required=
   flag=ulhost-id	short=	default=[]	required=true
   flag=yes	short=y	default=false	required=
+ucloud ulhost image	use=image	short=List ULHost images
+ucloud ulhost image list	use=list	short=List ULHost images
+  flag=image-id	short=	default=	required=
+  flag=image-type	short=	default=Base	required=
+  flag=limit	short=	default=500	required=
+  flag=offset	short=	default=0	required=
+  flag=os-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
 ucloud ulhost list	use=list	short=List all ULHost Instances
   flag=all-region	short=	default=false	required=
   flag=limit	short=	default=50	required=

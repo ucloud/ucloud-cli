@@ -4,12 +4,18 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	internalimage "github.com/ucloud/ucloud-cli/products/ulhost/internal/image"
 )
 
 // NewCommand builds the `ulhost` root command and mounts the subcommands in
 // the same AddCommand order as the uhost product: list, create, delete, stop,
 // start, restart, poweroff, reset-password, reinstall-os, modify-attribute,
-// bundles, price.
+// bundles, price. The ulhost-scoped `image list` is mounted as a nested
+// subcommand here rather than a top-level `image` command: the top-level
+// `image` name is already claimed by the uhost product (uhost's image command
+// exposes copy/delete/create; ulhost only lists), so a second top-level
+// `image` would shadow uhost's at runtime (cobra registers top-level commands
+// by name) and break the snapshot partition golden.
 //
 // NOTE: The backend API also exposes UpdateULHostInstanceFirewall,
 // ModifyULHostProxyIp, CheckULHostResourceCapacity, and share-bandwidth
@@ -35,6 +41,7 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd.AddCommand(newModifyAttribute(ctx))
 	cmd.AddCommand(newBundles(ctx))
 	cmd.AddCommand(newPrice(ctx))
+	cmd.AddCommand(internalimage.NewCommand(ctx))
 
 	return cmd
 }

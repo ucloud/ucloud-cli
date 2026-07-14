@@ -6,8 +6,9 @@ import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
 
-// NewCommand builds the `image` root command for ulhost, mirroring the uhost
-// image subcommand pattern.
+// NewCommand builds the `image` subcommand nested under `ulhost` (ucloud ulhost
+// image list), mirroring the uhost image subcommand pattern. ULHost uses the
+// same DescribeImage API as UHost but with different defaults.
 func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "image",
