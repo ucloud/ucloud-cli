@@ -55,7 +55,7 @@ type Context struct {
 	logWarn     func(io.Writer, ...string)
 	logError    func(io.Writer, ...string)
 	logFilePath func() string
-	newPoller   func(func(string, *request.CommonBase) (interface{}, error), io.Writer) Poller
+	newPoller   func(func(string, *request.CommonBase) (interface{}, error), io.Writer, ...PollerOption) Poller
 
 	// errCount tallies HandleError calls this invocation so the host (cmd) can
 	// set a non-zero exit code when any product error occurred (aws/gcloud
@@ -88,7 +88,7 @@ type Deps struct {
 	LogWarn     func(io.Writer, ...string)
 	LogError    func(io.Writer, ...string)
 	LogFilePath func() string
-	NewPoller   func(func(string, *request.CommonBase) (interface{}, error), io.Writer) Poller
+	NewPoller   func(func(string, *request.CommonBase) (interface{}, error), io.Writer, ...PollerOption) Poller
 }
 
 // NewContext constructs a Context from the provided Deps.

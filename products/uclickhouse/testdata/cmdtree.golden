@@ -1,0 +1,63 @@
+ucloud uclickhouse	use=uclickhouse	short=Manage UClickhouse clusters
+ucloud uclickhouse create	use=create	short=Create UClickhouse cluster
+  flag=admin-password	short=	default=	required=true
+  flag=async	short=	default=false	required=
+  flag=backup-id	short=	default=	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=clickhouse-machine-type-id	short=	default=	required=true
+  flag=clickhouse-version	short=	default=	required=true
+  flag=data-disk-size-gb	short=	default=100	required=
+  flag=data-disk-type	short=	default=	required=true
+  flag=label	short=	default=[]	required=
+  flag=multi-zone	short=	default=false	required=
+  flag=multi-zone-name	short=	default=[]	required=
+  flag=name	short=	default=clickhouse	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=replicate-count	short=	default=2	required=
+  flag=sec-group	short=	default=false	required=
+  flag=sec-group-ids	short=	default=	required=
+  flag=shard-count	short=	default=1	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zookeeper-data-disk-size-gb	short=	default=	required=
+  flag=zookeeper-data-disk-type	short=	default=	required=
+  flag=zookeeper-ha	short=	default=true	required=
+  flag=zookeeper-machine-type-id	short=	default=	required=
+ucloud uclickhouse create-option	use=create-option	short=List available UClickhouse creation options
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uclickhouse delete	use=delete	short=Delete UClickhouse clusters
+  flag=clickhouse-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+ucloud uclickhouse describe	use=describe	short=Describe UClickhouse cluster details
+  flag=clickhouse-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uclickhouse expand	use=expand	short=Expand UClickhouse cluster node count
+  flag=async	short=	default=false	required=
+  flag=clickhouse-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=sync-node-id	short=	default=	required=
+  flag=total-node-count	short=	default=0	required=true
+ucloud uclickhouse list	use=list	short=List UClickhouse clusters
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uclickhouse resize	use=resize	short=Resize UClickhouse cluster
+  flag=async	short=	default=false	required=
+  flag=clickhouse-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=target-data-disk-size-gb	short=	default=0	required=
+  flag=target-machine-type-id	short=	default=	required=
+  flag=zookeeper-node	short=	default=false	required=
+ucloud uclickhouse restart	use=restart	short=Restart UClickhouse cluster service
+  flag=async	short=	default=false	required=
+  flag=clickhouse-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=

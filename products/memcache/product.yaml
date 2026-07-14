@@ -1,6 +1,6 @@
 name: memcache
 owners:
-  - Episkey-G
+  - ucloud-umem-qingpfang
 commands:
   - memcache
 enabled: true
