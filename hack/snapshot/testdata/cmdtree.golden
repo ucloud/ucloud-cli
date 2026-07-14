@@ -49,21 +49,6 @@ ucloud config update	use=update	short=update configurations
   flag=region	short=	default=	required=
   flag=timeout-sec	short=	default=	required=
   flag=zone	short=	default=	required=
-ucloud ext	use=ext	short=extended commands of UCloud CLI
-ucloud ext uhost	use=uhost	short=extended uhost commands
-ucloud ext uhost switch-eip	use=switch-eip	short=Switch EIP for UHost instances
-  flag=create-eip-bandwidth-mb	short=	default=1	required=
-  flag=create-eip-charge-type	short=	default=Month	required=
-  flag=create-eip-quantity	short=	default=1	required=
-  flag=create-eip-share-bandwidth-id	short=	default=	required=
-  flag=create-eip-traffic-mode	short=	default=Bandwidth	required=
-  flag=eip-addr	short=	default=[]	required=
-  flag=project-id	short=	default=	required=
-  flag=region	short=	default=	required=
-  flag=release-all	short=	default=true	required=
-  flag=uhost-id	short=	default=[]	required=true
-  flag=unbind-all	short=	default=true	required=
-  flag=zone	short=	default=	required=
 ucloud gendoc	use=gendoc	short=Generate documents for all commands
   flag=dir	short=	default=	required=true
   flag=format	short=	default=douku	required=

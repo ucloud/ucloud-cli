@@ -8,17 +8,16 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
-// defaults reads the per-invocation region/zone/project defaults from the agg config.
+// defaults reads the per-invocation region/zone/project defaults from the host provider.
 func (c *Context) defaults() command.Defaults {
-	if c.config == nil {
+	if c.defaultsProvider == nil {
 		return command.Defaults{}
 	}
-	return command.Defaults{Region: c.config.Region, Zone: c.config.Zone, ProjectID: c.config.ProjectID}
+	return c.defaultsProvider()
 }
 
 // SetCompletion forwards to command.SetCompletion.
@@ -100,28 +99,19 @@ func (c *Context) ProjectList() []string {
 // default region/project as a flag default but must NOT register region/project
 // completion (mirrors the RegionList rationale). Nil-safe: empty when no config.
 func (c *Context) DefaultRegion() string {
-	if c.config == nil {
-		return ""
-	}
-	return c.config.Region
+	return c.defaults().Region
 }
 
 // DefaultProjectID returns the per-invocation default project id from config.
 func (c *Context) DefaultProjectID() string {
-	if c.config == nil {
-		return ""
-	}
-	return c.config.ProjectID
+	return c.defaults().ProjectID
 }
 
 // DefaultZone returns the per-invocation default availability zone from config,
 // for hand-written --zone flags that must NOT register zone completion (same
 // rationale as DefaultRegion/DefaultProjectID). Nil-safe: empty when no config.
 func (c *Context) DefaultZone() string {
-	if c.config == nil {
-		return ""
-	}
-	return c.config.Zone
+	return c.defaults().Zone
 }
 
 // AllRegions returns every region the account can see, propagating the
@@ -164,7 +154,7 @@ func (c *Context) Confirm(yes bool, text string) (bool, error) {
 // cli.log file / telemetry.
 func (c *Context) HandleError(err error) {
 	atomic.AddInt32(&c.errCount, 1)
-	base.HandleErrorTo(c.err, err)
+	c.handleError(c.err, err)
 }
 
 // LogInfo / LogPrint / LogWarn / LogError forward to the platform logger
@@ -175,26 +165,26 @@ func (c *Context) HandleError(err error) {
 // LogInfo writes to the log file only (no console). LogPrint/LogWarn/LogError
 // send their console copy to stderr (ctx.Err), never stdout, so machine output
 // on stdout stays clean; all four still record to cli.log / telemetry.
-func (c *Context) LogInfo(logs ...string)  { base.LogInfo(logs...) }
-func (c *Context) LogPrint(logs ...string) { base.LogPrintTo(c.err, logs...) }
-func (c *Context) LogWarn(logs ...string)  { base.LogWarnTo(c.err, logs...) }
-func (c *Context) LogError(logs ...string) { base.LogErrorTo(c.err, logs...) }
+func (c *Context) LogInfo(logs ...string)  { c.logInfo(logs...) }
+func (c *Context) LogPrint(logs ...string) { c.logPrint(c.err, logs...) }
+func (c *Context) LogWarn(logs ...string)  { c.logWarn(c.err, logs...) }
+func (c *Context) LogError(logs ...string) { c.logError(c.err, logs...) }
 
 // LogFilePath returns the path of the CLI log file (e.g. for "check logs in …").
-func (c *Context) LogFilePath() string { return base.GetLogFilePath() }
+func (c *Context) LogFilePath() string { return c.logFilePath() }
 
 // PickResourceID extracts the resource ID from a "resourceID/name" string.
 func (c *Context) PickResourceID(s string) string { return PickResourceID(s) }
 
-// Poller wraps base.NewSpoller bound to ctx's writer.
-func (c *Context) Poller(describeFunc func(string, *request.CommonBase) (interface{}, error)) *base.Poller {
-	return base.NewSpoller(describeFunc, c.out)
+// Poller returns a platform poller bound to ctx's writer.
+func (c *Context) Poller(describeFunc func(string, *request.CommonBase) (interface{}, error)) Poller {
+	return c.newPoller(describeFunc, c.out)
 }
 
 // PollerTo wraps base.NewSpoller bound to an explicit writer, so callers can
 // route progress narration to stderr (e.g. in json/yaml mode) while keeping
 // machine output on stdout. Products cannot import base directly, so this
 // exposes the writer-parameterized poller through the Context.
-func (c *Context) PollerTo(w io.Writer, describeFunc func(string, *request.CommonBase) (interface{}, error)) *base.Poller {
-	return base.NewSpoller(describeFunc, w)
+func (c *Context) PollerTo(w io.Writer, describeFunc func(string, *request.CommonBase) (interface{}, error)) Poller {
+	return c.newPoller(describeFunc, w)
 }

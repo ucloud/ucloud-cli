@@ -1,0 +1,119 @@
+# Enables GitHub native auto-merge for product-autonomous PRs, including PRs
+# opened from forks. This workflow runs in the trusted base-repository context:
+# it checks out only the base SHA and treats PR file metadata as data.
+
+name: Auto Merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft, labeled, unlabeled]
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable:
+    if: github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check pause state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          HOLD: ${{ contains(github.event.pull_request.labels.*.name, 'do-not-merge/hold') }}
+        run: |
+          set -euo pipefail
+
+          if [ "$DRAFT" = "true" ] || [ "$HOLD" = "true" ]; then
+            echo "paused=true" >> "$GITHUB_OUTPUT"
+            auto_merge="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+            if [ "$auto_merge" = "true" ]; then
+              gh pr merge --disable-auto "$PR" --repo "$GITHUB_REPOSITORY"
+            fi
+            echo "Auto-merge paused: draft=$DRAFT hold=$HOLD"
+            exit 0
+          fi
+
+          echo "paused=false" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout trusted base
+        if: steps.state.outputs.paused != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+
+      - name: Set up go
+        if: steps.state.outputs.paused != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Judge product autonomy
+        if: steps.state.outputs.paused != 'true'
+        id: judge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          OWNER_GATE_AUTHOR: ${{ github.event.pull_request.user.login }}
+          OWNER_GATE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          OWNER_GATE_PLATFORM_CLEARED: "false"
+          GOPROXY: 'https://goproxy.cn,direct'
+        run: |
+          set -euo pipefail
+
+          diff_file="$RUNNER_TEMP/pr-files.name-status"
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate \
+            --jq '.[] | if .status == "renamed" then "R100\t\(.previous_filename)\t\(.filename)" elif .status == "removed" then "D\t\(.filename)" elif .status == "added" then "A\t\(.filename)" else "M\t\(.filename)" end' \
+            > "$diff_file"
+
+          decision="$(go run ./hack/owner-gate < "$diff_file")"
+          echo "$decision"
+
+          auto_merge="$(jq -r '.autoMergeEligible' <<<"$decision")"
+          reason="$(jq -r '.reason' <<<"$decision")"
+          {
+            echo "eligible=$auto_merge"
+            echo "reason<<OWNER_GATE_EOF"
+            echo "$reason"
+            echo "OWNER_GATE_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Disable auto-merge for non-autonomous PRs
+        if: steps.state.outputs.paused != 'true' && steps.judge.outputs.eligible != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REASON: ${{ steps.judge.outputs.reason }}
+        run: |
+          set -euo pipefail
+
+          auto_merge="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+          if [ "$auto_merge" = "true" ]; then
+            gh pr merge --disable-auto "$PR" --repo "$GITHUB_REPOSITORY"
+          fi
+          echo "Auto-merge not enabled: $REASON"
+
+      - name: Enable native auto-merge
+        if: steps.state.outputs.paused != 'true' && steps.judge.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          auto_merge="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+          if [ "$auto_merge" = "true" ]; then
+            echo "Auto-merge is already enabled for PR #$PR."
+            exit 0
+          fi
+
+          gh pr merge --auto --squash "$PR" --repo "$GITHUB_REPOSITORY" --match-head-commit "$HEAD_SHA"

@@ -1,0 +1,78 @@
+ucloud css	use=css	short=Manage UES (Elasticsearch/OpenSearch) instances
+ucloud css app-version	use=app-version	short=List available UES application versions
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css create	use=create	short=Create UES instance
+  flag=app-name	short=	default=elasticsearch	required=
+  flag=app-version	short=	default=	required=true
+  flag=async	short=	default=false	required=
+  flag=business-id	short=	default=	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=kibana-disk-conf	short=	default=CLOUD_RSSD	required=true
+  flag=kibana-node-conf	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=node-conf	short=	default=	required=true
+  flag=node-count	short=	default=3	required=
+  flag=node-disk-conf	short=	default=CLOUD_RSSD	required=true
+  flag=node-disk-size-gb	short=	default=100	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=service-passwd	short=	default=	required=
+  flag=service-username	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud css delete	use=delete	short=Delete UES instances
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud css describe	use=describe	short=Describe UES instance details
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css disk-limit	use=disk-limit	short=List UES disk size limitations by disk type
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css expand	use=expand	short=Expand UES instance node count
+  flag=async	short=	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=node-count	short=	default=0	required=true
+  flag=node-role	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css list	use=list	short=List UES instances
+  flag=limit	short=	default=30	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css node-conf	use=node-conf	short=List available UES node configurations
+  flag=app-version	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css resize	use=resize	short=Resize UES instance node configuration
+  flag=async	short=	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=node-conf	short=	default=	required=
+  flag=node-disk-size-gb	short=	default=0	required=
+  flag=node-role	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud css restart	use=restart	short=Restart UES instance
+  flag=async	short=	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=

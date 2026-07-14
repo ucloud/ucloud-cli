@@ -82,6 +82,40 @@ func TestDecideOutputFormat(t *testing.T) {
 	}
 }
 
+func TestSyncLegacyJSONFlag(t *testing.T) {
+	origOutput := global.Output
+	origJSON := global.JSON
+	t.Cleanup(func() {
+		global.Output = origOutput
+		global.JSON = origJSON
+	})
+
+	tests := []struct {
+		name       string
+		outputFlag string
+		jsonFlag   bool
+		wantJSON   bool
+	}{
+		{name: "--output json enables legacy JSON", outputFlag: "json", wantJSON: true},
+		{name: "--output table disables legacy JSON", outputFlag: "table", jsonFlag: true, wantJSON: false},
+		{name: "--json still enables legacy JSON", jsonFlag: true, wantJSON: true},
+		{name: "non-TTY default enables legacy JSON", wantJSON: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			global.Output = tc.outputFlag
+			global.JSON = tc.jsonFlag
+
+			syncLegacyJSONFlag(&bytes.Buffer{})
+
+			if global.JSON != tc.wantJSON {
+				t.Errorf("global.JSON = %v, want %v", global.JSON, tc.wantJSON)
+			}
+		})
+	}
+}
+
 // TestProductCtxFormatFinalize is a regression test for the bug where the
 // product cli.Context's output format was frozen at command-tree construction
 // time (buildContext, before cobra parses --output), so an explicit

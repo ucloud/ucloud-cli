@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
 // 回归：oauth profile 已存 AK/SK 时（auth login 保留密钥的常见形态），
@@ -21,14 +21,14 @@ func TestSwitchProfileToAKSKPersistsToDisk(t *testing.T) {
 	credPath := filepath.Join(dir, "credential.json")
 	cliJSON := `[{"profile":"oa","active":true,"region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
 	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"oa","auth_mode":"oauth","access_token":"at","refresh_token":"rt","expires_at":1234567890}]`
-	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
-	if err := ioutil.WriteFile(credPath, []byte(credJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(credPath, []byte(credJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
 
-	m, err := base.NewAggConfigManager(cfgPath, credPath)
+	m, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,16 +37,16 @@ func TestSwitchProfileToAKSKPersistsToDisk(t *testing.T) {
 		t.Fatal("profile oa missing")
 	}
 
-	oldM, oldC := base.AggConfigListIns, base.ConfigIns
-	base.AggConfigListIns, base.ConfigIns = m, cfg
-	defer func() { base.AggConfigListIns, base.ConfigIns = oldM, oldC }()
+	oldM, oldC := platform.AggConfigListIns, platform.ConfigIns
+	platform.AggConfigListIns, platform.ConfigIns = m, cfg
+	defer func() { platform.AggConfigListIns, platform.ConfigIns = oldM, oldC }()
 
 	if err := switchProfileToAKSK(cfg); err != nil {
 		t.Fatal(err)
 	}
 
 	// 重新读盘验证持久化，而非只看内存
-	m2, err := base.NewAggConfigManager(cfgPath, credPath)
+	m2, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,23 +93,23 @@ func TestConfigUpdateAppliesBaseURLBeforeValidation(t *testing.T) {
 	// 存量 base_url 指向必然连不通的地址，复现坏网关现场
 	cliJSON := `[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"http://127.0.0.1:1/","timeout_sec":3,"max_retry_times":0}]`
 	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"up"}]`
-	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
-	if err := ioutil.WriteFile(credPath, []byte(credJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(credPath, []byte(credJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
 
-	m, err := base.NewAggConfigManager(cfgPath, credPath)
+	m, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// GetBizClient 会改写包级全局 ClientConfig/AuthCredential，恢复现场避免测试顺序耦合
-	oldM, oldCC, oldAC := base.AggConfigListIns, base.ClientConfig, base.AuthCredential
-	base.AggConfigListIns = m
+	oldM, oldCC, oldAC := platform.AggConfigListIns, platform.ClientConfig, platform.AuthCredential
+	platform.AggConfigListIns = m
 	defer func() {
-		base.AggConfigListIns, base.ClientConfig, base.AuthCredential = oldM, oldCC, oldAC
+		platform.AggConfigListIns, platform.ClientConfig, platform.AuthCredential = oldM, oldCC, oldAC
 	}()
 
 	cmd := NewCmdConfigUpdate()
@@ -122,7 +122,7 @@ func TestConfigUpdateAppliesBaseURLBeforeValidation(t *testing.T) {
 	cmd.Run(cmd, nil)
 
 	// 重新读盘验证持久化，而非只看内存
-	m2, err := base.NewAggConfigManager(cfgPath, credPath)
+	m2, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,14 +144,14 @@ func TestInitSaveOverwritesExistingOAuthOnlyProfile(t *testing.T) {
 	credPath := filepath.Join(dir, "credential.json")
 	cliJSON := `[{"profile":"oa","active":true,"base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
 	credJSON := `[{"public_key":"","private_key":"","profile":"oa","auth_mode":"oauth","access_token":"at","refresh_token":"rt","expires_at":1234567890}]`
-	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
-	if err := ioutil.WriteFile(credPath, []byte(credJSON), base.LocalFileMode); err != nil {
+	if err := ioutil.WriteFile(credPath, []byte(credJSON), platform.LocalFileMode); err != nil {
 		t.Fatal(err)
 	}
 
-	m, err := base.NewAggConfigManager(cfgPath, credPath)
+	m, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,9 +160,9 @@ func TestInitSaveOverwritesExistingOAuthOnlyProfile(t *testing.T) {
 		t.Fatal("profile oa missing")
 	}
 
-	oldM, oldC := base.AggConfigListIns, base.ConfigIns
-	base.AggConfigListIns, base.ConfigIns = m, cfg
-	defer func() { base.AggConfigListIns, base.ConfigIns = oldM, oldC }()
+	oldM, oldC := platform.AggConfigListIns, platform.ConfigIns
+	platform.AggConfigListIns, platform.ConfigIns = m, cfg
+	defer func() { platform.AggConfigListIns, platform.ConfigIns = oldM, oldC }()
 
 	// 模拟 NewCmdInit Run 完整配置路径对 ConfigIns（即 manager map 内同一指针）的写入
 	clearOAuthState(cfg)
@@ -171,8 +171,8 @@ func TestInitSaveOverwritesExistingOAuthOnlyProfile(t *testing.T) {
 	cfg.Region = "cn-bj2"
 	cfg.Zone = "cn-bj2-04"
 	cfg.ProjectID = "org-new"
-	cfg.Timeout = base.DefaultTimeoutSec
-	cfg.BaseURL = base.DefaultBaseURL
+	cfg.Timeout = platform.DefaultTimeoutSec
+	cfg.BaseURL = platform.DefaultBaseURL
 	cfg.Active = true
 
 	if err := saveInitProfile(cfg); err != nil {
@@ -180,7 +180,7 @@ func TestInitSaveOverwritesExistingOAuthOnlyProfile(t *testing.T) {
 	}
 
 	// 重新读盘验证持久化，而非只看内存
-	m2, err := base.NewAggConfigManager(cfgPath, credPath)
+	m2, err := platform.NewAggConfigManager(cfgPath, credPath)
 	if err != nil {
 		t.Fatal(err)
 	}

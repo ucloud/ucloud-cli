@@ -11,27 +11,30 @@ import (
 
 	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/command"
-	"github.com/ucloud/ucloud-cli/ux"
+	"github.com/ucloud/ucloud-cli/pkg/ui"
 )
 
 func bindRegion(req request.Common, cmd *cobra.Command) {
 	var region string
-	cmd.Flags().StringVar(&region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&region, "region", def.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "region", getRegionList)
 	req.SetRegionRef(&region)
 }
 
 func bindRegionS(region *string, cmd *cobra.Command) {
-	*region = base.ConfigIns.Region
-	cmd.Flags().StringVar(region, "region", base.ConfigIns.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	*region = def.Region
+	cmd.Flags().StringVar(region, "region", def.Region, "Optional. Override default region for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "region", getRegionList)
 }
 
 func bindZone(req request.Common, cmd *cobra.Command) {
 	var zone string
-	cmd.Flags().StringVar(&zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&zone, "zone", def.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(req.GetRegion())
 	})
@@ -55,8 +58,9 @@ func bindZoneEmptyS(zone, region *string, cmd *cobra.Command) {
 }
 
 func bindZoneS(zone, region *string, cmd *cobra.Command) {
-	*zone = base.ConfigIns.Zone
-	cmd.Flags().StringVar(zone, "zone", base.ConfigIns.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
+	def := runtimeDefaults()
+	*zone = def.Zone
+	cmd.Flags().StringVar(zone, "zone", def.Zone, "Optional. Override default availability zone for this command invocation, see 'ucloud region'")
 	command.SetCompletion(cmd, "zone", func() []string {
 		return getZoneList(*region)
 	})
@@ -64,14 +68,16 @@ func bindZoneS(zone, region *string, cmd *cobra.Command) {
 
 func bindProjectID(req request.Common, cmd *cobra.Command) {
 	var project string
-	cmd.Flags().StringVar(&project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	def := runtimeDefaults()
+	cmd.Flags().StringVar(&project, "project-id", def.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	command.SetCompletion(cmd, "project-id", getProjectList)
 	req.SetProjectIdRef(&project)
 }
 
 func bindProjectIDS(project *string, cmd *cobra.Command) {
-	*project = base.ConfigIns.ProjectID
-	cmd.Flags().StringVar(project, "project-id", base.ConfigIns.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
+	def := runtimeDefaults()
+	*project = def.ProjectID
+	cmd.Flags().StringVar(project, "project-id", def.ProjectID, "Optional. Override default project-id for this command invocation, see 'ucloud project list'")
 	command.SetCompletion(cmd, "project-id", getProjectList)
 }
 
@@ -137,7 +143,7 @@ func (c *concurrentAction) actionFuncWrapper(req request.Common) {
 	success, logs := c.actionFunc(req)
 	c.result <- success
 	logs = append([]string{"========================================"}, logs...)
-	base.LogInfo(logs...)
+	platform.LogInfo(logs...)
 	<-c.tokens
 	time.Sleep(time.Second / 5)
 	c.wg.Done()
@@ -146,10 +152,12 @@ func (c *concurrentAction) actionFuncWrapper(req request.Common) {
 func (c *concurrentAction) Do() {
 	count := len(c.reqs)
 	success, fail := 0, 0
-	refresh := ux.NewRefresh()
+	progressOut := platform.Cxt.GetWriter()
+	refresh := ui.NewRefresh(progressOut)
 	//同时执行任务数量大于5时，不再单独显示每一个任务的进行情况，而是聚合显示
 	if count > 5 {
-		ux.Doc.Disable()
+		doc := ui.NewDocument(progressOut)
+		doc.Disable()
 		refresh.Do(fmt.Sprintf("total:%d, doing:%d, success:%d, fail:%d", count, len(c.tokens), success, fail))
 	}
 	go func() {
@@ -164,7 +172,7 @@ func (c *concurrentAction) Do() {
 
 			case <-time.Tick(time.Second / 30):
 				if count == (success+fail) && fail > 0 {
-					fmt.Printf("Check logs in %s\n", base.GetLogFilePath())
+					fmt.Printf("Check logs in %s\n", platform.GetLogFilePath())
 					return
 				}
 				if count > 5 {

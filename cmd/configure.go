@@ -24,7 +24,7 @@ import (
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/command"
 )
 
@@ -47,19 +47,19 @@ func NewCmdInit() *cobra.Command {
 		Short: "Initialize UCloud CLI options",
 		Long:  `Initialize UCloud CLI options such as private-key,public-key,default region,zone and project.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fromOAuth := base.ConfigIns.AuthMode == base.AuthModeOAuth
+			fromOAuth := platform.ConfigIns.AuthMode == platform.AuthModeOAuth
 			if fromOAuth {
-				ok := base.Confirm(false, fmt.Sprintf("Profile '%s' currently uses OAuth login (auth_mode=oauth). Continue with AK/SK setup and switch this profile to key-based auth? (y/n):", base.ConfigIns.Profile))
+				ok := platform.Confirm(false, fmt.Sprintf("Profile '%s' currently uses OAuth login (auth_mode=oauth). Continue with AK/SK setup and switch this profile to key-based auth? (y/n):", platform.ConfigIns.Profile))
 				if !ok {
 					return
 				}
-				clearOAuthState(base.ConfigIns)
+				clearOAuthState(platform.ConfigIns)
 			}
 
-			if base.ConfigIns.PrivateKey != "" && base.ConfigIns.PublicKey != "" {
+			if platform.ConfigIns.PrivateKey != "" && platform.ConfigIns.PublicKey != "" {
 				if fromOAuth {
-					if err := switchProfileToAKSK(base.ConfigIns); err != nil {
-						base.HandleError(err)
+					if err := switchProfileToAKSK(platform.ConfigIns); err != nil {
+						platform.HandleError(err)
 						return
 					}
 				}
@@ -68,11 +68,11 @@ func NewCmdInit() *cobra.Command {
 			}
 
 			fmt.Println(configDesc)
-			base.ConfigIns.ConfigPublicKey()
-			base.ConfigIns.ConfigPrivateKey()
-			base.ConfigIns.ConfigBaseURL()
+			platform.ConfigIns.ConfigPublicKey()
+			platform.ConfigIns.ConfigPrivateKey()
+			platform.ConfigIns.ConfigBaseURL()
 
-			region, err := fetchRegionWithConfig(base.ConfigIns)
+			region, err := fetchRegionWithConfig(platform.ConfigIns)
 			if err != nil {
 				if uErr, ok := err.(uerr.Error); ok {
 					if uErr.Code() == 172 {
@@ -83,35 +83,35 @@ func NewCmdInit() *cobra.Command {
 				fmt.Println(err)
 				return
 			}
-			base.ConfigIns.Region = region.DefaultRegion
-			base.ConfigIns.Zone = region.DefaultZone
+			platform.ConfigIns.Region = region.DefaultRegion
+			platform.ConfigIns.Zone = region.DefaultZone
 			fmt.Printf("Configured default region:%s zone:%s\n", region.DefaultRegion, region.DefaultZone)
 
-			projectID, projectName, err := getDefaultProjectWithConfig(base.ConfigIns)
+			projectID, projectName, err := getDefaultProjectWithConfig(platform.ConfigIns)
 			if err != nil && !errors.Is(err, errNoDefaultProject) {
-				base.HandleError(err)
+				platform.HandleError(err)
 				return
 			}
 			if projectID != "" && projectName != "" {
-				base.ConfigIns.ProjectID = projectID
+				platform.ConfigIns.ProjectID = projectID
 				fmt.Printf("Configured default project:%s %s\n", projectID, projectName)
 			} else {
 				fmt.Println("No default project, skip.")
 			}
-			base.ConfigIns.Timeout = base.DefaultTimeoutSec
-			base.ConfigIns.BaseURL = base.DefaultBaseURL
-			base.ConfigIns.MaxRetryTimes = sdk.Int(base.DefaultMaxRetryTimes)
-			base.ConfigIns.Active = true
-			fmt.Printf("Configured default base url:%s\n", base.ConfigIns.BaseURL)
-			fmt.Printf("Configured default timeout_sec:%ds\n", base.ConfigIns.Timeout)
-			fmt.Printf("Active profile name:%s\n", base.ConfigIns.Profile)
+			platform.ConfigIns.Timeout = platform.DefaultTimeoutSec
+			platform.ConfigIns.BaseURL = platform.DefaultBaseURL
+			platform.ConfigIns.MaxRetryTimes = sdk.Int(platform.DefaultMaxRetryTimes)
+			platform.ConfigIns.Active = true
+			fmt.Printf("Configured default base url:%s\n", platform.ConfigIns.BaseURL)
+			fmt.Printf("Configured default timeout_sec:%ds\n", platform.ConfigIns.Timeout)
+			fmt.Printf("Active profile name:%s\n", platform.ConfigIns.Profile)
 			fmt.Println("You can change the default settings by running 'ucloud config update'")
-			base.ConfigIns.ConfigUploadLog()
-			err = saveInitProfile(base.ConfigIns)
+			platform.ConfigIns.ConfigUploadLog()
+			err = saveInitProfile(platform.ConfigIns)
 			if err != nil {
-				base.HandleError(fmt.Errorf("Error: %v", err))
+				platform.HandleError(fmt.Errorf("Error: %v", err))
 			} else {
-				base.InitConfig()
+				platform.InitConfig()
 				printHello()
 			}
 		},
@@ -121,12 +121,12 @@ func NewCmdInit() *cobra.Command {
 
 // saveInitProfile 持久化 init 完整配置流程的结果；profile 已存在时（OAuth-only profile
 // 切回 AK/SK 的场景）覆盖保存——依赖 ConfigIns 即 manager map 内的同一指针（InitConfig 保证）
-func saveInitProfile(cfg *base.AggConfig) error {
-	return base.AggConfigListIns.UpdateAggConfig(cfg)
+func saveInitProfile(cfg *platform.AggConfig) error {
+	return platform.AggConfigListIns.UpdateAggConfig(cfg)
 }
 
 // clearOAuthState 清除 profile 的 oauth 状态（口径与 'ucloud auth logout' 一致），不落盘
-func clearOAuthState(cfg *base.AggConfig) {
+func clearOAuthState(cfg *platform.AggConfig) {
 	cfg.AuthMode = ""
 	cfg.AccessToken = ""
 	cfg.RefreshToken = ""
@@ -134,27 +134,27 @@ func clearOAuthState(cfg *base.AggConfig) {
 }
 
 // switchProfileToAKSK 把 OAuth profile 切回 AK/SK：清除 oauth 状态并落盘
-func switchProfileToAKSK(cfg *base.AggConfig) error {
+func switchProfileToAKSK(cfg *platform.AggConfig) error {
 	clearOAuthState(cfg)
-	return base.AggConfigListIns.UpdateAggConfig(cfg)
+	return platform.AggConfigListIns.UpdateAggConfig(cfg)
 }
 
 func printHello() {
 	userInfo, err := getUserInfo()
 	if err != nil {
-		base.Cxt.PrintErr(err)
+		platform.Cxt.PrintErr(err)
 		return
 	}
-	base.Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
+	platform.Cxt.Printf("You are logged in as: [%s]\n", userInfo.UserEmail)
 	certified := isUserCertified(userInfo)
 	if !certified {
-		base.Cxt.Println("\nWarning: Please authenticate the account with your valid documentation at 'https://accountv2.ucloud.cn/authentication'.")
+		platform.Cxt.Println("\nWarning: Please authenticate the account with your valid documentation at 'https://accountv2.ucloud.cn/authentication'.")
 	}
-	base.Cxt.Println(helloUcloud)
+	platform.Cxt.Println(helloUcloud)
 }
 
 // 根据用户设置的region和zone,检查其合法性，补上缺失的部分，给出一个合理的符合用户本意设置的region和zone
-func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
+func getReasonableRegionZone(cfg *platform.AggConfig) (string, string, error) {
 	userRegion := cfg.Region
 	userZone := cfg.Zone
 	//如果zone设置了，region不能为空，因为这种情况较难判断给出一个合理的region
@@ -197,7 +197,7 @@ func getReasonableRegionZone(cfg *base.AggConfig) (string, string, error) {
 // NewCmdConfig ucloud config
 func NewCmdConfig() *cobra.Command {
 	var active, upload string
-	cfg := base.AggConfig{}
+	cfg := platform.AggConfig{}
 	cmd := &cobra.Command{
 		Use:     "config",
 		Short:   "add or update configurations",
@@ -210,15 +210,15 @@ func NewCmdConfig() *cobra.Command {
 			}
 
 			if cfg.Timeout < 0 {
-				base.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
+				platform.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
 				return
 			}
 
 			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
-			cacheConfig, ok := base.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
+			cacheConfig, ok := platform.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
 			//如果配置文件中找不到该profile 则添加配置
 			if !ok {
-				cacheConfig = &base.AggConfig{
+				cacheConfig = &platform.AggConfig{
 					PrivateKey:    cfg.PrivateKey,
 					PublicKey:     cfg.PublicKey,
 					Profile:       cfg.Profile,
@@ -241,7 +241,7 @@ func NewCmdConfig() *cobra.Command {
 
 			if cfg.BaseURL == "" {
 				if cacheConfig.BaseURL == "" {
-					cacheConfig.BaseURL = base.DefaultBaseURL
+					cacheConfig.BaseURL = platform.DefaultBaseURL
 				}
 			} else {
 				cacheConfig.BaseURL = cfg.BaseURL
@@ -249,7 +249,7 @@ func NewCmdConfig() *cobra.Command {
 
 			if cfg.Timeout == 0 {
 				if cacheConfig.Timeout == 0 {
-					cacheConfig.Timeout = base.DefaultTimeoutSec
+					cacheConfig.Timeout = platform.DefaultTimeoutSec
 				}
 			} else {
 				cacheConfig.Timeout = cfg.Timeout
@@ -257,7 +257,7 @@ func NewCmdConfig() *cobra.Command {
 
 			if *cfg.MaxRetryTimes == 0 {
 				if *cacheConfig.MaxRetryTimes == 0 {
-					cacheConfig.MaxRetryTimes = sdk.Int(base.DefaultMaxRetryTimes)
+					cacheConfig.MaxRetryTimes = sdk.Int(platform.DefaultMaxRetryTimes)
 				}
 			} else {
 				cacheConfig.MaxRetryTimes = cfg.MaxRetryTimes
@@ -273,7 +273,7 @@ func NewCmdConfig() *cobra.Command {
 			//确保设置的Region和Zone真实存在
 			region, zone, err := getReasonableRegionZone(cacheConfig)
 			if err != nil {
-				base.HandleError(fmt.Errorf("verify region failed: %v", err))
+				platform.HandleError(fmt.Errorf("verify region failed: %v", err))
 			} else {
 				cacheConfig.Region = region
 				cacheConfig.Zone = zone
@@ -285,13 +285,13 @@ func NewCmdConfig() *cobra.Command {
 				if cacheConfig.ProjectID == "" {
 					id, _, err := getDefaultProjectWithConfig(cacheConfig)
 					if err != nil {
-						base.HandleError(fmt.Errorf("fetch default project failed: %v", err))
+						platform.HandleError(fmt.Errorf("fetch default project failed: %v", err))
 					} else {
 						cacheConfig.ProjectID = id
 					}
 				}
 			} else {
-				cfg.ProjectID = base.PickResourceID(cfg.ProjectID)
+				cfg.ProjectID = platform.PickResourceID(cfg.ProjectID)
 				projects, err := fetchProjectWithConfig(cacheConfig)
 				if err != nil {
 					cacheConfig.ProjectID = cfg.ProjectID
@@ -299,9 +299,9 @@ func NewCmdConfig() *cobra.Command {
 					if ok := projects[cfg.ProjectID]; ok {
 						cacheConfig.ProjectID = cfg.ProjectID
 					} else {
-						base.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
+						platform.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
 						if ok := projects[cacheConfig.ProjectID]; !ok {
-							base.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
+							platform.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
 						}
 					}
 				}
@@ -313,7 +313,7 @@ func NewCmdConfig() *cobra.Command {
 				} else if active == "false" {
 					cacheConfig.Active = false
 				} else {
-					base.HandleError(fmt.Errorf("flag active should be true or false. received %s", active))
+					platform.HandleError(fmt.Errorf("flag active should be true or false. received %s", active))
 				}
 			}
 
@@ -323,13 +323,13 @@ func NewCmdConfig() *cobra.Command {
 				} else if upload == "false" {
 					cacheConfig.AgreeUploadLog = false
 				} else {
-					base.HandleError(fmt.Errorf("flag agree-upload-log should be true or false. received %s", active))
+					platform.HandleError(fmt.Errorf("flag agree-upload-log should be true or false. received %s", active))
 				}
 			}
 
-			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			err = platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 			}
 		},
 	}
@@ -349,7 +349,7 @@ func NewCmdConfig() *cobra.Command {
 
 	command.SetFlagValues(cmd, "active", "true", "false")
 	command.SetFlagValues(cmd, "agree-upload-log", "true", "false")
-	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return platform.AggConfigListIns.GetProfileNameList() })
 	command.SetCompletion(cmd, "region", getRegionList)
 	command.SetCompletion(cmd, "project-id", getProjectList)
 	command.SetCompletion(cmd, "zone", func() []string {
@@ -366,7 +366,7 @@ func NewCmdConfig() *cobra.Command {
 // NewCmdConfigAdd ucloud config add
 func NewCmdConfigAdd() *cobra.Command {
 	var active, upload string
-	cfg := &base.AggConfig{}
+	cfg := &platform.AggConfig{}
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "add configuration",
@@ -374,19 +374,19 @@ func NewCmdConfigAdd() *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			region, zone, err := getReasonableRegionZone(cfg)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 			}
 			cfg.Region = region
 			cfg.Zone = zone
 
 			project, err := getReasonableProject(cfg)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 			}
 			cfg.ProjectID = project
 
 			if cfg.Timeout <= 0 {
-				base.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
+				platform.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
 				return
 			}
 
@@ -406,9 +406,9 @@ func NewCmdConfigAdd() *cobra.Command {
 				fmt.Printf("agree-upload-log should be true or false, received %s\n", active)
 			}
 
-			err = base.AggConfigListIns.Append(cfg)
+			err = platform.AggConfigListIns.Append(cfg)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 				return
 			}
 		},
@@ -422,15 +422,15 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
-	flags.StringVar(&cfg.BaseURL, "base-url", base.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
-	flags.IntVar(&cfg.Timeout, "timeout-sec", base.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
-	cfg.MaxRetryTimes = flags.Int("max-retry-times", base.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
+	flags.StringVar(&cfg.BaseURL, "base-url", platform.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.IntVar(&cfg.Timeout, "timeout-sec", platform.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
+	cfg.MaxRetryTimes = flags.Int("max-retry-times", platform.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
 	flags.StringVar(&upload, "agree-upload-log", "false", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
 	command.SetFlagValues(cmd, "active", "true", "false")
 	command.SetFlagValues(cmd, "agree-upload-log", "true", "false")
-	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return platform.AggConfigListIns.GetProfileNameList() })
 	command.SetCompletion(cmd, "region", getRegionList)
 	command.SetCompletion(cmd, "project-id", getProjectList)
 	command.SetCompletion(cmd, "zone", func() []string {
@@ -447,16 +447,16 @@ func NewCmdConfigAdd() *cobra.Command {
 // NewCmdConfigUpdate ucloud config update
 func NewCmdConfigUpdate() *cobra.Command {
 	var timeout, active, maxRetries, upload string
-	cfg := &base.AggConfig{}
+	cfg := &platform.AggConfig{}
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "update configurations",
 		Long:  "update configurations",
 		Run: func(c *cobra.Command, args []string) {
 			//cacheConfig AggConfig read from $HOME/.ucloud/config.json+credential.json or empty shell
-			cacheConfig, ok := base.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
+			cacheConfig, ok := platform.AggConfigListIns.GetAggConfigByProfile(cfg.Profile)
 			if !ok {
-				base.HandleError(fmt.Errorf("profile %s not exist", cfg.Profile))
+				platform.HandleError(fmt.Errorf("profile %s not exist", cfg.Profile))
 				return
 			}
 
@@ -469,7 +469,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 
 			//如果配置了公私钥，则先更新让其生效, 为接下来拉取Region,Zone做准备
 			if cfg.PrivateKey != "" || cfg.PublicKey != "" {
-				base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+				platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			}
 
 			//先应用连接类参数(base-url/timeout-sec/max-retry-times)，确保接下来的远程校验
@@ -481,28 +481,28 @@ func NewCmdConfigUpdate() *cobra.Command {
 			if timeout != "" {
 				seconds, err := strconv.Atoi(timeout)
 				if err != nil {
-					base.HandleError(fmt.Errorf("parse timeout-sec failed: %v", err))
+					platform.HandleError(fmt.Errorf("parse timeout-sec failed: %v", err))
 					return
 				}
 				cacheConfig.Timeout = seconds
 			}
 
 			if cacheConfig.Timeout <= 0 {
-				base.HandleError(fmt.Errorf("timeout-sec must be greater than 0, accept %d", cfg.Timeout))
+				platform.HandleError(fmt.Errorf("timeout-sec must be greater than 0, accept %d", cfg.Timeout))
 				return
 			}
 
 			if maxRetries != "" {
 				times, err := strconv.Atoi(maxRetries)
 				if err != nil {
-					base.HandleError(fmt.Errorf("parse max-retry-times failed: %v", err))
+					platform.HandleError(fmt.Errorf("parse max-retry-times failed: %v", err))
 					return
 				}
 				cacheConfig.MaxRetryTimes = &times
 			}
 
 			if *cacheConfig.MaxRetryTimes < 0 {
-				base.HandleError(fmt.Errorf("max-retry-timesc must be greater than or equal to 0, accept %d", cfg.MaxRetryTimes))
+				platform.HandleError(fmt.Errorf("max-retry-timesc must be greater than or equal to 0, accept %d", cfg.MaxRetryTimes))
 				return
 			}
 
@@ -516,7 +516,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 
 			region, zone, err := getReasonableRegionZone(cacheConfig)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 				return
 			}
 
@@ -524,12 +524,12 @@ func NewCmdConfigUpdate() *cobra.Command {
 			cacheConfig.Zone = zone
 
 			if cfg.ProjectID != "" {
-				cacheConfig.ProjectID = base.PickResourceID(cfg.ProjectID)
+				cacheConfig.ProjectID = platform.PickResourceID(cfg.ProjectID)
 			}
 
 			project, err := getReasonableProject(cacheConfig)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 			}
 			cacheConfig.ProjectID = project
 
@@ -545,9 +545,9 @@ func NewCmdConfigUpdate() *cobra.Command {
 				cacheConfig.AgreeUploadLog = false
 			}
 
-			err = base.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			err = platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			if err != nil {
-				base.HandleError(err)
+				platform.HandleError(err)
 			}
 		},
 	}
@@ -566,7 +566,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")
 	flags.StringVar(&upload, "agree-upload-log", "", "Optional. Agree to upload log in local file ~/.ucloud/cli.log or not. Accept valeus: true or false")
 
-	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return platform.AggConfigListIns.GetProfileNameList() })
 	command.SetCompletion(cmd, "region", getRegionList)
 	command.SetCompletion(cmd, "project-id", getProjectList)
 	command.SetCompletion(cmd, "zone", func() []string {
@@ -587,7 +587,7 @@ func NewCmdConfigList() *cobra.Command {
 		Short: "list all configurations",
 		Long:  `list all configurations`,
 		Run: func(c *cobra.Command, args []string) {
-			base.ListAggConfig(global.JSON)
+			platform.ListAggConfig(global.JSON)
 		},
 	}
 	return cmd
@@ -602,7 +602,7 @@ func NewCmdConfigDelete() *cobra.Command {
 		Long:    "delete configurations by profile name",
 		Example: "ucloud config delete --profile test",
 		Run: func(c *cobra.Command, args []string) {
-			profiles := base.AggConfigListIns.GetProfileNameList()
+			profiles := platform.AggConfigListIns.GetProfileNameList()
 			allProfileMap := make(map[string]bool)
 			for _, p := range profiles {
 				allProfileMap[p] = true
@@ -610,18 +610,18 @@ func NewCmdConfigDelete() *cobra.Command {
 
 			for _, p := range profileList {
 				if allProfileMap[p] {
-					err := base.AggConfigListIns.DeleteByProfile(p)
+					err := platform.AggConfigListIns.DeleteByProfile(p)
 					if err != nil {
-						base.HandleError(err)
+						platform.HandleError(err)
 					}
 				} else {
-					base.HandleError(fmt.Errorf("profile %s does not exist", p))
+					platform.HandleError(fmt.Errorf("profile %s does not exist", p))
 				}
 			}
 		},
 	}
 	cmd.Flags().StringSliceVar(&profileList, "profile", nil, "Required. Name of settings item")
 	cmd.MarkFlagRequired("profile")
-	command.SetCompletion(cmd, "profile", func() []string { return base.AggConfigListIns.GetProfileNameList() })
+	command.SetCompletion(cmd, "profile", func() []string { return platform.AggConfigListIns.GetProfileNameList() })
 	return cmd
 }

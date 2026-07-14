@@ -1,0 +1,96 @@
+ucloud urocketmq group create	project-id	dynamic
+ucloud urocketmq group create	region	dynamic
+ucloud urocketmq group create	service-id	dynamic
+ucloud urocketmq group delete	group-name	dynamic
+ucloud urocketmq group delete	project-id	dynamic
+ucloud urocketmq group delete	region	dynamic
+ucloud urocketmq group delete	service-id	dynamic
+ucloud urocketmq group list	project-id	dynamic
+ucloud urocketmq group list	region	dynamic
+ucloud urocketmq group list	service-id	dynamic
+ucloud urocketmq message query-by-id	project-id	dynamic
+ucloud urocketmq message query-by-id	region	dynamic
+ucloud urocketmq message query-by-id	service-id	dynamic
+ucloud urocketmq message query-by-id	topic-name	dynamic
+ucloud urocketmq message query-by-key	id-only	static	false,true
+ucloud urocketmq message query-by-key	project-id	dynamic
+ucloud urocketmq message query-by-key	region	dynamic
+ucloud urocketmq message query-by-key	service-id	dynamic
+ucloud urocketmq message query-by-key	topic-name	dynamic
+ucloud urocketmq message query-by-topic	project-id	dynamic
+ucloud urocketmq message query-by-topic	region	dynamic
+ucloud urocketmq message query-by-topic	service-id	dynamic
+ucloud urocketmq message query-by-topic	topic-name	dynamic
+ucloud urocketmq service create	charge-type	static	Dynamic,Month,Year
+ucloud urocketmq service create	edition	static	Enterprise
+ucloud urocketmq service create	mode	static	PrivateNet
+ucloud urocketmq service create	project-id	dynamic
+ucloud urocketmq service create	public-version	static	v4,v5
+ucloud urocketmq service create	region	dynamic
+ucloud urocketmq service create	subnet-id	dynamic
+ucloud urocketmq service create	tps	static	10000,100000,20000,200000,50000
+ucloud urocketmq service create	vpc-id	dynamic
+ucloud urocketmq service delete	project-id	dynamic
+ucloud urocketmq service delete	region	dynamic
+ucloud urocketmq service delete	service-id	dynamic
+ucloud urocketmq service get	project-id	dynamic
+ucloud urocketmq service get	region	dynamic
+ucloud urocketmq service get	service-id	dynamic
+ucloud urocketmq service list	all-region	static	false,true
+ucloud urocketmq service list	id-only	static	false,true
+ucloud urocketmq service list	project-id	dynamic
+ucloud urocketmq service list	region	dynamic
+ucloud urocketmq service price	charge-type	static	Dynamic,Month,Year
+ucloud urocketmq service price	edition	static	Enterprise
+ucloud urocketmq service price	mode	static	PrivateNet
+ucloud urocketmq service price	project-id	dynamic
+ucloud urocketmq service price	public-version	static	v4,v5
+ucloud urocketmq service price	region	dynamic
+ucloud urocketmq service price	tps	static	10000,100000,20000,200000,50000
+ucloud urocketmq service update-name	project-id	dynamic
+ucloud urocketmq service update-name	region	dynamic
+ucloud urocketmq service update-name	service-id	dynamic
+ucloud urocketmq service update-remark	project-id	dynamic
+ucloud urocketmq service update-remark	region	dynamic
+ucloud urocketmq service update-remark	service-id	dynamic
+ucloud urocketmq token create	allow-consume-topic-list	dynamic
+ucloud urocketmq token create	allow-produce-topic-list	dynamic
+ucloud urocketmq token create	project-id	dynamic
+ucloud urocketmq token create	region	dynamic
+ucloud urocketmq token create	service-id	dynamic
+ucloud urocketmq token create	topic-consume-perm	static	ALL,NONE,PART
+ucloud urocketmq token create	topic-produce-perm	static	ALL,NONE,PART
+ucloud urocketmq token delete	project-id	dynamic
+ucloud urocketmq token delete	region	dynamic
+ucloud urocketmq token delete	service-id	dynamic
+ucloud urocketmq token delete	token-id	dynamic
+ucloud urocketmq token get	project-id	dynamic
+ucloud urocketmq token get	region	dynamic
+ucloud urocketmq token get	service-id	dynamic
+ucloud urocketmq token get	token-id	dynamic
+ucloud urocketmq token list	project-id	dynamic
+ucloud urocketmq token list	region	dynamic
+ucloud urocketmq token list	service-id	dynamic
+ucloud urocketmq token update	allow-consume-topic-list	dynamic
+ucloud urocketmq token update	allow-produce-topic-list	dynamic
+ucloud urocketmq token update	project-id	dynamic
+ucloud urocketmq token update	region	dynamic
+ucloud urocketmq token update	service-id	dynamic
+ucloud urocketmq token update	token-id	dynamic
+ucloud urocketmq token update	topic-consume-perm	static	ALL,NONE,PART
+ucloud urocketmq token update	topic-produce-perm	static	ALL,NONE,PART
+ucloud urocketmq topic create	message-type	static	Delay,GlobalSequence,Normal,PartitionSequence,Transaction
+ucloud urocketmq topic create	project-id	dynamic
+ucloud urocketmq topic create	region	dynamic
+ucloud urocketmq topic create	service-id	dynamic
+ucloud urocketmq topic delete	project-id	dynamic
+ucloud urocketmq topic delete	region	dynamic
+ucloud urocketmq topic delete	service-id	dynamic
+ucloud urocketmq topic delete	topic-name	dynamic
+ucloud urocketmq topic list	project-id	dynamic
+ucloud urocketmq topic list	region	dynamic
+ucloud urocketmq topic list	service-id	dynamic
+ucloud urocketmq topic update	project-id	dynamic
+ucloud urocketmq topic update	region	dynamic
+ucloud urocketmq topic update	service-id	dynamic
+ucloud urocketmq topic update	topic-name	dynamic

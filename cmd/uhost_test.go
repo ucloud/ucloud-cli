@@ -1,3 +1,6 @@
+//go:build live
+// +build live
+
 package cmd
 
 import (
@@ -8,51 +11,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
-
+	svcuhost "github.com/ucloud/ucloud-sdk-go/services/uhost"
 	sdk "github.com/ucloud/ucloud-sdk-go/ucloud"
 
-	"github.com/ucloud/ucloud-cli/base"
+	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
 	"github.com/ucloud/ucloud-cli/products/uhost"
 )
 
 // uhost_test.go drives the live UHost flow through the migrated products/uhost
-// command tree (uhost moved out of cmd in Part 6). It hits the real API and
-// needs valid credentials, so it is gated by name — run the rest of the suite
-// with `go test ./... -skip TestUhost`. The image-id lookup the old test did via
+// command tree (uhost moved out of cmd in Part 6). It hits the real API,
+// creates paid resources, and needs valid credentials, so it is gated behind
+// the `live` build tag. Run it explicitly with:
+// `go test -tags live ./cmd -run '^TestUhost$' -count=1`.
+// The image-id lookup the old test did via
 // the cmd-local NewCmdUImageList/ImageRow shim is now a direct DescribeImage SDK
 // call (image is served by the uhost SDK). create/delete narration now flows
 // through ctx.NewProgress → ctx.ProgressWriter (the ctx Out buffer in table
-// mode) instead of the global ux.Doc, so the test captures the ctx Out buffer.
-
-// subCmd returns the child of root whose Use matches name.
-func subCmd(t *testing.T, root *cobra.Command, name string) *cobra.Command {
-	for _, c := range root.Commands() {
-		if c.Use == name {
-			return c
-		}
-	}
-	t.Fatalf("uhost subcommand %q not found", name)
-	return nil
-}
-
-func topLevelCmd(t *testing.T, commands []*cobra.Command, name string) *cobra.Command {
-	t.Helper()
-	for _, c := range commands {
-		if c.Use == name {
-			return c
-		}
-	}
-	t.Fatalf("product top-level command %q not found", name)
-	return nil
-}
+// mode) instead of the old global progress document, so the test captures the
+// ctx Out buffer.
 
 // fetchLiveImageID returns the first Available Base image id via DescribeImage.
 func fetchLiveImageID(t *testing.T) string {
-	req := base.BizClient.NewDescribeImageRequest()
+	client := newServiceClient(svcuhost.NewClient)
+	req := client.NewDescribeImageRequest()
 	req.ImageType = sdk.String("Base")
-	resp, err := base.BizClient.DescribeImage(req)
+	resp, err := client.DescribeImage(req)
 	if err != nil {
 		t.Fatalf("unexpected error fetching image list: %v", err)
 	}
@@ -66,34 +51,46 @@ func fetchLiveImageID(t *testing.T) string {
 }
 
 func TestUhost(t *testing.T) {
-	base.InitConfig()
+	platform.InitConfig()
 	var out bytes.Buffer
 	// Buffer-backed ctx (table mode): create/delete narration via ctx.NewProgress
 	// routes to ProgressWriter == Out; the cmd-package completion providers + real
 	// config preserve the live behaviour.
 	ctx := cli.NewContext(cli.Deps{
-		In:          strings.NewReader(""),
-		Out:         &out,
-		Err:         &out,
-		Format:      cli.OutputTable,
-		Config:      base.ConfigIns,
-		RegionList:  getRegionList,
-		ZoneList:    getZoneList,
-		ProjectList: getProjectList,
-		AllRegions:  getAllRegions,
+		In:     strings.NewReader(""),
+		Out:    &out,
+		Err:    &out,
+		Format: cli.OutputTable,
+		DefaultsProvider: func() command.Defaults {
+			return command.Defaults{Region: platform.ConfigIns.Region, Zone: platform.ConfigIns.Zone, ProjectID: platform.ConfigIns.ProjectID}
+		},
+		RegionList:      getRegionList,
+		ZoneList:        getZoneList,
+		ProjectList:     getProjectList,
+		AllRegions:      getAllRegions,
+		ClientConfig:    func() *sdk.Config { return platform.ClientConfig },
+		BuildCredential: platform.BuildCredential,
+		AttachHandlers:  platform.AttachHandlers,
 	})
 	root := topLevelCmd(t, uhost.New().NewCommand(ctx), "uhost")
 
 	imageID := fetchLiveImageID(t)
 
-	run := func(name string, flags []string) string {
+	runE := func(name string, flags []string) (string, error) {
 		out.Reset()
 		subCmd(t, root, name)
 		root.SetArgs(append([]string{name}, flags...))
 		if err := root.Execute(); err != nil {
-			t.Fatalf("unexpected error executing %s: %v, flags: %v", name, err, flags)
+			return out.String(), fmt.Errorf("unexpected error executing %s: %w, flags: %v", name, err, flags)
 		}
-		return out.String()
+		return out.String(), nil
+	}
+	run := func(name string, flags []string) string {
+		content, err := runE(name, flags)
+		if err != nil {
+			t.Fatalf("%v, output: %s", err, content)
+		}
+		return content
 	}
 
 	createOut := run("create", []string{
@@ -113,6 +110,18 @@ func TestUhost(t *testing.T) {
 	}
 	uhostID := m[1]
 	idFlag := fmt.Sprintf("--uhost-id=%s", uhostID)
+	deleted := false
+	defer func() {
+		if deleted {
+			return
+		}
+		content, err := runE("delete", []string{"--yes", "--destroy", idFlag})
+		if err != nil {
+			t.Logf("cleanup delete failed for %s: %v, output: %s", uhostID, err, content)
+			return
+		}
+		t.Logf("cleanup delete succeeded for %s: %s", uhostID, content)
+	}()
 
 	assertRun := func(name string, flags []string, re *regexp.Regexp) {
 		content := run(name, flags)
@@ -128,4 +137,5 @@ func TestUhost(t *testing.T) {
 	assertRun("start", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is starting\.\.\.done`))
 	assertRun("stop", []string{idFlag}, regexp.MustCompile(`uhost\[([\w-]+)\] is shutting down\.\.\.done`))
 	run("delete", []string{"--yes", "--destroy", idFlag})
+	deleted = true
 }

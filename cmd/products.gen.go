@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/products/css"
 	"github.com/ucloud/ucloud-cli/products/eip"
 	"github.com/ucloud/ucloud-cli/products/firewall"
 	"github.com/ucloud/ucloud-cli/products/globalssh"
@@ -21,6 +22,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
 	"github.com/ucloud/ucloud-cli/products/upfs"
 	"github.com/ucloud/ucloud-cli/products/uphost"
+	"github.com/ucloud/ucloud-cli/products/urocketmq"
 	"github.com/ucloud/ucloud-cli/products/usnap"
 	"github.com/ucloud/ucloud-cli/products/vpc"
 )
@@ -28,6 +30,7 @@ import (
 // registeredProducts returns the platform-registered products.
 func registeredProducts() []cli.Product {
 	return []cli.Product{
+		css.New(),
 		eip.New(),
 		firewall.New(),
 		globalssh.New(),
@@ -46,6 +49,7 @@ func registeredProducts() []cli.Product {
 		umodelverse.New(),
 		upfs.New(),
 		uphost.New(),
+		urocketmq.New(),
 		usnap.New(),
 		vpc.New(),
 	}
