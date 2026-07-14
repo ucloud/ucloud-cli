@@ -10,3 +10,10 @@ type ImageRow struct {
 	CreationTime      string
 	State             string
 }
+
+// Image-state constants mirrored from the uhost image product. Used by list to
+// filter to Available images only.
+const (
+	imageStateAvailable   = "Available"
+	imageStateUnavailable = "Unavailable"
+)

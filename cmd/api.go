@@ -18,7 +18,6 @@ import (
 
 	"github.com/ucloud/ucloud-cli/base"
 	"github.com/ucloud/ucloud-cli/model/status"
-	"github.com/ucloud/ucloud-cli/products/ulhost"
 	"github.com/ucloud/ucloud-cli/ux"
 )
 
@@ -27,8 +26,18 @@ type RepeatsConfig struct {
 	IDInResp string
 }
 
-var RepeatsSupportedAPI = map[string]RepeatsConfig{
-	"CreateULHostInstance": {Poller: ulhost.Spoller, IDInResp: "ULHostId"},
+// RepeatsSupportedAPI maps a repeatable Action to its polling config. The map
+// is built lazily from repeatsSupportedAPI because each Poller captures an
+// io.Writer from NewCmdAPI's out, which is not available at package init.
+var RepeatsSupportedAPI = map[string]RepeatsConfig{}
+
+// initRepeatsSupportedAPI populates RepeatsSupportedAPI with the poller for the
+// given writer. Called from NewCmdAPI (where out is known). Idempotent.
+func initRepeatsSupportedAPI(out io.Writer) {
+	RepeatsSupportedAPI["CreateULHostInstance"] = RepeatsConfig{
+		Poller:   newULHostPoller(out),
+		IDInResp: "ULHostId",
+	}
 }
 
 const ActionField = "Action"
@@ -45,6 +54,7 @@ Options:
 
 // NewCmdAPI ucloud api --xkey xvalue
 func NewCmdAPI(out io.Writer) *cobra.Command {
+	initRepeatsSupportedAPI(out)
 	return &cobra.Command{
 		Use:   "api",
 		Short: "Call API",

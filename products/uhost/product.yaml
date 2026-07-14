@@ -1,7 +1,7 @@
 # products/uhost/product.yaml — uhost 产品元数据(归属真源,owner 自治维护)
 name: uhost
 owners:
-  - Episkey-G
+  - kai.zhao
 commands:
   - uhost
   - image

@@ -36,16 +36,19 @@ func newPoweroff(ctx *cli.Context) *cobra.Command {
 			if !ok {
 				return
 			}
+			results := []cli.OpResultRow{}
 			for _, id := range *ulhostIDs {
 				id = ctx.PickResourceID(id)
 				req.ULHostId = &id
 				resp, err := client.PoweroffULHostInstance(req)
 				if err != nil {
 					ctx.HandleError(err)
-				} else {
-					fmt.Fprintf(w, "ulhost[%v] is power off\n", resp.ULHostId)
+					continue
 				}
+				fmt.Fprintf(w, "ulhost[%v] is power off\n", resp.ULHostId)
+				results = append(results, cli.OpResultRow{ResourceID: resp.ULHostId, Action: "poweroff", Status: "Stopped"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	cmd.Flags().SortFlags = false

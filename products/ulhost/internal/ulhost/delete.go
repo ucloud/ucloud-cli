@@ -34,6 +34,7 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 			}
 			req.ReleaseUDisk = sdk.Bool(releaseUDisk)
 			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, id := range *ulhostIDs {
 				id = ctx.PickResourceID(id)
 				req.ULHostId = sdk.String(id)
@@ -42,12 +43,16 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 					ctx.HandleError(err)
 					continue
 				}
+				status := "Deleted"
 				if resp.InRecycle == "Yes" {
+					status = "Recycled"
 					fmt.Fprintf(w, "ulhost[%s] has been moved to recycle bin\n", resp.ULHostId)
 				} else {
 					fmt.Fprintf(w, "ulhost[%s] deleted\n", resp.ULHostId)
 				}
+				results = append(results, cli.OpResultRow{ResourceID: resp.ULHostId, Action: "delete", Status: status})
 			}
+			ctx.EmitResult(results...)
 			return nil
 		},
 	}

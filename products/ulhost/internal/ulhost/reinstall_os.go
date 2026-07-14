@@ -39,6 +39,7 @@ func newReinstallOS(ctx *cli.Context) *cobra.Command {
 			} else {
 				ctx.PollerTo(w, describeULHostByID(ctx, *req.ProjectId, *req.Region)).Spoll(resp.ULHostId, text, []string{HOST_RUNNING, HOST_FAIL})
 			}
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.ULHostId, Action: "reinstall-os", Status: "Reinstalling"})
 		},
 	}
 	flags := cmd.Flags()

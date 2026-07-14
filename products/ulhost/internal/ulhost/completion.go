@@ -11,7 +11,7 @@ import (
 )
 
 // completion.go holds the cross-product completion-data fetchers that ulhost's
-// flags need (--ulhost-id, --image-id). Each is a self-contained SDK call
+// flags need (--ulhost-id, --bundle-id). Each is a self-contained SDK call
 // (NOT imported — products stay boundary-isolated), with cli.NewServiceClient.
 
 // getULHostList returns "ULHostId/Name" completion candidates filtered by states
@@ -39,17 +39,6 @@ func getULHostList(ctx *cli.Context, states []string, project, region string) []
 		}
 	}
 	return list
-}
-
-// getULHostImageList returns "ImageId/ImageName" completion candidates for
-// ulhost images. Uses the ucompshare DescribeULHostImage API if available,
-// otherwise falls back to listing from the uhost image API filtered for ulhost.
-func getULHostImageList(ctx *cli.Context, project, region string) []string {
-	// ULHost images are queried through the ucompshare service; the SDK
-	// does not expose a separate DescribeULHostImage in the public SDK,
-	// so we provide basic completion via the uhost image API as a fallback.
-	// Users can also use `ucloud ulhost image list` to browse available images.
-	return nil
 }
 
 // formatBundleInfo returns a human-readable description of a bundle.

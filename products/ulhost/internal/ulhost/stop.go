@@ -24,21 +24,24 @@ func newStop(ctx *cli.Context) *cobra.Command {
 		Example: "ucloud ulhost stop --ulhost-id ulhost-xxx1,ulhost-xxx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, id := range *ulhostIDs {
 				id = ctx.PickResourceID(id)
 				req.ULHostId = &id
 				resp, err := client.StopULHostInstance(req)
 				if err != nil {
 					ctx.HandleError(err)
-				} else {
-					text := fmt.Sprintf("ulhost[%v] is shutting down", resp.ULHostId)
-					if *async {
-						fmt.Fprintln(w, text)
-					} else {
-						ctx.PollerTo(w, describeULHostByID(ctx, *req.ProjectId, *req.Region)).Spoll(resp.ULHostId, text, []string{HOST_STOPPED, HOST_FAIL})
-					}
+					continue
 				}
+				text := fmt.Sprintf("ulhost[%v] is shutting down", resp.ULHostId)
+				if *async {
+					fmt.Fprintln(w, text)
+				} else {
+					ctx.PollerTo(w, describeULHostByID(ctx, *req.ProjectId, *req.Region)).Spoll(resp.ULHostId, text, []string{HOST_STOPPED, HOST_FAIL})
+				}
+				results = append(results, cli.OpResultRow{ResourceID: resp.ULHostId, Action: "stop", Status: "Stopping"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	cmd.Flags().SortFlags = false

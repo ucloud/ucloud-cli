@@ -29,6 +29,7 @@ func newModifyAttribute(ctx *cli.Context) *cobra.Command {
 				return
 			}
 			fmt.Fprintf(w, "ulhost[%s] attribute modified\n", resp.ULHostId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.ULHostId, Action: "modify-attribute", Status: "OK"})
 		},
 	}
 	flags := cmd.Flags()

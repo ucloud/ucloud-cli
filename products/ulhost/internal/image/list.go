@@ -38,7 +38,7 @@ func newList(ctx *cli.Context) *cobra.Command {
 				row.ExtensibleFeature = strings.Join(image.Features, ",")
 				row.CreationTime = common.FormatDate(image.CreateTime)
 				row.State = image.State
-				if row.State == "Available" {
+				if row.State == imageStateAvailable {
 					list = append(list, row)
 				}
 			}

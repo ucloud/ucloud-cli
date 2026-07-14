@@ -46,6 +46,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 				block := prog.NewBlock()
 				prog.Sspoll(sdescribeULHostByID(ctx), resp.ULHostId, text, []string{HOST_RUNNING, HOST_FAIL}, block, &req.CommonBase)
 			}
+			ctx.EmitResult(cli.OpResultRow{ResourceID: resp.ULHostId, Action: "create", Status: "Initializing"})
 			return nil
 		},
 	}

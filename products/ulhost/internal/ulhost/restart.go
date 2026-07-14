@@ -24,21 +24,24 @@ func newReboot(ctx *cli.Context) *cobra.Command {
 		Example: "ucloud ulhost restart --ulhost-id ulhost-xxx1,ulhost-xxx2",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := ctx.ProgressWriter()
+			results := []cli.OpResultRow{}
 			for _, id := range *ulhostIDs {
 				id = ctx.PickResourceID(id)
 				req.ULHostId = &id
 				resp, err := client.RebootULHostInstance(req)
 				if err != nil {
 					ctx.HandleError(err)
-				} else {
-					text := fmt.Sprintf("ulhost[%v] is restarting", resp.ULHostId)
-					if *async {
-						fmt.Fprintln(w, text)
-					} else {
-						ctx.PollerTo(w, describeULHostByID(ctx, *req.ProjectId, *req.Region)).Spoll(resp.ULHostId, text, []string{HOST_RUNNING, HOST_FAIL})
-					}
+					continue
 				}
+				text := fmt.Sprintf("ulhost[%v] is restarting", resp.ULHostId)
+				if *async {
+					fmt.Fprintln(w, text)
+				} else {
+					ctx.PollerTo(w, describeULHostByID(ctx, *req.ProjectId, *req.Region)).Spoll(resp.ULHostId, text, []string{HOST_RUNNING, HOST_FAIL})
+				}
+				results = append(results, cli.OpResultRow{ResourceID: resp.ULHostId, Action: "restart", Status: "Rebooting"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	cmd.Flags().SortFlags = false

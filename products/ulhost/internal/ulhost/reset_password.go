@@ -26,6 +26,7 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 			w := ctx.ProgressWriter()
 			// Encode password to base64
 			req.Password = sdk.String(base64.StdEncoding.EncodeToString([]byte(*req.Password)))
+			results := []cli.OpResultRow{}
 			for _, id := range *ulhostIDs {
 				id = ctx.PickResourceID(id)
 				req.ULHostId = &id
@@ -35,7 +36,9 @@ func newResetPassword(ctx *cli.Context) *cobra.Command {
 					continue
 				}
 				fmt.Fprintf(w, "ulhost[%s] reset password\n", resp.ULHostId)
+				results = append(results, cli.OpResultRow{ResourceID: resp.ULHostId, Action: "reset-password", Status: "OK"})
 			}
+			ctx.EmitResult(results...)
 		},
 	}
 	flags := cmd.Flags()
