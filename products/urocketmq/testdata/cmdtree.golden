@@ -49,7 +49,7 @@ ucloud urocketmq service create	use=create	short=Create a URocketMQ service inst
   flag=mode	short=	default=PrivateNet	required=true
   flag=name	short=	default=	required=true
   flag=project-id	short=	default=	required=
-  flag=public-version	short=	default=	required=true
+  flag=public-version	short=	default=	required=
   flag=quantity	short=	default=1	required=
   flag=region	short=	default=	required=
   flag=remark	short=	default=	required=
@@ -79,7 +79,7 @@ ucloud urocketmq service price	use=price	short=Get price of URocketMQ service in
   flag=edition	short=	default=Enterprise	required=true
   flag=mode	short=	default=PrivateNet	required=true
   flag=project-id	short=	default=	required=
-  flag=public-version	short=	default=	required=true
+  flag=public-version	short=	default=	required=
   flag=quantity	short=	default=1	required=
   flag=region	short=	default=	required=
   flag=storage-gb	short=	default=0	required=true
