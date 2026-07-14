@@ -1,0 +1,102 @@
+ucloud nlb	use=nlb	short=List and manipulate NLB (Network Load Balancer) instances
+ucloud nlb create	use=create	short=Create an NLB instance
+  flag=charge-type	short=	default=Dynamic	required=
+  flag=coupon-id	short=	default=	required=
+  flag=group	short=	default=Default	required=
+  flag=ip-version	short=	default=IPv4	required=
+  flag=name	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=true
+ucloud nlb delete	use=delete	short=Delete NLB instances by resource ID
+  flag=nlb-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-eip	short=	default=false	required=
+  flag=yes	short=y	default=false	required=
+ucloud nlb describe	use=describe	short=Show details of one NLB instance
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud nlb list	use=list	short=List NLB instances
+  flag=limit	short=	default=100	required=
+  flag=nlb-id	short=	default=	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+ucloud nlb listener	use=listener	short=List and manipulate NLB listeners
+ucloud nlb listener create	use=create	short=Create an NLB listener
+  flag=end-port	short=	default=65535	required=true
+  flag=forward-src-ip-method	short=	default=	required=
+  flag=health-check-port	short=	default=0	required=
+  flag=health-check-req-msg	short=	default=	required=
+  flag=health-check-res-msg	short=	default=	required=
+  flag=health-check-type	short=	default=Port	required=
+  flag=name	short=	default=	required=
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=protocol	short=	default=	required=true
+  flag=region	short=	default=	required=
+  flag=scheduler	short=	default=RoundRobin	required=
+  flag=start-port	short=	default=1	required=true
+  flag=stickiness-timeout	short=	default=0	required=
+ucloud nlb listener delete	use=delete	short=Delete NLB listeners by resource ID
+  flag=listener-id	short=	default=[]	required=true
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+ucloud nlb listener list	use=list	short=List listeners of an NLB instance
+  flag=limit	short=	default=100	required=
+  flag=listener-id	short=	default=	required=
+  flag=nlb-id	short=	default=	required=true
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud nlb listener update	use=update	short=Update an NLB listener
+  flag=end-port	short=	default=65535	required=
+  flag=forward-src-ip-method	short=	default=	required=
+  flag=health-check-port	short=	default=0	required=
+  flag=health-check-req-msg	short=	default=	required=
+  flag=health-check-res-msg	short=	default=	required=
+  flag=health-check-type	short=	default=	required=
+  flag=listener-id	short=	default=	required=true
+  flag=name	short=	default=	required=
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
+  flag=scheduler	short=	default=	required=
+  flag=start-port	short=	default=1	required=
+ucloud nlb target	use=target	short=Manage NLB backend targets (service nodes)
+ucloud nlb target add	use=add	short=Add backend targets to an NLB listener
+  flag=listener-id	short=	default=	required=true
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=target	short=	default=[]	required=true
+ucloud nlb target remove	use=remove	short=Remove backend targets from an NLB listener
+  flag=listener-id	short=	default=	required=true
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=target-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+ucloud nlb target update	use=update	short=Update backend targets of an NLB listener
+  flag=listener-id	short=	default=	required=true
+  flag=nlb-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=target	short=	default=[]	required=true
+ucloud nlb update	use=update	short=Update NLB instance attributes
+  flag=group	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=nlb-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=
