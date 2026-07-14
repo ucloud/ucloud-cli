@@ -30,7 +30,7 @@ func newListProducts(ctx *cli.Context) *cobra.Command {
   ucloud cloudwatch list-products
 
   # Print only product keys as JSON
-  ucloud cloudwatch list-products --output json | jq -r '.[].ProductKey'`,
+  ucloud cloudwatch list-products --output json | jq -r '.[].Product'`,
 		Args: cobra.NoArgs,
 		Run: func(c *cobra.Command, args []string) {
 			out, err := invoke(client, req, map[string]interface{}{
@@ -50,7 +50,7 @@ func newListProducts(ctx *cli.Context) *cobra.Command {
 			rows := make([]MonitorProductRow, 0, len(resp.List))
 			for _, p := range resp.List {
 				rows = append(rows, MonitorProductRow{
-					ProductKey:             p.ProductKey,
+					Product:                p.ProductKey,
 					ProductName:            p.ProductName,
 					ProductChName:          p.ProductChName,
 					IsSupportHighPrecision: p.IsSupportHighPrecision,

@@ -2,7 +2,7 @@ package cloudwatch
 
 // MonitorProductRow is one product definition returned by ListMonitorProduct.
 type MonitorProductRow struct {
-	ProductKey             string
+	Product                string
 	ProductName            string
 	ProductChName          string
 	IsSupportHighPrecision bool
