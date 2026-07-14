@@ -1,0 +1,6 @@
+name: sqlserver
+owners:
+  - xiaolaohu-hi
+commands:
+  - sqlserver
+enabled: true
