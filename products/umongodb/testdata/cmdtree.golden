@@ -1,6 +1,5 @@
 ucloud umongodb	use=umongodb	short=Manipulate MongoDB on UCloud platform
 ucloud umongodb create-replset	use=create-replset	short=Create a MongoDB replica set
-  flag=async	short=	default=false	required=
   flag=charge-type	short=	default=Month	required=
   flag=disk-space-gb	short=	default=0	required=true
   flag=machine-type-id	short=	default=	required=true
@@ -18,7 +17,6 @@ ucloud umongodb create-replset	use=create-replset	short=Create a MongoDB replica
   flag=vpc-id	short=	default=	required=
   flag=zone	short=	default=	required=
 ucloud umongodb create-sharded	use=create-sharded	short=Create a MongoDB sharded cluster
-  flag=async	short=	default=false	required=
   flag=charge-type	short=	default=Month	required=
   flag=disk-space-gb	short=	default=0	required=true
   flag=machine-type-id	short=	default=	required=true
