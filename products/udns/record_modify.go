@@ -19,13 +19,15 @@ func newRecordModifyCommand(ctx *cli.Context) *cobra.Command {
 		Short: "Modify a DNS record in a UDNS zone",
 		Long:  "Modify a DNS record in a UDNS zone",
 		Run: func(cmd *cobra.Command, args []string) {
+			recordID := ctx.PickResourceID(*req.RecordId)
+			req.RecordId = &recordID
 			_, err := client.ModifyUDNSRecord(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.ProgressWriter(), "record[%s] modified\n", *req.RecordId)
-			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.RecordId, Action: "modify", Status: "Modified"})
+			fmt.Fprintf(ctx.ProgressWriter(), "record[%s] modified\n", recordID)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: recordID, Action: "modify", Status: "Modified"})
 		},
 	}
 	flags := cmd.Flags()

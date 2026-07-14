@@ -19,13 +19,15 @@ func newDisassociateVPCCommand(ctx *cli.Context) *cobra.Command {
 		Short: "Disassociate a UDNS zone from a VPC",
 		Long:  "Disassociate a UDNS zone from a VPC",
 		Run: func(cmd *cobra.Command, args []string) {
+			zoneID := ctx.PickResourceID(*req.DNSZoneId)
+			req.DNSZoneId = &zoneID
 			_, err := client.DisassociateUDNSZoneVPC(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.ProgressWriter(), "zone[%s] disassociated from vpc[%s]\n", *req.DNSZoneId, *req.VPCId)
-			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.DNSZoneId, Action: "disassociate-vpc", Status: "Disassociated"})
+			fmt.Fprintf(ctx.ProgressWriter(), "zone[%s] disassociated from vpc[%s]\n", zoneID, *req.VPCId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: zoneID, Action: "disassociate-vpc", Status: "Disassociated"})
 		},
 	}
 	flags := cmd.Flags()

@@ -19,13 +19,15 @@ func newAssociateVPCCommand(ctx *cli.Context) *cobra.Command {
 		Short: "Associate a UDNS zone with a VPC",
 		Long:  "Associate a UDNS zone with a VPC",
 		Run: func(cmd *cobra.Command, args []string) {
+			zoneID := ctx.PickResourceID(*req.DNSZoneId)
+			req.DNSZoneId = &zoneID
 			_, err := client.AssociateUDNSZoneVPC(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			fmt.Fprintf(ctx.ProgressWriter(), "zone[%s] associated with vpc[%s]\n", *req.DNSZoneId, *req.VPCId)
-			ctx.EmitResult(cli.OpResultRow{ResourceID: *req.DNSZoneId, Action: "associate-vpc", Status: "Associated"})
+			fmt.Fprintf(ctx.ProgressWriter(), "zone[%s] associated with vpc[%s]\n", zoneID, *req.VPCId)
+			ctx.EmitResult(cli.OpResultRow{ResourceID: zoneID, Action: "associate-vpc", Status: "Associated"})
 		},
 	}
 	flags := cmd.Flags()
