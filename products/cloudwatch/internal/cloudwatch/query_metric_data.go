@@ -57,12 +57,17 @@ func newQueryMetricData(ctx *cli.Context) *cobra.Command {
 		Short: "Query metric data",
 		Long:  "Query time-series data for one or more resources and metrics. Every resource is paired with every metric.",
 		Example: `  # Query one metric on one resource for the default last-hour window
-  ucloud cloudwatch query-metric-data --product uhost --resource-ids uhost-xxx --metrics uhost_cpu_used
+		  ucloud cloudwatch query-metric-data --product uhost --resource-id uhost-xxx --metric uhost_cpu_used
 
-  # Query two metrics on two resources using 5-minute averages
-  ucloud cloudwatch query-metric-data --product uhost \
-    --resource-ids uhost-a,uhost-b --metrics uhost_cpu_used,uhost_mem_used \
-    --tags env=prod --calc-method avg --period 300`,
+		  # Repeat --resource-id and --metric for multiple resources and metrics
+		  ucloud cloudwatch query-metric-data --product uhost \
+		    --resource-id uhost-a --resource-id uhost-b \
+		    --metric uhost_cpu_used --metric uhost_mem_used \
+		    --tag env=prod --tag role=web --calc-method avg --period 300
+
+		  # Values for the same tag key are OR-ed; different keys are AND-ed
+		  ucloud cloudwatch query-metric-data --product uhost --resource-id uhost-a \
+		    --metric uhost_cpu_used --tag env=prod --tag env=staging --tag role=web`,
 		Args: cobra.NoArgs,
 		Run: func(c *cobra.Command, args []string) {
 			if req.GetProjectId() == "" {
@@ -98,12 +103,6 @@ func newQueryMetricData(ctx *cli.Context) *cobra.Command {
 				return
 			}
 
-			// --resource-ids / --metrics each accept both repeated flags and
-			// comma-separated values within a single flag (freely mixable):
-			//   --metrics a --metrics b,c == --metrics a,b,c
-			expandedResourceIDs := splitCommaList(resourceIDs)
-			expandedMetrics := splitCommaList(metrics)
-
 			// Cartesian product of --resource-id x --metric: one MetricInfos
 			// entry per (resource, metric) combination, all queried in the
 			// same request. The backend enforces its own cap on the total
@@ -111,7 +110,7 @@ func newQueryMetricData(ctx *cli.Context) *cobra.Command {
 			// compile time) — CLI does not pre-validate a count, an
 			// over-limit request surfaces as a normal backend error via
 			// ctx.HandleError.
-			metricInfos := buildMetricInfos(ctx, expandedResourceIDs, expandedMetrics, tagList)
+			metricInfos := buildMetricInfos(ctx, resourceIDs, metrics, tagList)
 
 			payload := map[string]interface{}{
 				"Action":      "QueryMetricDataSet",
@@ -167,16 +166,16 @@ func newQueryMetricData(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringVar(&product, "product", "", "Required. Product key returned by list-products, for example uhost")
-	flags.StringArrayVar(&resourceIDs, "resource-ids", nil, "Required. Resource IDs; repeat the flag or separate values with commas")
-	flags.StringArrayVar(&metrics, "metrics", nil, "Required. Metric keys returned by list-metrics; repeat the flag or separate values with commas")
+	flags.StringArrayVar(&resourceIDs, "resource-id", nil, "Required. Resource ID; repeat --resource-id to query multiple resources (values are not comma-split)")
+	flags.StringArrayVar(&metrics, "metric", nil, "Required. Metric key returned by list-metrics; repeat --metric to query multiple metrics (values are not comma-split)")
 	flags.Int64Var(&startTime, "start-time", 0, "Optional. Start time as Unix seconds; defaults to one hour before end-time")
 	flags.Int64Var(&endTime, "end-time", 0, "Optional. End time as Unix seconds; defaults to the current time")
 	flags.StringVar(&calcMethod, "calc-method", "raw", "Optional. Calculation method: raw, max, min, avg, or sum")
 	flags.Int64Var(&period, "period", 0, "Optional. Data interval in seconds: 60, 300, 3600, 21600, or 86400; omit to choose automatically")
-	flags.StringArrayVar(&tags, "tags", nil, "Optional. Tag filter in key=value1,value2 form; repeat for multiple tag keys")
+	flags.StringArrayVar(&tags, "tag", nil, "Optional. Tag filter as key=value; repeat --tag for multiple values or keys. Same-key values are OR-ed, different keys are AND-ed; commas in values are preserved")
 	cmd.MarkFlagRequired("product")
-	cmd.MarkFlagRequired("resource-ids")
-	cmd.MarkFlagRequired("metrics")
+	cmd.MarkFlagRequired("resource-id")
+	cmd.MarkFlagRequired("metric")
 
 	ctx.BindProjectID(cmd, req)
 	cmd.Flags().Lookup("project-id").Usage = "Required. Project ID"
@@ -207,21 +206,30 @@ func buildMetricInfos(ctx *cli.Context, resourceIDs, metrics []string, tagList [
 	return metricInfos
 }
 
-// parseTags converts repeated --tags "key=v1,v2" flags into TagList entries.
+// parseTags converts repeated --tag "key=value" flags into TagList entries.
 // Each entry is a map (not a struct) so the SDK generic form encoder can expand
-// it into TagList.N.TagKey / TagList.N.TagValues.M form.
+// it into TagList.N.TagKey / TagList.N.TagValues.M form. Values for the same
+// key are grouped into one entry (OR); separate keys remain separate entries
+// (AND).
 func parseTags(tags []string) ([]map[string]interface{}, error) {
 	if len(tags) == 0 {
 		return nil, nil
 	}
-	list := make([]map[string]interface{}, 0, len(tags))
+	valuesByKey := make(map[string][]string, len(tags))
+	keys := make([]string, 0, len(tags))
 	for _, t := range tags {
 		kv := strings.SplitN(t, "=", 2)
-		if len(kv) != 2 || kv[0] == "" {
-			return nil, fmt.Errorf("invalid --tags %q, want key=v1,v2", t)
+		if len(kv) != 2 || kv[0] == "" || kv[1] == "" {
+			return nil, fmt.Errorf("invalid --tag %q, want key=value; repeat --tag for multiple values", t)
 		}
-		values := strings.Split(kv[1], ",")
-		list = append(list, map[string]interface{}{"TagKey": kv[0], "TagValues": values})
+		if _, exists := valuesByKey[kv[0]]; !exists {
+			keys = append(keys, kv[0])
+		}
+		valuesByKey[kv[0]] = append(valuesByKey[kv[0]], kv[1])
+	}
+	list := make([]map[string]interface{}, 0, len(keys))
+	for _, key := range keys {
+		list = append(list, map[string]interface{}{"TagKey": key, "TagValues": valuesByKey[key]})
 	}
 	return list, nil
 }
@@ -241,19 +249,4 @@ func flattenTagMap(m map[string]string) string {
 		parts = append(parts, k+"="+m[k])
 	}
 	return strings.Join(parts, ", ")
-}
-
-// splitCommaList expands repeatable flag values on commas and removes empty
-// elements. It belongs to query-metric-data because that is its only caller.
-func splitCommaList(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		for _, part := range strings.Split(value, ",") {
-			part = strings.TrimSpace(part)
-			if part != "" {
-				out = append(out, part)
-			}
-		}
-	}
-	return out
 }
