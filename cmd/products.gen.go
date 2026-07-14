@@ -18,6 +18,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/sqlserver"
 	"github.com/ucloud/ucloud-cli/products/subnet"
 	"github.com/ucloud/ucloud-cli/products/uclickhouse"
+	"github.com/ucloud/ucloud-cli/products/udac"
 	"github.com/ucloud/ucloud-cli/products/uddos"
 	"github.com/ucloud/ucloud-cli/products/udisk"
 	"github.com/ucloud/ucloud-cli/products/udpn"
@@ -55,6 +56,7 @@ func registeredProducts() []cli.Product {
 		sqlserver.New(),
 		subnet.New(),
 		uclickhouse.New(),
+		udac.New(),
 		uddos.New(),
 		udisk.New(),
 		udpn.New(),
