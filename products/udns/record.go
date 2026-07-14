@@ -13,5 +13,9 @@ func newRecordCommand(ctx *cli.Context) *cobra.Command {
 		Short: "Manage DNS records within a UDNS zone",
 		Long:  "Manage DNS records within a UDNS zone",
 	}
+	cmd.AddCommand(newRecordListCommand(ctx))
+	cmd.AddCommand(newRecordCreateCommand(ctx))
+	cmd.AddCommand(newRecordModifyCommand(ctx))
+	cmd.AddCommand(newRecordDeleteCommand(ctx))
 	return cmd
 }
