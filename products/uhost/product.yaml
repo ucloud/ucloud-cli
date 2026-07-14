@@ -1,6 +1,6 @@
 name: uhost
 owners:
-  - kai.zhao
+  - calmxkk
 commands:
   - uhost
 enabled: true
