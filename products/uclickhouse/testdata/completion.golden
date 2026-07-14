@@ -1,0 +1,8 @@
+ucloud uclickhouse create	charge-type	static	Dynamic,Month,Year
+ucloud uclickhouse create	multi-zone	static	false,true
+ucloud uclickhouse create	sec-group	static	false,true
+ucloud uclickhouse delete	clickhouse-id	dynamic
+ucloud uclickhouse describe	clickhouse-id	dynamic
+ucloud uclickhouse expand	clickhouse-id	dynamic
+ucloud uclickhouse resize	clickhouse-id	dynamic
+ucloud uclickhouse restart	clickhouse-id	dynamic

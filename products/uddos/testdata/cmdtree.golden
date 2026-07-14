@@ -1,0 +1,90 @@
+ucloud uddos	use=uddos	short=Manage UCloud DDoS protection services
+ucloud uddos mainland	use=mainland	short=Manage mainland China DDoS high-protection services
+ucloud uddos mainland ip	use=ip	short=Manage mainland DDoS protection IPs
+ucloud uddos mainland ip create	use=create	short=Create a mainland BGP high-protection IP
+  flag=remark	short=	default=	required=
+  flag=resource-id	short=	default=	required=true
+  flag=tag	short=	default=	required=
+  flag=type-ip	short=	default=TypeFree	required=
+ucloud uddos mainland ip delete	use=delete	short=Delete a mainland BGP high-protection IP
+  flag=defence-ip	short=	default=	required=true
+  flag=resource-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud uddos mainland ip list	use=list	short=List mainland BGP high-protection IPs
+  flag=bgp-ip	short=	default=	required=
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=resource-id	short=	default=	required=true
+ucloud uddos mainland rule	use=rule	short=Manage BGP forwarding rules
+ucloud uddos mainland rule create	use=create	short=Create a BGP forwarding rule
+  flag=bgp-ip	short=	default=	required=true
+  flag=bgp-ip-port	short=	default=0	required=
+  flag=fwd-type	short=	default=IP	required=
+  flag=load-balance	short=	default=No	required=
+  flag=remark	short=	default=	required=
+  flag=resource-id	short=	default=	required=true
+  flag=source-detect	short=	default=0	required=
+  flag=source-ip	short=	default=	required=true
+ucloud uddos mainland rule delete	use=delete	short=Delete a BGP forwarding rule
+  flag=resource-id	short=	default=	required=true
+  flag=rule-index	short=	default=0	required=true
+  flag=yes	short=y	default=false	required=
+ucloud uddos mainland rule list	use=list	short=List BGP forwarding rules
+  flag=bgp-ip	short=	default=	required=
+  flag=limit	short=	default=32	required=
+  flag=offset	short=	default=0	required=
+  flag=resource-id	short=	default=	required=true
+  flag=rule-index	short=	default=0	required=
+ucloud uddos mainland rule update	use=update	short=Update a BGP forwarding rule
+  flag=bgp-ip	short=	default=	required=true
+  flag=bgp-ip-port	short=	default=0	required=
+  flag=fwd-type	short=	default=IP	required=
+  flag=load-balance	short=	default=No	required=
+  flag=resource-id	short=	default=	required=true
+  flag=rule-id	short=	default=	required=
+  flag=rule-index	short=	default=0	required=true
+  flag=source-detect	short=	default=0	required=
+  flag=source-ip	short=	default=	required=
+ucloud uddos mainland service	use=service	short=Manage mainland DDoS protection service instances
+ucloud uddos mainland service create	use=create	short=Create a mainland DDoS high-protection service
+  flag=area-line	short=	default=	required=true
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=	required=true
+  flag=defence-base-flow	short=	default=0	required=true
+  flag=defence-max-flow	short=	default=0	required=true
+  flag=engine-room	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=quantity	short=	default=0	required=true
+  flag=src-bandwidth	short=	default=0	required=true
+ucloud uddos mainland service list	use=list	short=List mainland DDoS protection service instances
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=resource-id	short=	default=	required=
+ucloud uddos overseas	use=overseas	short=Manage overseas DDoS high-protection services
+ucloud uddos overseas ip	use=ip	short=Manage overseas DDoS protection IPs
+ucloud uddos overseas ip create	use=create	short=Create an overseas BGP high-protection IP
+  flag=remark	short=	default=	required=
+  flag=resource-id	short=	default=	required=true
+  flag=tag	short=	default=	required=
+  flag=type-ip	short=	default=TypeFree	required=
+ucloud uddos overseas ip delete	use=delete	short=Delete an overseas BGP high-protection IP
+  flag=defence-ip	short=	default=	required=true
+  flag=resource-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud uddos overseas ip list	use=list	short=List overseas BGP high-protection IPs
+  flag=limit	short=	default=20	required=
+  flag=nap-ip	short=	default=	required=
+  flag=offset	short=	default=0	required=
+  flag=resource-id	short=	default=	required=true
+ucloud uddos overseas service	use=service	short=Manage overseas DDoS protection service instances
+ucloud uddos overseas service create	use=create	short=Create an overseas DDoS high-protection service
+  flag=area-line	short=	default=	required=true
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=quantity	short=	default=0	required=true
+  flag=src-bandwidth	short=	default=0	required=true
+ucloud uddos overseas service list	use=list	short=List overseas DDoS protection service instances
+  flag=limit	short=	default=20	required=
+  flag=offset	short=	default=0	required=
+  flag=resource-id	short=	default=	required=

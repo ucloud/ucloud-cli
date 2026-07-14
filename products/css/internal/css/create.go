@@ -48,7 +48,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	req.InstanceName = flags.String("name", "", "Required. Instance name")
-	req.AppVersion = flags.String("app-version", "", "Required. Application version, e.g. 7.10.0")
+	req.AppVersion = flags.String("app-version", "", "Required. Application version, e.g. 7.10.2")
 	req.AppName = flags.String("app-name", "elasticsearch", "Optional. Application name, default elasticsearch")
 	req.NodeConf = flags.String("node-conf", "", "Required. Node configuration identifier")
 	req.NodeDiskConf = flags.String("node-disk-conf", "CLOUD_RSSD", "Required. Node disk type")

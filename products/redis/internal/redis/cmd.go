@@ -17,5 +17,15 @@ func NewCommand(ctx *cli.Context) *cobra.Command {
 	cmd.AddCommand(newCreate(ctx))
 	cmd.AddCommand(newDelete(ctx))
 	cmd.AddCommand(newRestart(ctx))
+	cmd.AddCommand(newModifyName(ctx))
+	cmd.AddCommand(newModifyPassword(ctx))
+	cmd.AddCommand(newListBlock(ctx))
+	cmd.AddCommand(newListProxy(ctx))
+	cmd.AddCommand(newFlush(ctx))
+	cmd.AddCommand(newIsolation(ctx))
+	cmd.AddCommand(newResize(ctx))
+	cmd.AddCommand(newCreateProxy(ctx))
+	cmd.AddCommand(newDeleteProxy(ctx))
+	cmd.AddCommand(newResizeProxy(ctx))
 	return cmd
 }

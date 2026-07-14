@@ -10,8 +10,7 @@ require (
 	github.com/sirupsen/logrus v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/ucloud/ucloud-sdk-go v0.22.89
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
+	github.com/ucloud/ucloud-sdk-go v0.22.90
 	gopkg.in/yaml.v2 v2.2.2
 )
 
@@ -25,5 +24,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
