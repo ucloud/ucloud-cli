@@ -16,6 +16,7 @@ ucloud nlb list	region	dynamic
 ucloud nlb list	subnet-id	dynamic
 ucloud nlb list	vpc-id	dynamic
 ucloud nlb listener create	forward-src-ip-method	static	,None,ProxyProto,Toa
+ucloud nlb listener create	health-check-type	static	Ping,Port,UDP
 ucloud nlb listener create	nlb-id	dynamic
 ucloud nlb listener create	project-id	dynamic
 ucloud nlb listener create	protocol	static	TCP,UDP
@@ -29,7 +30,7 @@ ucloud nlb listener list	listener-id	static
 ucloud nlb listener list	nlb-id	dynamic
 ucloud nlb listener list	project-id	dynamic
 ucloud nlb listener list	region	dynamic
-ucloud nlb listener update	forward-src-ip-method	static	,None,Toa
+ucloud nlb listener update	forward-src-ip-method	static	,None,ProxyProto,Toa
 ucloud nlb listener update	health-check-type	static	Ping,Port,UDP
 ucloud nlb listener update	listener-id	static
 ucloud nlb listener update	nlb-id	dynamic
@@ -40,7 +41,6 @@ ucloud nlb target add	listener-id	static
 ucloud nlb target add	nlb-id	dynamic
 ucloud nlb target add	project-id	dynamic
 ucloud nlb target add	region	dynamic
-ucloud nlb target add	resource-type	static	IP,UHost,UNI,UPM
 ucloud nlb target remove	listener-id	static
 ucloud nlb target remove	nlb-id	dynamic
 ucloud nlb target remove	project-id	dynamic
@@ -50,7 +50,7 @@ ucloud nlb target update	listener-id	static
 ucloud nlb target update	nlb-id	dynamic
 ucloud nlb target update	project-id	dynamic
 ucloud nlb target update	region	dynamic
-ucloud nlb target update	target-id	static
+ucloud nlb target update	target	static
 ucloud nlb update	nlb-id	dynamic
 ucloud nlb update	project-id	dynamic
 ucloud nlb update	region	dynamic
