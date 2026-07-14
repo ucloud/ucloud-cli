@@ -14,6 +14,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
 	"github.com/ucloud/ucloud-cli/products/subnet"
+	"github.com/ucloud/ucloud-cli/products/uddos"
 	"github.com/ucloud/ucloud-cli/products/udisk"
 	"github.com/ucloud/ucloud-cli/products/udpn"
 	"github.com/ucloud/ucloud-cli/products/ufs"
@@ -41,6 +42,7 @@ func registeredProducts() []cli.Product {
 		redis.New(),
 		sharedbw.New(),
 		subnet.New(),
+		uddos.New(),
 		udisk.New(),
 		udpn.New(),
 		ufs.New(),

@@ -18,6 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
@@ -61,6 +62,7 @@ var overseasCityToCleaningCenter = map[string]string{
 func newCreate(ctx *cli.Context) *cobra.Command {
 	var chargeType, areaLine, name string
 	var quantity, srcBandwidth int
+	var async bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -142,6 +144,18 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			payload := resp.GetPayload()
 			resInfo, _ := payload["ResourceInfo"].(map[string]interface{})
 			resourceID := strVal(resInfo, "ResourceId")
+			if resourceID == "" {
+				ctx.HandleError(fmt.Errorf("BuyHighProtectGameService returned no ResourceId; the purchase may have failed, check the console"))
+				return
+			}
+			fmt.Fprintf(ctx.ProgressWriter(), "overseas DDoS service created: %s\n", resourceID)
+			if !async {
+				ctx.PollerTo(ctx.ProgressWriter(), describeOverseasService(ctx)).Spoll(
+					resourceID,
+					fmt.Sprintf("service[%s] is initializing", resourceID),
+					[]string{napServiceStatusStarted},
+				)
+			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resourceID, Action: "create", Status: "Created"})
 		},
 	}
@@ -152,10 +166,39 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.StringVar(&areaLine, "area-line", "", "Required. AreaLine: HongKong/Frankfurt/Ashburn and their coverage cities (see --help)")
 	flags.IntVar(&srcBandwidth, "src-bandwidth", 0, "Required. Source bandwidth (Mbps). <=300 step 50, 300~1000 step 100, 1000~5000 step 500")
 	flags.StringVar(&name, "name", "", "Required. Service name")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the service to become available.")
 	cmd.MarkFlagRequired("charge-type")
 	cmd.MarkFlagRequired("quantity")
 	cmd.MarkFlagRequired("area-line")
 	cmd.MarkFlagRequired("src-bandwidth")
 	cmd.MarkFlagRequired("name")
 	return cmd
+}
+
+// describeOverseasService 返回 poller 用的服务状态查询函数，
+// 调用 DescribeNapServiceInfo（NapType=2）按 ResourceId 查询，返回带 Status 字段的结构体。
+func describeOverseasService(ctx *cli.Context) func(string, *request.CommonBase) (interface{}, error) {
+	return func(id string, _ *request.CommonBase) (interface{}, error) {
+		client := cli.NewServiceClient(ctx, uaccount.NewClient)
+		req := client.NewGenericRequest()
+		if err := req.SetPayload(map[string]interface{}{
+			"Action":     "DescribeNapServiceInfo",
+			"NapType":    2,
+			"ResourceId": id,
+			"Offset":     0,
+			"Limit":      1,
+		}); err != nil {
+			return nil, fmt.Errorf("set payload: %w", err)
+		}
+		resp, err := client.GenericInvoke(req)
+		if err != nil {
+			return nil, fmt.Errorf("DescribeNapServiceInfo: %w", err)
+		}
+		serviceInfo, _ := resp.GetPayload()["ServiceInfo"].([]interface{})
+		if len(serviceInfo) == 0 {
+			return nil, nil // 尚未可见，poller 视为 pending 继续轮询
+		}
+		m, _ := serviceInfo[0].(map[string]interface{})
+		return &serviceStatusRow{Status: strVal(m, "DefenceStatus")}, nil
+	}
 }

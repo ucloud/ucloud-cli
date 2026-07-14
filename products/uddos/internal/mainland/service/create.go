@@ -18,6 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 
 	"github.com/ucloud/ucloud-cli/pkg/cli"
 )
@@ -44,6 +45,7 @@ var mainlandAreaLineEngineRooms = map[string][]string{
 func newCreate(ctx *cli.Context) *cobra.Command {
 	var chargeType, areaLine, engineRoom, name string
 	var quantity, srcBandwidth, defenceBaseFlow, defenceMaxFlow int
+	var async bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -151,6 +153,18 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 			payload := resp.GetPayload()
 			resInfo, _ := payload["ResourceInfo"].(map[string]interface{})
 			resourceID := strVal(resInfo, "ResourceId")
+			if resourceID == "" {
+				ctx.HandleError(fmt.Errorf("BuyHighProtectGameService returned no ResourceId; the purchase may have failed, check the console"))
+				return
+			}
+			fmt.Fprintf(ctx.ProgressWriter(), "mainland DDoS service created: %s\n", resourceID)
+			if !async {
+				ctx.PollerTo(ctx.ProgressWriter(), describeMainlandService(ctx)).Spoll(
+					resourceID,
+					fmt.Sprintf("service[%s] is initializing", resourceID),
+					[]string{napServiceStatusStarted},
+				)
+			}
 			ctx.EmitResult(cli.OpResultRow{ResourceID: resourceID, Action: "create", Status: "Created"})
 		},
 	}
@@ -164,6 +178,7 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	flags.IntVar(&defenceBaseFlow, "defence-base-flow", 0, "Required. Base defence flow (Gbps): 30/40/50/60/70/80/100/200/300/400/500/600/700/800")
 	flags.IntVar(&defenceMaxFlow, "defence-max-flow", 0, "Required. Max defence flow (Gbps), must be >= defence-base-flow")
 	flags.StringVar(&name, "name", "", "Required. Service name")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for the service to become available.")
 	cmd.MarkFlagRequired("charge-type")
 	cmd.MarkFlagRequired("quantity")
 	cmd.MarkFlagRequired("area-line")
@@ -173,4 +188,31 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("defence-max-flow")
 	cmd.MarkFlagRequired("name")
 	return cmd
+}
+
+// describeMainlandService 返回 poller 用的服务状态查询函数，
+// 调用 DescribeHighProtectGameServiceInfo 按 ResourceId 查询，返回带 Status 字段的结构体。
+func describeMainlandService(ctx *cli.Context) func(string, *request.CommonBase) (interface{}, error) {
+	return func(id string, _ *request.CommonBase) (interface{}, error) {
+		client := cli.NewServiceClient(ctx, uaccount.NewClient)
+		req := client.NewGenericRequest()
+		if err := req.SetPayload(map[string]interface{}{
+			"Action":     "DescribeHighProtectGameServiceInfo",
+			"ResourceId": id,
+			"Offset":     0,
+			"Limit":      1,
+		}); err != nil {
+			return nil, fmt.Errorf("set payload: %w", err)
+		}
+		resp, err := client.GenericInvoke(req)
+		if err != nil {
+			return nil, fmt.Errorf("DescribeHighProtectGameServiceInfo: %w", err)
+		}
+		gameInfo, _ := resp.GetPayload()["GameInfo"].([]interface{})
+		if len(gameInfo) == 0 {
+			return nil, nil // 尚未可见，poller 视为 pending 继续轮询
+		}
+		m, _ := gameInfo[0].(map[string]interface{})
+		return &serviceStatusRow{Status: strVal(m, "DefenceStatus")}, nil
+	}
 }

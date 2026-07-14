@@ -29,8 +29,13 @@
 | M-SVC-C-15 | **defence-max-flow 不在白名单** | `--defence-max-flow 45` | 报错：`invalid --defence-max-flow 45` |
 | M-SVC-C-16 | **max-flow 小于 base-flow** | `--defence-base-flow 50 --defence-max-flow 30` | 报错：`--defence-max-flow (30) must be >= --defence-base-flow (50)` |
 | M-SVC-C-17 | **缺少 required flag** | 省略 `--name` | cobra 报错：required flag not set |
+| M-SVC-C-18 | 默认同步等待就绪 | 正常参数（不带 `--async`） | 先打印 `mainland DDoS service created: ghp-xxxxx`，再轮询 `DescribeHighProtectGameServiceInfo` 直到 `DefenceStatus="Started"`，输出 `service[ghp-xxxxx] is initializing...done` |
+| M-SVC-C-19 | `--async` 不等待 | `... --async` | 打印 created 叙述后立即返回，不轮询 |
+| M-SVC-C-20 | ResourceId 缺失（下单未成功） | 模拟 API 返回无 ResourceInfo | 报错：`BuyHighProtectGameService returned no ResourceId; ...`，不静默当成功 |
 
 **defence flow 白名单**：30 / 40 / 50 / 60 / 70 / 80 / 100 / 200 / 300 / 400 / 500 / 600 / 700 / 800 (Gbps)
+
+**服务生命周期状态**：API 响应 `DefenceStatus` 为字符串，`Started`（=NAP_SERVICE_STATUS_IS_NORMAL,创建完成）/ `Stopped` / `Expired`。轮询目标态 = `Started`。10 分钟超时输出 `...timeout`（购买已完成，仅未等到可用）。
 
 ---
 
@@ -53,12 +58,12 @@
 | TC# | 场景 | 命令 | 预期结果 |
 |-----|------|------|----------|
 | M-IP-C-01 | 正常创建，仅必填参数 | `ucloud uddos mainland ip create --resource-id ghp-xxxxx` | 输出新建 BGP IP 地址，状态 Created |
-| M-IP-C-02 | 指定 block-udp=yes | `... --block-udp yes` | 正常创建，UDP 流量被屏蔽 |
-| M-IP-C-03 | 指定 type-ip=TypeCharge | `... --type-ip TypeCharge` | 正常创建计费类型 IP |
-| M-IP-C-04 | 指定 remark 和 tag | `... --remark "test" --tag "biz-group"` | 正常创建，API 参数中含 Remark 和 Tag |
-| M-IP-C-05 | 指定 eip-region | `... --eip-region cn-bj2` | 正常创建，API 参数中含 EIPRegion |
-| M-IP-C-06 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
-| M-IP-C-07 | resource-id 不存在 | `--resource-id ghp-notexist` | API 返回业务错误，CLI 打印错误信息 |
+| M-IP-C-02 | 指定 type-ip=TypeCharge | `... --type-ip TypeCharge` | 正常创建计费类型 IP |
+| M-IP-C-03 | 指定 remark 和 tag | `... --remark "test" --tag "biz-group"` | 正常创建，API 参数中含 Remark 和 Tag |
+| M-IP-C-04 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
+| M-IP-C-05 | resource-id 不存在 | `--resource-id ghp-notexist` | API 返回业务错误，CLI 打印错误信息 |
+
+> 可选 flag：`--type-ip`（默认 `TypeFree`）、`--remark`、`--tag`。已移除 `--block-udp` / `--eip-region`。
 
 ---
 
@@ -93,14 +98,16 @@
 
 | TC# | 场景 | 命令 | 预期结果 |
 |-----|------|------|----------|
-| M-RL-C-01 | 最小参数创建 IP 协议规则 | `ucloud uddos mainland rule create --resource-id ghp-xxxxx --bgp-ip 1.2.3.4` | 输出 `rule[N] created for service[ghp-xxxxx]`，状态 Created |
-| M-RL-C-02 | 指定 source-ip | `... --source-ip 10.0.0.1` | API 参数中含 SourceAddrArr、SourcePortArr、SourceToaIDArr |
-| M-RL-C-03 | TCP 协议 + 端口 | `... --fwd-type TCP --bgp-ip-port 80` | 正常创建 TCP 转发规则 |
-| M-RL-C-04 | UDP 协议 + 端口 | `... --fwd-type UDP --bgp-ip-port 53` | 正常创建 UDP 转发规则 |
-| M-RL-C-05 | 开启负载均衡 | `... --load-balance Yes` | API 参数 LoadBalance=Yes |
-| M-RL-C-06 | 指定 remark | `... --remark "main rule"` | API 参数含 Remark |
-| M-RL-C-07 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
-| M-RL-C-08 | **缺少 bgp-ip** | 省略 `--bgp-ip` | cobra 报错：required flag not set |
+| M-RL-C-01 | 最小参数创建 IP 协议规则 | `ucloud uddos mainland rule create --resource-id ghp-xxxxx --bgp-ip 1.2.3.4 --source-ip 10.0.0.1` | 输出 `rule[N] created for service[ghp-xxxxx]`，状态 Created；API 参数含 SourceAddrArr、SourcePortArr、SourceToaIDArr |
+| M-RL-C-02 | TCP 协议 + 端口 | `... --fwd-type TCP --bgp-ip-port 80` | 正常创建 TCP 转发规则 |
+| M-RL-C-03 | UDP 协议 + 端口 | `... --fwd-type UDP --bgp-ip-port 53` | 正常创建 UDP 转发规则 |
+| M-RL-C-04 | 开启负载均衡 | `... --load-balance Yes` | API 参数 LoadBalance=Yes |
+| M-RL-C-05 | 指定 remark | `... --remark "main rule"` | API 参数含 Remark |
+| M-RL-C-06 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
+| M-RL-C-07 | **缺少 bgp-ip** | 省略 `--bgp-ip` | cobra 报错：required flag not set |
+| M-RL-C-08 | **缺少 source-ip** | 省略 `--source-ip` | cobra 报错：required flag not set |
+
+> `--source-ip` 现为**必填**（required=true）。
 
 ---
 
@@ -147,29 +154,41 @@
 
 ### 4.1 service create
 
+**必填 flag**：`--charge-type`、`--quantity`、`--area-line`、`--src-bandwidth`、`--name`（无 `--engine-room`，已由 `--area-line` 取代；防护流量固定 50 Gbps）。
+
+**area-line → 清洗中心（API EngineRoom）映射**：
+- HongKong 清洗中心：HongKong / Taipei / Singapore / Tokyo / Seoul / Bangkok / HoChiMinh / Jakarta / Manila / Mumbai
+- Frankfurt 清洗中心：Frankfurt / London / Moscow
+- Ashburn 清洗中心：Ashburn / LosAngeles / Washington
+
 **src-bandwidth 步进规则**：≤300 Mbps 步进 50；300~1000 步进 100；1000~5000 步进 500。
 
 | TC# | 场景 | 命令 | 预期结果 |
 |-----|------|------|----------|
-| O-SVC-C-01 | 亚太清洗中心（HongKong） | `ucloud uddos overseas service create --charge-type Month --quantity 1 --engine-room HongKong --src-bandwidth 100 --name my-svc` | 正常返回 ResourceID，状态 Created |
-| O-SVC-C-02 | 亚太城市节点（Singapore） | `--engine-room Singapore` | 正常创建，AreaLine 自动映射为 HongKong 清洗中心 |
-| O-SVC-C-03 | 欧洲（Frankfurt） | `--engine-room Frankfurt` | 正常创建 |
-| O-SVC-C-04 | 欧洲城市（London） | `--engine-room London` | 正常创建，AreaLine 映射为 Frankfurt |
-| O-SVC-C-05 | 北美（Ashburn） | `--engine-room Ashburn` | 正常创建 |
-| O-SVC-C-06 | 北美城市（LosAngeles） | `--engine-room LosAngeles` | 正常创建，AreaLine 映射为 Ashburn |
+| O-SVC-C-01 | 亚太清洗中心（HongKong） | `ucloud uddos overseas service create --charge-type Month --quantity 1 --area-line HongKong --src-bandwidth 100 --name my-svc` | 正常返回 ResourceID，状态 Created |
+| O-SVC-C-02 | 亚太城市节点（Singapore） | `--area-line Singapore` | 正常创建，EngineRoom 自动映射为 HongKong 清洗中心 |
+| O-SVC-C-03 | 欧洲（Frankfurt） | `--area-line Frankfurt` | 正常创建 |
+| O-SVC-C-04 | 欧洲城市（London） | `--area-line London` | 正常创建，EngineRoom 映射为 Frankfurt |
+| O-SVC-C-05 | 北美（Ashburn） | `--area-line Ashburn` | 正常创建 |
+| O-SVC-C-06 | 北美城市（LosAngeles） | `--area-line LosAngeles` | 正常创建，EngineRoom 映射为 Ashburn |
 | O-SVC-C-07 | src-bandwidth 最小值 50 | `--src-bandwidth 50` | 正常创建 |
 | O-SVC-C-08 | src-bandwidth 300（步进边界） | `--src-bandwidth 300` | 正常创建 |
 | O-SVC-C-09 | src-bandwidth 400（进入 100 步进） | `--src-bandwidth 400` | 正常创建 |
 | O-SVC-C-10 | src-bandwidth 1000（步进边界） | `--src-bandwidth 1000` | 正常创建 |
 | O-SVC-C-11 | src-bandwidth 最大值 5000 | `--src-bandwidth 5000` | 正常创建 |
-| O-SVC-C-12 | **charge-type 非法值** | `--charge-type Daily` | 报错：`invalid --charge-type "Daily"` |
-| O-SVC-C-13 | **engine-room 不在映射表** | `--engine-room Shanghai` | 报错：`invalid --engine-room "Shanghai"` |
-| O-SVC-C-14 | **src-bandwidth 低于下限** | `--src-bandwidth 49` | 报错：`--src-bandwidth minimum is 50` |
-| O-SVC-C-15 | **src-bandwidth 超过上限** | `--src-bandwidth 5001` | 报错：`--src-bandwidth maximum is 5000` |
-| O-SVC-C-16 | **≤300 时不是 50 的倍数** | `--src-bandwidth 75` | 报错：`must be a multiple of 50 when <= 300` |
-| O-SVC-C-17 | **300~1000 时不是 100 的倍数** | `--src-bandwidth 350` | 报错：`must be a multiple of 100 when 300~1000` |
-| O-SVC-C-18 | **1000~5000 时不是 500 的倍数** | `--src-bandwidth 1200` | 报错：`must be a multiple of 500 when 1000~5000` |
-| O-SVC-C-19 | **缺少 required flag** | 省略 `--engine-room` | cobra 报错：required flag not set |
+| O-SVC-C-12 | **charge-type 非法值** | `--charge-type Daily` | 报错：`invalid --charge-type "Daily", must be "Month" or "Year"` |
+| O-SVC-C-13 | **area-line 不在映射表** | `--area-line Shanghai` | 报错：`invalid --area-line "Shanghai"; valid values: HongKong/...` |
+| O-SVC-C-14 | **src-bandwidth 低于下限** | `--src-bandwidth 49` | 报错：`--src-bandwidth minimum is 50 for overseas` |
+| O-SVC-C-15 | **src-bandwidth 超过上限** | `--src-bandwidth 5001` | 报错：`--src-bandwidth maximum is 5000 for overseas` |
+| O-SVC-C-16 | **≤300 时不是 50 的倍数** | `--src-bandwidth 75` | 报错：`must be a multiple of 50 when <= 300 (overseas)` |
+| O-SVC-C-17 | **300~1000 时不是 100 的倍数** | `--src-bandwidth 350` | 报错：`must be a multiple of 100 when 300~1000 (overseas)` |
+| O-SVC-C-18 | **1000~5000 时不是 500 的倍数** | `--src-bandwidth 1200` | 报错：`must be a multiple of 500 when 1000~5000 (overseas)` |
+| O-SVC-C-19 | **缺少 required flag** | 省略 `--area-line` | cobra 报错：required flag not set |
+| O-SVC-C-20 | 默认同步等待就绪 | 正常参数（不带 `--async`） | 先打印 `overseas DDoS service created: nap-xxxxx`，再轮询 `DescribeNapServiceInfo`(NapType=2) 直到 `DefenceStatus="Started"`，输出 `service[nap-xxxxx] is initializing...done` |
+| O-SVC-C-21 | `--async` 不等待 | `... --async` | 打印 created 叙述后立即返回，不轮询 |
+| O-SVC-C-22 | ResourceId 缺失（下单未成功） | 模拟 API 返回无 ResourceInfo | 报错：`BuyHighProtectGameService returned no ResourceId; ...`，不静默当成功 |
+
+**服务生命周期状态**：API 响应 `DefenceStatus` 为字符串，`Started`（创建完成）/ `Stopped` / `Expired`。轮询目标态 = `Started`。
 
 ---
 
@@ -188,18 +207,16 @@
 
 ### 5.1 ip create
 
-> 海外高防为透传模式（Passthrough），自动通过 `DescribeNapServiceInfo` + `GetNapServiceConfig` 解析 EIPRegion；也可通过 `--eip-region` 手动指定。
+> 海外高防为透传模式（Passthrough），EIPRegion **始终自动解析**：通过 `DescribeNapServiceInfo` + `GetNapServiceConfig` 取服务配置 IpInfo 的 Region。无手动 `--eip-region` / `--block-udp` flag。可选 flag：`--type-ip`（默认 `TypeFree`）、`--remark`、`--tag`。
 
 | TC# | 场景 | 命令 | 预期结果 |
 |-----|------|------|----------|
-| O-IP-C-01 | 自动解析 EIPRegion（省略参数） | `ucloud uddos overseas ip create --resource-id nap-xxxxx` | 自动查询服务配置获取 EIPRegion，创建 IP，输出 `BGP IP created: x.x.x.x` |
-| O-IP-C-02 | 手动指定 eip-region | `... --eip-region hk` | 跳过自动解析，直接使用 hk，正常创建 |
-| O-IP-C-03 | 指定 block-udp=yes | `... --block-udp yes` | 正常创建，UDP 被屏蔽 |
-| O-IP-C-04 | 指定 type-ip=TypeCharge | `... --type-ip TypeCharge` | 正常创建计费类型 IP |
-| O-IP-C-05 | 指定 remark 和 tag | `... --remark "r1" --tag "grp1"` | API 参数含 Remark / Tag |
-| O-IP-C-06 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
-| O-IP-C-07 | resource-id 查不到服务 | `--resource-id nap-notexist` | 报错：`service nap-notexist not found` |
-| O-IP-C-08 | 服务配置 IpInfo 为空 | （数据库无 IpInfo 配置的服务） | 报错：`IpInfo is empty... please specify --eip-region manually` |
+| O-IP-C-01 | 自动解析 EIPRegion（仅必填参数） | `ucloud uddos overseas ip create --resource-id nap-xxxxx` | 自动查询服务配置获取 EIPRegion，创建 IP，输出 `BGP IP created: x.x.x.x`，状态 Created |
+| O-IP-C-02 | 指定 type-ip=TypeCharge | `... --type-ip TypeCharge` | 正常创建计费类型 IP |
+| O-IP-C-03 | 指定 remark 和 tag | `... --remark "r1" --tag "grp1"` | API 参数含 Remark / Tag |
+| O-IP-C-04 | **缺少 resource-id** | 省略 `--resource-id` | cobra 报错：required flag not set |
+| O-IP-C-05 | resource-id 查不到服务 | `--resource-id nap-notexist` | 报错：`service nap-notexist not found` |
+| O-IP-C-06 | 服务配置 IpInfo 为空 | （数据库无 IpInfo 配置的服务） | 报错：`IpInfo is empty in service config` |
 
 ---
 
@@ -237,4 +254,4 @@
 | G-04 | 进度提示去向（Table 模式） | 不带 `--output`（默认表格） | 进度文本与结果均输出到 stdout |
 | G-05 | 帮助信息 | `ucloud uddos --help` / `ucloud uddos mainland --help` | 输出可读的帮助文本，Example 字段完整 |
 | G-06 | 命令树完整性 | `ucloud uddos mainland rule --help` | 列出 create / list / update / delete 四个子命令 |
-| G-07 | 海外命令树完整性 | `ucloud uddos overseas ip --help` | 列出 create / list / delete 三个子命令（bind/unbind 暂未启用） |
+| G-07 | 海外命令树完整性 | `ucloud uddos overseas ip --help` | 列出 create / list / delete 三个子命令 |
