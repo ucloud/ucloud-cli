@@ -40,6 +40,7 @@ func registeredProducts() []cli.Product {
 		image.New(),
 		memcache.New(),
 		mysql.New(),
+		nlb.New(),
 		pathx.New(),
 		redis.New(),
 		sharedbw.New(),
@@ -57,6 +58,5 @@ func registeredProducts() []cli.Product {
 		usnap.New(),
 		utidb.New(),
 		vpc.New(),
-		nlb.New(),
 	}
 }
