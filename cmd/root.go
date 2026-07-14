@@ -324,14 +324,6 @@ func init() {
 				global.Timeout = sec
 			}
 		}
-		if arg == "--wait-timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			sec, err := strconv.Atoi(os.Args[idx+1])
-			if err != nil {
-				fmt.Printf("parse wait-timeout-sec failed: %v\n", err)
-			} else {
-				global.WaitTimeout = sec
-			}
-		}
 		if arg == "--max-retry-times" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			times, err := strconv.Atoi(os.Args[idx+1])
 			if err != nil {
@@ -341,7 +333,38 @@ func init() {
 			}
 		}
 	}
+	if sec, found, err := parseWaitTimeoutSec(os.Args); found {
+		if err != nil {
+			fmt.Printf("parse wait-timeout-sec failed: %v\n", err)
+		} else {
+			global.WaitTimeout = sec
+		}
+	}
 	cobra.EnableCommandSorting = false
+}
+
+// parseWaitTimeoutSec scans args for --wait-timeout-sec in either
+// `--wait-timeout-sec N` or `--wait-timeout-sec=N` form. found=true when
+// the flag is present with a value; err is set when that value isn't an int.
+func parseWaitTimeoutSec(args []string) (sec int, found bool, err error) {
+	const flag = "--wait-timeout-sec"
+	for idx, arg := range args {
+		if arg == flag {
+			if len(args) > idx+1 && args[idx+1] != "" {
+				sec, err = strconv.Atoi(args[idx+1])
+				return sec, true, err
+			}
+			continue
+		}
+		if val, ok := strings.CutPrefix(arg, flag+"="); ok {
+			if val == "" {
+				continue
+			}
+			sec, err = strconv.Atoi(val)
+			return sec, true, err
+		}
+	}
+	return 0, false, nil
 }
 
 func resetHelpFunc(cmd *cobra.Command) {
