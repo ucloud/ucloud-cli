@@ -1,0 +1,80 @@
+package tidb
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"github.com/ucloud/ucloud-sdk-go/services/tidb"
+
+	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/pkg/command"
+)
+
+// newDelete ucloud utidb delete
+func newDelete(ctx *cli.Context) *cobra.Command {
+	var id string
+	var deleteBackup bool
+	var yes, async bool
+
+	client := cli.NewServiceClient(ctx, tidb.NewClient)
+	req := client.NewDeleteTiDBClusterServiceRequest()
+
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a UTiDB instance",
+		Long:  "Delete a UTiDB instance",
+		Run: func(c *cobra.Command, args []string) {
+			ok, err := ctx.Confirm(yes, fmt.Sprintf("Are you sure to delete UTiDB instance %s?", id))
+			if err != nil {
+				ctx.HandleError(err)
+				return
+			}
+			if !ok {
+				return
+			}
+
+			pickedID := ctx.PickResourceID(id)
+			params := mergeCommonParams(req.GetRegion(), req.GetZone(), req.GetProjectId(), map[string]interface{}{
+				"Id": pickedID,
+			})
+			if deleteBackup {
+				params["DeleteBackup"] = true
+			}
+
+			_, err = invokeAPI(ctx, "DeleteTiDBClusterService", params)
+			if err != nil {
+				handleAPIError(ctx, err)
+				return
+			}
+
+			w := ctx.ProgressWriter()
+			if async {
+				fmt.Fprintf(w, "utidb[%s] is deleting\n", pickedID)
+			} else {
+				text := fmt.Sprintf("utidb[%s] is deleting", pickedID)
+				ctx.PollerTo(w, describeByID(ctx, req.GetRegion(), req.GetZone(), req.GetProjectId())).Spoll(pickedID, text, []string{stateDeleted, stateDeleteFail})
+			}
+			ctx.EmitResult(cli.OpResultRow{ResourceID: pickedID, Action: "delete", Status: "Deleted"})
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+
+	flags.StringVar(&id, "utidb-id", "", "Required. Resource ID of the UTiDB instance to delete")
+	flags.BoolVar(&deleteBackup, "delete-backup", false, "Optional. Also delete backup data")
+	flags.BoolVarP(&yes, "yes", "y", false, "Optional. Do not prompt for confirmation")
+	flags.BoolVar(&async, "async", false, "Optional. Do not wait for deletion to finish")
+
+	ctx.BindRegion(cmd, req)
+	ctx.BindZone(cmd, req)
+	ctx.BindProjectID(cmd, req)
+
+	cmd.MarkFlagRequired("utidb-id")
+	command.SetCompletion(cmd, "utidb-id", func() []string {
+		return listResourceIDs(ctx, nil, req.GetRegion(), req.GetZone(), req.GetProjectId())
+	})
+
+	return cmd
+}
