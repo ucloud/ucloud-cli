@@ -22,22 +22,21 @@ func newDescribe(ctx *cli.Context) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			*req.ClusterId = ctx.PickResourceID(*req.ClusterId)
-			cluster := &compatResponse{}
-			err := client.InvokeAction("DescribeUK8SCluster", req, cluster)
+			cluster, err := client.DescribeUK8SCluster(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			if cluster.stringField("ClusterId") == "" {
+			if cluster.ClusterId == "" {
 				ctx.HandleError(fmt.Errorf("cluster %q not found", *req.ClusterId))
 				return
 			}
 			if ctx.Format() != cli.OutputTable {
-				ctx.PrintList(cluster.Payload)
+				ctx.PrintList(cluster)
 				return
 			}
 
-			ctx.PrintList(responseRows(cluster.Payload))
+			ctx.PrintList(clusterDescribeRows(cluster))
 		},
 	}
 

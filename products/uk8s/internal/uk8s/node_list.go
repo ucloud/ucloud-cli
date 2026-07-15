@@ -19,17 +19,16 @@ func newNodeList(ctx *cli.Context) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			*req.ClusterId = ctx.PickResourceID(*req.ClusterId)
-			resp := &compatResponse{}
-			err := client.InvokeAction("ListUK8SClusterNodeV2", req, resp)
+			resp, err := client.ListUK8SClusterNodeV2(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
 			if ctx.Format() != cli.OutputTable {
-				ctx.PrintList(resp.Payload)
+				ctx.PrintList(resp)
 				return
 			}
-			ctx.PrintList(responseRows(resp.Payload))
+			ctx.PrintList(nodeRows(resp.NodeSet))
 		},
 	}
 

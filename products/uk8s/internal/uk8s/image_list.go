@@ -17,17 +17,16 @@ func newImageList(ctx *cli.Context) *cobra.Command {
 		Short: "List images supported by UK8S",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			resp := &compatResponse{}
-			err := client.InvokeAction("DescribeUK8SImage", req, resp)
+			resp, err := client.DescribeUK8SImage(req)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
 			if ctx.Format() != cli.OutputTable {
-				ctx.PrintList(resp.Payload)
+				ctx.PrintList(resp)
 				return
 			}
-			ctx.PrintList(responseRows(resp.Payload))
+			ctx.PrintList(imageRows(resp))
 		},
 	}
 

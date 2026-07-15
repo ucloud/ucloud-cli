@@ -31,7 +31,7 @@ func newList(ctx *cli.Context) *cobra.Command {
 				ctx.PrintList(resp)
 				return
 			}
-			ctx.PrintList(responseRows(resp))
+			ctx.PrintList(clusterRows(resp.ClusterSet))
 		},
 	}
 
