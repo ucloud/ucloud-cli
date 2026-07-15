@@ -175,11 +175,15 @@ This is a synchronous operation: the command returns after the export API respon
 					fmt.Fprintf(w, "%s[%s] exported successfully (type: %s, zone: %s)\n", productName, id, instanceType, zone)
 				}
 			}
-			ctx.EmitResult(cli.OpResultRow{
-				ResourceID: instanceIDs[0],
-				Action:     "export",
-				Status:     "Exported",
-			})
+			results := make([]cli.OpResultRow, 0, len(instanceIDs))
+			for _, id := range instanceIDs {
+				results = append(results, cli.OpResultRow{
+					ResourceID: id,
+					Action:     "export",
+					Status:     "Exported",
+				})
+			}
+			ctx.EmitResult(results...)
 		},
 	}
 

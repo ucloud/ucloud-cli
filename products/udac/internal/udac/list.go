@@ -182,6 +182,7 @@ When both --region and --zone are specified, the zone must belong to the region.
 			}
 
 			// 6. 客户端过滤
+			instanceID = ctx.PickResourceID(instanceID)
 			rows := make([]importedInstanceRow, 0, len(instances))
 			for _, m := range instances {
 				if instanceID != "" && firstString(m, "ClusterId", "InstanceId", "ID") != instanceID {

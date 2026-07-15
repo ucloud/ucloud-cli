@@ -174,11 +174,15 @@ This is a synchronous operation: the command returns after the import API respon
 					fmt.Fprintf(w, "%s[%s] imported successfully (type: %s, zone: %s)\n", productName, id, instanceType, zone)
 				}
 			}
-			ctx.EmitResult(cli.OpResultRow{
-				ResourceID: instanceIDs[0],
-				Action:     "import",
-				Status:     "Imported",
-			})
+			results := make([]cli.OpResultRow, 0, len(instanceIDs))
+			for _, id := range instanceIDs {
+				results = append(results, cli.OpResultRow{
+					ResourceID: id,
+					Action:     "import",
+					Status:     "Imported",
+				})
+			}
+			ctx.EmitResult(results...)
 		},
 	}
 
