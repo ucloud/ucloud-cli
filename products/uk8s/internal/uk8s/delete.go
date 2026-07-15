@@ -47,8 +47,10 @@ func newDelete(ctx *cli.Context) *cobra.Command {
 				if releaseEIP {
 					// DelUK8SClusterRequest in older SDK schemas does not expose
 					// ReleaseEIP, but the UK8S API accepts it. Use a local request
-					// shape only when the user explicitly opts in.
+					// shape only when the user explicitly opts in. Preserve CommonBase
+					// so the bound region and project ID are sent with this request.
 					eipReq := &deleteClusterRequest{
+						CommonBase:   req.CommonBase,
 						ClusterId:    req.ClusterId,
 						ReleaseUDisk: req.ReleaseUDisk,
 						ReleaseEIP:   sdk.Bool(true),
