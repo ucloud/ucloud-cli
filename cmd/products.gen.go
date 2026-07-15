@@ -24,11 +24,8 @@ import (
 	"github.com/ucloud/ucloud-cli/products/ufs"
 	"github.com/ucloud/ucloud-cli/products/uhadoop"
 	"github.com/ucloud/ucloud-cli/products/uhost"
-<<<<<<< HEAD
 	"github.com/ucloud/ucloud-cli/products/ukafka"
-=======
 	"github.com/ucloud/ucloud-cli/products/uk8s"
->>>>>>> 7b0a4da (feat: add UK8S product support with command structure and completion)
 	"github.com/ucloud/ucloud-cli/products/ulb"
 	"github.com/ucloud/ucloud-cli/products/ulhost"
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
@@ -65,11 +62,8 @@ func registeredProducts() []cli.Product {
 		ufs.New(),
 		uhadoop.New(),
 		uhost.New(),
-<<<<<<< HEAD
 		ukafka.New(),
-=======
 		uk8s.New(),
->>>>>>> 7b0a4da (feat: add UK8S product support with command structure and completion)
 		ulb.New(),
 		ulhost.New(),
 		umodelverse.New(),

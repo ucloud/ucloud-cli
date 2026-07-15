@@ -10,11 +10,7 @@ require (
 	github.com/sirupsen/logrus v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-<<<<<<< HEAD
-	github.com/ucloud/ucloud-sdk-go v0.22.90
-=======
 	github.com/ucloud/ucloud-sdk-go v0.22.92
->>>>>>> 08283fa (feat(uk8s): update SDK dependencies, enhance command responses, and refactor output handling)
 	gopkg.in/yaml.v2 v2.2.2
 )
 
