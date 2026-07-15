@@ -103,11 +103,13 @@ func TestClusterRowFormatsMillisecondCreateTimestamp(t *testing.T) {
 		ExpireTimestamp: 1783926000,
 	})
 
-	if row.CreateTime != "2026-07-11" {
-		t.Fatalf("CreateTime = %q, want 2026-07-11", row.CreateTime)
+	// Expected values go through formatUnixDate with second-precision inputs so
+	// the assertions hold in any local timezone.
+	if want := formatUnixDate(1783700833); row.CreateTime != want {
+		t.Fatalf("CreateTime = %q, want %q", row.CreateTime, want)
 	}
-	if row.ExpireTime != "2026-07-13" {
-		t.Fatalf("ExpireTime = %q, want 2026-07-13", row.ExpireTime)
+	if want := formatUnixDate(1783926000); row.ExpireTime != want {
+		t.Fatalf("ExpireTime = %q, want %q", row.ExpireTime, want)
 	}
 }
 
