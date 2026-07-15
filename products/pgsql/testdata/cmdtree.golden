@@ -1,0 +1,358 @@
+ucloud pgsql	use=pgsql	short=Manipulate UPgSQL on UCloud platform
+ucloud pgsql backup	use=backup	short=List and manipulate backups of UPgSQL instances
+ucloud pgsql backup download	use=download	short=Display download URLs of a UPgSQL backup
+  flag=backup-id	short=	default=	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql backup list	use=list	short=List backups of a UPgSQL instance
+  flag=backup-type	short=	default=	required=
+  flag=instance-id	short=	default=	required=true
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql backup strategy	use=strategy	short=Display the backup strategy of a UPgSQL instance
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql backup update-strategy	use=update-strategy	short=Update the backup strategy of a UPgSQL instance
+  flag=backup-method	short=	default=	required=
+  flag=backup-time-range	short=	default=	required=
+  flag=backup-week	short=	default=	required=
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql conf	use=conf	short=List and manipulate parameter templates of UPgSQL instances
+ucloud pgsql conf create	use=create	short=Create a UPgSQL parameter template from a base template
+  flag=db-version	short=	default=	required=true
+  flag=description	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-conf-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud pgsql conf delete	use=delete	short=Delete a UPgSQL parameter template
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql conf describe	use=describe	short=Display details of a UPgSQL parameter template
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql conf download	use=download	short=Download a UPgSQL parameter template (base64 content)
+  flag=conf-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql conf list	use=list	short=List UPgSQL parameter templates
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql conf upload	use=upload	short=Create a UPgSQL parameter template by uploading a local config file
+  flag=conf-file	short=	default=	required=true
+  flag=db-version	short=	default=	required=true
+  flag=description	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db	use=db	short=Manage UPgSQL instances
+ucloud pgsql db create	use=create	short=Create a UPgSQL instance
+  flag=async	short=a	default=false	required=
+  flag=disk-size-gb	short=	default=100	required=
+  flag=machine-type	short=	default=	required=true
+  flag=mode	short=	default=Normal	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-id	short=	default=0	required=
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=5432	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=version	short=	default=	required=true
+  flag=vpc-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud pgsql db create-readonly	use=create-readonly	short=Create a readonly replica for a UPgSQL instance
+  flag=async	short=a	default=false	required=
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=machine-type	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=port	short=	default=5432	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=src-instance-id	short=	default=	required=true
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db delete	use=delete	short=Delete UPgSQL instances by instance-id
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db get	use=get	short=Display details of a UPgSQL instance
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db list	use=list	short=List UPgSQL instances
+  flag=instance-id	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db list-machine-type	use=list-machine-type	short=List available UPgSQL machine types
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db list-version	use=list-version	short=List available UPgSQL versions
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db price	use=price	short=Get the price of creating UPgSQL instances
+  flag=charge-type	short=	default=Month	required=
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=machine-type	short=	default=	required=true
+  flag=mode	short=	default=Normal	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db reset-password	use=reset-password	short=Reset the admin password of UPgSQL instances
+  flag=instance-id	short=	default=[]	required=true
+  flag=name	short=	default=	required=
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db restart	use=restart	short=Restart UPgSQL instances by instance-id
+  flag=async	short=a	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=restart-host	short=	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db start	use=start	short=Start UPgSQL instances by instance-id
+  flag=async	short=a	default=false	required=
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db stop	use=stop	short=Stop UPgSQL instances by instance-id
+  flag=async	short=a	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=stop-host	short=	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db stop-creating-readonly	use=stop-creating-readonly	short=Stop readonly replicas that are still being created
+  flag=instance-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db update-name	use=update-name	short=Update the name of a UPgSQL instance
+  flag=instance-id	short=	default=	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db update-remark	use=update-remark	short=Update the remark of a UPgSQL instance
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=remark	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud pgsql db upgrade	use=upgrade	short=Upgrade disk space and/or machine type of UPgSQL instances
+  flag=async	short=a	default=false	required=
+  flag=disk-size-gb	short=	default=0	required=
+  flag=instance-id	short=	default=[]	required=true
+  flag=machine-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql db upgrade-price	use=upgrade-price	short=Get the price of upgrading a UPgSQL instance
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=machine-type	short=	default=	required=true
+  flag=mode	short=	default=Normal	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql log	use=log	short=List and back up logs of UPgSQL instances
+ucloud pgsql log backup	use=backup	short=Back up the log package of a UPgSQL instance
+  flag=backup-file	short=	default=	required=true
+  flag=begin-time	short=	default=	required=
+  flag=end-time	short=	default=	required=
+  flag=instance-id	short=	default=	required=true
+  flag=log-type	short=	default=	required=
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql log list	use=list	short=List logs of a UPgSQL instance within a time range
+  flag=begin-time	short=	default=	required=true
+  flag=end-time	short=	default=	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase	use=supabase	short=Manage USupabase instances (and the MemoryDB AI-memory variant)
+ucloud pgsql supabase bandwidth-upgrade-price	use=bandwidth-upgrade-price	short=Get the price of upgrading external-access bandwidth of a USupabase instance
+  flag=bandwidth	short=	default=0	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase create	use=create	short=Create a USupabase instance
+  flag=async	short=a	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=dashboard-name	short=	default=	required=true
+  flag=dashboard-password	short=	default=	required=true
+  flag=db-version	short=	default=	required=true
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=label	short=	default=[]	required=
+  flag=machine-type	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=mode	short=	default=Normal	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-id	short=	default=0	required=true
+  flag=pgsql-password	short=	default=	required=true
+  flag=pgsql-port	short=	default=5432	required=
+  flag=pgsql-user	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=supabase-port	short=	default=8000	required=
+  flag=vpc-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase create-memory-db	use=create-memory-db	short=Create a UMemoryDB (AI memory) instance
+  flag=async	short=a	default=false	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=dashboard-name	short=	default=	required=true
+  flag=dashboard-password	short=	default=	required=true
+  flag=db-version	short=	default=	required=true
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=label	short=	default=[]	required=
+  flag=machine-type	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=mode	short=	default=Normal	required=
+  flag=name	short=	default=	required=true
+  flag=param-group-id	short=	default=0	required=true
+  flag=pgsql-password	short=	default=	required=true
+  flag=pgsql-port	short=	default=5432	required=
+  flag=pgsql-user	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=supabase-port	short=	default=8000	required=
+  flag=vpc-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase delete	use=delete	short=Delete a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase describe	use=describe	short=Display details of a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase disable-external-access	use=disable-external-access	short=Disable external access for a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase enable-external-access	use=enable-external-access	short=Enable external access for a USupabase instance
+  flag=bandwidth	short=	default=0	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase external-price	use=external-price	short=Get the price of enabling external access for a USupabase instance
+  flag=bandwidth	short=	default=0	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase get-api-key	use=get-api-key	short=Display the API keys (service key + anon key) of a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase get-storage-config	use=get-storage-config	short=Display the storage configuration of a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase list	use=list	short=List USupabase instances
+  flag=instance-id	short=	default=	required=
+  flag=limit	short=	default=0	required=
+  flag=memory-db	short=	default=false	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase modify-external-access	use=modify-external-access	short=Modify external-access settings of a USupabase instance
+  flag=bandwidth	short=	default=0	required=
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=port	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=white-list	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase reset-password	use=reset-password	short=Reset the dashboard password of a USupabase instance
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase restart	use=restart	short=Restart a USupabase instance
+  flag=async	short=a	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase set-storage-config	use=set-storage-config	short=Set storage configuration entries of a USupabase instance
+  flag=config	short=	default=[]	required=true
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase start	use=start	short=Start a USupabase instance
+  flag=async	short=a	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud pgsql supabase stop	use=stop	short=Stop a USupabase instance
+  flag=async	short=a	default=false	required=
+  flag=instance-id	short=	default=	required=true
+  flag=memory-db	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=

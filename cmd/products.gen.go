@@ -13,6 +13,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/mysql"
 	"github.com/ucloud/ucloud-cli/products/nlb"
 	"github.com/ucloud/ucloud-cli/products/pathx"
+	"github.com/ucloud/ucloud-cli/products/pgsql"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
 	"github.com/ucloud/ucloud-cli/products/sqlserver"
@@ -52,6 +53,7 @@ func registeredProducts() []cli.Product {
 		mysql.New(),
 		nlb.New(),
 		pathx.New(),
+		pgsql.New(),
 		redis.New(),
 		sharedbw.New(),
 		sqlserver.New(),

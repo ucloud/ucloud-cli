@@ -1,0 +1,192 @@
+ucloud pgsql backup download	backup-id	dynamic
+ucloud pgsql backup download	instance-id	dynamic
+ucloud pgsql backup download	project-id	dynamic
+ucloud pgsql backup download	region	dynamic
+ucloud pgsql backup download	zone	dynamic
+ucloud pgsql backup list	backup-type	static	auto,manual
+ucloud pgsql backup list	instance-id	dynamic
+ucloud pgsql backup list	project-id	dynamic
+ucloud pgsql backup list	region	dynamic
+ucloud pgsql backup list	zone	dynamic
+ucloud pgsql backup strategy	instance-id	dynamic
+ucloud pgsql backup strategy	project-id	dynamic
+ucloud pgsql backup strategy	region	dynamic
+ucloud pgsql backup strategy	zone	dynamic
+ucloud pgsql backup update-strategy	instance-id	dynamic
+ucloud pgsql backup update-strategy	project-id	dynamic
+ucloud pgsql backup update-strategy	region	dynamic
+ucloud pgsql backup update-strategy	zone	dynamic
+ucloud pgsql conf create	db-version	static	postgresql-10.4,postgresql-13.4
+ucloud pgsql conf create	project-id	dynamic
+ucloud pgsql conf create	region	dynamic
+ucloud pgsql conf create	src-conf-id	dynamic
+ucloud pgsql conf create	zone	dynamic
+ucloud pgsql conf delete	conf-id	dynamic
+ucloud pgsql conf delete	project-id	dynamic
+ucloud pgsql conf delete	region	dynamic
+ucloud pgsql conf delete	zone	dynamic
+ucloud pgsql conf describe	conf-id	dynamic
+ucloud pgsql conf describe	project-id	dynamic
+ucloud pgsql conf describe	region	dynamic
+ucloud pgsql conf describe	zone	dynamic
+ucloud pgsql conf download	conf-id	dynamic
+ucloud pgsql conf download	project-id	dynamic
+ucloud pgsql conf download	region	dynamic
+ucloud pgsql conf download	zone	dynamic
+ucloud pgsql conf list	project-id	dynamic
+ucloud pgsql conf list	region	dynamic
+ucloud pgsql conf list	zone	dynamic
+ucloud pgsql conf upload	conf-file	static
+ucloud pgsql conf upload	db-version	static	postgresql-10.4,postgresql-13.4
+ucloud pgsql conf upload	project-id	dynamic
+ucloud pgsql conf upload	region	dynamic
+ucloud pgsql conf upload	zone	dynamic
+ucloud pgsql db create	machine-type	dynamic
+ucloud pgsql db create	mode	static	HA,Normal
+ucloud pgsql db create	param-group-id	dynamic
+ucloud pgsql db create	project-id	dynamic
+ucloud pgsql db create	region	dynamic
+ucloud pgsql db create	subnet-id	dynamic
+ucloud pgsql db create	version	static	postgresql-10.4,postgresql-13.4
+ucloud pgsql db create	vpc-id	dynamic
+ucloud pgsql db create	zone	dynamic
+ucloud pgsql db create-readonly	machine-type	dynamic
+ucloud pgsql db create-readonly	project-id	dynamic
+ucloud pgsql db create-readonly	region	dynamic
+ucloud pgsql db create-readonly	src-instance-id	dynamic
+ucloud pgsql db create-readonly	subnet-id	dynamic
+ucloud pgsql db create-readonly	vpc-id	dynamic
+ucloud pgsql db create-readonly	zone	dynamic
+ucloud pgsql db delete	instance-id	dynamic
+ucloud pgsql db delete	project-id	dynamic
+ucloud pgsql db delete	region	dynamic
+ucloud pgsql db delete	zone	dynamic
+ucloud pgsql db get	instance-id	dynamic
+ucloud pgsql db get	project-id	dynamic
+ucloud pgsql db get	region	dynamic
+ucloud pgsql db get	zone	dynamic
+ucloud pgsql db list	instance-id	dynamic
+ucloud pgsql db list	project-id	dynamic
+ucloud pgsql db list	region	dynamic
+ucloud pgsql db list	zone	dynamic
+ucloud pgsql db list-machine-type	project-id	dynamic
+ucloud pgsql db list-machine-type	region	dynamic
+ucloud pgsql db list-machine-type	zone	dynamic
+ucloud pgsql db list-version	project-id	dynamic
+ucloud pgsql db list-version	region	dynamic
+ucloud pgsql db list-version	zone	dynamic
+ucloud pgsql db price	charge-type	static	Dynamic,Month,Year
+ucloud pgsql db price	machine-type	dynamic
+ucloud pgsql db price	mode	static	HA,Normal
+ucloud pgsql db price	project-id	dynamic
+ucloud pgsql db price	region	dynamic
+ucloud pgsql db price	zone	dynamic
+ucloud pgsql db reset-password	instance-id	dynamic
+ucloud pgsql db reset-password	project-id	dynamic
+ucloud pgsql db reset-password	region	dynamic
+ucloud pgsql db reset-password	zone	dynamic
+ucloud pgsql db restart	force	static	false,true
+ucloud pgsql db restart	instance-id	dynamic
+ucloud pgsql db restart	project-id	dynamic
+ucloud pgsql db restart	region	dynamic
+ucloud pgsql db restart	restart-host	static	false,true
+ucloud pgsql db restart	zone	dynamic
+ucloud pgsql db start	instance-id	dynamic
+ucloud pgsql db start	project-id	dynamic
+ucloud pgsql db start	region	dynamic
+ucloud pgsql db start	zone	dynamic
+ucloud pgsql db stop	force	static	false,true
+ucloud pgsql db stop	instance-id	dynamic
+ucloud pgsql db stop	project-id	dynamic
+ucloud pgsql db stop	region	dynamic
+ucloud pgsql db stop	stop-host	static	false,true
+ucloud pgsql db stop	zone	dynamic
+ucloud pgsql db stop-creating-readonly	instance-id	dynamic
+ucloud pgsql db stop-creating-readonly	project-id	dynamic
+ucloud pgsql db stop-creating-readonly	region	dynamic
+ucloud pgsql db stop-creating-readonly	zone	dynamic
+ucloud pgsql db update-name	instance-id	dynamic
+ucloud pgsql db update-name	project-id	dynamic
+ucloud pgsql db update-name	region	dynamic
+ucloud pgsql db update-name	zone	dynamic
+ucloud pgsql db update-remark	instance-id	dynamic
+ucloud pgsql db update-remark	project-id	dynamic
+ucloud pgsql db update-remark	region	dynamic
+ucloud pgsql db update-remark	zone	dynamic
+ucloud pgsql db upgrade	instance-id	dynamic
+ucloud pgsql db upgrade	machine-type	dynamic
+ucloud pgsql db upgrade	project-id	dynamic
+ucloud pgsql db upgrade	region	dynamic
+ucloud pgsql db upgrade	zone	dynamic
+ucloud pgsql db upgrade-price	instance-id	dynamic
+ucloud pgsql db upgrade-price	machine-type	dynamic
+ucloud pgsql db upgrade-price	mode	static	HA,Normal
+ucloud pgsql db upgrade-price	project-id	dynamic
+ucloud pgsql db upgrade-price	region	dynamic
+ucloud pgsql db upgrade-price	zone	dynamic
+ucloud pgsql log backup	instance-id	dynamic
+ucloud pgsql log backup	log-type	static	error,slow
+ucloud pgsql log backup	project-id	dynamic
+ucloud pgsql log backup	region	dynamic
+ucloud pgsql log backup	zone	dynamic
+ucloud pgsql log list	instance-id	dynamic
+ucloud pgsql log list	project-id	dynamic
+ucloud pgsql log list	region	dynamic
+ucloud pgsql log list	zone	dynamic
+ucloud pgsql supabase bandwidth-upgrade-price	project-id	dynamic
+ucloud pgsql supabase bandwidth-upgrade-price	region	dynamic
+ucloud pgsql supabase bandwidth-upgrade-price	zone	dynamic
+ucloud pgsql supabase create	charge-type	static	Dynamic,Month,Year
+ucloud pgsql supabase create	db-version	static	postgresql-10.4,postgresql-13.4
+ucloud pgsql supabase create	mode	static	HA,Normal
+ucloud pgsql supabase create	project-id	dynamic
+ucloud pgsql supabase create	region	dynamic
+ucloud pgsql supabase create	zone	dynamic
+ucloud pgsql supabase create-memory-db	charge-type	static	Dynamic,Month,Year
+ucloud pgsql supabase create-memory-db	db-version	static	postgresql-10.4,postgresql-13.4
+ucloud pgsql supabase create-memory-db	mode	static	HA,Normal
+ucloud pgsql supabase create-memory-db	project-id	dynamic
+ucloud pgsql supabase create-memory-db	region	dynamic
+ucloud pgsql supabase create-memory-db	zone	dynamic
+ucloud pgsql supabase delete	project-id	dynamic
+ucloud pgsql supabase delete	region	dynamic
+ucloud pgsql supabase delete	zone	dynamic
+ucloud pgsql supabase describe	project-id	dynamic
+ucloud pgsql supabase describe	region	dynamic
+ucloud pgsql supabase describe	zone	dynamic
+ucloud pgsql supabase disable-external-access	project-id	dynamic
+ucloud pgsql supabase disable-external-access	region	dynamic
+ucloud pgsql supabase disable-external-access	zone	dynamic
+ucloud pgsql supabase enable-external-access	project-id	dynamic
+ucloud pgsql supabase enable-external-access	region	dynamic
+ucloud pgsql supabase enable-external-access	zone	dynamic
+ucloud pgsql supabase external-price	project-id	dynamic
+ucloud pgsql supabase external-price	region	dynamic
+ucloud pgsql supabase external-price	zone	dynamic
+ucloud pgsql supabase get-api-key	project-id	dynamic
+ucloud pgsql supabase get-api-key	region	dynamic
+ucloud pgsql supabase get-api-key	zone	dynamic
+ucloud pgsql supabase get-storage-config	project-id	dynamic
+ucloud pgsql supabase get-storage-config	region	dynamic
+ucloud pgsql supabase get-storage-config	zone	dynamic
+ucloud pgsql supabase list	project-id	dynamic
+ucloud pgsql supabase list	region	dynamic
+ucloud pgsql supabase list	zone	dynamic
+ucloud pgsql supabase modify-external-access	project-id	dynamic
+ucloud pgsql supabase modify-external-access	region	dynamic
+ucloud pgsql supabase modify-external-access	zone	dynamic
+ucloud pgsql supabase reset-password	project-id	dynamic
+ucloud pgsql supabase reset-password	region	dynamic
+ucloud pgsql supabase reset-password	zone	dynamic
+ucloud pgsql supabase restart	project-id	dynamic
+ucloud pgsql supabase restart	region	dynamic
+ucloud pgsql supabase restart	zone	dynamic
+ucloud pgsql supabase set-storage-config	project-id	dynamic
+ucloud pgsql supabase set-storage-config	region	dynamic
+ucloud pgsql supabase set-storage-config	zone	dynamic
+ucloud pgsql supabase start	project-id	dynamic
+ucloud pgsql supabase start	region	dynamic
+ucloud pgsql supabase start	zone	dynamic
+ucloud pgsql supabase stop	project-id	dynamic
+ucloud pgsql supabase stop	region	dynamic
+ucloud pgsql supabase stop	zone	dynamic

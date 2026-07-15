@@ -1,0 +1,6 @@
+name: pgsql
+owners:
+  - jemy-wang
+commands:
+  - pgsql
+enabled: true
