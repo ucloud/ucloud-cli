@@ -1,0 +1,22 @@
+ucloud ulhost bundles	project-id	dynamic
+ucloud ulhost bundles	region	dynamic
+ucloud ulhost create	bundle-id	dynamic
+ucloud ulhost create	charge-type	static	Month,Year
+ucloud ulhost create	region	dynamic
+ucloud ulhost delete	delete-cloud-disk	static	false,true
+ucloud ulhost delete	ulhost-id	dynamic
+ucloud ulhost image list	image-type	static	Base,Business,Custom
+ucloud ulhost list	page-off	static	false,true
+ucloud ulhost list	project-id	dynamic
+ucloud ulhost list	region	dynamic
+ucloud ulhost list	ulhost-id	dynamic
+ucloud ulhost list	ulhost-id-only	static	false,true
+ucloud ulhost modify-attribute	ulhost-id	dynamic
+ucloud ulhost poweroff	ulhost-id	dynamic
+ucloud ulhost price	charge-type	static	Month,Year
+ucloud ulhost price	region	dynamic
+ucloud ulhost reinstall-os	ulhost-id	dynamic
+ucloud ulhost reset-password	ulhost-id	dynamic
+ucloud ulhost restart	ulhost-id	dynamic
+ucloud ulhost start	ulhost-id	dynamic
+ucloud ulhost stop	ulhost-id	dynamic

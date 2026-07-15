@@ -1,0 +1,93 @@
+ucloud ukafka	use=ukafka	short=Manage UKafka instances
+ucloud ukafka add-node	use=add-node	short=Add nodes to UKafka instance
+  flag=async	short=	default=false	required=
+  flag=node-count	short=	default=1	required=
+  flag=node-type	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka app-version	use=app-version	short=List available Kafka versions
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud ukafka check-topic	use=check-topic	short=Check if a topic name exists in UKafka instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=topic-name	short=	default=	required=true
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka create	use=create	short=Create UKafka instance
+  flag=async	short=	default=false	required=
+  flag=business-id	short=	default=	required=
+  flag=disk-controller-type	short=	default=NONE	required=
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=disk-threshold	short=	default=90	required=
+  flag=enable-security	short=	default=false	required=
+  flag=kafka-version	short=	default=	required=true
+  flag=log-retention-hours	short=	default=72	required=
+  flag=name	short=	default=	required=true
+  flag=node-count	short=	default=3	required=
+  flag=node-type	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud ukafka delete	use=delete	short=Delete UKafka instances
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud ukafka describe	use=describe	short=Describe UKafka instance details
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka describe-consumer	use=describe-consumer	short=Describe Kafka consumer group details
+  flag=consumer-group	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=type	short=	default=	required=true
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka list	use=list	short=List UKafka instances
+  flag=business-id	short=	default=	required=
+  flag=limit	short=	default=60	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud ukafka list-consumers	use=list-consumers	short=List Kafka consumer groups
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka list-topics	use=list-topics	short=List Kafka topics in UKafka instance
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka modify-type	use=modify-type	short=Modify UKafka instance type (CPU and memory)
+  flag=async	short=	default=false	required=
+  flag=node-type	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud ukafka node-conf	use=node-conf	short=List available UKafka node configurations
+  flag=node-type	short=	default=	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud ukafka resize-disk	use=resize-disk	short=Resize UKafka instance disk
+  flag=async	short=	default=false	required=
+  flag=disk-size-gb	short=	default=0	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=ukafka-id	short=	default=	required=true
+  flag=zone	short=	default=	required=

@@ -1,0 +1,6 @@
+name: uhadoop
+owners:
+  - markwei-ucloud
+commands:
+  - uhadoop
+enabled: true

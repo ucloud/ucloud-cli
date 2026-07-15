@@ -1,0 +1,60 @@
+ucloud sqlserver	use=sqlserver	short=Manipulate SQL Server on UCloud platform
+ucloud sqlserver db	use=db	short=Manage SQL Server instances
+ucloud sqlserver db create	use=create	short=Create SQL Server instance (Normal/single-node mode) on UCloud platform
+  flag=alarm-template-id	short=	default=	required=
+  flag=async	short=	default=false	required=
+  flag=backup-count	short=	default=7	required=
+  flag=backup-duration	short=	default=24	required=
+  flag=backup-time	short=	default=1	required=
+  flag=charge-type	short=	default=Month	required=
+  flag=coupon-id	short=	default=	required=
+  flag=cpu	short=	default=2	required=
+  flag=db-type	short=	default=	required=true
+  flag=disk-size-gb	short=	default=50	required=
+  flag=label	short=	default=[]	required=
+  flag=memory	short=	default=4000	required=
+  flag=name	short=	default=	required=true
+  flag=password	short=	default=	required=true
+  flag=port	short=	default=1433	required=
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=1	required=
+  flag=region	short=	default=	required=
+  flag=spec-class	short=	default=O	required=
+  flag=storage-class	short=	default=CLOUD_RSSD	required=
+  flag=subnet-id	short=	default=	required=
+  flag=tag	short=	default=	required=
+  flag=vpc-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud sqlserver db delete	use=delete	short=Delete SQL Server instances by udb-id
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+  flag=zone	short=	default=	required=
+ucloud sqlserver db list	use=list	short=List SQL Server instances
+  flag=include-slaves	short=	default=false	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud sqlserver db restart	use=restart	short=Restart SQL Server instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud sqlserver db start	use=start	short=Start SQL Server instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=
+ucloud sqlserver db stop	use=stop	short=Stop SQL Server instances by udb-id
+  flag=async	short=a	default=false	required=
+  flag=force	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=true
+  flag=zone	short=	default=	required=

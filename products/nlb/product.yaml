@@ -1,0 +1,7 @@
+# products/nlb/product.yaml — NLB (Network Load Balancer) product metadata.
+name: nlb
+owners:
+  - Cavan-xu
+commands:
+  - nlb
+enabled: true

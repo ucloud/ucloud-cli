@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/ucloud/ucloud-cli/pkg/cli"
+	"github.com/ucloud/ucloud-cli/products/cloudwatch"
 	"github.com/ucloud/ucloud-cli/products/css"
 	"github.com/ucloud/ucloud-cli/products/eip"
 	"github.com/ucloud/ucloud-cli/products/firewall"
@@ -10,18 +11,25 @@ import (
 	"github.com/ucloud/ucloud-cli/products/image"
 	"github.com/ucloud/ucloud-cli/products/memcache"
 	"github.com/ucloud/ucloud-cli/products/mysql"
+	"github.com/ucloud/ucloud-cli/products/nlb"
 	"github.com/ucloud/ucloud-cli/products/pathx"
 	"github.com/ucloud/ucloud-cli/products/redis"
 	"github.com/ucloud/ucloud-cli/products/sharedbw"
+	"github.com/ucloud/ucloud-cli/products/sqlserver"
 	"github.com/ucloud/ucloud-cli/products/subnet"
 	"github.com/ucloud/ucloud-cli/products/uclickhouse"
+	"github.com/ucloud/ucloud-cli/products/uddos"
 	"github.com/ucloud/ucloud-cli/products/udisk"
 	"github.com/ucloud/ucloud-cli/products/udns"
 	"github.com/ucloud/ucloud-cli/products/udpn"
 	"github.com/ucloud/ucloud-cli/products/ufs"
+	"github.com/ucloud/ucloud-cli/products/uhadoop"
 	"github.com/ucloud/ucloud-cli/products/uhost"
+	"github.com/ucloud/ucloud-cli/products/ukafka"
 	"github.com/ucloud/ucloud-cli/products/ulb"
+	"github.com/ucloud/ucloud-cli/products/ulhost"
 	"github.com/ucloud/ucloud-cli/products/umodelverse"
+	"github.com/ucloud/ucloud-cli/products/umongodb"
 	"github.com/ucloud/ucloud-cli/products/upfs"
 	"github.com/ucloud/ucloud-cli/products/uphost"
 	"github.com/ucloud/ucloud-cli/products/urocketmq"
@@ -33,6 +41,7 @@ import (
 // registeredProducts returns the platform-registered products.
 func registeredProducts() []cli.Product {
 	return []cli.Product{
+		cloudwatch.New(),
 		css.New(),
 		eip.New(),
 		firewall.New(),
@@ -40,18 +49,25 @@ func registeredProducts() []cli.Product {
 		image.New(),
 		memcache.New(),
 		mysql.New(),
+		nlb.New(),
 		pathx.New(),
 		redis.New(),
 		sharedbw.New(),
+		sqlserver.New(),
 		subnet.New(),
 		uclickhouse.New(),
+		uddos.New(),
 		udisk.New(),
 		udns.New(),
 		udpn.New(),
 		ufs.New(),
+		uhadoop.New(),
 		uhost.New(),
+		ukafka.New(),
 		ulb.New(),
+		ulhost.New(),
 		umodelverse.New(),
+		umongodb.New(),
 		upfs.New(),
 		uphost.New(),
 		urocketmq.New(),

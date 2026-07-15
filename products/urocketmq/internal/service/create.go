@@ -59,8 +59,8 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	req.Edition = flags.String("edition", "Enterprise", "Required. Edition. Unique value: Enterprise")
 	req.Mode = flags.String("mode", "PrivateNet", "Required. Network mode. Unique value: PrivateNet")
 	req.Name = flags.String("name", "", "Required. Service name. Regex: ^[a-zA-Z0-9-_]{1,36}$")
-	req.PublicVersion = flags.String("public-version", "", "Required. Cluster version. Enum: v4, v5. Note: each region currently supports only one version, confirm with region")
-	req.Storage = flags.Int("storage-gb", 0, "Required. Message storage space in GB. Range depends on TPS")
+	req.PublicVersion = flags.String("public-version", "", "Cluster version. Options vary by region, see doc for supported values: https://github.com/UCloudDoc-Team/rocketmq/blob/master/price/index.md, e.g. v4, v5 (each region only support one version)")
+	req.Storage = flags.Int("storage-gb", 0, "Required. Storage space in GB. Check the doc first to determine available values: https://github.com/UCloudDoc-Team/rocketmq/blob/master/price/index.md")
 	req.SubnetId = flags.String("subnet-id", "", "Required. Subnet ID. Default to current region's default subnet")
 	req.Tps = flags.String("tps", "", "Required. Transactions per second. Enum: 10000, 20000, 50000, 100000, 200000. Note: v4 supports 20000, 50000, 100000, 200000; v5 currently supports only 10000, 20000.")
 	req.VPCId = flags.String("vpc-id", "", "Required. VPC ID. Default to current region's default VPC")
@@ -77,7 +77,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	command.SetFlagValues(cmd, "charge-type", "Year", "Month", "Dynamic")
 	command.SetFlagValues(cmd, "edition", "Enterprise")
 	command.SetFlagValues(cmd, "mode", "PrivateNet")
-	command.SetFlagValues(cmd, "public-version", "v4", "v5")
 	command.SetFlagValues(cmd, "tps", "10000", "20000", "50000", "100000", "200000")
 
 	command.SetCompletion(cmd, "vpc-id", func() []string {
@@ -91,7 +90,6 @@ func newCreate(ctx *cli.Context) *cobra.Command {
 	cmd.MarkFlagRequired("edition")
 	cmd.MarkFlagRequired("mode")
 	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagRequired("public-version")
 	cmd.MarkFlagRequired("storage-gb")
 	cmd.MarkFlagRequired("subnet-id")
 	cmd.MarkFlagRequired("tps")

@@ -31,7 +31,7 @@ ucloud uhost create	use=create	short=Create UHost instance
   flag=image-id	short=	default=	required=true
   flag=isolation-group	short=	default=	required=
   flag=key-pair-id	short=	default=	required=
-  flag=machine-type	short=	default=N	required=
+  flag=machine-type	short=	default=O	required=
   flag=memory-gb	short=	default=8	required=true
   flag=minimal-cpu-platform	short=	default=	required=
   flag=name	short=	default=UHost	required=

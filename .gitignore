@@ -3,3 +3,4 @@ out
 .idea/
 bin/
 .DS_Store
+.codegraph/
