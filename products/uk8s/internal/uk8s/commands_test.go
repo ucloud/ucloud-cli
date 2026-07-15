@@ -53,6 +53,14 @@ func setupCommandGateway(t *testing.T) (*cli.Context, *[]url.Values) {
 			}}
 		case "AddUK8SNodeGroup":
 			response["NodeGroupId"] = "uk8sng-test"
+		case "DescribeUK8SImage":
+			response["CustomImageSet"] = []map[string]interface{}{{
+				"ImageId": "uimage-custom", "ImageName": "custom-ubuntu", "Features": []string{"CloudInit"},
+			}}
+		case "ListUK8SClusterNodeV2":
+			response["NodeSet"] = []map[string]interface{}{{
+				"NodeId": "uk8s-node", "UsedCPU": 87, "UsedMemory": 1052389376, "VKCpu": 0, "VKMem": 0,
+			}}
 		case "AddUK8SUHostNode":
 			response["NodeIds"] = []string{"uk8snode-test"}
 		}
@@ -300,6 +308,44 @@ func TestImageListDispatch(t *testing.T) {
 	assertRequest(t, lastRequest(t, requests), map[string]string{
 		"Action": "DescribeUK8SImage", "Region": "cn-sh2", "ProjectId": "org-test", "Zone": "cn-sh2-01",
 	})
+}
+
+func TestCompatibilityResponsesKeepUpdatedUK8SFields(t *testing.T) {
+	tests := []struct {
+		name  string
+		build func(*cli.Context) *cobra.Command
+		args  []string
+		field string
+	}{
+		{
+			name: "cluster describe", build: newDescribe,
+			args: []string{"--cluster-id", "uk8s-a"}, field: "ClusterId",
+		},
+		{
+			name: "image list", build: func(ctx *cli.Context) *cobra.Command { return newImage(ctx) },
+			args: []string{"list"}, field: "CustomImageSet",
+		},
+		{
+			name: "node list", build: func(ctx *cli.Context) *cobra.Command { return newNode(ctx) },
+			args: []string{"list", "--cluster-id", "uk8s-a"}, field: "NodeSet",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := setupCommandGateway(t)
+			ctx.SetFormat(cli.OutputJSON)
+			runUK8SCommand(t, tt.build(ctx), tt.args...)
+
+			var output map[string]json.RawMessage
+			if err := json.Unmarshal(ctx.Out().(*bytes.Buffer).Bytes(), &output); err != nil {
+				t.Fatalf("decode JSON output: %v", err)
+			}
+			if _, ok := output[tt.field]; !ok {
+				t.Fatalf("output does not contain %q: %s", tt.field, ctx.Out().(*bytes.Buffer).String())
+			}
+		})
+	}
 }
 
 func TestVersionListDispatch(t *testing.T) {

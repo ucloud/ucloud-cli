@@ -41,6 +41,10 @@ func newGetConfig(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(fmt.Errorf("%s kubeconfig is not available for cluster %q", kind, *req.ClusterId))
 				return
 			}
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(resp)
+				return
+			}
 			fmt.Fprint(ctx.Out(), config)
 			if !strings.HasSuffix(config, "\n") {
 				fmt.Fprintln(ctx.Out())

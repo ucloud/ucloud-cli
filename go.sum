@@ -38,8 +38,13 @@ github.com/spf13/pflag v1.0.10/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3A
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+<<<<<<< HEAD
 github.com/ucloud/ucloud-sdk-go v0.22.90 h1:OYYPYlWZFQ5DB15akEkrd/ty28zkd6Als7PQ6shywzk=
 github.com/ucloud/ucloud-sdk-go v0.22.90/go.mod h1:dyLmFHmUfgb4RZKYQP9IArlvQ2pxzFthfhwxRzOEPIw=
+=======
+github.com/ucloud/ucloud-sdk-go v0.22.92 h1:HuT+JQfyEx9OFhluTQ/Zusb6obB+2kJ9OJlU/JREHR4=
+github.com/ucloud/ucloud-sdk-go v0.22.92/go.mod h1:dyLmFHmUfgb4RZKYQP9IArlvQ2pxzFthfhwxRzOEPIw=
+>>>>>>> 08283fa (feat(uk8s): update SDK dependencies, enhance command responses, and refactor output handling)
 go.yaml.in/yaml/v3 v3.0.4 h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

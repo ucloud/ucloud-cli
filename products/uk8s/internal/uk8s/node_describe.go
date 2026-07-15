@@ -29,6 +29,10 @@ func newNodeDescribe(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(node)
+				return
+			}
 			rows := []cli.DescribeRow{
 				{Attribute: "Name", Content: node.Name},
 				{Attribute: "Hostname", Content: node.Hostname},

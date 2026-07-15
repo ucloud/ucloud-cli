@@ -1,8 +1,6 @@
 package uk8s
 
 import (
-	"strings"
-
 	"github.com/spf13/cobra"
 
 	uk8ssdk "github.com/ucloud/ucloud-sdk-go/services/uk8s"
@@ -26,20 +24,11 @@ func newNodeGroupList(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			rows := make([]nodeGroupRow, 0, len(resp.NodeGroupList))
-			for _, group := range resp.NodeGroupList {
-				rows = append(rows, nodeGroupRow{
-					ResourceID: group.NodeGroupId, Name: group.NodeGroupName,
-					MachineType: group.MachineType, CPU: group.CPU, MemoryMB: group.Mem,
-					NodeCount: len(group.NodeList), NodeIDs: strings.Join(group.NodeList, ","),
-					ChargeType: group.ChargeType, ImageID: group.ImageId,
-					BootDiskType: group.BootDiskType, BootDiskSize: group.BootDiskSize,
-					DataDiskType: group.DataDiskType, DataDiskSize: group.DataDiskSize,
-					GPU: group.GPU, GPUType: group.GpuType,
-					MinimalCPUPlatform: group.MinimalCpuPlatform, Tag: group.Tag,
-				})
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(resp)
+				return
 			}
-			ctx.PrintList(rows)
+			ctx.PrintList(responseRows(resp))
 		},
 	}
 

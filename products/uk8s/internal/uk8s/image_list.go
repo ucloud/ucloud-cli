@@ -17,25 +17,17 @@ func newImageList(ctx *cli.Context) *cobra.Command {
 		Short: "List images supported by UK8S",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			resp, err := client.DescribeUK8SImage(req)
+			resp := &compatResponse{}
+			err := client.InvokeAction("DescribeUK8SImage", req, resp)
 			if err != nil {
 				ctx.HandleError(err)
 				return
 			}
-			rows := make([]imageRow, 0, len(resp.ImageSet)+len(resp.PHostImageSet))
-			for _, image := range resp.ImageSet {
-				rows = append(rows, imageRow{
-					ResourceID: image.ImageId, Name: image.ImageName, ZoneID: image.ZoneId,
-					ProductType: "UHost", NotSupportGPU: image.NotSupportGPU,
-				})
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(resp.Payload)
+				return
 			}
-			for _, image := range resp.PHostImageSet {
-				rows = append(rows, imageRow{
-					ResourceID: image.ImageId, Name: image.ImageName, ZoneID: image.ZoneId,
-					ProductType: "PHost", NotSupportGPU: image.NotSupportGPU,
-				})
-			}
-			ctx.PrintList(rows)
+			ctx.PrintList(responseRows(resp.Payload))
 		},
 	}
 

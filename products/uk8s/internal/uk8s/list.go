@@ -1,8 +1,6 @@
 package uk8s
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	uk8ssdk "github.com/ucloud/ucloud-sdk-go/services/uk8s"
@@ -29,31 +27,11 @@ func newList(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-
-			rows := make([]clusterRow, 0, len(resp.ClusterSet))
-			for _, cluster := range resp.ClusterSet {
-				created := ""
-				if cluster.CreateTime > 0 {
-					created = time.Unix(int64(cluster.CreateTime), 0).Format(time.RFC3339)
-				}
-				rows = append(rows, clusterRow{
-					ResourceID:        cluster.ClusterId,
-					Name:              cluster.ClusterName,
-					ApiServer:         cluster.ApiServer,
-					ClusterLogInfo:    cluster.ClusterLogInfo,
-					ExternalApiServer: cluster.ExternalApiServer,
-					K8sVersion:        cluster.K8sVersion,
-					VPCID:             cluster.VPCId,
-					SubnetID:          cluster.SubnetId,
-					MasterCnt:         cluster.MasterCount,
-					NodeCnt:           cluster.NodeCount,
-					PodCIDR:           cluster.PodCIDR,
-					ServiceCIDR:       cluster.ServiceCIDR,
-					Status:            cluster.Status,
-					Created:           created,
-				})
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(resp)
+				return
 			}
-			ctx.PrintList(rows)
+			ctx.PrintList(responseRows(resp))
 		},
 	}
 

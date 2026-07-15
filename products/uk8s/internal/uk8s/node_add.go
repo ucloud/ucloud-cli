@@ -105,12 +105,14 @@ func newNodeAdd(ctx *cli.Context) *cobra.Command {
 				ctx.HandleError(err)
 				return
 			}
-			results := make([]cli.OpResultRow, 0, len(resp.NodeIds))
+			if ctx.Format() != cli.OutputTable {
+				ctx.PrintList(resp)
+				return
+			}
 			for _, id := range resp.NodeIds {
 				fmt.Fprintf(ctx.ProgressWriter(), "uk8s node[%s] is being added\n", id)
-				results = append(results, cli.OpResultRow{ResourceID: id, Action: "add", Status: "Adding"})
 			}
-			ctx.EmitResult(results...)
+			ctx.PrintList(responseRows(resp))
 		},
 	}
 
