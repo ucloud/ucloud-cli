@@ -161,6 +161,43 @@ func BuildCredentialFrom(credConfig *CredentialConfig) *auth.Credential {
 	return buildCredential(credConfig)
 }
 
+// normalizeProjectID 把 project-id 从补全带出的 "id/name" 形态还原成纯 id
+// （补全候选由 getProjectList 生成，形如 "org-xxx/ProjectName"）。
+//
+// typed 请求 SetProjectId 写进 CommonBase 即可。GenericRequest 要多一步：SDK 的
+// BaseGenericRequest 把 GetProjectId() override 成 payload 优先，却没有 override
+// SetProjectId —— SetProjectId 写的是 CommonBase，而 GetPayload() 末尾用 payload
+// 覆盖 CommonBase（SDK ucloud/request/generic.go），于是归一化被 payload 里的原值
+// 吃掉，"org-x/Name" 原样上行，网关报 RetCode 292 Project [org-x/Name] not exists
+// （2026-07-14 对 api.ucloud.cn 实测）。凡是把 ProjectId 放进 payload map 的产品
+// 都会中招，故在此一并同步 payload。
+//
+// 未发生归一化时（已是纯 id 或为空，即绝大多数调用）直接返回，payload 一字不动 ——
+// 行为与历史逐字节一致。
+func normalizeProjectID(req request.Common) (request.Common, error) {
+	raw := req.GetProjectId()
+	normalized := PickResourceID(raw)
+	if err := req.SetProjectId(normalized); err != nil {
+		return req, err
+	}
+	if raw == normalized {
+		return req, nil
+	}
+	gr, ok := req.(request.GenericRequest)
+	if !ok {
+		return req, nil
+	}
+	payload := gr.GetPayload()
+	if _, exists := payload["ProjectId"]; !exists {
+		return req, nil
+	}
+	payload["ProjectId"] = normalized
+	if err := gr.SetPayload(payload); err != nil {
+		return req, err
+	}
+	return req, nil
+}
+
 // attachHandlers 把三个平台 handler 挂到 service client 上：
 // project-id 归一化、凭据头注入、oauth 反应式重试。
 // credConfig 与 ac 显式传入：NewClient 借此传它自己的构造来源 profile（ac），
@@ -172,8 +209,7 @@ func attachHandlersWithManager(sc sdk.ServiceClient, credConfig *CredentialConfi
 		credConfig = &CredentialConfig{}
 	}
 	sc.AddRequestHandler(func(c *sdk.Client, req request.Common) (request.Common, error) {
-		err := req.SetProjectId(PickResourceID(req.GetProjectId()))
-		return req, err
+		return normalizeProjectID(req)
 	})
 	// Platform request logging: every API request is logged uniformly at the SDK
 	// layer (replaces per-command hand-rolled logging; products no longer build
