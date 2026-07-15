@@ -13,6 +13,8 @@ import (
 
 	uhttp "github.com/ucloud/ucloud-sdk-go/private/protocol/http"
 	"github.com/ucloud/ucloud-sdk-go/services/uaccount"
+	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	"github.com/ucloud/ucloud-sdk-go/ucloud/request"
 )
 
 func injectorHeaders(t *testing.T, cred *CredentialConfig) map[string]string {
@@ -58,6 +60,144 @@ func TestInjectorOAuthEmptyToken(t *testing.T) {
 	headers := injectorHeaders(t, &CredentialConfig{AuthMode: AuthModeOAuth})
 	if _, ok := headers["Authorization"]; ok {
 		t.Error("empty token must not inject Authorization")
+	}
+}
+
+// injectBody 把 body 以指定 Content-Type 过一遍 injector，返回处理后的请求。
+func injectBody(t *testing.T, cred *CredentialConfig, contentType, body string) *uhttp.HttpRequest {
+	t.Helper()
+	req := uhttp.NewHttpRequest()
+	if err := req.SetHeader(uhttp.HeaderNameContentType, contentType); err != nil {
+		t.Fatal(err)
+	}
+	if err := req.SetRequestBody([]byte(body)); err != nil {
+		t.Fatal(err)
+	}
+	out, err := newCredHeaderInjector(cred)(nil, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// oauth + JSON body：剥离 Signature/PublicKey，其余字段与 Content-Type 原样保留。
+// JSON 编码器此前不可达；products/pgsql(#127) 是第一个走这条路的产品（UPgSQL 网关
+// 无法把 form 的字符串 "100" unmarshal 进 Go 的 *int，RetCode 214001，故切 JSONEncoder）。
+func TestInjectorOAuthStripsJSONSignature(t *testing.T) {
+	body := `{"Action":"ListUPgSQLParamTemplate","Count":100,"PublicKey":"pub","Region":"cn-bj2","Signature":"deadbeef"}`
+	out := injectBody(t, &CredentialConfig{AuthMode: AuthModeOAuth, AccessToken: "tok123"}, uhttp.MimeJSON, body)
+
+	var got map[string]interface{}
+	if err := json.Unmarshal(out.GetRequestBody(), &got); err != nil {
+		t.Fatalf("body is not valid json after strip: %v", err)
+	}
+	if _, ok := got["Signature"]; ok {
+		t.Error("Signature must be stripped from oauth json body")
+	}
+	if _, ok := got["PublicKey"]; ok {
+		t.Error("PublicKey must be stripped from oauth json body")
+	}
+	if got["Action"] != "ListUPgSQLParamTemplate" || got["Region"] != "cn-bj2" {
+		t.Errorf("business fields must survive untouched, got %v", got)
+	}
+	// int 必须仍是 JSON number —— 产品切 JSONEncoder 的全部意义就在于此，
+	// 剥离过程若把它变回字符串就重新踩回 214001。
+	if got["Count"] != float64(100) {
+		t.Errorf("Count = %#v, want JSON number 100", got["Count"])
+	}
+	if out.GetHeaderMap()[uhttp.HeaderNameContentType] != uhttp.MimeJSON {
+		t.Error("Content-Type must stay application/json")
+	}
+	if out.GetHeaderMap()["Authorization"] != "Bearer tok123" {
+		t.Error("Bearer must still be injected for json body")
+	}
+}
+
+// CRITICAL 回归：非 oauth（aksk）模式下 JSON body 必须逐字节不变 ——
+// AK/SK 路径的签名就活在 body 里，碰一下就验签失败。
+func TestInjectorAkskJSONBodyUntouched(t *testing.T) {
+	body := `{"Action":"X","PublicKey":"pub","Signature":"deadbeef"}`
+	out := injectBody(t, &CredentialConfig{PublicKey: "pub", PrivateKey: "pri"}, uhttp.MimeJSON, body)
+	if string(out.GetRequestBody()) != body {
+		t.Errorf("aksk json body must be byte-identical\n got: %s\nwant: %s", out.GetRequestBody(), body)
+	}
+}
+
+// CRITICAL 回归：oauth + form body 行为与历史完全一致（本次只加分支，不动 form）。
+func TestInjectorOAuthFormUnchanged(t *testing.T) {
+	body := "Action=X&PublicKey=pub&Region=cn-bj2&Signature=deadbeef"
+	out := injectBody(t, &CredentialConfig{AuthMode: AuthModeOAuth, AccessToken: "tok"}, uhttp.MimeFormURLEncoded, body)
+	vals, err := url.ParseQuery(string(out.GetRequestBody()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vals.Has("Signature") || vals.Has("PublicKey") {
+		t.Errorf("form signature params must be stripped, got %s", out.GetRequestBody())
+	}
+	if vals.Get("Action") != "X" || vals.Get("Region") != "cn-bj2" {
+		t.Errorf("form business fields changed: %s", out.GetRequestBody())
+	}
+}
+
+// 不认识的 Content-Type：不碰 body（盲目重编码会毁掉它），但 Bearer 照常注入。
+func TestInjectorOAuthUnknownContentTypeBodyUntouched(t *testing.T) {
+	body := `<xml><Signature>deadbeef</Signature></xml>`
+	out := injectBody(t, &CredentialConfig{AuthMode: AuthModeOAuth, AccessToken: "tok"}, "application/xml", body)
+	if string(out.GetRequestBody()) != body {
+		t.Errorf("unknown content-type body must be untouched, got %s", out.GetRequestBody())
+	}
+	if out.GetHeaderMap()["Authorization"] != "Bearer tok" {
+		t.Error("Bearer must still be injected for unknown content-type")
+	}
+}
+
+// 端到端：真实 SDK JSONEncoder + 真实 oauth 凭据，确认
+// (a) SDK 即使凭据为空也会附加 Signature（这正是必须剥离的原因）；
+// (b) injector 之后 body 内再无签名参数，只剩 Bearer 一种凭据机制。
+func TestInjectorOAuthJSONEndToEndWithSDKEncoder(t *testing.T) {
+	credConfig := &CredentialConfig{AuthMode: AuthModeOAuth, AccessToken: "tok"}
+	cfg := ucloud.NewConfig()
+	cred := BuildCredentialFrom(credConfig)
+
+	req := &request.CommonBase{}
+	if err := req.SetAction("ListUPgSQLParamTemplate"); err != nil {
+		t.Fatal(err)
+	}
+	if err := req.SetRegion("cn-bj2"); err != nil {
+		t.Fatal(err)
+	}
+	httpReq, err := request.NewJSONEncoder(&cfg, cred).Encode(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var before map[string]interface{}
+	if err := json.Unmarshal(httpReq.GetRequestBody(), &before); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := before["Signature"]; !ok {
+		t.Fatal("premise broken: SDK JSONEncoder no longer attaches Signature for empty credential")
+	}
+
+	out, err := newCredHeaderInjector(credConfig)(nil, httpReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var after map[string]interface{}
+	if err := json.Unmarshal(out.GetRequestBody(), &after); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := after["Signature"]; ok {
+		t.Error("Signature survived the injector on a real SDK-encoded json body")
+	}
+	if _, ok := after["PublicKey"]; ok {
+		t.Error("PublicKey survived the injector on a real SDK-encoded json body")
+	}
+	if after["Action"] != "ListUPgSQLParamTemplate" {
+		t.Errorf("Action lost: %v", after)
+	}
+	if out.GetHeaderMap()["Authorization"] != "Bearer tok" {
+		t.Error("Bearer missing after injector")
 	}
 }
 
