@@ -1,0 +1,7 @@
+# products/uk8s/product.yaml — uk8s 产品元数据(归属真源,owner 自治维护)
+name: uk8s
+owners:
+  - Episkey-G
+commands:
+  - uk8s
+enabled: true

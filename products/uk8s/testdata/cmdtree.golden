@@ -1,0 +1,159 @@
+ucloud uk8s	use=uk8s	short=Read and manipulate UK8S (UCloud Kubernetes Service) clusters
+ucloud uk8s create	use=create	short=Create a UK8S cluster
+  flag=async	short=	default=false	required=
+  flag=charge-type	short=	default=	required=
+  flag=cluster-domain	short=	default=	required=
+  flag=external-api-server	short=	default=	required=
+  flag=group	short=	default=	required=
+  flag=image-id	short=	default=	required=true
+  flag=init-script	short=	default=	required=
+  flag=init-script-base64	short=	default=	required=
+  flag=k8s-version	short=	default=	required=true
+  flag=kube-proxy-mode	short=	default=	required=
+  flag=master-boot-disk-size-gb	short=	default=0	required=
+  flag=master-boot-disk-type	short=	default=	required=
+  flag=master-cpu	short=	default=0	required=true
+  flag=master-cpu-platform	short=	default=	required=
+  flag=master-data-disk-size-gb	short=	default=0	required=
+  flag=master-data-disk-type	short=	default=	required=
+  flag=master-machine-type	short=	default=	required=true
+  flag=master-memory-mb	short=	default=0	required=true
+  flag=master-zone	short=	default=[]	required=true
+  flag=name	short=	default=	required=true
+  flag=node-boot-disk-size-gb	short=	default=0	required=
+  flag=node-boot-disk-type	short=	default=	required=
+  flag=node-count	short=	default=0	required=true
+  flag=node-cpu	short=	default=0	required=true
+  flag=node-cpu-platform	short=	default=	required=
+  flag=node-data-disk-size-gb	short=	default=0	required=
+  flag=node-data-disk-type	short=	default=	required=
+  flag=node-gpu	short=	default=0	required=
+  flag=node-gpu-type	short=	default=	required=
+  flag=node-isolation-group-id	short=	default=	required=
+  flag=node-labels	short=	default=	required=
+  flag=node-machine-type	short=	default=	required=true
+  flag=node-max-pods	short=	default=0	required=
+  flag=node-memory-mb	short=	default=0	required=true
+  flag=node-taints	short=	default=	required=
+  flag=node-zone	short=	default=	required=true
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=0	required=
+  flag=region	short=	default=	required=
+  flag=service-cidr	short=	default=	required=true
+  flag=subnet-id	short=	default=	required=true
+  flag=user-data	short=	default=	required=
+  flag=user-data-base64	short=	default=	required=
+  flag=vpc-id	short=	default=	required=true
+ucloud uk8s delete	use=delete	short=Delete UK8S clusters
+  flag=cluster-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-eip	short=	default=false	required=
+  flag=release-udisk	short=	default=false	required=
+  flag=yes	short=y	default=false	required=
+ucloud uk8s describe	use=describe	short=Show details of a UK8S cluster
+  flag=cluster-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s get-config	use=get-config	short=Print a UK8S cluster kubeconfig
+  flag=cluster-id	short=	default=	required=true
+  flag=external	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s image	use=image	short=Inspect UK8S images
+ucloud uk8s image list	use=list	short=List images supported by UK8S
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uk8s list	use=list	short=List UK8S clusters
+  flag=cluster-id	short=	default=	required=
+  flag=limit	short=	default=100	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s node	use=node	short=Manage UK8S nodes
+ucloud uk8s node add	use=add	short=Add UHost nodes to a UK8S cluster
+  flag=boot-disk-size-gb	short=	default=0	required=
+  flag=boot-disk-type	short=	default=	required=
+  flag=charge-type	short=	default=	required=true
+  flag=cluster-id	short=	default=	required=true
+  flag=count	short=	default=0	required=true
+  flag=cpu	short=	default=0	required=true
+  flag=cpu-platform	short=	default=	required=
+  flag=data-disk-size-gb	short=	default=0	required=
+  flag=data-disk-type	short=	default=	required=
+  flag=disable-schedule	short=	default=false	required=
+  flag=gpu	short=	default=0	required=
+  flag=gpu-type	short=	default=	required=
+  flag=group	short=	default=	required=
+  flag=image-id	short=	default=	required=
+  flag=init-script	short=	default=	required=
+  flag=init-script-base64	short=	default=	required=
+  flag=isolation-group-id	short=	default=	required=
+  flag=labels	short=	default=	required=
+  flag=machine-type	short=	default=	required=
+  flag=max-pods	short=	default=0	required=
+  flag=memory-mb	short=	default=0	required=true
+  flag=nodegroup-id	short=	default=	required=
+  flag=password	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=quantity	short=	default=0	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=
+  flag=taints	short=	default=	required=
+  flag=user-data	short=	default=	required=
+  flag=user-data-base64	short=	default=	required=
+  flag=zone	short=	default=	required=
+ucloud uk8s node delete	use=delete	short=Delete nodes from a UK8S cluster
+  flag=cluster-id	short=	default=	required=true
+  flag=node-id	short=	default=[]	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=release-data-udisk	short=	default=true	required=
+  flag=yes	short=y	default=false	required=
+ucloud uk8s node describe	use=describe	short=Show details of a UK8S node
+  flag=cluster-id	short=	default=	required=true
+  flag=node-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s node list	use=list	short=List nodes in a UK8S cluster
+  flag=cluster-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s nodegroup	use=nodegroup	short=Manage UK8S node groups
+ucloud uk8s nodegroup add	use=add	short=Add a UK8S node group
+  flag=boot-disk-size-gb	short=	default=0	required=true
+  flag=boot-disk-type	short=	default=	required=true
+  flag=charge-type	short=	default=Month	required=true
+  flag=cluster-id	short=	default=	required=true
+  flag=cpu	short=	default=0	required=true
+  flag=cpu-platform	short=	default=Intel/Auto	required=true
+  flag=data-disk-size-gb	short=	default=0	required=
+  flag=data-disk-type	short=	default=	required=
+  flag=gpu	short=	default=0	required=
+  flag=gpu-type	short=	default=	required=
+  flag=group	short=	default=	required=
+  flag=image-id	short=	default=	required=true
+  flag=machine-type	short=	default=	required=true
+  flag=memory-mb	short=	default=0	required=true
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=subnet-id	short=	default=	required=true
+  flag=zone	short=	default=	required=
+ucloud uk8s nodegroup delete	use=delete	short=Delete a UK8S node group
+  flag=cluster-id	short=	default=	required=true
+  flag=nodegroup-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=yes	short=y	default=false	required=
+ucloud uk8s nodegroup list	use=list	short=List UK8S node groups
+  flag=cluster-id	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+ucloud uk8s version	use=version	short=Inspect UK8S versions
+ucloud uk8s version list	use=list	short=List versions supported by UK8S
+  flag=kind	short=	default=Dedicated	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
