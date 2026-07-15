@@ -12,6 +12,7 @@ import (
 )
 
 func newRecordModifyCommand(ctx *cli.Context) *cobra.Command {
+	var ttl int
 	client := cli.NewServiceClient(ctx, udnssdk.NewClient)
 	req := client.NewModifyUDNSRecordRequest()
 	cmd := &cobra.Command{
@@ -19,6 +20,9 @@ func newRecordModifyCommand(ctx *cli.Context) *cobra.Command {
 		Short: "Modify a DNS record in a UDNS zone",
 		Long:  "Modify a DNS record in a UDNS zone",
 		Run: func(cmd *cobra.Command, args []string) {
+			if cmd.Flags().Changed("ttl") {
+				req.TTL = &ttl
+			}
 			recordID := ctx.PickResourceID(*req.RecordId)
 			req.RecordId = &recordID
 			_, err := client.ModifyUDNSRecord(req)
@@ -37,7 +41,8 @@ func newRecordModifyCommand(ctx *cli.Context) *cobra.Command {
 	req.Type = flags.String("type", "", "Optional. Record type: A, AAAA, CNAME, MX, TXT, SRV, PTR")
 	req.Value = flags.String("value", "", `Optional. Value string: "IP|weight|enabled,..."`)
 	req.ValueType = flags.String("value-type", "", "Optional. Normal or Multivalue")
-	req.TTL = flags.Int("ttl", 0, "Optional. TTL in seconds (5-600); 0 means unchanged")
+	//req.TTL = flags.Int("ttl", 0, "Optional. TTL in seconds (5-600); 0 means unchanged")
+	flags.IntVar(&ttl, "ttl", 0, "Optional. TTL in seconds (5-600); 0 means unchanged")
 	req.Remark = flags.String("remark", "", "Optional. Remark")
 	ctx.BindRegion(cmd, req)
 	ctx.BindProjectID(cmd, req)
