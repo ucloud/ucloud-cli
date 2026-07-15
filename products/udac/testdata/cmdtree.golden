@@ -1,0 +1,21 @@
+ucloud udac	use=udac	short=Manage Database Autonomous Center (UDAC) instances
+ucloud udac export	use=export	short=Export database instances from UDAC
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=type	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=
+  flag=zone	short=	default=	required=
+ucloud udac import	use=import	short=Import database instances into UDAC
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=type	short=	default=	required=
+  flag=udb-id	short=	default=[]	required=
+  flag=zone	short=	default=	required=
+ucloud udac list	use=list	short=List imported database instances in UDAC
+  flag=all-regions	short=	default=false	required=
+  flag=project-id	short=	default=	required=
+  flag=region	short=	default=	required=
+  flag=status	short=	default=	required=
+  flag=type	short=	default=mysql	required=
+  flag=udb-id	short=	default=	required=
+  flag=zone	short=	default=	required=

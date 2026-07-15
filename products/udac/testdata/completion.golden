@@ -1,0 +1,13 @@
+ucloud udac export	project-id	dynamic
+ucloud udac export	region	dynamic
+ucloud udac export	type	static	mongodb,mysql
+ucloud udac export	zone	dynamic
+ucloud udac import	project-id	dynamic
+ucloud udac import	region	dynamic
+ucloud udac import	type	static	mongodb,mysql
+ucloud udac import	zone	dynamic
+ucloud udac list	project-id	dynamic
+ucloud udac list	region	dynamic
+ucloud udac list	type	static	mongodb,mysql
+ucloud udac list	udb-id	dynamic
+ucloud udac list	zone	dynamic
