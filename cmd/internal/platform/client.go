@@ -29,9 +29,11 @@ func newCredHeaderInjector(credConfig *CredentialConfig) sdk.HttpRequestHandler 
 			return req, err
 		}
 		if credConfig.AuthMode == AuthModeOAuth {
-			// 仅对 form-urlencoded body 剥离（JSON 编码器虽当前不可达，但
-			// url.ParseQuery 对 JSON 往往"成功"，重编码会悄悄毁掉 body）
-			if req.GetHeaderMap()[http.HeaderNameContentType] == http.MimeFormURLEncoded {
+			// 按 Content-Type 分派剥离：编码器决定 body 形态，剥离方式必须与之配对。
+			// 不能只按一种形态盲剥 —— url.ParseQuery 对 JSON 往往"成功"，重编码会
+			// 悄悄毁掉 body；不认识的 Content-Type 一律不碰 body。
+			switch req.GetHeaderMap()[http.HeaderNameContentType] {
+			case http.MimeFormURLEncoded:
 				vals, err := url.ParseQuery(string(req.GetRequestBody()))
 				if err != nil {
 					// 剥不掉就明确失败：客户端报错优于网关 171
@@ -40,6 +42,22 @@ func newCredHeaderInjector(credConfig *CredentialConfig) sdk.HttpRequestHandler 
 				vals.Del("Signature")
 				vals.Del("PublicKey")
 				if err := req.SetRequestBody([]byte(vals.Encode())); err != nil {
+					return req, err
+				}
+			case http.MimeJSON:
+				// JSONEncoder 把 cred.Apply 附加的 Signature/PublicKey 放在 body 顶层
+				// （SDK ucloud/request/encoder_json.go），与 form 分支同构剥离。
+				var payload map[string]interface{}
+				if err := json.Unmarshal(req.GetRequestBody(), &payload); err != nil {
+					return req, fmt.Errorf("strip signature params from oauth json request failed: %w", err)
+				}
+				delete(payload, "Signature")
+				delete(payload, "PublicKey")
+				bs, err := json.Marshal(payload)
+				if err != nil {
+					return req, fmt.Errorf("re-encode oauth json request failed: %w", err)
+				}
+				if err := req.SetRequestBody(bs); err != nil {
 					return req, err
 				}
 			}
