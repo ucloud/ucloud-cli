@@ -425,6 +425,41 @@ func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
 	}
 }
 
+// 回归 D9：config add 必须归一化补全格式的 project-id（org-xxx/Name）。
+// getProjectList 补全吐出的正是斜杠形式，而 config add 此前不做 PickResourceID
+// （主命令与 update 都做）——合法的补全值会被 getReasonableProject 判为「不存在」，
+// 叠加 fail-closed 后直接硬拦一个真实存在的 project。
+func TestConfigAddNormalizesSlashProjectID(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	// respProjectOK 的 ProjectSet 含 org-123（map 键为裸 id）
+	gateway := fakeGatewayServer(t)
+	t.Cleanup(gateway.Close)
+
+	cliJSON := `[{"profile":"good","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"good"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigAdd()
+	setFlags(t, cmd,
+		"profile", "probe",
+		"public-key", "pub",
+		"private-key", "pri",
+		"base-url", gateway.URL,
+		"region", "cn-bj2",
+		"zone", "cn-bj2-04",
+		"project-id", "org-123/Default", // 补全格式，project 真实存在
+	)
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "probe")
+	if !ok {
+		t.Fatal("a valid completion-form project-id must not block the save; profile probe was not created")
+	}
+	if got.ProjectID != "org-123" {
+		t.Errorf("project-id must be normalized to the bare id; got %q, want org-123", got.ProjectID)
+	}
+}
+
 // 回归 AC9：fail-closed 不得误伤「有项目但未设默认」的账号。
 // 该场景下 getDefaultProjectWithConfig 返回 errNoDefaultProject（良性），init 认得
 // 并放行；config add 必须同口径 —— 建成 profile 且 project_id 留空。

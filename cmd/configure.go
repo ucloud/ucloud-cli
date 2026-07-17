@@ -399,6 +399,13 @@ func NewCmdConfigAdd() *cobra.Command {
 			cfg.Region = region
 			cfg.Zone = zone
 
+			//归一化 project-id：补全吐出的是 org-xxx/Name 形式（见 getProjectList），
+			//与主命令/update 一致剥成裸 id。否则合法的补全值会被 getReasonableProject
+			//判为「project does not exist」——叠加 fail-closed 会硬拦一个真实存在的 project
+			if cfg.ProjectID != "" {
+				cfg.ProjectID = platform.PickResourceID(cfg.ProjectID)
+			}
+
 			//errNoDefaultProject 是良性缺失（账号有项目但未设默认），放行并留空 ProjectID，
 			//口径与 ucloud init 一致；其余错误一律拒绝落盘
 			project, err := getReasonableProject(cfg)
