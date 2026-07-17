@@ -180,16 +180,21 @@ func addProductCommands(root *cobra.Command, products []cli.Product, ctx *cli.Co
 	}
 }
 
-// applyGlobalOverrideFlags adds the five per-invocation override flags to
+// applyGlobalOverrideFlags adds the per-invocation override flags to
 // every top-level command that is not in the exempt list. Running this after
 // both addPlatformCommands and addProductCommands ensures product commands
 // also receive the flags.
+//
+// Each flag registered here must also be scanned from os.Args in initGlobals:
+// mergeConfigIns reads global.* before cobra parses flags, so registration
+// alone is not enough for the override to take effect.
 func applyGlobalOverrideFlags(root *cobra.Command) {
 	for _, c := range root.Commands() {
 		if c.Name() != "init" && c.Name() != "gendoc" && c.Name() != "config" && c.Name() != "auth" {
 			c.PersistentFlags().StringVar(&global.PublicKey, "public-key", global.PublicKey, "Set public-key to override the public-key in local config file")
 			c.PersistentFlags().StringVar(&global.PrivateKey, "private-key", global.PrivateKey, "Set private-key to override the private-key in local config file")
 			c.PersistentFlags().StringVar(&global.BaseURL, "base-url", "", "Set base-url to override the base-url in local config file")
+			c.PersistentFlags().StringVar(&global.ChannelKey, "channel-key", "", "Set channel-key to override the channel-key in local config file")
 			c.PersistentFlags().IntVar(&global.Timeout, "timeout-sec", 0, "Set timeout-sec to override the timeout-sec in local config file")
 			c.PersistentFlags().IntVar(&global.WaitTimeout, "wait-timeout-sec", 0, "Set the total timeout in seconds for synchronous wait/poll (e.g. cluster/host create). 0 uses the built-in default (600s)")
 			c.PersistentFlags().IntVar(&global.MaxRetryTimes, "max-retry-times", -1, "Set max-retry-times to override the max-retry-times in local config file")
@@ -315,6 +320,9 @@ func init() {
 		}
 		if arg == "--base-url" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			global.BaseURL = os.Args[idx+1]
+		}
+		if arg == "--channel-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
+			global.ChannelKey = os.Args[idx+1]
 		}
 		if arg == "--timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
 			sec, err := strconv.Atoi(os.Args[idx+1])

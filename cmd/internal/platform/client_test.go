@@ -276,6 +276,132 @@ func TestOAuthProfileWithRetainedKeysDoesNotSign(t *testing.T) {
 	}
 }
 
+// channelInjectorHeaders 单独驱动渠道头注入 handler，取其产出的 header map。
+// 注意查的是 SetHeader 原样存入的 map（未经 Go 规范化），故 key 必须与注入端字面一致。
+func channelInjectorHeaders(t *testing.T, ac *AggConfig) map[string]string {
+	t.Helper()
+	h := newChannelHeaderInjector(ac)
+	req, err := h(nil, uhttp.NewHttpRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return req.GetHeaderMap()
+}
+
+// 配了 channel_key 的 profile：注入 channel-key 头（AC1）
+func TestChannelInjectorSetsHeader(t *testing.T) {
+	headers := channelInjectorHeaders(t, &AggConfig{ChannelKey: "ch_combo_test"})
+	if headers["channel-key"] != "ch_combo_test" {
+		t.Errorf("channel-key = %q, want ch_combo_test", headers["channel-key"])
+	}
+}
+
+// CRITICAL 零回归（AC2）：未配 channel_key 时该头必须完全不存在——不是空值，是键不存在。
+// 主站用户与独立域名专属云渠道恒走此路径，线路字节必须与引入本特性前逐字节一致。
+// 与同文件 Cookie/Csrf-Token「空值也照旧 set」的存量契约刻意相反：那是历史行为，
+// 本头是新增的，注入空头会给全部存量用户构成回归。
+func TestChannelInjectorAbsentWhenEmpty(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		ac   *AggConfig
+	}{
+		{"empty channel key", &AggConfig{}},
+		{"nil agg config", nil}, // AttachHandlersWith(sc, nil, nil, nil) 降级路径确实存在
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if v, ok := channelInjectorHeaders(t, tc.ac)["channel-key"]; ok {
+				t.Errorf("channel-key header must be absent, got present with value %q", v)
+			}
+		})
+	}
+}
+
+// channel-key 与凭据机制正交（AC3）：auth_mode 不影响其注入。
+// spec auth-guidelines 的「一个请求只携带一种凭据机制」约束的是凭据，channel-key 是
+// 渠道路由标识，不在其列。2026-07-16 真实网关实测：Bearer 与 channel-key 同时上行被接受。
+func TestChannelInjectorOrthogonalToAuthMode(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		ac   *AggConfig
+	}{
+		{"aksk", &AggConfig{ChannelKey: "ch_x", PublicKey: "pub", PrivateKey: "pri"}},
+		{"oauth", &AggConfig{ChannelKey: "ch_x", AuthMode: AuthModeOAuth, AccessToken: "tok"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := channelInjectorHeaders(t, tc.ac)["channel-key"]; got != "ch_x" {
+				t.Errorf("channel-key = %q, want ch_x", got)
+			}
+		})
+	}
+}
+
+// 端到端：经完整 handler 链发真实请求，断言服务端侧确实收到该头。
+// 这是唯一能验证「Go 的 Header.Set 规范化为 Channel-Key 后网关仍可取到」的用例
+// （单测查的 map 未规范化，验证不到线路形式），也顺带证明 handler 确实被挂上了。
+func TestChannelKeyHeaderEndToEnd(t *testing.T) {
+	rec := &recordedRequest{}
+	s := bizRecorderServer(t, rec)
+	defer s.Close()
+
+	ac := &AggConfig{
+		Profile: "combo", BaseURL: s.URL, Timeout: 15, MaxRetryTimes: intPtr(0),
+		Region: "hk", ChannelKey: "ch_combo_e2e",
+		PublicKey: "pub", PrivateKey: "pri",
+	}
+	callGetRegion(t, ac, rec)
+
+	// http.Header.Get 大小写不敏感：线路上是 Channel-Key，此处照样取得到
+	if got := rec.header.Get("channel-key"); got != "ch_combo_e2e" {
+		t.Errorf("server received channel-key = %q, want ch_combo_e2e", got)
+	}
+}
+
+// AttachHandlers（读包级 ConfigIns 的那条路径，GetUserInfo 等在用）同样注入 channel-key。
+// 该路径实测难以触发（仅 agree_upload_log=true 的 DAS 日志上传会走 GetUserInfo），故以单测钉死。
+func TestAttachHandlersInjectsChannelKeyFromConfigIns(t *testing.T) {
+	rec := &recordedRequest{}
+	s := bizRecorderServer(t, rec)
+	defer s.Close()
+
+	oldConfig, oldClientConfig, oldCred := ConfigIns, ClientConfig, AuthCredential
+	t.Cleanup(func() { ConfigIns, ClientConfig, AuthCredential = oldConfig, oldClientConfig, oldCred })
+
+	ac := &AggConfig{
+		Profile: "combo", BaseURL: s.URL, Timeout: 15, MaxRetryTimes: intPtr(0),
+		Region: "hk", ChannelKey: "ch_from_configins",
+		PublicKey: "pub", PrivateKey: "pri",
+	}
+	ConfigIns = ac
+	if err := InitClientRuntime(ac); err != nil {
+		t.Fatal(err)
+	}
+	client := uaccount.NewClient(ClientConfig, BuildCredential())
+	AttachHandlers(client) // 包级路径：等价于 AttachHandlersWith(sc, AuthCredential, ConfigIns, ...)
+	if _, err := client.GetRegion(client.NewGetRegionRequest()); err != nil {
+		t.Fatalf("GetRegion failed: %v", err)
+	}
+	if got := rec.header.Get("channel-key"); got != "ch_from_configins" {
+		t.Errorf("AttachHandlers must inject channel-key from ConfigIns, got %q", got)
+	}
+}
+
+// 端到端零回归：未配 channel_key 时服务端不得看到该头
+func TestChannelKeyHeaderAbsentEndToEnd(t *testing.T) {
+	rec := &recordedRequest{}
+	s := bizRecorderServer(t, rec)
+	defer s.Close()
+
+	ac := &AggConfig{
+		Profile: "mainsite", BaseURL: s.URL, Timeout: 15, MaxRetryTimes: intPtr(0),
+		Region: "cn-bj2", PublicKey: "pub", PrivateKey: "pri",
+	}
+	callGetRegion(t, ac, rec)
+
+	if _, ok := rec.header["Channel-Key"]; ok {
+		t.Errorf("main-site profile must not send channel-key header, got %q", rec.header.Get("channel-key"))
+	}
+}
+
 // 401 自动重放矩阵（D6 反应式兜底）：401→刷新→重放成功；aksk 模式不重放。
 // 注意 SDK 行为：HttpClient.Send 对 status>=400 返回 (nil, StatusError)，
 // 401 的 body 在 handler 层不可见，鉴权失败只能从 err 判定。

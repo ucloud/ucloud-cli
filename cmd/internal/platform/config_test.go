@@ -3,6 +3,7 @@ package platform
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -124,6 +125,70 @@ func TestOAuthFieldsRoundTrip(t *testing.T) {
 	if got.AuthMode != AuthModeOAuth || got.AccessToken != "at" || got.RefreshToken != "rt" ||
 		got.ExpiresAt != 1234567890 || got.OAuthBaseURL != "https://oauth.example.com" {
 		t.Errorf("oauth fields lost on round trip: %+v", got)
+	}
+}
+
+// channel_key 写入后能读回（AC4）。覆盖跨层链路 copyToCLIConfig → config.json → Load，
+// 任一层漏改都会表现为「能存不能读」或「存了不落盘」。
+func TestChannelKeyRoundTrip(t *testing.T) {
+	os.MkdirAll(".ucloud", 0700)
+	defer os.RemoveAll(".ucloud")
+	m, err := NewAggConfigManager(".ucloud/config.json", ".ucloud/credential.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ac := &AggConfig{
+		Profile: "combo", Active: true, BaseURL: "https://api.ucloud-global.com/", Timeout: 15,
+		MaxRetryTimes: intPtr(3), ChannelKey: "ch_combo_roundtrip",
+	}
+	if err := m.Append(ac); err != nil {
+		t.Fatal(err)
+	}
+
+	m2, err := NewAggConfigManager(".ucloud/config.json", ".ucloud/credential.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := m2.GetAggConfigByProfile("combo")
+	if !ok {
+		t.Fatal("profile combo missing after reload")
+	}
+	if got.ChannelKey != "ch_combo_roundtrip" {
+		t.Errorf("ChannelKey lost on round trip: got %q, want ch_combo_roundtrip", got.ChannelKey)
+	}
+
+	// channel-key 是接入点配置而非凭据：绝不能落进 credential.json
+	raw, err := os.ReadFile(".ucloud/credential.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "ch_combo_roundtrip") {
+		t.Error("channel_key must not be persisted to credential.json (it is an endpoint config, not a credential)")
+	}
+}
+
+// 向后兼容（AC6）：不含 channel_key 字段的旧 config.json 照常加载，且该值为空。
+func TestConfigWithoutChannelKeyLoads(t *testing.T) {
+	os.MkdirAll(".ucloud", 0700)
+	defer os.RemoveAll(".ucloud")
+	if err := os.WriteFile(".ucloud/config.json",
+		[]byte(`[{"profile":"legacy","active":true,"base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(".ucloud/credential.json",
+		[]byte(`[{"profile":"legacy","public_key":"pub","private_key":"pri"}]`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m, err := NewAggConfigManager(".ucloud/config.json", ".ucloud/credential.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := m.GetAggConfigByProfile("legacy")
+	if !ok {
+		t.Fatal("legacy profile missing")
+	}
+	if got.ChannelKey != "" {
+		t.Errorf("ChannelKey = %q, want empty for a legacy config", got.ChannelKey)
 	}
 }
 

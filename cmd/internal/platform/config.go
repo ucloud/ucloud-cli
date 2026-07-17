@@ -102,6 +102,7 @@ type GlobalFlag struct {
 	PublicKey     string
 	PrivateKey    string
 	BaseURL       string
+	ChannelKey    string
 	Timeout       int
 	WaitTimeout   int // 同步轮询总超时（秒），0 表示用内置默认（600s）
 	MaxRetryTimes int
@@ -119,6 +120,10 @@ type CLIConfig struct {
 	MaxRetryTimes  *int   `json:"max_retry_times"`
 	AgreeUploadLog bool   `json:"agree_upload_log"`
 	OAuthBaseURL   string `json:"oauth_base_url,omitempty"`
+	// ChannelKey 专属云渠道标识，与 base_url 成对配置（复用主站域名的专属云渠道必填，
+	// 独立域名渠道与主站用户为空）。属接入点配置而非用户凭据，故落在 config.json，
+	// 不进 credential.json。
+	ChannelKey string `json:"channel_key,omitempty"`
 }
 
 // CredentialConfig credential element
@@ -155,6 +160,7 @@ type AggConfig struct {
 	RefreshToken   string `json:"refresh_token,omitempty"`
 	ExpiresAt      int64  `json:"expires_at,omitempty"`
 	OAuthBaseURL   string `json:"oauth_base_url,omitempty"`
+	ChannelKey     string `json:"channel_key,omitempty"`
 }
 
 // ConfigPublicKey 输入公钥
@@ -248,6 +254,7 @@ func (p *AggConfig) copyToCLIConfig(target *CLIConfig) {
 	target.MaxRetryTimes = p.MaxRetryTimes
 	target.AgreeUploadLog = p.AgreeUploadLog
 	target.OAuthBaseURL = p.OAuthBaseURL
+	target.ChannelKey = p.ChannelKey
 }
 
 func (p *AggConfig) copyToCredentialConfig(target *CredentialConfig) {
@@ -389,6 +396,7 @@ func (p *AggConfigManager) Load() error {
 			RefreshToken:   cred.RefreshToken,
 			ExpiresAt:      cred.ExpiresAt,
 			OAuthBaseURL:   config.OAuthBaseURL,
+			ChannelKey:     config.ChannelKey,
 		}
 	}
 
@@ -668,7 +676,7 @@ func ListAggConfig(json bool) {
 			HandleError(err)
 		}
 	} else {
-		PrintTable(aggConfigs, []string{"Profile", "Active", "AuthMode", "ProjectID", "Region", "Zone", "BaseURL", "Timeout", "PublicKey", "PrivateKey", "MaxRetryTimes", "AgreeUploadLog"})
+		PrintTable(aggConfigs, []string{"Profile", "Active", "AuthMode", "ProjectID", "Region", "Zone", "BaseURL", "ChannelKey", "Timeout", "PublicKey", "PrivateKey", "MaxRetryTimes", "AgreeUploadLog"})
 	}
 }
 
@@ -896,6 +904,9 @@ func InitConfig() {
 func mergeConfigIns(ins *AggConfig) {
 	if Global.BaseURL != "" {
 		ins.BaseURL = Global.BaseURL
+	}
+	if Global.ChannelKey != "" {
+		ins.ChannelKey = Global.ChannelKey
 	}
 	if Global.Timeout != 0 {
 		ins.Timeout = Global.Timeout
