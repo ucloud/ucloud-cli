@@ -289,7 +289,7 @@ func setFlags(t *testing.T, cmd *cobra.Command, kv ...string) {
 
 // 回归 AC1：config add 远程校验失败时不得创建 profile。
 // 现状 getReasonableRegionZone 出错后只 HandleError 不 return，随即把空 region/zone
-// 赋回，照常 Append，落盘一个 region='' zone='' project_id='' 的残缺 profile。
+// 赋回，照常 Append，落盘一个 region=” zone=” project_id=” 的残缺 profile。
 //
 // 预置一个 active profile 而非从空配置起步：AggConfigManager.Load 规定「有 profile
 // 就必须有 active」（config.go:403），否则这里落盘的 bad(active=false) 会让重新读盘
@@ -385,9 +385,11 @@ func TestConfigUpdateWritesNothingWhenValidationFails(t *testing.T) {
 	}
 }
 
-// 回归 AC4：config update 的 project 校验失败不得清空 ProjectID。
-// 现状同函数内 region 记得 return、project 忘了 return，随即把 "" 赋回并落盘。
-// 网关对 GetRegion 返成功、对 GetProjectList 返失败，精确构造该组合。
+// 回归 AC4（config-cmd-audit）：config update 的 project 校验失败不得清空 ProjectID
+// （此前同函数内 region 记得 return、project 忘了 return，把 "" 赋回并落盘）。
+// 本任务改为「按需校验」后，仅传 --profile 不再触发校验；凭据变更(--public-key)会触发
+// 对存量 region+project 的校验。网关 GetRegion 返成功、GetProjectList 返失败，精确
+// 构造「project 校验触发且失败」：fail-closed → 不落盘 → 存量 org-123 不被清空。
 func TestConfigUpdateKeepsProjectIDWhenProjectValidationFails(t *testing.T) {
 	t.Setenv("COMP_LINE", "1")
 	gateway := fakeGatewayServerWith(t, gatewayBehavior{projectResp: respSignatureFail})
@@ -398,7 +400,7 @@ func TestConfigUpdateKeepsProjectIDWhenProjectValidationFails(t *testing.T) {
 	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
 
 	cmd := NewCmdConfigUpdate()
-	setFlags(t, cmd, "profile", "up")
+	setFlags(t, cmd, "profile", "up", "public-key", "NEWKEY")
 	cmd.Run(cmd, nil)
 
 	got, ok := reloadProfile(t, cfgPath, credPath, "up")
@@ -410,9 +412,10 @@ func TestConfigUpdateKeepsProjectIDWhenProjectValidationFails(t *testing.T) {
 	}
 }
 
-// 回归 AC6：config 主命令（非 add/update）的校验失败同样不得落盘。
-// 现状它用 else 保留原 region 后照常 UpdateAggConfig，落盘了同一条命令里的其他改动
-// （此处为 timeout-sec），与 add/update 的 fail-closed 口径不一致。
+// 回归 AC6（config-cmd-audit）：config 主命令改存量、确实发起的校验失败时不得落盘。
+// 本任务改为「按需校验」后，纯元数据编辑不再触发校验，故此处用 --region 触发校验并
+// bundle 一个 --timeout-sec：校验失败时，同一条命令里的元数据改动也必须一并不落盘
+// （fail-closed 不因本任务回退，prd R4）。
 func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
 	t.Setenv("COMP_LINE", "1")
 	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
@@ -423,7 +426,7 @@ func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
 	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
 
 	cmd := NewCmdConfig()
-	setFlags(t, cmd, "profile", "main", "timeout-sec", "30")
+	setFlags(t, cmd, "profile", "main", "region", "cn-sh2", "timeout-sec", "30")
 	cmd.Run(cmd, nil)
 
 	got, ok := reloadProfile(t, cfgPath, credPath, "main")
@@ -432,6 +435,9 @@ func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
 	}
 	if got.Timeout != 15 {
 		t.Errorf("a failed 'ucloud config' must write nothing; got timeout_sec=%d, want 15 (unchanged)", got.Timeout)
+	}
+	if got.Region != "cn-bj2" {
+		t.Errorf("a failed region validation must not persist the new region; got %q, want cn-bj2 (unchanged)", got.Region)
 	}
 }
 
@@ -536,5 +542,160 @@ func TestConfigAddAllowsAccountWithoutDefaultProject(t *testing.T) {
 	}
 	if got.Region != "cn-bj2" || got.Zone != "cn-bj2-04" {
 		t.Errorf("region/zone must survive; got region=%q zone=%q", got.Region, got.Zone)
+	}
+}
+
+// AC1（复现→守卫后转绿）：config update 只改元数据（--active）时跳过远程校验，离线可改。
+// 存量 base_url 指向毒网关：一旦发起校验就会打到它 → t.Errorf 判红。守卫前无条件校验必红
+// （复现成立），守卫后跳过校验、零远程调用、落盘成功转绿。
+// 需第二个 active profile "keep" 作锚点：up 由 active→inactive 后仍须有 active profile，
+// 否则重新读盘因「no active config found」失败（config.go:403）。
+func TestConfigUpdateSkipsValidationForMetadataOnly(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := poisonGateway(t)
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"keep","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3},{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"keep"},{"public_key":"pub","private_key":"pri","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd, "profile", "up", "active", "false")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.Active {
+		t.Error("only-metadata 'config update --active false' must persist offline without any remote call; got active=true")
+	}
+}
+
+// AC2（复现→守卫后转绿）：config update 只改 --timeout-sec（元数据）时跳过远程校验，
+// 即便 base_url 指向坏地址也能离线改成功。守卫前无条件校验会打坏网关 → 失败 → 硬拦、
+// timeout 改不了（复现红）；守卫后跳过校验、落盘成功转绿。单 active profile 全程不变，
+// 重新读盘无「no active config found」之虞。
+func TestConfigUpdateOfflineTimeoutChange(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	// 存量 base_url 指向必然连不通的地址：一旦发起校验必失败
+	cliJSON := `[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"http://127.0.0.1:1/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd, "profile", "up", "timeout-sec", "30")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.Timeout != 30 {
+		t.Errorf("only-metadata 'config update --timeout-sec 30' must persist offline; got timeout_sec=%d, want 30", got.Timeout)
+	}
+}
+
+// AC5（复现→守卫后转绿）：主命令 config 改存量 profile 且只改元数据（--active）时跳过校验。
+// p1 已存在 → ok==true → validateRegion/Project 皆 false → 毒网关零调用。keep 作 active
+// 锚点，使 p1 由 inactive→active 为可见变更，且切换后仍有 active profile 供重新读盘。
+func TestConfigMainSkipsValidationForExistingMetadataOnly(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := poisonGateway(t)
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"keep","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3},{"profile":"p1","active":false,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"keep"},{"public_key":"pub","private_key":"pri","profile":"p1"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfig()
+	setFlags(t, cmd, "profile", "p1", "active", "true")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "p1")
+	if !ok {
+		t.Fatal("profile p1 missing after reload")
+	}
+	if !got.Active {
+		t.Error("main 'config --active true' on an existing profile must persist offline without validation; got active=false")
+	}
+}
+
+// AC3（反向，守卫前后都应绿）：config update 传了 --region 时仍必须校验——防止把该校验的
+// 也跳了。网关 GetRegion 返 171，传 --region cn-sh2：校验触发且失败 → fail-closed 不落盘，
+// 存量 region 不变。
+func TestConfigUpdateStillValidatesOnRegionChange(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd, "profile", "up", "region", "cn-sh2")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.Region != "cn-bj2" {
+		t.Errorf("a --region change must still be validated; a failed validation must not persist. got region=%q, want cn-bj2 (unchanged)", got.Region)
+	}
+}
+
+// AC4（反向，最关键，守卫前后都应绿）：config update 改凭据（--public-key）必须同时触发
+// region 与 project 两个校验。网关 GetRegion 返成功、GetProjectList 返 171：守卫正确时
+// 凭据变更会触发 project 校验并失败 → fail-closed 不落盘，新 public-key 不落盘。
+// 若守卫漏了「凭据变更 → 校验 project」，project 不被校验 → 命令直接落盘新 key → 断言判红。
+func TestConfigUpdateValidatesBothOnCredChange(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{projectResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"OLD_PUB","private_key":"pri","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd, "profile", "up", "public-key", "NEW_PUB")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.PublicKey != "OLD_PUB" {
+		t.Errorf("a credential change must trigger project validation; a failed project validation must not persist. got public_key=%q, want OLD_PUB (unchanged)", got.PublicKey)
+	}
+}
+
+// AC5 补充（反向，守卫前后都应绿）：主命令 config 新建 profile（!ok）时必须无条件校验。
+// 新 profile 的 region/project 须从零建立，不得因「无 Changed 标志」而跳过。
+// 网关 GetRegion 返 171 → 新建被拒、不落盘。
+func TestConfigMainStillValidatesNewProfile(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := `[{"profile":"keep","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"keep"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfig()
+	setFlags(t, cmd,
+		"profile", "fresh",
+		"public-key", "pub",
+		"private-key", "pri",
+		"base-url", gateway.URL,
+		"region", "cn-bj2",
+		"zone", "cn-bj2-04",
+	)
+	cmd.Run(cmd, nil)
+
+	if got, ok := reloadProfile(t, cfgPath, credPath, "fresh"); ok {
+		t.Errorf("a new profile must be validated unconditionally; a failed validation must not create it. got region=%q", got.Region)
 	}
 }

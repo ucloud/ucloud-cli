@@ -279,48 +279,65 @@ func NewCmdConfig() *cobra.Command {
 				cacheConfig.Zone = cfg.Zone
 			}
 
+			//按需远程校验：改存量 profile(ok==true)时，仅当改动涉及校验相关字段才发起
+			//对应校验；新建(!ok)恒校验（新 profile 的 region/project 须从零建立）。
+			//凭据/接入点(public-key/private-key/base-url/channel-key)变更须同时重校验
+			//region 与 project——换 key/网关后存量 region/project 可能失效或新凭据无权访问。
+			//只改元数据(active/timeout-sec/max-retry-times/agree-upload-log)且改存量则皆跳过，
+			//离线可改。用 Changed() 而非空值判断：空值是合法输入（清除语义）。
+			//本任务只改「何时校验」，if 体内的 fail-closed return 与 errNoDefaultProject
+			//放行原样不动（prd R4）；跳过时不碰 cacheConfig 的 region/zone/project，保留存量值。
+			credsOrEndpointChanged := c.Flags().Changed("public-key") || c.Flags().Changed("private-key") ||
+				c.Flags().Changed("base-url") || c.Flags().Changed("channel-key")
+			validateRegion := !ok || c.Flags().Changed("region") || c.Flags().Changed("zone") || credsOrEndpointChanged
+			validateProject := !ok || c.Flags().Changed("project-id") || credsOrEndpointChanged
+
 			//确保设置的Region和Zone真实存在。校验失败即整体放弃、不落盘：
 			//此前用 else 保留原值后仍照常写盘，与 add/update 的 fail-closed 口径不一致
-			region, zone, err := getReasonableRegionZone(cacheConfig)
-			if err != nil {
-				platform.HandleError(fmt.Errorf("verify region failed: %v", err))
-				return
+			if validateRegion {
+				region, zone, err := getReasonableRegionZone(cacheConfig)
+				if err != nil {
+					platform.HandleError(fmt.Errorf("verify region failed: %v", err))
+					return
+				}
+				cacheConfig.Region = region
+				cacheConfig.Zone = zone
 			}
-			cacheConfig.Region = region
-			cacheConfig.Zone = zone
 
 			//如果用户填写的project和配置文件中该配置的project均为空，则调接口拉取默认project
 			//如果用户填写的project不为空，则校验其是否真实存在;
-			if cfg.ProjectID == "" {
-				if cacheConfig.ProjectID == "" {
-					//此处直接调用、未经 %v 包装，sentinel 链完整：errNoDefaultProject
-					//属良性缺失，放行并留空 ProjectID，口径与 ucloud init 一致
-					id, _, err := getDefaultProjectWithConfig(cacheConfig)
-					if err != nil && !errors.Is(err, errNoDefaultProject) {
-						platform.HandleError(fmt.Errorf("fetch default project failed: %v", err))
+			if validateProject {
+				if cfg.ProjectID == "" {
+					if cacheConfig.ProjectID == "" {
+						//此处直接调用、未经 %v 包装，sentinel 链完整：errNoDefaultProject
+						//属良性缺失，放行并留空 ProjectID，口径与 ucloud init 一致
+						id, _, err := getDefaultProjectWithConfig(cacheConfig)
+						if err != nil && !errors.Is(err, errNoDefaultProject) {
+							platform.HandleError(fmt.Errorf("fetch default project failed: %v", err))
+							return
+						}
+						if err == nil {
+							cacheConfig.ProjectID = id
+						}
+					}
+				} else {
+					cfg.ProjectID = platform.PickResourceID(cfg.ProjectID)
+					projects, err := fetchProjectWithConfig(cacheConfig)
+					if err != nil {
+						//远程不可达时此前直接采信用户输入并落盘，等于写入未经校验的 project；
+						//现与其余路径一致：拒绝
+						platform.HandleError(fmt.Errorf("fetch project failed: %v", err))
 						return
 					}
-					if err == nil {
-						cacheConfig.ProjectID = id
+					if ok := projects[cfg.ProjectID]; !ok {
+						platform.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
+						if ok := projects[cacheConfig.ProjectID]; !ok {
+							platform.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
+						}
+						return
 					}
+					cacheConfig.ProjectID = cfg.ProjectID
 				}
-			} else {
-				cfg.ProjectID = platform.PickResourceID(cfg.ProjectID)
-				projects, err := fetchProjectWithConfig(cacheConfig)
-				if err != nil {
-					//远程不可达时此前直接采信用户输入并落盘，等于写入未经校验的 project；
-					//现与其余路径一致：拒绝
-					platform.HandleError(fmt.Errorf("fetch project failed: %v", err))
-					return
-				}
-				if ok := projects[cfg.ProjectID]; !ok {
-					platform.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
-					if ok := projects[cacheConfig.ProjectID]; !ok {
-						platform.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
-					}
-					return
-				}
-				cacheConfig.ProjectID = cfg.ProjectID
 			}
 
 			if active != "" {
@@ -343,7 +360,7 @@ func NewCmdConfig() *cobra.Command {
 				}
 			}
 
-			err = platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			err := platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			if err != nil {
 				platform.HandleError(err)
 			}
@@ -563,27 +580,43 @@ func NewCmdConfigUpdate() *cobra.Command {
 				draft.Zone = cfg.Zone
 			}
 
-			region, zone, err := getReasonableRegionZone(&draft)
-			if err != nil {
-				platform.HandleError(err)
-				return
+			//按需远程校验：改存量 profile 时，仅当改动涉及校验相关字段才发起对应校验。
+			//凭据/接入点(public-key/private-key/base-url/channel-key)变更须同时重校验
+			//region 与 project——换 key/网关后存量 region/project 可能失效或新凭据无权访问，
+			//配置时当场抓住才是校验的价值；跳过会把「坏 key」延迟到下次真正用命令时才暴露。
+			//只改元数据(active/timeout-sec/max-retry-times/agree-upload-log)则两者皆跳过，
+			//离线可改。用 Changed() 而非空值判断：空值是合法输入（清除语义）。
+			//本任务只改「何时校验」，if 体内的 fail-closed return 与 errNoDefaultProject
+			//放行原样不动（prd R4）；跳过时不碰 draft 的 region/zone/project，保留存量值。
+			credsOrEndpointChanged := c.Flags().Changed("public-key") || c.Flags().Changed("private-key") ||
+				c.Flags().Changed("base-url") || c.Flags().Changed("channel-key")
+			validateRegion := c.Flags().Changed("region") || c.Flags().Changed("zone") || credsOrEndpointChanged
+			validateProject := c.Flags().Changed("project-id") || credsOrEndpointChanged
+
+			if validateRegion {
+				region, zone, err := getReasonableRegionZone(&draft)
+				if err != nil {
+					platform.HandleError(err)
+					return
+				}
+				draft.Region = region
+				draft.Zone = zone
 			}
 
-			draft.Region = region
-			draft.Zone = zone
-
-			if cfg.ProjectID != "" {
-				draft.ProjectID = platform.PickResourceID(cfg.ProjectID)
+			if validateProject {
+				//归一化只在要校验 project 时才做，跳过时保留存量 ProjectID
+				if cfg.ProjectID != "" {
+					draft.ProjectID = platform.PickResourceID(cfg.ProjectID)
+				}
+				//errNoDefaultProject 是良性缺失（账号有项目但未设默认），放行并留空 ProjectID，
+				//口径与 ucloud init 一致；其余错误一律拒绝落盘——此处曾漏 return 而抹空 ProjectID
+				project, err := getReasonableProject(&draft)
+				if err != nil && !errors.Is(err, errNoDefaultProject) {
+					platform.HandleError(err)
+					return
+				}
+				draft.ProjectID = project
 			}
-
-			//errNoDefaultProject 是良性缺失（账号有项目但未设默认），放行并留空 ProjectID，
-			//口径与 ucloud init 一致；其余错误一律拒绝落盘——此处曾漏 return 而抹空 ProjectID
-			project, err := getReasonableProject(&draft)
-			if err != nil && !errors.Is(err, errNoDefaultProject) {
-				platform.HandleError(err)
-				return
-			}
-			draft.ProjectID = project
 
 			if active == "true" {
 				draft.Active = true
@@ -597,7 +630,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 				draft.AgreeUploadLog = false
 			}
 
-			err = platform.AggConfigListIns.UpdateAggConfig(&draft)
+			err := platform.AggConfigListIns.UpdateAggConfig(&draft)
 			if err != nil {
 				platform.HandleError(err)
 			}
