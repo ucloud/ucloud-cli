@@ -389,6 +389,14 @@ func NewCmdConfigAdd() *cobra.Command {
 		Short: "add configuration",
 		Long:  "add configuration",
 		Run: func(c *cobra.Command, args []string) {
+			//本地约束先于远程校验（与主命令一致）：timeout 是纯本地检查，若排在远程校验
+			//之后，坏 timeout 会先被喂进校验请求（0 → 无超时、负值 → 请求瞬败），用户
+			//看到的是 region 错、而非真正的 timeout 错，且白打一次网络
+			if cfg.Timeout <= 0 {
+				platform.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
+				return
+			}
+
 			//远程校验失败即整体放弃，不得落盘：否则 profile 会带着被抹空的 region/zone
 			//建成，且 --active true 时还会把原有 active profile 顶掉
 			region, zone, err := getReasonableRegionZone(cfg)
@@ -414,11 +422,6 @@ func NewCmdConfigAdd() *cobra.Command {
 				return
 			}
 			cfg.ProjectID = project
-
-			if cfg.Timeout <= 0 {
-				platform.HandleError(fmt.Errorf("timeout_sec must be greater than 0, accept %d", cfg.Timeout))
-				return
-			}
 
 			if active == "true" {
 				cfg.Active = true

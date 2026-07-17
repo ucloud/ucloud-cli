@@ -80,6 +80,16 @@ type gatewayBehavior struct {
 	projectResp string // 空 = respProjectOK
 }
 
+// poisonGateway 任何请求都判失败——用于断言某路径根本不该发起远程校验
+// （本地检查应先于远程校验拦截，不打网络）。
+func poisonGateway(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected remote call %s %s — this path must be rejected locally before any validation", r.Method, r.URL.RawQuery)
+		w.WriteHeader(500)
+	}))
+}
+
 // fakeGatewayServer 模拟业务网关：响应远程校验所需的 GetRegion/GetProjectList
 func fakeGatewayServer(t *testing.T) *httptest.Server {
 	t.Helper()
@@ -422,6 +432,38 @@ func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
 	}
 	if got.Timeout != 15 {
 		t.Errorf("a failed 'ucloud config' must write nothing; got timeout_sec=%d, want 15 (unchanged)", got.Timeout)
+	}
+}
+
+// 回归 D10：config add 的本地 timeout 检查必须先于远程校验。
+// timeout <= 0 是纯本地约束；此前它排在 getReasonableRegionZone 之后，坏 timeout
+// 会先被喂进校验请求（0 → 无超时 → 照打网关；负值 → 请求瞬败），坏 timeout 反而
+// 让人看到 region 错、看不到真正的 timeout 错。用 --timeout-sec 0 + 毒网关：修复后
+// 本地检查先拦，网关零调用。
+func TestConfigAddChecksTimeoutBeforeValidation(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := poisonGateway(t) // 任何远程调用都判失败
+	t.Cleanup(gateway.Close)
+
+	cliJSON := `[{"profile":"good","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"good"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigAdd()
+	setFlags(t, cmd,
+		"profile", "bt",
+		"public-key", "pub",
+		"private-key", "pri",
+		"base-url", gateway.URL,
+		"region", "cn-bj2",
+		"zone", "cn-bj2-04",
+		"timeout-sec", "0", // 非法本地值：0 会让 http.Client 变成「无超时」，照打网关
+	)
+	cmd.Run(cmd, nil)
+
+	// timeout=0 非法，profile 不该建成；关键由毒网关断言：拒绝发生在任何远程调用之前
+	if _, ok := reloadProfile(t, cfgPath, credPath, "bt"); ok {
+		t.Error("profile 'bt' must not be created with timeout_sec=0")
 	}
 }
 
