@@ -14,6 +14,7 @@ ucloud config	use=config	short=add or update configurations
   flag=active	short=	default=	required=
   flag=agree-upload-log	short=	default=false	required=
   flag=base-url	short=	default=	required=
+  flag=channel-key	short=	default=	required=
   flag=max-retry-times	short=	default=0	required=
   flag=private-key	short=	default=	required=
   flag=profile	short=	default=	required=
@@ -26,6 +27,7 @@ ucloud config add	use=add	short=add configuration
   flag=active	short=	default=false	required=
   flag=agree-upload-log	short=	default=false	required=
   flag=base-url	short=	default=https://api.ucloud.cn/	required=
+  flag=channel-key	short=	default=	required=
   flag=max-retry-times	short=	default=3	required=
   flag=private-key	short=	default=	required=true
   flag=profile	short=	default=	required=true
@@ -41,6 +43,7 @@ ucloud config update	use=update	short=update configurations
   flag=active	short=	default=	required=
   flag=agree-upload-log	short=	default=	required=
   flag=base-url	short=	default=	required=
+  flag=channel-key	short=	default=	required=
   flag=max-retry-times	short=	default=	required=
   flag=private-key	short=	default=	required=
   flag=profile	short=	default=	required=true

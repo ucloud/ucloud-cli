@@ -223,6 +223,7 @@ func NewCmdConfig() *cobra.Command {
 					PublicKey:     cfg.PublicKey,
 					Profile:       cfg.Profile,
 					BaseURL:       cfg.BaseURL,
+					ChannelKey:    cfg.ChannelKey,
 					Timeout:       cfg.Timeout,
 					Active:        cfg.Active,
 					Region:        cfg.Region,
@@ -245,6 +246,14 @@ func NewCmdConfig() *cobra.Command {
 				}
 			} else {
 				cacheConfig.BaseURL = cfg.BaseURL
+			}
+
+			//channel-key 属连接类参数，与 base-url 同批应用：必须早于下方 region/project
+			//远程校验，否则校验请求不带 key，专属云 profile 在配置时即报错而配不上。
+			//用 Changed() 而非空值判断：空是合法值（专属云切回主站需清除它），
+			//--channel-key "" 应能清空，这与 base-url「空=不改」的既有局限不同。
+			if c.Flags().Changed("channel-key") {
+				cacheConfig.ChannelKey = cfg.ChannelKey
 			}
 
 			if cfg.Timeout == 0 {
@@ -342,6 +351,7 @@ func NewCmdConfig() *cobra.Command {
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&cfg.ChannelKey, "channel-key", "", "Optional. Set channel-key for a dedicated cloud channel that reuses the main-site domain. For instance 'ch_xxx'. Leave empty for the main site or a channel with its own domain")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", 0, "Optional. Set default timeout for requesting API. Unit: seconds")
 	cfg.MaxRetryTimes = flags.Int("max-retry-times", 0, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
@@ -423,6 +433,7 @@ func NewCmdConfigAdd() *cobra.Command {
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", platform.DefaultBaseURL, "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&cfg.ChannelKey, "channel-key", "", "Optional. Set channel-key for a dedicated cloud channel that reuses the main-site domain. For instance 'ch_xxx'. Leave empty for the main site or a channel with its own domain")
 	flags.IntVar(&cfg.Timeout, "timeout-sec", platform.DefaultTimeoutSec, "Optional. Set default timeout for requesting API. Unit: seconds")
 	cfg.MaxRetryTimes = flags.Int("max-retry-times", platform.DefaultMaxRetryTimes, "Optional. Set default max-retry-times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "false", "Optional. Mark the profile to be effective or not. Accept valeus: true or false")
@@ -472,10 +483,17 @@ func NewCmdConfigUpdate() *cobra.Command {
 				platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
 			}
 
-			//先应用连接类参数(base-url/timeout-sec/max-retry-times)，确保接下来的远程校验
+			//先应用连接类参数(base-url/channel-key/timeout-sec/max-retry-times)，确保接下来的远程校验
 			//打到新网关而不是旧的(可能已不可用的)网关，避免旧base-url坏掉后无法改回的死锁
 			if cfg.BaseURL != "" {
 				cacheConfig.BaseURL = cfg.BaseURL
+			}
+
+			//channel-key 同属连接类参数：专属云 profile 的远程校验请求必须带上它，
+			//否则网关报 174 而校验失败，profile 永远配不上。
+			//Changed() 使 --channel-key "" 可清除（专属云切回主站的场景）。
+			if c.Flags().Changed("channel-key") {
+				cacheConfig.ChannelKey = cfg.ChannelKey
 			}
 
 			if timeout != "" {
@@ -561,6 +579,7 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")
 	flags.StringVar(&cfg.BaseURL, "base-url", "", "Optional. Set default base url. For instance 'https://api.ucloud.cn/'")
+	flags.StringVar(&cfg.ChannelKey, "channel-key", "", "Optional. Set channel-key for a dedicated cloud channel that reuses the main-site domain. For instance 'ch_xxx'. Pass an empty value to clear it")
 	flags.StringVar(&timeout, "timeout-sec", "", "Optional. Set default timeout for requesting API. Unit: seconds")
 	flags.StringVar(&maxRetries, "max-retry-times", "", "Optional. Set default max retry times for idempotent APIs which can be called many times without side effect, for example 'ReleaseEIP'")
 	flags.StringVar(&active, "active", "", "Optional. Mark the profile to be effective")

@@ -71,13 +71,45 @@ func newCredHeaderInjector(credConfig *CredentialConfig) sdk.HttpRequestHandler 
 	}
 }
 
+// newChannelHeaderInjector 返回专属云渠道头注入 handler。
+//
+// 网关据 channel-key 识别「复用主站域名」的专属云渠道（如 api.ucloud-global.com）；
+// 独立域名渠道与主站用户没有这个 key，故空值必须完全不注入该头 —— 与本文件中
+// Cookie/Csrf-Token「空值也照旧 set」的历史行为刻意相反：那是存量契约，而这是新增头，
+// 给全部存量用户平白加一个空头即构成回归。
+//
+// 取值源是 ac 而非 credConfig：channel-key 是接入点配置（与 base_url 同类、成对配置），
+// 不是凭据机制，与 auth_mode 正交（spec auth-guidelines「一个请求只携带一种凭据机制」
+// 说的是凭据，不含本头）。且 newServiceClientForConfig 传入的 ac 正是用户此刻正在配置
+// 的 profile，config 子命令自身的 region/project 远程校验请求因此天然带上正确的 key，
+// 不会出现「配置时校验失败 → 配不上」的死锁。
+//
+// 实测（2026-07-16，真实 combo 账号 + 真实网关）：同一 token 同一域名，唯一变量为本头，
+// RetCode 174 → 0；且 Go 的 Header.Set 规范化为 Channel-Key 后网关照常接受。
+func newChannelHeaderInjector(ac *AggConfig) sdk.HttpRequestHandler {
+	return func(c *sdk.Client, req *http.HttpRequest) (*http.HttpRequest, error) {
+		if ac == nil || ac.ChannelKey == "" {
+			return req, nil
+		}
+		return req, req.SetHeader("channel-key", ac.ChannelKey)
+	}
+}
+
 // authRetCodeWhitelist 鉴权类 RetCode 白名单（D6）。实测网关（2026-06-11 实探）：
 // 鉴权失败以 HTTP 200 + RetCode 返回，401 仅作防御性分支保留。
 // 174 "Token Not Exists"：伪造与已过期的 Bearer 同为 174（已实测确认）；属网关
 // 前置鉴权拒绝，业务必未执行，重放一次安全。网关团队书面确认仍待补档（spec §7）。
 // 170（缺签名，oauth 请求恒带 Bearer 不会触发）、171/172（AK/SK 路径）不入列。
+//
+// 174 的第三种成因（2026-07-16 实测发现，已知且刻意保留现状）：channel-key 与账号
+// 所属渠道不匹配时网关同样返回 174（同一有效 token 换成别的渠道 key 即报 174）。
+// 于是本白名单会把「配错 channel-key」误判为 token 过期 → 刷新（refresh_token 轮转、
+// 旧的立即作废）→ 重放 → 仍 174。后果是每次请求白耗一轮刷新，且错误文案把用户导向
+// 重新登录 —— 而重新登录永远治不好。本次不改控制流（改了会波及正常的过期刷新路径）。
+// 排障：OAuth profile 报 174 且重新登录无效时，优先检查 channel_key 是否与账号所属
+// 渠道匹配。
 var authRetCodeWhitelist = map[int]bool{
-	174: true, // Token Not Exists：无效或过期 Bearer
+	174: true, // Token Not Exists：无效或过期 Bearer（亦可能是 channel-key 不匹配，见上）
 }
 
 // isAuthFailure 判定是否鉴权类失败：HTTP 401 或 body RetCode 在白名单（网关前置鉴权，业务必未执行）。
@@ -216,8 +248,8 @@ func normalizeProjectID(req request.Common) (request.Common, error) {
 	return req, nil
 }
 
-// attachHandlers 把三个平台 handler 挂到 service client 上：
-// project-id 归一化、凭据头注入、oauth 反应式重试。
+// attachHandlers 把平台 handler 挂到 service client 上：
+// project-id 归一化、请求日志、凭据头注入、专属云渠道头注入、oauth 反应式重试。
 // credConfig 与 ac 显式传入：NewClient 借此传它自己的构造来源 profile（ac），
 // 重试目标必须是构造本 client 的 profile，而非包级 ConfigIns
 // （详见 newOAuthRetryHandler 的注释：os.Args 扫描识别不了 -p X/--profile=X，
@@ -239,6 +271,7 @@ func attachHandlersWithManager(sc sdk.ServiceClient, credConfig *CredentialConfi
 		return req, nil
 	})
 	sc.AddHttpRequestHandler(newCredHeaderInjector(credConfig))
+	sc.AddHttpRequestHandler(newChannelHeaderInjector(ac))
 	sc.AddHttpResponseHandler(newOAuthRetryHandler(credConfig, ac, manager))
 }
 
