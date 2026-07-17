@@ -242,7 +242,9 @@ func getReasonableProject(cfg *platform.AggConfig) (string, error) {
 	if cfg.ProjectID == "" {
 		id, _, err := getDefaultProjectWithConfig(cfg)
 		if err != nil {
-			return "", fmt.Errorf("fetch project failed: %v", err)
+			// %w 而非 %v：调用方需 errors.Is 识别 errNoDefaultProject（账号有项目但
+			// 未设默认，属良性），放行而非拒绝落盘，口径与 ucloud init 一致
+			return "", fmt.Errorf("fetch project failed: %w", err)
 		}
 		return id, nil
 	}

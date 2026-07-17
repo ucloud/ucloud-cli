@@ -279,23 +279,28 @@ func NewCmdConfig() *cobra.Command {
 				cacheConfig.Zone = cfg.Zone
 			}
 
-			//确保设置的Region和Zone真实存在
+			//确保设置的Region和Zone真实存在。校验失败即整体放弃、不落盘：
+			//此前用 else 保留原值后仍照常写盘，与 add/update 的 fail-closed 口径不一致
 			region, zone, err := getReasonableRegionZone(cacheConfig)
 			if err != nil {
 				platform.HandleError(fmt.Errorf("verify region failed: %v", err))
-			} else {
-				cacheConfig.Region = region
-				cacheConfig.Zone = zone
+				return
 			}
+			cacheConfig.Region = region
+			cacheConfig.Zone = zone
 
 			//如果用户填写的project和配置文件中该配置的project均为空，则调接口拉取默认project
 			//如果用户填写的project不为空，则校验其是否真实存在;
 			if cfg.ProjectID == "" {
 				if cacheConfig.ProjectID == "" {
+					//此处直接调用、未经 %v 包装，sentinel 链完整：errNoDefaultProject
+					//属良性缺失，放行并留空 ProjectID，口径与 ucloud init 一致
 					id, _, err := getDefaultProjectWithConfig(cacheConfig)
-					if err != nil {
+					if err != nil && !errors.Is(err, errNoDefaultProject) {
 						platform.HandleError(fmt.Errorf("fetch default project failed: %v", err))
-					} else {
+						return
+					}
+					if err == nil {
 						cacheConfig.ProjectID = id
 					}
 				}
@@ -303,17 +308,19 @@ func NewCmdConfig() *cobra.Command {
 				cfg.ProjectID = platform.PickResourceID(cfg.ProjectID)
 				projects, err := fetchProjectWithConfig(cacheConfig)
 				if err != nil {
-					cacheConfig.ProjectID = cfg.ProjectID
-				} else {
-					if ok := projects[cfg.ProjectID]; ok {
-						cacheConfig.ProjectID = cfg.ProjectID
-					} else {
-						platform.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
-						if ok := projects[cacheConfig.ProjectID]; !ok {
-							platform.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
-						}
-					}
+					//远程不可达时此前直接采信用户输入并落盘，等于写入未经校验的 project；
+					//现与其余路径一致：拒绝
+					platform.HandleError(fmt.Errorf("fetch project failed: %v", err))
+					return
 				}
+				if ok := projects[cfg.ProjectID]; !ok {
+					platform.HandleError(fmt.Errorf("project %s you assigned not exists", cfg.ProjectID))
+					if ok := projects[cacheConfig.ProjectID]; !ok {
+						platform.HandleError(fmt.Errorf("project %s not exists, assign another one please", cacheConfig.ProjectID))
+					}
+					return
+				}
+				cacheConfig.ProjectID = cfg.ProjectID
 			}
 
 			if active != "" {
@@ -382,16 +389,22 @@ func NewCmdConfigAdd() *cobra.Command {
 		Short: "add configuration",
 		Long:  "add configuration",
 		Run: func(c *cobra.Command, args []string) {
+			//远程校验失败即整体放弃，不得落盘：否则 profile 会带着被抹空的 region/zone
+			//建成，且 --active true 时还会把原有 active profile 顶掉
 			region, zone, err := getReasonableRegionZone(cfg)
 			if err != nil {
 				platform.HandleError(err)
+				return
 			}
 			cfg.Region = region
 			cfg.Zone = zone
 
+			//errNoDefaultProject 是良性缺失（账号有项目但未设默认），放行并留空 ProjectID，
+			//口径与 ucloud init 一致；其余错误一律拒绝落盘
 			project, err := getReasonableProject(cfg)
-			if err != nil {
+			if err != nil && !errors.Is(err, errNoDefaultProject) {
 				platform.HandleError(err)
+				return
 			}
 			cfg.ProjectID = project
 
@@ -471,29 +484,33 @@ func NewCmdConfigUpdate() *cobra.Command {
 				return
 			}
 
+			//GetAggConfigByProfile 返回的是 manager map 内条目本身。改动一律先落在副本上，
+			//校验全部通过后才交给 UpdateAggConfig 写回，任一步失败都不污染内存态、更不落盘。
+			//这也堵死了 OAuth token 刷新 handler 持 manager 写回时把半成品一并 Save 的路径。
+			//注意 MaxRetryTimes 是 *int，浅拷贝与原对象共享该指针：下方只做整体替换，
+			//不得改成 *draft.MaxRetryTimes = x 的原地写。
+			draft := *cacheConfig
+
+			//AK/SK 只写内存即可供下方远程校验使用：BuildClientRuntime 完全从传入的
+			//AggConfig 构造 sdk.Config 与 credential，不读磁盘，故无需先行落盘。
 			if cfg.PrivateKey != "" {
-				cacheConfig.PrivateKey = cfg.PrivateKey
+				draft.PrivateKey = cfg.PrivateKey
 			}
 			if cfg.PublicKey != "" {
-				cacheConfig.PublicKey = cfg.PublicKey
-			}
-
-			//如果配置了公私钥，则先更新让其生效, 为接下来拉取Region,Zone做准备
-			if cfg.PrivateKey != "" || cfg.PublicKey != "" {
-				platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
+				draft.PublicKey = cfg.PublicKey
 			}
 
 			//先应用连接类参数(base-url/channel-key/timeout-sec/max-retry-times)，确保接下来的远程校验
 			//打到新网关而不是旧的(可能已不可用的)网关，避免旧base-url坏掉后无法改回的死锁
 			if cfg.BaseURL != "" {
-				cacheConfig.BaseURL = cfg.BaseURL
+				draft.BaseURL = cfg.BaseURL
 			}
 
 			//channel-key 同属连接类参数：专属云 profile 的远程校验请求必须带上它，
 			//否则网关报 174 而校验失败，profile 永远配不上。
 			//Changed() 使 --channel-key "" 可清除（专属云切回主站的场景）。
 			if c.Flags().Changed("channel-key") {
-				cacheConfig.ChannelKey = cfg.ChannelKey
+				draft.ChannelKey = cfg.ChannelKey
 			}
 
 			if timeout != "" {
@@ -502,11 +519,13 @@ func NewCmdConfigUpdate() *cobra.Command {
 					platform.HandleError(fmt.Errorf("parse timeout-sec failed: %v", err))
 					return
 				}
-				cacheConfig.Timeout = seconds
+				draft.Timeout = seconds
 			}
 
-			if cacheConfig.Timeout <= 0 {
-				platform.HandleError(fmt.Errorf("timeout-sec must be greater than 0, accept %d", cfg.Timeout))
+			//报告被检查的那个值：cfg.Timeout 是本命令从不赋值的字段（flag 绑定的是
+			//局部变量 timeout），报它恒为 0，与实际被拒的值无关
+			if draft.Timeout <= 0 {
+				platform.HandleError(fmt.Errorf("timeout-sec must be greater than 0, accept %d", draft.Timeout))
 				return
 			}
 
@@ -516,54 +535,59 @@ func NewCmdConfigUpdate() *cobra.Command {
 					platform.HandleError(fmt.Errorf("parse max-retry-times failed: %v", err))
 					return
 				}
-				cacheConfig.MaxRetryTimes = &times
+				draft.MaxRetryTimes = &times
 			}
 
-			if *cacheConfig.MaxRetryTimes < 0 {
-				platform.HandleError(fmt.Errorf("max-retry-timesc must be greater than or equal to 0, accept %d", cfg.MaxRetryTimes))
+			//同上，且更隐蔽：cfg.MaxRetryTimes 是本命令从不赋值的 *int，
+			//%d 对指针打印的是地址（nil 即 0），并非用户传入的值。必须解引用。
+			if *draft.MaxRetryTimes < 0 {
+				platform.HandleError(fmt.Errorf("max-retry-times must be greater than or equal to 0, accept %d", *draft.MaxRetryTimes))
 				return
 			}
 
 			//如有设置Region和Zone，确保设置的Region和Zone真实存在
 			if cfg.Region != "" {
-				cacheConfig.Region = cfg.Region
+				draft.Region = cfg.Region
 			}
 			if cfg.Zone != "" {
-				cacheConfig.Zone = cfg.Zone
+				draft.Zone = cfg.Zone
 			}
 
-			region, zone, err := getReasonableRegionZone(cacheConfig)
+			region, zone, err := getReasonableRegionZone(&draft)
 			if err != nil {
 				platform.HandleError(err)
 				return
 			}
 
-			cacheConfig.Region = region
-			cacheConfig.Zone = zone
+			draft.Region = region
+			draft.Zone = zone
 
 			if cfg.ProjectID != "" {
-				cacheConfig.ProjectID = platform.PickResourceID(cfg.ProjectID)
+				draft.ProjectID = platform.PickResourceID(cfg.ProjectID)
 			}
 
-			project, err := getReasonableProject(cacheConfig)
-			if err != nil {
+			//errNoDefaultProject 是良性缺失（账号有项目但未设默认），放行并留空 ProjectID，
+			//口径与 ucloud init 一致；其余错误一律拒绝落盘——此处曾漏 return 而抹空 ProjectID
+			project, err := getReasonableProject(&draft)
+			if err != nil && !errors.Is(err, errNoDefaultProject) {
 				platform.HandleError(err)
+				return
 			}
-			cacheConfig.ProjectID = project
+			draft.ProjectID = project
 
 			if active == "true" {
-				cacheConfig.Active = true
+				draft.Active = true
 			} else if active == "false" {
-				cacheConfig.Active = false
+				draft.Active = false
 			}
 
 			if upload == "true" {
-				cacheConfig.AgreeUploadLog = true
+				draft.AgreeUploadLog = true
 			} else if upload == "false" {
-				cacheConfig.AgreeUploadLog = false
+				draft.AgreeUploadLog = false
 			}
 
-			err = platform.AggConfigListIns.UpdateAggConfig(cacheConfig)
+			err = platform.AggConfigListIns.UpdateAggConfig(&draft)
 			if err != nil {
 				platform.HandleError(err)
 			}
@@ -573,8 +597,9 @@ func NewCmdConfigUpdate() *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.StringVar(&cfg.Profile, "profile", "", "Required. Set name of CLI profile")
-	flags.StringVar(&cfg.PublicKey, "public-key", "", "Required. Set public key")
-	flags.StringVar(&cfg.PrivateKey, "private-key", "", "Required. Set private key")
+	//公私钥在 update 中为可选：仅在非空时更新（见 Run）。只有 profile 是 MarkFlagRequired
+	flags.StringVar(&cfg.PublicKey, "public-key", "", "Optional. Set public key")
+	flags.StringVar(&cfg.PrivateKey, "private-key", "", "Optional. Set private key")
 	flags.StringVar(&cfg.Region, "region", "", "Optional. Set default region. For instance 'cn-bj2' See 'ucloud region'")
 	flags.StringVar(&cfg.Zone, "zone", "", "Optional. Set default zone. For instance 'cn-bj2-02'. See 'ucloud region'")
 	flags.StringVar(&cfg.ProjectID, "project-id", "", "Optional. Set default project. For instance 'org-xxxxxx'. See 'ucloud project list")

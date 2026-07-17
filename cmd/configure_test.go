@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/ucloud/ucloud-cli/cmd/internal/platform"
 )
 
@@ -63,18 +65,45 @@ func TestSwitchProfileToAKSKPersistsToDisk(t *testing.T) {
 	}
 }
 
+// 假网关响应体。网关以 HTTP 200 + RetCode 表达错误，假网关须照做。
+const (
+	respRegionOK         = `{"RetCode":0,"Action":"GetRegionResponse","Regions":[{"Region":"cn-bj2","Zone":"cn-bj2-04","IsDefault":true}]}`
+	respProjectOK        = `{"RetCode":0,"Action":"GetProjectListResponse","ProjectSet":[{"ProjectId":"org-123","ProjectName":"Default","IsDefault":true}]}`
+	respSignatureFail    = `{"RetCode":171,"Message":"Signature VerifyAC Error"}`
+	respProjectNoDefault = `{"RetCode":0,"Action":"GetProjectListResponse","ProjectSet":[{"ProjectId":"org-123","ProjectName":"P","IsDefault":false}]}`
+)
+
+// gatewayBehavior 指定假网关对各 action 的响应，零值即全部成功。
+// 分 action 控制使「region 校验通过但 project 校验失败」这类组合可精确构造。
+type gatewayBehavior struct {
+	regionResp  string // 空 = respRegionOK
+	projectResp string // 空 = respProjectOK
+}
+
 // fakeGatewayServer 模拟业务网关：响应远程校验所需的 GetRegion/GetProjectList
 func fakeGatewayServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	return fakeGatewayServerWith(t, gatewayBehavior{})
+}
+
+// fakeGatewayServerWith 同 fakeGatewayServer，但可为单个 action 指定失败响应
+func fakeGatewayServerWith(t *testing.T, b gatewayBehavior) *httptest.Server {
+	t.Helper()
+	if b.regionResp == "" {
+		b.regionResp = respRegionOK
+	}
+	if b.projectResp == "" {
+		b.projectResp = respProjectOK
+	}
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		payload := r.URL.RawQuery + string(body)
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case strings.Contains(payload, "GetRegion"):
-			fmt.Fprint(w, `{"RetCode":0,"Action":"GetRegionResponse","Regions":[{"Region":"cn-bj2","Zone":"cn-bj2-04","IsDefault":true}]}`)
+			fmt.Fprint(w, b.regionResp)
 		case strings.Contains(payload, "GetProjectList"):
-			fmt.Fprint(w, `{"RetCode":0,"Action":"GetProjectListResponse","ProjectSet":[{"ProjectId":"org-123","ProjectName":"Default","IsDefault":true}]}`)
+			fmt.Fprint(w, b.projectResp)
 		default:
 			fmt.Fprint(w, `{"RetCode":230,"Message":"unexpected action"}`)
 		}
@@ -201,5 +230,234 @@ func TestInitSaveOverwritesExistingOAuthOnlyProfile(t *testing.T) {
 	if got.AccessToken != "" || got.RefreshToken != "" || got.ExpiresAt != 0 {
 		t.Errorf("oauth tokens must be cleared on disk, got access_token=%q refresh_token=%q expires_at=%d",
 			got.AccessToken, got.RefreshToken, got.ExpiresAt)
+	}
+}
+
+// newTestConfigFiles 写入 config/credential 到临时目录，让包级 AggConfigListIns 指向它们，
+// 并在 t.Cleanup 中恢复被 GetBizClient 改写的包级全局，避免测试顺序耦合。
+func newTestConfigFiles(t *testing.T, cliJSON, credJSON string) (cfgPath, credPath string) {
+	t.Helper()
+	dir := t.TempDir()
+	cfgPath = filepath.Join(dir, "config.json")
+	credPath = filepath.Join(dir, "credential.json")
+	if err := ioutil.WriteFile(cfgPath, []byte(cliJSON), platform.LocalFileMode); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(credPath, []byte(credJSON), platform.LocalFileMode); err != nil {
+		t.Fatal(err)
+	}
+	m, err := platform.NewAggConfigManager(cfgPath, credPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldM, oldCC, oldAC := platform.AggConfigListIns, platform.ClientConfig, platform.AuthCredential
+	platform.AggConfigListIns = m
+	t.Cleanup(func() {
+		platform.AggConfigListIns, platform.ClientConfig, platform.AuthCredential = oldM, oldCC, oldAC
+	})
+	return cfgPath, credPath
+}
+
+// reloadProfile 重新读盘取 profile —— 断言持久化结果，而非内存态
+func reloadProfile(t *testing.T, cfgPath, credPath, profile string) (*platform.AggConfig, bool) {
+	t.Helper()
+	m, err := platform.NewAggConfigManager(cfgPath, credPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m.GetAggConfigByProfile(profile)
+}
+
+func setFlags(t *testing.T, cmd *cobra.Command, kv ...string) {
+	t.Helper()
+	for i := 0; i+1 < len(kv); i += 2 {
+		if err := cmd.Flags().Set(kv[i], kv[i+1]); err != nil {
+			t.Fatalf("set --%s=%s: %v", kv[i], kv[i+1], err)
+		}
+	}
+}
+
+// 回归 AC1：config add 远程校验失败时不得创建 profile。
+// 现状 getReasonableRegionZone 出错后只 HandleError 不 return，随即把空 region/zone
+// 赋回，照常 Append，落盘一个 region='' zone='' project_id='' 的残缺 profile。
+//
+// 预置一个 active profile 而非从空配置起步：AggConfigManager.Load 规定「有 profile
+// 就必须有 active」（config.go:403），否则这里落盘的 bad(active=false) 会让重新读盘
+// 直接失败，断言根本跑不到。
+func TestConfigAddRejectsProfileWhenValidationFails(t *testing.T) {
+	// 失败路径必调 HandleError → LogErrorTo 会碰单测中恒为 nil 的包级 logger
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := `[{"profile":"good","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"good"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigAdd()
+	setFlags(t, cmd,
+		"profile", "bad",
+		"public-key", "FAKE",
+		"private-key", "FAKE",
+		"base-url", gateway.URL,
+		"region", "cn-bj2",
+		"zone", "cn-bj2-04",
+	)
+	cmd.Run(cmd, nil)
+
+	if got, ok := reloadProfile(t, cfgPath, credPath, "bad"); ok {
+		t.Errorf("profile must not be created when remote validation fails; got region=%q zone=%q project_id=%q",
+			got.Region, got.Zone, got.ProjectID)
+	}
+}
+
+// 回归 AC2：失败的 config add --active true 不得夺走原有 active profile。
+// 现状坏 profile 不仅建成，Append 还会把原 active 踢下去，此后每条命令都用
+// 那个 region 为空、密钥为假的 profile，且无任何线索指向病因。
+func TestConfigAddFailureDoesNotHijackActiveProfile(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := `[{"profile":"good","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"good"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigAdd()
+	setFlags(t, cmd,
+		"profile", "bad",
+		"public-key", "FAKE",
+		"private-key", "FAKE",
+		"base-url", gateway.URL,
+		"active", "true",
+	)
+	cmd.Run(cmd, nil)
+
+	good, ok := reloadProfile(t, cfgPath, credPath, "good")
+	if !ok {
+		t.Fatal("profile good missing after reload")
+	}
+	if !good.Active {
+		t.Error("a failed 'config add --active true' must not deactivate the existing active profile")
+	}
+	if bad, ok := reloadProfile(t, cfgPath, credPath, "bad"); ok {
+		t.Errorf("failed 'config add' must not create the profile; got active=%v region=%q", bad.Active, bad.Region)
+	}
+}
+
+// 回归 AC3：config update 远程校验失败时不得写入任何字段，含 AK/SK。
+// 现状「先更新让其生效」的提前 UpdateAggConfig 已把新 AK/SK 落盘，其后 region
+// 校验失败虽 return，profile 已停在「密钥已换、region/project 未换」的半更新态。
+func TestConfigUpdateWritesNothingWhenValidationFails(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"OLD_PUB","private_key":"OLD_PRI","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd,
+		"profile", "up",
+		"public-key", "NEW_PUB",
+		"private-key", "NEW_PRI",
+	)
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.PublicKey != "OLD_PUB" || got.PrivateKey != "OLD_PRI" {
+		t.Errorf("a failed 'config update' must write nothing; got public_key=%q private_key=%q, want OLD_PUB/OLD_PRI",
+			got.PublicKey, got.PrivateKey)
+	}
+}
+
+// 回归 AC4：config update 的 project 校验失败不得清空 ProjectID。
+// 现状同函数内 region 记得 return、project 忘了 return，随即把 "" 赋回并落盘。
+// 网关对 GetRegion 返成功、对 GetProjectList 返失败，精确构造该组合。
+func TestConfigUpdateKeepsProjectIDWhenProjectValidationFails(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{projectResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"up","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"up"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigUpdate()
+	setFlags(t, cmd, "profile", "up")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "up")
+	if !ok {
+		t.Fatal("profile up missing after reload")
+	}
+	if got.ProjectID != "org-123" {
+		t.Errorf("project validation failure must not clear project_id; got %q, want org-123", got.ProjectID)
+	}
+}
+
+// 回归 AC6：config 主命令（非 add/update）的校验失败同样不得落盘。
+// 现状它用 else 保留原 region 后照常 UpdateAggConfig，落盘了同一条命令里的其他改动
+// （此处为 timeout-sec），与 add/update 的 fail-closed 口径不一致。
+func TestConfigMainCommandWritesNothingWhenValidationFails(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{regionResp: respSignatureFail})
+	t.Cleanup(gateway.Close)
+
+	cliJSON := fmt.Sprintf(`[{"profile":"main","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":%q,"timeout_sec":15,"max_retry_times":3}]`, gateway.URL)
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"main"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfig()
+	setFlags(t, cmd, "profile", "main", "timeout-sec", "30")
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "main")
+	if !ok {
+		t.Fatal("profile main missing after reload")
+	}
+	if got.Timeout != 15 {
+		t.Errorf("a failed 'ucloud config' must write nothing; got timeout_sec=%d, want 15 (unchanged)", got.Timeout)
+	}
+}
+
+// 回归 AC9：fail-closed 不得误伤「有项目但未设默认」的账号。
+// 该场景下 getDefaultProjectWithConfig 返回 errNoDefaultProject（良性），init 认得
+// 并放行；config add 必须同口径 —— 建成 profile 且 project_id 留空。
+// 本用例守护修复不越界，故在修复前即应通过。
+func TestConfigAddAllowsAccountWithoutDefaultProject(t *testing.T) {
+	t.Setenv("COMP_LINE", "1")
+	gateway := fakeGatewayServerWith(t, gatewayBehavior{projectResp: respProjectNoDefault})
+	t.Cleanup(gateway.Close)
+
+	// 同 AC1：预置 active profile，否则新建的 nodef(active=false) 会让重新读盘失败
+	cliJSON := `[{"profile":"good","active":true,"project_id":"org-123","region":"cn-bj2","zone":"cn-bj2-04","base_url":"https://api.ucloud.cn/","timeout_sec":15,"max_retry_times":3}]`
+	credJSON := `[{"public_key":"pub","private_key":"pri","profile":"good"}]`
+	cfgPath, credPath := newTestConfigFiles(t, cliJSON, credJSON)
+
+	cmd := NewCmdConfigAdd()
+	setFlags(t, cmd,
+		"profile", "nodef",
+		"public-key", "pub",
+		"private-key", "pri",
+		"base-url", gateway.URL,
+		"region", "cn-bj2",
+		"zone", "cn-bj2-04",
+	)
+	cmd.Run(cmd, nil)
+
+	got, ok := reloadProfile(t, cfgPath, credPath, "nodef")
+	if !ok {
+		t.Fatal("an account without a default project must still be configurable; profile nodef was not created")
+	}
+	if got.ProjectID != "" {
+		t.Errorf("project_id should stay empty when the account has no default project, got %q", got.ProjectID)
+	}
+	if got.Region != "cn-bj2" || got.Zone != "cn-bj2-04" {
+		t.Errorf("region/zone must survive; got region=%q zone=%q", got.Region, got.Zone)
 	}
 }
