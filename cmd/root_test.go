@@ -81,3 +81,102 @@ func TestParseWaitTimeoutSec(t *testing.T) {
 		})
 	}
 }
+
+// TestScanFlagValue covers the generalized startup pre-scan helper. Same #119
+// bug as parseWaitTimeoutSec (equals form silently ignored), now for the
+// connection-class flags. The critical -pfoo case pins the R3 boundary:
+// attached/combined shorthand is intentionally NOT recognized.
+func TestScanFlagValue(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		names     []string
+		wantVal   string
+		wantFound bool
+	}{
+		{
+			name:      "long space form",
+			args:      []string{"ucloud", "config", "--profile", "foo"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "foo",
+			wantFound: true,
+		},
+		{
+			name:      "long equals form",
+			args:      []string{"ucloud", "config", "--profile=foo"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "foo",
+			wantFound: true,
+		},
+		{
+			name:      "short space form",
+			args:      []string{"ucloud", "config", "-p", "foo"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "foo",
+			wantFound: true,
+		},
+		{
+			name:      "short equals form",
+			args:      []string{"ucloud", "config", "-p=foo"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "foo",
+			wantFound: true,
+		},
+		{
+			// R3 boundary: attached shorthand is out of scope, must NOT match.
+			name:      "attached shorthand not recognized",
+			args:      []string{"ucloud", "config", "-pfoo"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "",
+			wantFound: false,
+		},
+		{
+			name:      "empty equals is no hit",
+			args:      []string{"ucloud", "config", "--profile="},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "",
+			wantFound: false,
+		},
+		{
+			name:      "trailing flag no value",
+			args:      []string{"ucloud", "config", "--profile"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "",
+			wantFound: false,
+		},
+		{
+			name:      "absent",
+			args:      []string{"ucloud", "config"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "",
+			wantFound: false,
+		},
+		{
+			name:      "base-url equals form single name",
+			args:      []string{"ucloud", "uhost", "list", "--base-url=http://x/"},
+			names:     []string{"--base-url"},
+			wantVal:   "http://x/",
+			wantFound: true,
+		},
+		{
+			// leftmost hit wins (pre-scan only needs one early value, no override)
+			name:      "leftmost wins",
+			args:      []string{"ucloud", "--profile", "a", "--profile", "b"},
+			names:     []string{"--profile", "-p"},
+			wantVal:   "a",
+			wantFound: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, found := scanFlagValue(tt.args, tt.names...)
+			if val != tt.wantVal {
+				t.Errorf("val = %q, want %q", val, tt.wantVal)
+			}
+			if found != tt.wantFound {
+				t.Errorf("found = %v, want %v", found, tt.wantFound)
+			}
+		})
+	}
+}

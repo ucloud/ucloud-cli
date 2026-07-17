@@ -308,37 +308,39 @@ func init() {
 
 	//-1表示不覆盖配置文件中的MaxRetryTimes参数
 	global.MaxRetryTimes = -1
-	for idx, arg := range os.Args {
-		if arg == "--profile" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			global.Profile = os.Args[idx+1]
+	// 启动期预扫描：在 cobra 解析前把连接类参数落到 global.*，供 InitClientRuntime 用。
+	// 每个 flag 都识别 `--flag value` 与 `--flag=value` 两形式（scanFlagValue）。
+	// --profile 额外识别短选项 -p：漏识别会让 ConfigIns 指向错误 profile，
+	// OAuth 刷新可能把别人的 Bearer 重放到当前请求（见 platform/client.go 注释）。
+	if v, ok := scanFlagValue(os.Args, "--profile", "-p"); ok {
+		global.Profile = v
+	}
+	if v, ok := scanFlagValue(os.Args, "--public-key"); ok {
+		global.PublicKey = v
+	}
+	if v, ok := scanFlagValue(os.Args, "--private-key"); ok {
+		global.PrivateKey = v
+	}
+	if v, ok := scanFlagValue(os.Args, "--base-url"); ok {
+		global.BaseURL = v
+	}
+	if v, ok := scanFlagValue(os.Args, "--channel-key"); ok {
+		global.ChannelKey = v
+	}
+	if v, ok := scanFlagValue(os.Args, "--timeout-sec"); ok {
+		sec, err := strconv.Atoi(v)
+		if err != nil {
+			fmt.Printf("parse timeout-sec failed: %v\n", err)
+		} else {
+			global.Timeout = sec
 		}
-		if arg == "--public-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			global.PublicKey = os.Args[idx+1]
-		}
-		if arg == "--private-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			global.PrivateKey = os.Args[idx+1]
-		}
-		if arg == "--base-url" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			global.BaseURL = os.Args[idx+1]
-		}
-		if arg == "--channel-key" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			global.ChannelKey = os.Args[idx+1]
-		}
-		if arg == "--timeout-sec" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			sec, err := strconv.Atoi(os.Args[idx+1])
-			if err != nil {
-				fmt.Printf("parse timeout-sec failed: %v\n", err)
-			} else {
-				global.Timeout = sec
-			}
-		}
-		if arg == "--max-retry-times" && len(os.Args) > idx+1 && os.Args[idx+1] != "" {
-			times, err := strconv.Atoi(os.Args[idx+1])
-			if err != nil {
-				fmt.Printf("parse max-retry-times failed: %v\n", err)
-			} else {
-				global.MaxRetryTimes = times
-			}
+	}
+	if v, ok := scanFlagValue(os.Args, "--max-retry-times"); ok {
+		times, err := strconv.Atoi(v)
+		if err != nil {
+			fmt.Printf("parse max-retry-times failed: %v\n", err)
+		} else {
+			global.MaxRetryTimes = times
 		}
 	}
 	if sec, found, err := parseWaitTimeoutSec(os.Args); found {
@@ -349,6 +351,34 @@ func init() {
 		}
 	}
 	cobra.EnableCommandSorting = false
+}
+
+// scanFlagValue finds the value of any of names in args, recognizing both the
+// space form (`--profile foo`) and the equals form (`--profile=foo`). Multiple
+// names allow aliases, e.g. scanFlagValue(args, "--profile", "-p"). The first
+// (leftmost) hit wins; an empty value (`--profile=` or a trailing `--profile`
+// with no following arg) counts as no hit and scanning continues.
+//
+// This is the startup pre-scan that must run before cobra parses flags, because
+// connection-class params (base-url/channel-key/profile/keys) must be settled
+// before InitClientRuntime builds sdk.Config. Exact-comparison-only scans missed
+// the equals form — the same #119 bug parseWaitTimeoutSec already fixed for
+// --wait-timeout-sec. Attached/combined shorthand (`-pfoo`, `-dpfoo`) is out of
+// scope: hand-parsing combined shorthand is error-prone and its residual risk
+// matches today's behavior (the pre-scan never recognized `-p` at all).
+func scanFlagValue(args []string, names ...string) (string, bool) {
+	for i, arg := range args {
+		for _, name := range names {
+			if arg == name {
+				if i+1 < len(args) && args[i+1] != "" {
+					return args[i+1], true
+				}
+			} else if v, ok := strings.CutPrefix(arg, name+"="); ok && v != "" {
+				return v, true
+			}
+		}
+	}
+	return "", false
 }
 
 // parseWaitTimeoutSec scans args for --wait-timeout-sec in either
