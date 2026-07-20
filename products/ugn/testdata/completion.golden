@@ -1,0 +1,16 @@
+ucloud ugn bw create	charge-type	static	Month,Postpay
+ucloud ugn bw create	path	static	Delay,IGP,TCO
+ucloud ugn bw create	pay-mode	static	FixedBw,Max5,Traffic
+ucloud ugn bw create	project-id	dynamic
+ucloud ugn bw create	qos	static	Diamond,Gold,Platinum
+ucloud ugn bw create	ugn-id	dynamic
+ucloud ugn bw list	project-id	dynamic
+ucloud ugn bw list	ugn-id	dynamic
+ucloud ugn create	project-id	dynamic
+ucloud ugn delete	project-id	dynamic
+ucloud ugn delete	ugn-id	dynamic
+ucloud ugn get	project-id	dynamic
+ucloud ugn get	ugn-id	dynamic
+ucloud ugn route	project-id	dynamic
+ucloud ugn route	type	static	Final,Middle,Origin
+ucloud ugn route	ugn-id	dynamic

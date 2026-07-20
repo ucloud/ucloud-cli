@@ -1,0 +1,60 @@
+ucloud ugn	use=ugn	short=List and manipulate ugn instances
+ucloud ugn bw	use=bw	short=List and manipulate ugn bandwidth packages
+ucloud ugn bw create	use=create	short=Create a ugn bandwidth package
+  flag=bandwidth	short=	default=0	required=true
+  flag=charge-type	short=	default=	required=true
+  flag=coupon-id	short=	default=	required=
+  flag=name	short=	default=	required=
+  flag=path	short=	default=IGP	required=
+  flag=pay-mode	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=qos	short=	default=Platinum	required=
+  flag=quantity	short=	default=1	required=
+  flag=region-a	short=	default=	required=true
+  flag=region-b	short=	default=	required=true
+  flag=ugn-id	short=	default=	required=true
+ucloud ugn bw delete	use=delete	short=Delete ugn bandwidth packages
+  flag=bw-package-id	short=	default=	required=true
+  flag=ugn-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud ugn bw list	use=list	short=List ugn bandwidth packages
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+  flag=ugn-id	short=	default=	required=true
+ucloud ugn bw modify-bandwidth	use=modify-bandwidth	short=Modify ugn bandwidth
+  flag=bandwidth	short=	default=0	required=true
+  flag=package-id	short=	default=	required=true
+  flag=ugn-id	short=	default=	required=true
+ucloud ugn create	use=create	short=Create a ugn instance
+  flag=name	short=	default=	required=true
+  flag=project-id	short=	default=	required=
+  flag=remark	short=	default=	required=
+ucloud ugn delete	use=delete	short=Delete ugn instances
+  flag=project-id	short=	default=	required=
+  flag=ugn-id	short=	default=[]	required=true
+  flag=yes	short=y	default=false	required=
+ucloud ugn get	use=get	short=Show details of one ugn instance
+  flag=project-id	short=	default=	required=
+  flag=ugn-id	short=	default=	required=true
+ucloud ugn list	use=list	short=List ugn instances
+  flag=limit	short=	default=50	required=
+  flag=offset	short=	default=0	required=
+  flag=project-id	short=	default=	required=
+ucloud ugn network	use=network	short=Manage ugn network instances
+ucloud ugn network attach	use=attach	short=Attach network instances to ugn
+  flag=network-id	short=	default=[]	required=true
+  flag=network-project-id	short=	default=[]	required=true
+  flag=network-region	short=	default=[]	required=true
+  flag=network-type	short=	default=[]	required=true
+  flag=ugn-id	short=	default=	required=true
+ucloud ugn network detach	use=detach	short=Detach network instances from ugn
+  flag=network-id	short=	default=[]	required=true
+  flag=ugn-id	short=	default=	required=true
+  flag=yes	short=y	default=false	required=
+ucloud ugn region	use=region	short=List and manipulate ugn regions
+ucloud ugn region list	use=list	short=List ugn regions
+ucloud ugn route	use=route	short=Show route table of one ugn instance
+  flag=project-id	short=	default=	required=
+  flag=type	short=	default=Final	required=
+  flag=ugn-id	short=	default=	required=true
