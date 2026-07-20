@@ -1,6 +1,6 @@
 name: ugn
 owners:
-  - kyler.liu
+  - kyler-67
 commands:
   - ugn
 enabled: true
