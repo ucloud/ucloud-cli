@@ -25,6 +25,7 @@ import (
 	"github.com/ucloud/ucloud-cli/products/udns"
 	"github.com/ucloud/ucloud-cli/products/udpn"
 	"github.com/ucloud/ucloud-cli/products/ufs"
+	"github.com/ucloud/ucloud-cli/products/ugn"
 	"github.com/ucloud/ucloud-cli/products/uhadoop"
 	"github.com/ucloud/ucloud-cli/products/uhost"
 	"github.com/ucloud/ucloud-cli/products/uk8s"
@@ -66,6 +67,7 @@ func registeredProducts() []cli.Product {
 		udns.New(),
 		udpn.New(),
 		ufs.New(),
+		ugn.New(),
 		uhadoop.New(),
 		uhost.New(),
 		uk8s.New(),
