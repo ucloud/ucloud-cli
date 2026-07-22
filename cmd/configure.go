@@ -99,7 +99,6 @@ func NewCmdInit() *cobra.Command {
 				fmt.Println("No default project, skip.")
 			}
 			platform.ConfigIns.Timeout = platform.DefaultTimeoutSec
-			platform.ConfigIns.BaseURL = platform.DefaultBaseURL
 			platform.ConfigIns.MaxRetryTimes = sdk.Int(platform.DefaultMaxRetryTimes)
 			platform.ConfigIns.Active = true
 			fmt.Printf("Configured default base url:%s\n", platform.ConfigIns.BaseURL)
